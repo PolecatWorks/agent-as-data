@@ -1,0 +1,86 @@
+kind: Project
+apiVersion: garden.io/v2
+name: agent-as-data
+
+variables:
+  pr-number: ${local.env.PR_NUMBER || "local"}
+  kube-context: "${local.env.GARDEN_KUBECONTEXT || (local.env.CI == 'true' ? 'local' : 'kubernetes-admin@kubernetes')}"
+
+providers:
+  - name: kubernetes
+    context: ${var.kube-context}
+    namespace: ${environment.namespace}
+    environments:
+      - pr
+      - local
+
+environments:
+  - name: local
+    defaultNamespace: agent-as-data-${local.env.USER}
+  - name: pr
+    defaultNamespace: agent-as-data-pr-${var.pr-number}
+
+---
+kind: Deploy
+type: kubernetes
+name: postgres-test
+description: "Ephemeral PostgreSQL database for integration tests & dev"
+spec:
+  manifests:
+    - apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: postgres-test
+      spec:
+        replicas: 1
+        selector:
+          matchLabels:
+            app: postgres-test
+        template:
+          metadata:
+            labels:
+              app: postgres-test
+          spec:
+            containers:
+              - name: postgres
+                image: postgres:16-alpine
+                env:
+                  - name: POSTGRES_DB
+                    value: agent_as_data
+                  - name: POSTGRES_USER
+                    value: postgres
+                  - name: POSTGRES_PASSWORD
+                    value: postgres
+                ports:
+                  - containerPort: 5432
+                    name: postgres
+    - apiVersion: v1
+      kind: Service
+      metadata:
+        name: postgres-test
+      spec:
+        ports:
+          - port: 5432
+            targetPort: 5432
+            name: postgres
+        selector:
+          app: postgres-test
+
+---
+kind: Deploy
+type: helm
+name: agent-as-data-be
+description: "Deploy Agent-As-Data Rust backend service"
+dependencies:
+  - deploy.postgres-test
+source:
+  path: charts/agent-as-data
+spec:
+  values:
+    image:
+      repository: agent-as-data-be
+      tag: latest
+      pullPolicy: IfNotPresent
+    config:
+      database:
+        url: postgresql://postgres:postgres@postgres-test:5432/agent_as_data
