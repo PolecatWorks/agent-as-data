@@ -38,6 +38,7 @@ flowchart TD
 
 ---
 
-## 3. Test Strategy & Verification Plan
 - Karma / Jasmine unit tests for Angular standalone components.
-- Cypress / Playwright E2E browser tests for SSE token streaming and Mermaid graph rendering.
+- Playwright / Cypress browser unit tests for SSE token streaming and Mermaid graph rendering.
+- **Robot Framework Integration Test Suite (`/integration-tests/tests/`)**: Adopted from `sward-warden/integration-tests`. Declarative `.robot` test files (`test_journey_01_knowledge_ingestion.robot` through `test_journey_09_developer_ui_studio.robot`) executing end-to-end user journeys against backend (`http://localhost:8080`) and frontend container (`http://localhost:4200`) via `run-tests-local.sh` and Garden Kubernetes tests (`garden.yml`).
+

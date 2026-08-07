@@ -23,6 +23,8 @@ This directory contains research notes, technical investigations, architecture o
 | [knowledge-graph-extraction-pruning-research.md](./knowledge-graph-extraction-pruning-research.md) | Automated Knowledge Graph Extraction, Synonym Canonicalization, Confidence Ratings, & Orphan Pruning | Complete | [Knowledge System PRD](../prds/knowledge-data-system-prd.md) |
 | [subagent-delegation-security-research.md](./subagent-delegation-security-research.md) | Privacy, Multi-Tenancy, RBAC Context Inheritance, Secret Redaction, & Sub-Agent Delegation Security | Complete | [Agent Registry PRD](../prds/agent-registry-execution-prd.md) |
 | [gap-analysis-remaining-items.md](./gap-analysis-remaining-items.md) | Comprehensive audit of remaining operational ambiguities, mock engines, auth secrets, & webhooks | Complete | [Master PRD](../prds/agent-as-data-prd.md) |
+| [robot-integration-testing-reference.md](./robot-integration-testing-reference.md) | Robot Framework integration testing pattern mirrored from sward-warden for E2E user journeys | Complete | [Agent UI PRD](../prds/agent-ui-testing-kit-prd.md) |
+
 
 
 

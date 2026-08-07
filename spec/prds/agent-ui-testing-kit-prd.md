@@ -67,9 +67,15 @@ graph TD
 - **MCP Server Ingestion**: Register external MCP servers Stdio commands or SSE transport URLs (`POST /api/v1/agents/mcp/register`).
 - **Cached Tool & Schema Browser**: Inspect cached tool argument schemas, descriptions, and type signatures retrieved from remote MCP servers.
 
+### 7. Robot Framework Integration Testing Suite (Ref: `sward-warden/integration-tests`)
+- **Declarative User Journey Robot Tests**: `/integration-tests/tests/*.robot` test cases mapping 1-to-1 to all 9 user journeys in `user-journeys-spec.md`.
+- **Python Integration Libraries**: Custom Python helper modules (`AADRequests.py`, `TestSeed.py`) extending Robot Framework for authenticated REST/SSE requests, database seeding, and OCC state reset.
+- **Local Dev & Garden Test Runners**: `run-tests-local.sh` local pre-flight runner verifying backend (`http://localhost:8080`) and frontend (`http://localhost:4200`) before running `robot` suites, integrated into Kubernetes via `garden.yml` (`kind: Test`).
+
 ---
 
 ## Technical Stack Alignment (Ref: `sward-warden/sw-fe-container`)
+
 
 - **Framework**: Angular 18+ (Standalone Components, Signals, RxJS 7.8+).
 - **UI Library**: Angular Material 18 (`@angular/material`), Material Symbols (`material-symbols`).
