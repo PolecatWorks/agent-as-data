@@ -10,6 +10,11 @@ hams:
   version: "0.1.0"
   port: 8079
 
+runtime:
+  threads: 4
+  stack_size: 3000000
+  name: "aad-worker"
+
 debugging:
   environment: "development"
   log_level: "info"

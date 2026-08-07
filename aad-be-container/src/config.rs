@@ -7,14 +7,19 @@ use url::Url;
 
 use ::hams::hams::config::HamsConfig;
 
+use crate::tokio_tools::ThreadRuntime;
+
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct AppConfig {
     pub database: DatabaseConfig,
     pub webservice: WebServiceConfig,
     #[serde(serialize_with = "serialize_hams")]
     pub hams: HamsConfig,
+    #[serde(default)]
+    pub runtime: ThreadRuntime,
     pub debugging: DebuggingConfig,
 }
+
 
 fn serialize_hams<S>(hams: &HamsConfig, s: S) -> Result<S::Ok, S::Error>
 where
@@ -77,6 +82,7 @@ mod tests {
                 address: "0.0.0.0:8080".to_string(),
             },
             hams: ::hams::hams::config::HamsConfig::default(),
+            runtime: ThreadRuntime::default(),
             debugging: DebuggingConfig {
                 environment: "development".to_string(),
                 log_level: "info".to_string(),
@@ -97,6 +103,7 @@ mod tests {
                 address: "0.0.0.0:8080".to_string(),
             },
             hams: ::hams::hams::config::HamsConfig::default(),
+            runtime: ThreadRuntime::default(),
             debugging: DebuggingConfig {
                 environment: "development".to_string(),
                 log_level: "info".to_string(),

@@ -4,6 +4,7 @@ use tracing::info;
 
 use aad_be_container::config::AppConfig;
 use aad_be_container::db::{init_db_pool, verify_pgvector_extension};
+use aad_be_container::tokio_tools::run_in_tokio;
 use aad_be_container::{NAME, VERSION};
 use ::hams::hams::Hams;
 
@@ -30,8 +31,7 @@ fn init_logging(log_level: &str) {
     tracing_subscriber::fmt().with_env_filter(env_filter).init();
 }
 
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cli = Cli::parse();
 
     match cli.command {
@@ -58,43 +58,57 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             hams.start().map_err(|e| format!("Failed to start HaMS: {}", e))?;
             info!("HaMS health monitoring sidecar started on port 8079.");
 
-            // 3. Connect DB Pool & Verify pgvector (Fail-Fast)
-            let pool = match init_db_pool(&config.database.url, config.database.max_connections).await {
-                Ok(p) => p,
-                Err(e) => {
-                    tracing::error!("Fail-Fast Error: Database connection failed: {}", e);
-                    panic!("Fail-Fast Error: Database connection failed: {}", e);
+            // 3. Launch Async Application inside Configurable Tokio Runtime
+            let runtime_config = config.runtime.clone();
+
+            run_in_tokio(&runtime_config, async move {
+                // Connect DB Pool & Verify pgvector (Fail-Fast)
+                let pool = match init_db_pool(&config.database.url, config.database.max_connections).await {
+                    Ok(p) => p,
+                    Err(e) => {
+                        tracing::error!("Fail-Fast Error: Database connection failed: {}", e);
+                        panic!("Fail-Fast Error: Database connection failed: {}", e);
+                    }
+                };
+
+                if let Err(e) = verify_pgvector_extension(&pool).await {
+                    tracing::error!("{}", e);
+                    panic!("{}", e);
                 }
-            };
 
-            if let Err(e) = verify_pgvector_extension(&pool).await {
-                tracing::error!("{}", e);
-                panic!("{}", e);
-            }
+                // Run Automatic Schema Migrations
+                info!("Executing database schema migrations...");
+                sqlx::migrate!("./migrations")
+                    .run(&pool)
+                    .await
+                    .map_err(|e| format!("Migration failed: {}", e))?;
+                info!("Database migrations applied successfully.");
 
-            // 4. Run Automatic Schema Migrations
-            info!("Executing database schema migrations...");
-            sqlx::migrate!("./migrations")
-                .run(&pool)
-                .await
-                .map_err(|e| format!("Migration failed: {}", e))?;
-            info!("Database migrations applied successfully.");
+                // Start Axum Main REST Service
+                let app = axum::Router::new()
+                    .route("/health", axum::routing::get(|| async { "OK" }));
 
-            // 5. Start Axum Main REST Service
-            let app = axum::Router::new()
-                .route("/health", axum::routing::get(|| async { "OK" }));
+                let listener = tokio::net::TcpListener::bind(&config.webservice.address).await
+                    .map_err(|e| format!("Listener bind error: {}", e))?;
 
-            let listener = tokio::net::TcpListener::bind(&config.webservice.address).await?;
-            info!("Axum REST Service listening on {}", config.webservice.address);
-            axum::serve(listener, app).await?;
+                info!("Axum REST Service listening on {}", config.webservice.address);
+                axum::serve(listener, app).await.map_err(|e| format!("Axum error: {}", e))?;
+
+                Ok(())
+            })?;
         }
         Commands::Migrate => {
             let config = AppConfig::load(&cli.config_path)?;
             init_logging(&config.debugging.log_level);
 
-            let pool = init_db_pool(&config.database.url, config.database.max_connections).await?;
-            sqlx::migrate!("./migrations").run(&pool).await?;
-            println!("Migrations completed successfully.");
+            run_in_tokio(&config.runtime, async move {
+                let pool = init_db_pool(&config.database.url, config.database.max_connections).await
+                    .map_err(|e| format!("DB connection error: {}", e))?;
+                sqlx::migrate!("./migrations").run(&pool).await
+                    .map_err(|e| format!("Migration error: {}", e))?;
+                println!("Migrations completed successfully.");
+                Ok(())
+            })?;
         }
         Commands::Version => {
             println!("aad-be {}", VERSION);
