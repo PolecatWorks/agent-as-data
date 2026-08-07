@@ -87,7 +87,19 @@ CREATE INDEX IF NOT EXISTS idx_agents_traits ON agents USING GIN(implements_trai
 
 ---
 
-## 2. Test Strategy & Verification Plan
+## 2. HaMS Health Probes & Fail-Fast Validation Setup
+- **HaMS Integration (`hams`)**:
+  - Initializes `Hams::new(hams_config)` on health port `8079`.
+  - Exposes `GET /hams/alive` (liveness), `GET /hams/ready` (readiness), and `GET /metrics` (Prometheus).
+- **Fail-Fast Early Startup Validation**:
+  - `AppConfig::load(config_path, secrets_dir)` deserializes YAML and environment variable overrides via `figment`.
+  - Validates URL syntax, credentials, and non-empty secrets **at startup before opening port 8080**.
+  - Queries `SELECT extname FROM pg_extension WHERE extname = 'vector'` during startup. If `pgvector` is missing or database pool fails to connect, startup aborts immediately with error logs (failing fast).
+
+---
+
+## 3. Test Strategy & Verification Plan
+
 
 ### Integration Tests
 - Verify `sqlx` migration runner executes cleanly against an empty PostgreSQL database with `vector` extension enabled.
