@@ -1,6 +1,7 @@
 # Spec 02: Knowledge & RAG/Graph System
 
-**Status**: `draft`
+**Status**: `complete`
+
 
 ## Overview & Scope
 This specification defines the **Enterprise Knowledge System**: text chunking, `pgvector` HNSW similarity indexing, Subject-Predicate-Object (`knowledge_tuples`) graph store with canonical entity resolution (`subject_canonical`, `object_canonical`), confidence scores, and multi-hop graph traversal.

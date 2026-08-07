@@ -84,12 +84,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     .map_err(|e| format!("Migration failed: {}", e))?;
                 info!("Database migrations applied successfully.");
 
-                // Start Axum Main REST Service
+                // Start Axum Main REST Service with Knowledge Engine routes
                 let app = axum::Router::new()
-                    .route("/health", axum::routing::get(|| async { "OK" }));
+                    .route("/health", axum::routing::get(|| async { "OK" }))
+                    .route("/api/v1/knowledge", axum::routing::post(aad_be_container::knowledge::ingest_knowledge))
+                    .route("/api/v1/knowledge/search", axum::routing::post(aad_be_container::knowledge::search_knowledge))
+                    .route("/api/v1/knowledge/graph/traverse", axum::routing::post(aad_be_container::knowledge::traverse_graph))
+                    .with_state(pool);
 
                 let listener = tokio::net::TcpListener::bind(&config.webservice.address).await
                     .map_err(|e| format!("Listener bind error: {}", e))?;
+
 
                 info!("Axum REST Service listening on {}", config.webservice.address);
                 axum::serve(listener, app).await.map_err(|e| format!("Axum error: {}", e))?;
