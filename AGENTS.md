@@ -57,5 +57,7 @@ flowchart TD
 
 
 ### Phase 3: Ordered Build & Implementation
-1. **Dependency Sequencing**: Determine the appropriate build order across all spec files (e.g., database DDL & migrations -> core domain logic -> API endpoints -> integrations).
+1. **Dependency Sequencing**: Determine the appropriate build order across all spec files (`01` through `08`).
 2. **Strict TDD Execution**: Build out code using a strict TDD approach (Write failing integration/unit test -> Implement code -> Verify test passes -> Refactor).
+3. **Per-Spec Verification Gate**: After completing implementation of a spec file, run **all unit tests** and **Robot Framework integration tests** (`/integration-tests/run-tests-local.sh`). Confirm clean pass before transitioning spec status to `complete` and progressing to the next spec file.
+
