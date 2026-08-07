@@ -151,9 +151,74 @@ sequenceDiagram
     API-->>Dev: Return Compilation Report & Line Diagnostics
 ```
 
+---
+
+## Journey 6: Managed Skill Creation & Promotion to Autonomous Agent
+
+### Scenario
+A developer writes a deterministic, single-purpose routine for formatting JSON logs as a Skill (`skill: "json-log-formatter"`). As requirements grow to include LLM reasoning, vulnerability tagging, and guardrails, the developer promotes the skill into a full declarative Agent.
+
+### Sequence Flow
+1. **Developer Guidance Check**: Developer calls `GET /api/v1/skills/guidance?complexity_score=8` and receives recommendation to promote the skill to an Agent.
+2. **Promotion Execution**: Developer invokes `POST /api/v1/skills/:id/promote`.
+3. **Backend Processing**:
+   - Converts `skills` entry into an `agents` record, wrapping implementation in default incoming/outgoing guardrails.
+   - Generates initial `agent_revisions` snapshot (v1).
+   - Marks original skill as deprecated.
+4. **Outcome**: The capability is now available for RAG discovery, autonomous reasoning, and sub-agent delegation.
+
+---
+
+## Journey 7: Probabilistic Unit Testing & LLM-as-a-Judge Evaluation in CI/CD
+
+### Scenario
+A developer updates the system prompt of `agent: "security-auditor"`. Before publishing a new revision to production, the CI pipeline runs declarative unit test suites to prevent regressions.
+
+### Sequence Flow
+1. **CI Pipeline Trigger**: Calls `POST /api/v1/agents/:id/test`.
+2. **Dual Evaluation Execution**:
+   - *Deterministic Assertion Phase*: Validates output JSON schemas, required keys, and regex patterns against `agent_test_suites`.
+   - *LLM-as-a-Judge Evaluation Phase*: Passes probabilistic text output to a "Judge Agent" which scores output quality against a natural language rubric (0.0 to 1.0).
+3. **Regression Gate Check**:
+   - Judge score returns `0.92` (exceeds threshold `0.85`).
+   - Revision snapshot is approved and published to `agent_revisions`.
+   - Test execution results stored in `agent_test_runs`.
+
+---
+
+## Journey 8: Agent Network Refactoring & Deliberate Contradiction Harmonization
+
+### Scenario
+An enterprise platform has accumulated 45 registered agents across multiple teams. An architect runs the Refactoring Engine to detect redundant agents and resolve conflicting personas.
+
+### Sequence Flow
+1. **Analysis Endpoint**: Architect invokes `POST /api/v1/agents/refactor/analyze { "similarity_threshold": 0.88 }`.
+2. **Vector Clustering**: AAD scans `agent_embeddings` and clusters 3 overlapping code reviewer agents.
+3. **Contradiction Classification**:
+   - Flags 2 redundant agents for merging.
+   - Identifies 1 deliberate contradiction (Optimistic Reviewer vs. Pessimistic Auditor).
+4. **Harmonization**: Merges duplicate prompt rules into a unified master agent and explicitly labels contrasting persona contracts so they operate harmoniously in sub-agent delegation trees.
+
+---
+
+## Journey 9: Interactive Debugging & Trait Override Testing in Developer UI (`aad-fe-container`)
+
+### Scenario
+A developer opens the Web Developer UI Workbench (`http://localhost:8080`) to test an agent's token generation stream and override a sub-agent trait mapping live.
+
+### Sequence Flow
+1. **Dashboard Workbench**: Developer navigates to **Interactive Testing Studio** in `aad-fe-container`.
+2. **Dynamic Trait Mapping**: Developer selects `Agent: "code-reviewer"` and specifies runtime `trait_mappings: { "SecurityAuditor": "custom_experimental_auditor_uuid" }`.
+3. **Contract Pre-Check**: UI calls `POST /api/v1/agents/verify-contract` to verify `custom_experimental_auditor_uuid` satisfies the required `SecurityAuditor` trait schema.
+4. **Live SSE Streaming**: Developer clicks **Execute**. The UI opens an SSE connection, streaming token output and rendering live Mermaid network graph updates in real time.
+
+---
+
 ## Related PRDs
 - [Master PRD](../prds/agent-as-data-prd.md)
 - [Knowledge System PRD](../prds/knowledge-data-system-prd.md)
 - [Agent Registry PRD](../prds/agent-registry-execution-prd.md)
+- [Agent UI & Testing Kit PRD](../prds/agent-ui-testing-kit-prd.md)
+
 
 
