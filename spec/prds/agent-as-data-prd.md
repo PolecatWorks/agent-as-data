@@ -123,7 +123,12 @@ Agent-As-Data (AAD) is an enterprise-grade declarative platform and specificatio
 ### 20. Database Migration Runner & Seed Engine
 - **Automated Migration Runner**: Container startup executes `sqlx` database migrations from `/migrations`, populating base traits (`SecurityAuditor`, `CodeReviewer`) and default guardrail templates.
 
+### 21. HaMS Sidecar Health Monitoring & Fail-Fast Startup Validation
+- **Out-of-Band HaMS Probes (`hams`)**: Runs dedicated sidecar health listener on port `8079` exposing `GET /hams/alive` (liveness probe), `GET /hams/ready` (readiness probe), and `GET /metrics` (Prometheus metrics).
+- **Fail-Fast Early Startup Validation**: Application configuration, YAML overrides, secret files, database connectivity, and required `pgvector` PostgreSQL extensions are validated **at process startup** before opening the main webservice port (`8080`). Invalid configurations, missing credentials, or missing database extensions abort execution immediately with error logs (failing fast).
+
 ## Data Model Requirements
+
 
 
 
