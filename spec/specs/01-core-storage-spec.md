@@ -1,6 +1,7 @@
 # Spec 01: Core Storage & Database Migrations
 
-**Status**: `draft`
+**Status**: `complete`
+
 
 ## Overview & Scope
 This specification defines the foundation layer for **Agent-As-Data (AAD)**: PostgreSQL database extension initialization (`pgvector`), DDL schema tables, `sqlx` migration runner setup, and base trait/guardrail data seeders.

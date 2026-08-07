@@ -1,100 +1,103 @@
-mod api;
-mod config;
-mod error;
-mod models;
-
-use axum::{
-    routing::get,
-    Router,
-};
-use clap::{Parser, Subcommand};
-use config::AppConfig;
-use error::AppError;
-use url::Url;
-use sqlx::postgres::PgPoolOptions;
-use std::net::SocketAddr;
 use std::path::PathBuf;
-use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
+use clap::{Parser, Subcommand};
+use tracing::info;
 
-#[derive(Parser)]
-#[command(name = "aad-be")]
-#[command(about = "Agent-As-Data Backend Service")]
-struct Cli {
-    #[arg(short, long, default_value = "config/default.yaml", env = "CONFIG_PATH")]
-    config_path: PathBuf,
+use aad_be_container::config::AppConfig;
+use aad_be_container::db::{init_db_pool, verify_pgvector_extension};
+use aad_be_container::{NAME, VERSION};
+use ::hams::hams::Hams;
 
-    #[arg(short, long, default_value = "config", env = "SECRETS_DIR")]
-    secrets_dir: PathBuf,
+#[derive(Parser, Debug)]
+#[command(name = "aad-be", about = "Agent-As-Data Backend Microservice", version)]
+pub struct Cli {
+    #[arg(short, long, default_value = "config/default.yaml")]
+    pub config_path: PathBuf,
 
     #[command(subcommand)]
-    command: Commands,
+    pub command: Commands,
 }
 
-#[derive(Subcommand)]
-enum Commands {
-    /// Start the HTTP server
+#[derive(Subcommand, Debug)]
+pub enum Commands {
     Serve,
-    /// Run database migrations
     Migrate,
+    Version,
+}
+
+fn init_logging(log_level: &str) {
+    let env_filter = tracing_subscriber::EnvFilter::try_from_default_env()
+        .unwrap_or_else(|_| tracing_subscriber::EnvFilter::new(log_level));
+    tracing_subscriber::fmt().with_env_filter(env_filter).init();
 }
 
 #[tokio::main]
-async fn main() -> Result<(), AppError> {
-    dotenv::dotenv().ok();
-
-    tracing_subscriber::registry()
-        .with(
-            tracing_subscriber::EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| "aad_be_container=debug,tower_http=debug".into()),
-        )
-        .with(tracing_subscriber::fmt::layer())
-        .init();
-
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cli = Cli::parse();
-    let config = AppConfig::load(&cli.config_path, &cli.secrets_dir)?;
-
-    let database_url: String = Url::from(config.database.url).to_string();
 
     match cli.command {
         Commands::Serve => {
-            tracing::info!("Connecting to database...");
-            let pool = PgPoolOptions::new()
-                .max_connections(config.database.max_connections)
-                .connect(&database_url)
-                .await?;
+            let config = AppConfig::load(&cli.config_path).unwrap_or_else(|e| {
+                init_logging("info");
+                panic!("Fail-Fast Error: Failed to load config: {}", e);
+            });
 
-            tracing::info!("Running database migrations...");
-            sqlx::migrate!("./migrations").run(&pool).await
-                .map_err(|e| AppError::Message(format!("Migration failed: {}", e)))?;
+            init_logging(&config.debugging.log_level);
+            info!("Starting Agent-As-Data backend v{}", VERSION);
 
-            let app = Router::new()
-                .route("/health", get(|| async { "OK" }))
-                .route(
-                    "/api/v1/agents",
-                    get(api::agents::list_agents).post(api::agents::create_agent),
-                )
-                .route(
-                    "/api/v1/agents/{id}",
-                    get(api::agents::get_agent)
-                        .put(api::agents::update_agent)
-                        .delete(api::agents::delete_agent),
-                )
-                .layer(tower_http::trace::TraceLayer::new_for_http())
-                .with_state(pool);
+            // 1. Fail-Fast Config Validation
+            if let Err(e) = config.validate() {
+                panic!("Fail-Fast Configuration Error: {}", e);
+            }
 
-            let addr: SocketAddr = config.webservice.address.parse()
-                .map_err(|e| AppError::Message(format!("Invalid socket address: {}", e)))?;
+            // 2. Start HaMS Health Monitoring Sidecar
+            let mut hams_config = config.hams.clone();
+            hams_config.name = NAME.to_owned();
+            hams_config.version = VERSION.to_owned();
 
-            tracing::info!("Agent-As-Data Backend listening on {}", addr);
-            let listener = tokio::net::TcpListener::bind(addr).await?;
+            let mut hams = Hams::new(hams_config);
+            hams.start().map_err(|e| format!("Failed to start HaMS: {}", e))?;
+            info!("HaMS health monitoring sidecar started on port 8079.");
+
+            // 3. Connect DB Pool & Verify pgvector (Fail-Fast)
+            let pool = match init_db_pool(&config.database.url, config.database.max_connections).await {
+                Ok(p) => p,
+                Err(e) => {
+                    tracing::error!("Fail-Fast Error: Database connection failed: {}", e);
+                    panic!("Fail-Fast Error: Database connection failed: {}", e);
+                }
+            };
+
+            if let Err(e) = verify_pgvector_extension(&pool).await {
+                tracing::error!("{}", e);
+                panic!("{}", e);
+            }
+
+            // 4. Run Automatic Schema Migrations
+            info!("Executing database schema migrations...");
+            sqlx::migrate!("./migrations")
+                .run(&pool)
+                .await
+                .map_err(|e| format!("Migration failed: {}", e))?;
+            info!("Database migrations applied successfully.");
+
+            // 5. Start Axum Main REST Service
+            let app = axum::Router::new()
+                .route("/health", axum::routing::get(|| async { "OK" }));
+
+            let listener = tokio::net::TcpListener::bind(&config.webservice.address).await?;
+            info!("Axum REST Service listening on {}", config.webservice.address);
             axum::serve(listener, app).await?;
         }
         Commands::Migrate => {
-            tracing::info!("Connecting to database for migrations...");
-            let pool = PgPoolOptions::new().connect(&database_url).await?;
-            sqlx::migrate!("./migrations").run(&pool).await
-                .map_err(|e| AppError::Message(format!("Migration failed: {}", e)))?;
-            tracing::info!("Migrations complete.");
+            let config = AppConfig::load(&cli.config_path)?;
+            init_logging(&config.debugging.log_level);
+
+            let pool = init_db_pool(&config.database.url, config.database.max_connections).await?;
+            sqlx::migrate!("./migrations").run(&pool).await?;
+            println!("Migrations completed successfully.");
+        }
+        Commands::Version => {
+            println!("aad-be {}", VERSION);
         }
     }
 

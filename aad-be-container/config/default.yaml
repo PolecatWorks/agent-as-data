@@ -1,11 +1,15 @@
-webservice:
-  address: "0.0.0.0:8085"
-  cors:
-    allow_origins: ["*"]
-    allow_methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
-    allow_headers: ["Content-Type", "Authorization"]
-
 database:
-  url:
-    url: "postgresql://postgres:postgres@localhost:5432/agent_as_data"
-  max_connections: 10
+  url: "postgres://postgres:mysecretpassword@localhost:5432/aaddb"
+  max_connections: 5
+
+webservice:
+  address: "0.0.0.0:8080"
+
+hams:
+  name: "aad-be"
+  version: "0.1.0"
+  port: 8079
+
+debugging:
+  environment: "development"
+  log_level: "info"

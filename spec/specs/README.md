@@ -22,7 +22,7 @@ flowchart TD
     end
 
     subgraph Phase1 ["Phase 1: Foundation Layer"]
-        Spec01["01-core-storage-spec.md<br/>(Database DDL & Migrations)"]
+        Spec01["01-core-storage-spec.md<br/>(Database DDL & Migrations)"]:::complete
     end
 
     subgraph Phase2 ["Phase 2: Core Domain Engines"]
@@ -40,6 +40,8 @@ flowchart TD
         Spec07["07-refactoring-compiler-engine-spec.md<br/>(Refactoring & Pre-Flight Compiler)"]
         Spec08["08-developer-ui-studio-spec.md<br/>(Angular 18+ Developer UI Workbench)"]
     end
+
+    classDef complete fill:#10B981,stroke:#047857,stroke-width:2px,color:#ffffff;
 
     SchemaSpec -.->|Informs Schema & Payloads| Spec01
     SchemaSpec -.->|Informs Schema & Payloads| Spec02
@@ -74,7 +76,8 @@ flowchart TD
 | :---: | :--- | :---: | :--- | :--- | :--- |
 | **Reference** | [agent-schema-spec.md](./agent-schema-spec.md) | `draft` | Consolidated Schema DDL Reference, Indices, & REST/MCP Payload Specifications | [Master PRD](../prds/agent-as-data-prd.md) | **Cross-Cutting Spec**: Source of truth for database DDL tables and JSON payloads across Phases 1-4 |
 | **Reference** | [user-journeys-spec.md](./user-journeys-spec.md) | `draft` | Sequence Diagrams & End-to-End User Journeys (Knowledge, RAG, MCP, Compiler) | [Master PRD](../prds/agent-as-data-prd.md) | **Cross-Cutting Spec**: E2E integration test criteria and sequence flows validating Phases 2-4 |
-| **Phase 1** | [01-core-storage-spec.md](./01-core-storage-spec.md) | `draft` | Database DDL Tables, Extension Init (`pgvector`), `sqlx` Migrations, & Seed Engine | [Master PRD](../prds/agent-as-data-prd.md) | Root Phase 1 Spec (Informed by `agent-schema-spec.md`) |
+| **Phase 1** | [01-core-storage-spec.md](./01-core-storage-spec.md) | `complete` | Database DDL Tables, Extension Init (`pgvector`), `sqlx` Migrations, & Seed Engine | [Master PRD](../prds/agent-as-data-prd.md) | Root Phase 1 Spec (Informed by `agent-schema-spec.md`) |
+
 | **Phase 2** | [02-knowledge-engine-spec.md](./02-knowledge-engine-spec.md) | `draft` | Text Chunks RAG, SPO Graph Store, Canonical Entity Resolution, & Pruning | [Knowledge PRD](../prds/knowledge-data-system-prd.md) | Depends on [01-core-storage-spec.md](./01-core-storage-spec.md) |
 | **Phase 2** | [03-declarative-agent-registry-spec.md](./03-declarative-agent-registry-spec.md) | `draft` | Declarative Agents, Managed Skills, Skill Promotion, & Trait Verification | [Agent Registry PRD](../prds/agent-registry-execution-prd.md) | Depends on [01-core-storage-spec.md](./01-core-storage-spec.md) |
 | **Phase 3** | [04-mcp-server-spec.md](./04-mcp-server-spec.md) | `draft` | Native MCP Server (Stdio/SSE), 11 Tools, & Remote MCP Registration | [Master PRD](../prds/agent-as-data-prd.md) | Depends on [02-knowledge-engine-spec.md](./02-knowledge-engine-spec.md) & [03-declarative-agent-registry-spec.md](./03-declarative-agent-registry-spec.md) |

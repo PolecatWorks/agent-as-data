@@ -1,69 +1,109 @@
-//! Application configuration schema & loader using Figment.
-
 use figment::{
-    providers::{Env, Format, Yaml},
     Figment,
+    providers::{Env, Format, Yaml},
 };
-use figment_file_provider_adapter::FileAdapter;
 use serde::{Deserialize, Serialize};
 use url::Url;
 
+use ::hams::hams::config::HamsConfig;
+
 #[derive(Deserialize, Serialize, Debug, Clone)]
-pub struct UrlWithUsernamePassword {
-    pub url: Url,
-    pub username: Option<String>,
-    pub password: Option<String>,
+pub struct AppConfig {
+    pub database: DatabaseConfig,
+    pub webservice: WebServiceConfig,
+    #[serde(serialize_with = "serialize_hams")]
+    pub hams: HamsConfig,
+    pub debugging: DebuggingConfig,
 }
 
-impl From<UrlWithUsernamePassword> for Url {
-    fn from(value: UrlWithUsernamePassword) -> Self {
-        let mut return_url = value.url;
-        if let Some(password) = value.password {
-            let _ = return_url.set_password(Some(&password));
-        }
-        if let Some(username) = value.username {
-            let _ = return_url.set_username(&username);
-        }
-        return_url
-    }
+fn serialize_hams<S>(hams: &HamsConfig, s: S) -> Result<S::Ok, S::Error>
+where
+    S: serde::Serializer,
+{
+    s.serialize_str(&format!("{:?}", hams))
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct DebuggingConfig {
+    pub environment: String,
+    pub log_level: String,
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct DatabaseConfig {
-    pub url: UrlWithUsernamePassword,
+    pub url: String,
     pub max_connections: u32,
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct WebServiceConfig {
     pub address: String,
-    pub cors: CorsConfig,
-}
-
-#[derive(Deserialize, Serialize, Debug, Clone)]
-pub struct CorsConfig {
-    pub allow_origins: Vec<String>,
-    pub allow_methods: Vec<String>,
-    pub allow_headers: Vec<String>,
-}
-
-#[derive(Deserialize, Serialize, Debug, Clone)]
-pub struct AppConfig {
-    pub database: DatabaseConfig,
-    pub webservice: WebServiceConfig,
 }
 
 impl AppConfig {
-    pub fn load(
-        config_path: &std::path::Path,
-        secrets_dir: &std::path::Path,
-    ) -> Result<Self, Box<figment::Error>> {
-        let adapter = FileAdapter::wrap(Yaml::file(config_path)).relative_to_dir(secrets_dir);
-
+    pub fn load(config_path: &std::path::Path) -> Result<Self, Box<figment::Error>> {
         Figment::new()
-            .merge(adapter)
+            .merge(Yaml::file(config_path))
             .merge(Env::prefixed("AAD_BE__").split("__").lowercase(true))
             .extract()
             .map_err(Box::new)
     }
+
+    /// Fail-Fast early validation of loaded configuration.
+    pub fn validate(&self) -> Result<(), String> {
+        if self.database.url.trim().is_empty() {
+            return Err("Database URL cannot be empty".to_string());
+        }
+        if self.webservice.address.trim().is_empty() {
+            return Err("Webservice address cannot be empty".to_string());
+        }
+        Url::parse(&self.database.url).map_err(|e| format!("Invalid Database URL format: {}", e))?;
+        Ok(())
+    }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_config_validation_valid() {
+        let config = AppConfig {
+            database: DatabaseConfig {
+                url: "postgres://postgres:mysecretpassword@localhost:5432/aaddb".to_string(),
+                max_connections: 5,
+            },
+            webservice: WebServiceConfig {
+                address: "0.0.0.0:8080".to_string(),
+            },
+            hams: ::hams::hams::config::HamsConfig::default(),
+            debugging: DebuggingConfig {
+                environment: "development".to_string(),
+                log_level: "info".to_string(),
+            },
+        };
+
+        assert!(config.validate().is_ok());
+    }
+
+    #[test]
+    fn test_config_validation_empty_url() {
+        let config = AppConfig {
+            database: DatabaseConfig {
+                url: "".to_string(),
+                max_connections: 5,
+            },
+            webservice: WebServiceConfig {
+                address: "0.0.0.0:8080".to_string(),
+            },
+            hams: ::hams::hams::config::HamsConfig::default(),
+            debugging: DebuggingConfig {
+                environment: "development".to_string(),
+                log_level: "info".to_string(),
+            },
+        };
+
+        assert!(config.validate().is_err());
+    }
+}
+
