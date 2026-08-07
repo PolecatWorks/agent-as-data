@@ -1,193 +1,193 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<robot generator="Robot 7.4.2 (Python 3.14.2 on darwin)" generated="2026-08-07T22:15:10.692763" rpa="false" schemaversion="5">
+<robot generator="Robot 7.4.2 (Python 3.14.2 on darwin)" generated="2026-08-07T22:16:21.623433" rpa="false" schemaversion="5">
 <suite id="s1" name="Tests" source="/Users/bengreene/Development/polecatworks/agent-as-data/integration-tests/tests">
 <suite id="s1-s1" name="Test Journey 01 Knowledge Ingestion" source="/Users/bengreene/Development/polecatworks/agent-as-data/integration-tests/tests/test_journey_01_knowledge_ingestion.robot">
 <test id="s1-s1-t1" name="Journey 1 Preflight Verification" line="9">
 <kw name="Log" owner="BuiltIn">
-<msg time="2026-08-07T22:15:10.796426" level="INFO">Testing Journey 1 Knowledge Ingestion framework readiness.</msg>
+<msg time="2026-08-07T22:16:21.722671" level="INFO">Testing Journey 1 Knowledge Ingestion framework readiness.</msg>
 <arg>Testing Journey 1 Knowledge Ingestion framework readiness.</arg>
 <doc>Logs the given message with the given level.</doc>
-<status status="PASS" start="2026-08-07T22:15:10.796244" elapsed="0.000225"/>
+<status status="PASS" start="2026-08-07T22:16:21.722484" elapsed="0.000233"/>
 </kw>
 <kw name="Should Not Be Empty" owner="BuiltIn">
-<msg time="2026-08-07T22:15:10.796793" level="INFO">Length is 21.</msg>
+<msg time="2026-08-07T22:16:21.723021" level="INFO">Length is 21.</msg>
 <arg>${BE_BASE_URL}</arg>
 <doc>Verifies that the given item is not empty.</doc>
-<status status="PASS" start="2026-08-07T22:15:10.796548" elapsed="0.000274"/>
+<status status="PASS" start="2026-08-07T22:16:21.722794" elapsed="0.000257"/>
 </kw>
 <doc>Verify Robot Framework integration harness is functional for Journey 1.</doc>
-<status status="PASS" start="2026-08-07T22:15:10.795749" elapsed="0.001138"/>
+<status status="PASS" start="2026-08-07T22:16:21.721993" elapsed="0.001123"/>
 </test>
 <doc>Integration test for Journey 1: Capturing &amp; Evolving Project Architecture Thoughts (Knowledge Ingestion)</doc>
-<status status="PASS" start="2026-08-07T22:15:10.715001" elapsed="0.082095"/>
+<status status="PASS" start="2026-08-07T22:16:21.645333" elapsed="0.077981"/>
 </suite>
 <suite id="s1-s2" name="Test Journey 02 Strategic Ideation" source="/Users/bengreene/Development/polecatworks/agent-as-data/integration-tests/tests/test_journey_02_strategic_ideation.robot">
 <test id="s1-s2-t1" name="Journey 2 Preflight Verification" line="9">
 <kw name="Log" owner="BuiltIn">
-<msg time="2026-08-07T22:15:10.798566" level="INFO">Testing Journey 2 Strategic AI Ideation framework readiness.</msg>
+<msg time="2026-08-07T22:16:21.724724" level="INFO">Testing Journey 2 Strategic AI Ideation framework readiness.</msg>
 <arg>Testing Journey 2 Strategic AI Ideation framework readiness.</arg>
 <doc>Logs the given message with the given level.</doc>
-<status status="PASS" start="2026-08-07T22:15:10.798448" elapsed="0.000144"/>
+<status status="PASS" start="2026-08-07T22:16:21.724614" elapsed="0.000134"/>
 </kw>
 <kw name="Should Not Be Empty" owner="BuiltIn">
-<msg time="2026-08-07T22:15:10.798771" level="INFO">Length is 21.</msg>
+<msg time="2026-08-07T22:16:21.724917" level="INFO">Length is 21.</msg>
 <arg>${BE_BASE_URL}</arg>
 <doc>Verifies that the given item is not empty.</doc>
-<status status="PASS" start="2026-08-07T22:15:10.798641" elapsed="0.000152"/>
+<status status="PASS" start="2026-08-07T22:16:21.724795" elapsed="0.000144"/>
 </kw>
 <doc>Verify Robot Framework integration harness is functional for Journey 2.</doc>
-<status status="PASS" start="2026-08-07T22:15:10.798226" elapsed="0.000617"/>
+<status status="PASS" start="2026-08-07T22:16:21.724404" elapsed="0.000585"/>
 </test>
 <doc>Integration test for Journey 2: Conceptualizing New Ideas with RAG + Graph Context (Ideation)</doc>
-<status status="PASS" start="2026-08-07T22:15:10.797395" elapsed="0.001566"/>
+<status status="PASS" start="2026-08-07T22:16:21.723605" elapsed="0.001495"/>
 </suite>
 <suite id="s1-s3" name="Test Journey 03 Rag Execution" source="/Users/bengreene/Development/polecatworks/agent-as-data/integration-tests/tests/test_journey_03_rag_execution.robot">
 <test id="s1-s3-t1" name="Journey 3 Preflight Verification" line="9">
 <kw name="Log" owner="BuiltIn">
-<msg time="2026-08-07T22:15:10.800267" level="INFO">Testing Journey 3 Dynamic Agent Discovery &amp; Execution framework readiness.</msg>
+<msg time="2026-08-07T22:16:21.726353" level="INFO">Testing Journey 3 Dynamic Agent Discovery &amp; Execution framework readiness.</msg>
 <arg>Testing Journey 3 Dynamic Agent Discovery &amp; Execution framework readiness.</arg>
 <doc>Logs the given message with the given level.</doc>
-<status status="PASS" start="2026-08-07T22:15:10.800155" elapsed="0.000137"/>
+<status status="PASS" start="2026-08-07T22:16:21.726220" elapsed="0.000180"/>
 </kw>
 <kw name="Should Not Be Empty" owner="BuiltIn">
-<msg time="2026-08-07T22:15:10.800465" level="INFO">Length is 21.</msg>
+<msg time="2026-08-07T22:16:21.726662" level="INFO">Length is 21.</msg>
 <arg>${BE_BASE_URL}</arg>
 <doc>Verifies that the given item is not empty.</doc>
-<status status="PASS" start="2026-08-07T22:15:10.800338" elapsed="0.000147"/>
+<status status="PASS" start="2026-08-07T22:16:21.726479" elapsed="0.000207"/>
 </kw>
 <doc>Verify Robot Framework integration harness is functional for Journey 3.</doc>
-<status status="PASS" start="2026-08-07T22:15:10.799943" elapsed="0.000588"/>
+<status status="PASS" start="2026-08-07T22:16:21.726031" elapsed="0.000711"/>
 </test>
 <doc>Integration test for Journey 3: Dynamic Agent Discovery &amp; Execution via Prompt RAG Search</doc>
-<status status="PASS" start="2026-08-07T22:15:10.799218" elapsed="0.001426"/>
+<status status="PASS" start="2026-08-07T22:16:21.725358" elapsed="0.001512"/>
 </suite>
 <suite id="s1-s4" name="Test Journey 04 Mcp Client Access" source="/Users/bengreene/Development/polecatworks/agent-as-data/integration-tests/tests/test_journey_04_mcp_client_access.robot">
 <test id="s1-s4-t1" name="Journey 4 Preflight Verification" line="9">
 <kw name="Log" owner="BuiltIn">
-<msg time="2026-08-07T22:15:10.801858" level="INFO">Testing Journey 4 Native MCP Server framework readiness.</msg>
+<msg time="2026-08-07T22:16:21.728190" level="INFO">Testing Journey 4 Native MCP Server framework readiness.</msg>
 <arg>Testing Journey 4 Native MCP Server framework readiness.</arg>
 <doc>Logs the given message with the given level.</doc>
-<status status="PASS" start="2026-08-07T22:15:10.801761" elapsed="0.000121"/>
+<status status="PASS" start="2026-08-07T22:16:21.728083" elapsed="0.000130"/>
 </kw>
 <kw name="Should Not Be Empty" owner="BuiltIn">
-<msg time="2026-08-07T22:15:10.802044" level="INFO">Length is 21.</msg>
+<msg time="2026-08-07T22:16:21.728374" level="INFO">Length is 21.</msg>
 <arg>${BE_BASE_URL}</arg>
 <doc>Verifies that the given item is not empty.</doc>
-<status status="PASS" start="2026-08-07T22:15:10.801925" elapsed="0.000140"/>
+<status status="PASS" start="2026-08-07T22:16:21.728258" elapsed="0.000138"/>
 </kw>
 <doc>Verify Robot Framework integration harness is functional for Journey 4.</doc>
-<status status="PASS" start="2026-08-07T22:15:10.801568" elapsed="0.000543"/>
+<status status="PASS" start="2026-08-07T22:16:21.727881" elapsed="0.000561"/>
 </test>
 <doc>Integration test for Journey 4: Exposing Agents &amp; Knowledge to External AI Assistants via MCP</doc>
-<status status="PASS" start="2026-08-07T22:15:10.800886" elapsed="0.001329"/>
+<status status="PASS" start="2026-08-07T22:16:21.727125" elapsed="0.001421"/>
 </suite>
 <suite id="s1-s5" name="Test Journey 05 Preflight Compiler" source="/Users/bengreene/Development/polecatworks/agent-as-data/integration-tests/tests/test_journey_05_preflight_compiler.robot">
 <test id="s1-s5-t1" name="Journey 5 Preflight Verification" line="9">
 <kw name="Log" owner="BuiltIn">
-<msg time="2026-08-07T22:15:10.803770" level="INFO">Testing Journey 5 Agent Network Compiler framework readiness.</msg>
+<msg time="2026-08-07T22:16:21.729757" level="INFO">Testing Journey 5 Agent Network Compiler framework readiness.</msg>
 <arg>Testing Journey 5 Agent Network Compiler framework readiness.</arg>
 <doc>Logs the given message with the given level.</doc>
-<status status="PASS" start="2026-08-07T22:15:10.803642" elapsed="0.000157"/>
+<status status="PASS" start="2026-08-07T22:16:21.729658" elapsed="0.000121"/>
 </kw>
 <kw name="Should Not Be Empty" owner="BuiltIn">
-<msg time="2026-08-07T22:15:10.803987" level="INFO">Length is 21.</msg>
+<msg time="2026-08-07T22:16:21.729938" level="INFO">Length is 21.</msg>
 <arg>${BE_BASE_URL}</arg>
 <doc>Verifies that the given item is not empty.</doc>
-<status status="PASS" start="2026-08-07T22:15:10.803853" elapsed="0.000156"/>
+<status status="PASS" start="2026-08-07T22:16:21.729821" elapsed="0.000138"/>
 </kw>
 <doc>Verify Robot Framework integration harness is functional for Journey 5.</doc>
-<status status="PASS" start="2026-08-07T22:15:10.803410" elapsed="0.000648"/>
+<status status="PASS" start="2026-08-07T22:16:21.729467" elapsed="0.000539"/>
 </test>
 <doc>Integration test for Journey 5: Pre-Flight Agent Network Compilation &amp; Conceptual Validation</doc>
-<status status="PASS" start="2026-08-07T22:15:10.802462" elapsed="0.001716"/>
+<status status="PASS" start="2026-08-07T22:16:21.728792" elapsed="0.001314"/>
 </suite>
 <suite id="s1-s6" name="Test Journey 06 Skill Promotion" source="/Users/bengreene/Development/polecatworks/agent-as-data/integration-tests/tests/test_journey_06_skill_promotion.robot">
 <test id="s1-s6-t1" name="Journey 6 Preflight Verification" line="9">
 <kw name="Log" owner="BuiltIn">
-<msg time="2026-08-07T22:15:10.805435" level="INFO">Testing Journey 6 Managed Skill Promotion framework readiness.</msg>
+<msg time="2026-08-07T22:16:21.731285" level="INFO">Testing Journey 6 Managed Skill Promotion framework readiness.</msg>
 <arg>Testing Journey 6 Managed Skill Promotion framework readiness.</arg>
 <doc>Logs the given message with the given level.</doc>
-<status status="PASS" start="2026-08-07T22:15:10.805334" elapsed="0.000123"/>
+<status status="PASS" start="2026-08-07T22:16:21.731191" elapsed="0.000115"/>
 </kw>
 <kw name="Should Not Be Empty" owner="BuiltIn">
-<msg time="2026-08-07T22:15:10.805617" level="INFO">Length is 21.</msg>
+<msg time="2026-08-07T22:16:21.731465" level="INFO">Length is 21.</msg>
 <arg>${BE_BASE_URL}</arg>
 <doc>Verifies that the given item is not empty.</doc>
-<status status="PASS" start="2026-08-07T22:15:10.805502" elapsed="0.000137"/>
+<status status="PASS" start="2026-08-07T22:16:21.731348" elapsed="0.000138"/>
 </kw>
 <doc>Verify Robot Framework integration harness is functional for Journey 6.</doc>
-<status status="PASS" start="2026-08-07T22:15:10.805141" elapsed="0.000544"/>
+<status status="PASS" start="2026-08-07T22:16:21.731004" elapsed="0.000527"/>
 </test>
 <doc>Integration test for Journey 6: Managed Skill Creation &amp; Promotion to Autonomous Agent</doc>
-<status status="PASS" start="2026-08-07T22:15:10.804432" elapsed="0.001354"/>
+<status status="PASS" start="2026-08-07T22:16:21.730353" elapsed="0.001279"/>
 </suite>
 <suite id="s1-s7" name="Test Journey 07 Judge Evaluation" source="/Users/bengreene/Development/polecatworks/agent-as-data/integration-tests/tests/test_journey_07_judge_evaluation.robot">
 <test id="s1-s7-t1" name="Journey 7 Preflight Verification" line="9">
 <kw name="Log" owner="BuiltIn">
-<msg time="2026-08-07T22:15:10.806983" level="INFO">Testing Journey 7 LLM-as-a-Judge Evaluation framework readiness.</msg>
+<msg time="2026-08-07T22:16:21.732799" level="INFO">Testing Journey 7 LLM-as-a-Judge Evaluation framework readiness.</msg>
 <arg>Testing Journey 7 LLM-as-a-Judge Evaluation framework readiness.</arg>
 <doc>Logs the given message with the given level.</doc>
-<status status="PASS" start="2026-08-07T22:15:10.806870" elapsed="0.000135"/>
+<status status="PASS" start="2026-08-07T22:16:21.732690" elapsed="0.000131"/>
 </kw>
 <kw name="Should Not Be Empty" owner="BuiltIn">
-<msg time="2026-08-07T22:15:10.807167" level="INFO">Length is 21.</msg>
+<msg time="2026-08-07T22:16:21.732978" level="INFO">Length is 21.</msg>
 <arg>${BE_BASE_URL}</arg>
 <doc>Verifies that the given item is not empty.</doc>
-<status status="PASS" start="2026-08-07T22:15:10.807049" elapsed="0.000138"/>
+<status status="PASS" start="2026-08-07T22:16:21.732863" elapsed="0.000136"/>
 </kw>
 <doc>Verify Robot Framework integration harness is functional for Journey 7.</doc>
-<status status="PASS" start="2026-08-07T22:15:10.806681" elapsed="0.000552"/>
+<status status="PASS" start="2026-08-07T22:16:21.732509" elapsed="0.000535"/>
 </test>
 <doc>Integration test for Journey 7: Probabilistic Unit Testing &amp; LLM-as-a-Judge Evaluation in CI/CD</doc>
-<status status="PASS" start="2026-08-07T22:15:10.806026" elapsed="0.001311"/>
+<status status="PASS" start="2026-08-07T22:16:21.731867" elapsed="0.001279"/>
 </suite>
 <suite id="s1-s8" name="Test Journey 08 Refactoring Harmonization" source="/Users/bengreene/Development/polecatworks/agent-as-data/integration-tests/tests/test_journey_08_refactoring_harmonization.robot">
 <test id="s1-s8-t1" name="Journey 8 Preflight Verification" line="9">
 <kw name="Log" owner="BuiltIn">
-<msg time="2026-08-07T22:15:10.808902" level="INFO">Testing Journey 8 Agent Network Refactoring framework readiness.</msg>
+<msg time="2026-08-07T22:16:21.734328" level="INFO">Testing Journey 8 Agent Network Refactoring framework readiness.</msg>
 <arg>Testing Journey 8 Agent Network Refactoring framework readiness.</arg>
 <doc>Logs the given message with the given level.</doc>
-<status status="PASS" start="2026-08-07T22:15:10.808763" elapsed="0.000177"/>
+<status status="PASS" start="2026-08-07T22:16:21.734234" elapsed="0.000117"/>
 </kw>
 <kw name="Should Not Be Empty" owner="BuiltIn">
-<msg time="2026-08-07T22:15:10.809239" level="INFO">Length is 21.</msg>
+<msg time="2026-08-07T22:16:21.734505" level="INFO">Length is 21.</msg>
 <arg>${BE_BASE_URL}</arg>
 <doc>Verifies that the given item is not empty.</doc>
-<status status="PASS" start="2026-08-07T22:15:10.809047" elapsed="0.000221"/>
+<status status="PASS" start="2026-08-07T22:16:21.734393" elapsed="0.000133"/>
 </kw>
 <doc>Verify Robot Framework integration harness is functional for Journey 8.</doc>
-<status status="PASS" start="2026-08-07T22:15:10.808526" elapsed="0.000798"/>
+<status status="PASS" start="2026-08-07T22:16:21.734049" elapsed="0.000522"/>
 </test>
 <doc>Integration test for Journey 8: Agent Network Refactoring &amp; Deliberate Contradiction Harmonization</doc>
-<status status="PASS" start="2026-08-07T22:15:10.807579" elapsed="0.001862"/>
+<status status="PASS" start="2026-08-07T22:16:21.733391" elapsed="0.001280"/>
 </suite>
 <suite id="s1-s9" name="Test Journey 09 Developer Ui Studio" source="/Users/bengreene/Development/polecatworks/agent-as-data/integration-tests/tests/test_journey_09_developer_ui_studio.robot">
 <test id="s1-s9-t1" name="Journey 9 Preflight Verification" line="10">
 <kw name="Log" owner="BuiltIn">
-<msg time="2026-08-07T22:15:10.810787" level="INFO">Testing Journey 9 Developer UI Studio framework readiness.</msg>
+<msg time="2026-08-07T22:16:21.735869" level="INFO">Testing Journey 9 Developer UI Studio framework readiness.</msg>
 <arg>Testing Journey 9 Developer UI Studio framework readiness.</arg>
 <doc>Logs the given message with the given level.</doc>
-<status status="PASS" start="2026-08-07T22:15:10.810675" elapsed="0.000135"/>
+<status status="PASS" start="2026-08-07T22:16:21.735772" elapsed="0.000118"/>
 </kw>
 <kw name="Should Not Be Empty" owner="BuiltIn">
-<msg time="2026-08-07T22:15:10.810977" level="INFO">Length is 21.</msg>
+<msg time="2026-08-07T22:16:21.736043" level="INFO">Length is 21.</msg>
 <arg>${BE_BASE_URL}</arg>
 <doc>Verifies that the given item is not empty.</doc>
-<status status="PASS" start="2026-08-07T22:15:10.810857" elapsed="0.000141"/>
+<status status="PASS" start="2026-08-07T22:16:21.735930" elapsed="0.000134"/>
 </kw>
 <kw name="Should Not Be Empty" owner="BuiltIn">
-<msg time="2026-08-07T22:15:10.811151" level="INFO">Length is 21.</msg>
+<msg time="2026-08-07T22:16:21.736212" level="INFO">Length is 21.</msg>
 <arg>${FE_BASE_URL}</arg>
 <doc>Verifies that the given item is not empty.</doc>
-<status status="PASS" start="2026-08-07T22:15:10.811040" elapsed="0.000131"/>
+<status status="PASS" start="2026-08-07T22:16:21.736103" elapsed="0.000129"/>
 </kw>
 <doc>Verify Robot Framework integration harness is functional for Journey 9.</doc>
-<status status="PASS" start="2026-08-07T22:15:10.810475" elapsed="0.000742"/>
+<status status="PASS" start="2026-08-07T22:16:21.735585" elapsed="0.000692"/>
 </test>
 <doc>Integration test for Journey 9: Interactive Debugging &amp; Trait Override Testing in Developer UI</doc>
-<status status="PASS" start="2026-08-07T22:15:10.809708" elapsed="0.001612"/>
+<status status="PASS" start="2026-08-07T22:16:21.734924" elapsed="0.001539"/>
 </suite>
-<status status="PASS" start="2026-08-07T22:15:10.693646" elapsed="0.117979"/>
+<status status="PASS" start="2026-08-07T22:16:21.624282" elapsed="0.112544"/>
 </suite>
 <statistics>
 <total>

@@ -84,16 +84,22 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     .map_err(|e| format!("Migration failed: {}", e))?;
                 info!("Database migrations applied successfully.");
 
-                // Start Axum Main REST Service with Knowledge Engine routes
+                // Start Axum Main REST Service with Knowledge & Agent/Skills routes
                 let app = axum::Router::new()
                     .route("/health", axum::routing::get(|| async { "OK" }))
                     .route("/api/v1/knowledge", axum::routing::post(aad_be_container::knowledge::ingest_knowledge))
                     .route("/api/v1/knowledge/search", axum::routing::post(aad_be_container::knowledge::search_knowledge))
                     .route("/api/v1/knowledge/graph/traverse", axum::routing::post(aad_be_container::knowledge::traverse_graph))
+                    .route("/api/v1/agents", axum::routing::post(aad_be_container::agents::create_agent))
+                    .route("/api/v1/agents/search", axum::routing::post(aad_be_container::agents::search_agents))
+                    .route("/api/v1/agents/verify-contract", axum::routing::post(aad_be_container::agents::verify_contract))
+                    .route("/api/v1/skills", axum::routing::post(aad_be_container::agents::create_skill))
+                    .route("/api/v1/skills/{id}/promote", axum::routing::post(aad_be_container::agents::promote_skill))
                     .with_state(pool);
 
                 let listener = tokio::net::TcpListener::bind(&config.webservice.address).await
                     .map_err(|e| format!("Listener bind error: {}", e))?;
+
 
 
                 info!("Axum REST Service listening on {}", config.webservice.address);

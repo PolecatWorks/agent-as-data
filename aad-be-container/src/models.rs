@@ -54,3 +54,76 @@ pub struct GraphTraverseResult {
     pub confidence: f64,
     pub depth: usize,
 }
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct CreateAgentRequest {
+    pub name: String,
+    pub description: Option<String>,
+    pub tags: Option<Vec<String>>,
+    pub implements_traits: Option<Vec<String>>,
+    pub owner_id: Uuid,
+    pub read_groups: Option<Vec<String>>,
+    pub write_groups: Option<Vec<String>>,
+    pub execute_groups: Option<Vec<String>>,
+    pub agent_definition: serde_json::Value,
+    pub model: Option<serde_json::Value>,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct AgentResponse {
+    pub id: Uuid,
+    pub name: String,
+    pub description: Option<String>,
+    pub tags: Vec<String>,
+    pub implements_traits: Vec<String>,
+    pub current_version: i32,
+    pub owner_id: Uuid,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct AgentSearchRequest {
+    pub query: String,
+    pub limit: Option<usize>,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct AgentSearchResult {
+    pub agent_id: Uuid,
+    pub name: String,
+    pub description: Option<String>,
+    pub score: f64,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct CreateSkillRequest {
+    pub name: String,
+    pub description: String,
+    pub tags: Option<Vec<String>>,
+    pub owner_id: Uuid,
+    pub input_schema: Option<serde_json::Value>,
+    pub output_schema: Option<serde_json::Value>,
+    pub implementation: Option<serde_json::Value>,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct SkillResponse {
+    pub id: Uuid,
+    pub name: String,
+    pub description: String,
+    pub current_version: i32,
+    pub owner_id: Uuid,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct VerifyContractRequest {
+    pub referrer_agent_id: Uuid,
+    pub target_agent_id: Uuid,
+    pub trait_name: String,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct VerifyContractResponse {
+    pub status: String,
+    pub semantic_fit_score: f64,
+    pub contract_valid: bool,
+}

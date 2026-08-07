@@ -1,6 +1,7 @@
 # Spec 03: Declarative Agent & Managed Skills Registry
 
-**Status**: `draft`
+**Status**: `complete`
+
 
 ## Overview & Scope
 This specification defines the **Declarative Agent Registry, Managed Skills Subsystem, Skill-to-Agent Promotion/Demotion Engine, and Agent Traits Verification Contract System**.
