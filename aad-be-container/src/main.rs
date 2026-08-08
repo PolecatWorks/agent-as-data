@@ -98,7 +98,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     .route("/api/v1/skills", axum::routing::post(aad_be_container::agents::create_skill))
                     .route("/api/v1/skills/{id}/promote", axum::routing::post(aad_be_container::agents::promote_skill))
                     .route("/api/v1/agents/mcp/register", axum::routing::post(aad_be_container::mcp::register_mcp_server))
+                    .route("/api/v1/agents/{id}/execute", axum::routing::post(aad_be_container::execution::execute_agent))
+                    .route("/api/v1/agents/search-and-execute", axum::routing::post(aad_be_container::execution::search_and_execute))
+                    .route("/api/v1/executions/{id}", axum::routing::get(aad_be_container::execution::get_execution))
                     .with_state(pool);
+
 
                 let listener = tokio::net::TcpListener::bind(&config.webservice.address).await
                     .map_err(|e| format!("Listener bind error: {}", e))?;

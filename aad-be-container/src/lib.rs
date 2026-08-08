@@ -1,11 +1,13 @@
 pub mod agents;
 pub mod config;
 pub mod db;
+pub mod execution;
 pub mod hams_tools;
 pub mod knowledge;
 pub mod mcp;
 pub mod models;
 pub mod tokio_tools;
+
 
 
 pub const NAME: &str = "aad-be";

@@ -1,6 +1,7 @@
 # Spec 05: Agent Execution Engine & Safety Guardrails
 
-**Status**: `draft`
+**Status**: `complete`
+
 
 ## Overview & Scope
 This specification defines the **Synchronous/Streaming & Asynchronous Agent Execution Engine**, pre/post-execution Guardrail Interceptors, and the **Three-Tier Working Memory Persistence System with Optimistic Concurrency Control (OCC)**.
