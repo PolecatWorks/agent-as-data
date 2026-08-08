@@ -58,6 +58,8 @@ flowchart TD
 
 ### Phase 3: Ordered Build & Implementation
 1. **Dependency Sequencing**: Determine the appropriate build order across all spec files (`01` through `08`).
-2. **Strict TDD Execution**: Build out code using a strict TDD approach (Write failing integration/unit test -> Implement code -> Verify test passes -> Refactor).
-3. **Per-Spec Verification Gate**: After completing implementation of a spec file, run **all unit tests** and **Robot Framework integration tests** (`/integration-tests/run-tests-local.sh`). Confirm clean pass before transitioning spec status to `complete` and progressing to the next spec file.
+2. **Feature Branch & PR Workflow**: **Do NOT push directly to the `main` branch**. Always create a dedicated feature branch (e.g. `feat/reversible-migrations`), commit changes to the feature branch, push the feature branch to `origin`, and open a Pull Request (PR) using `gh pr create`.
+3. **Strict TDD Execution**: Build out code using a strict TDD approach (Write failing integration/unit test -> Implement code -> Verify test passes -> Refactor).
+4. **Per-Spec Verification Gate**: After completing implementation of a spec file, run **all unit tests** and **Robot Framework integration tests** (`/integration-tests/run-tests-local.sh`). Confirm clean pass before transitioning spec status to `complete` and progressing to the next spec file.
+
 
