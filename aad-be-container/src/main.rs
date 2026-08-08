@@ -97,6 +97,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     .route("/api/v1/agents/:id/test", axum::routing::post(aad_be_container::agents::test_agent))
                     .route("/api/v1/agents/search", axum::routing::post(aad_be_container::agents::search_agents))
                     .route("/api/v1/agents/verify-contract", axum::routing::post(aad_be_container::agents::verify_contract))
+                    .route("/api/v1/agents/refactor/analyze", axum::routing::post(aad_be_container::agents::analyze_refactor))
+                    .route("/api/v1/agents/compile", axum::routing::post(aad_be_container::agents::compile_agent))
                     .route("/api/v1/skills", axum::routing::post(aad_be_container::agents::create_skill))
                     .route("/api/v1/skills/{id}/promote", axum::routing::post(aad_be_container::agents::promote_skill))
                     .route("/api/v1/agents/mcp/register", axum::routing::post(aad_be_container::mcp::register_mcp_server))

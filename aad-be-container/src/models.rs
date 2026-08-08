@@ -190,4 +190,33 @@ pub struct SearchAndExecuteRequest {
     pub prompt: String,
 }
 
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct RefactorAnalyzeRequest {
+    pub similarity_threshold: Option<f64>,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct RefactorAnalyzeResponse {
+    pub clusters: Vec<serde_json::Value>,
+    pub redundant_agents: Vec<Uuid>,
+    pub deliberate_contradictions: Vec<serde_json::Value>,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct CompileAgentRequest {
+    pub root_agent_id: Uuid,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct DiagnosticMessage {
+    pub code: String,
+    pub message: String,
+    pub severity: String,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct CompileAgentResponse {
+    pub status: String,
+    pub diagnostics: Vec<DiagnosticMessage>,
+}
 
