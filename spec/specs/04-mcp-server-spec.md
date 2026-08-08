@@ -1,6 +1,7 @@
 # Spec 04: Native Model Context Protocol (MCP) Server & Remote Registration
 
-**Status**: `draft`
+**Status**: `complete`
+
 
 ## Overview & Scope
 This specification defines the **Native MCP Server (Stdio & SSE)**, exposing 11 native MCP tools (`search_agents`, `execute_agent`, `compile_agent_network`, `ingest_knowledge`, `search_knowledge`, `query_knowledge_graph`, etc.) and the **Remote MCP Server Registration & Tool Caching Subsystem**.

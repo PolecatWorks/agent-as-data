@@ -4,6 +4,7 @@ use tracing::info;
 
 use aad_be_container::config::AppConfig;
 use aad_be_container::db::{init_db_pool, verify_pgvector_extension};
+use aad_be_container::hams_tools::HamsHarness;
 use aad_be_container::tokio_tools::run_in_tokio;
 use aad_be_container::{NAME, VERSION};
 use ::hams::hams::Hams;
@@ -49,19 +50,20 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 panic!("Fail-Fast Configuration Error: {}", e);
             }
 
-            // 2. Start HaMS Health Monitoring Sidecar
-            let mut hams_config = config.hams.clone();
-            hams_config.name = NAME.to_owned();
-            hams_config.version = VERSION.to_owned();
-
-            let mut hams = Hams::new(hams_config);
-            hams.start().map_err(|e| format!("Failed to start HaMS: {}", e))?;
-            info!("HaMS health monitoring sidecar started on port 8079.");
-
-            // 3. Launch Async Application inside Configurable Tokio Runtime
+            // 2. Launch Application in Configurable Tokio Runtime
             let runtime_config = config.runtime.clone();
 
             run_in_tokio(&runtime_config, async move {
+                // Initialize HaMS Health Monitoring Sidecar & ProbeManual readiness signal
+                let mut hams_config = config.hams.clone();
+                hams_config.name = NAME.to_owned();
+                hams_config.version = VERSION.to_owned();
+
+                let hams = Hams::new(hams_config);
+                let _hams_harness = HamsHarness::init(hams).await
+                    .map_err(|e| format!("HaMS init error: {}", e))?;
+                info!("HaMS health sidecar started on port 8079 with readiness probe.");
+
                 // Connect DB Pool & Verify pgvector (Fail-Fast)
                 let pool = match init_db_pool(&config.database.url, config.database.max_connections).await {
                     Ok(p) => p,
@@ -84,7 +86,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     .map_err(|e| format!("Migration failed: {}", e))?;
                 info!("Database migrations applied successfully.");
 
-                // Start Axum Main REST Service with Knowledge & Agent/Skills routes
+                // Start Axum Main REST Service
                 let app = axum::Router::new()
                     .route("/health", axum::routing::get(|| async { "OK" }))
                     .route("/api/v1/knowledge", axum::routing::post(aad_be_container::knowledge::ingest_knowledge))
@@ -95,12 +97,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     .route("/api/v1/agents/verify-contract", axum::routing::post(aad_be_container::agents::verify_contract))
                     .route("/api/v1/skills", axum::routing::post(aad_be_container::agents::create_skill))
                     .route("/api/v1/skills/{id}/promote", axum::routing::post(aad_be_container::agents::promote_skill))
+                    .route("/api/v1/agents/mcp/register", axum::routing::post(aad_be_container::mcp::register_mcp_server))
                     .with_state(pool);
 
                 let listener = tokio::net::TcpListener::bind(&config.webservice.address).await
                     .map_err(|e| format!("Listener bind error: {}", e))?;
-
-
 
                 info!("Axum REST Service listening on {}", config.webservice.address);
                 axum::serve(listener, app).await.map_err(|e| format!("Axum error: {}", e))?;

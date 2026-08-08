@@ -31,7 +31,7 @@ flowchart TD
     end
 
     subgraph Phase3 ["Phase 3: Execution Runtimes & MCP"]
-        Spec04["04-mcp-server-spec.md<br/>(Native MCP Server & Remote MCP Caching)"]
+        Spec04["04-mcp-server-spec.md<br/>(Native MCP Server & Remote MCP Caching)"]:::complete
         Spec05["05-execution-guardrails-engine-spec.md<br/>(Sync/Async Runtimes & OCC State Sync)"]
     end
 
@@ -79,8 +79,8 @@ flowchart TD
 | **Phase 1** | [01-core-storage-spec.md](./01-core-storage-spec.md) | `complete` | Database DDL Tables, Extension Init (`pgvector`), `sqlx` Migrations, & Seed Engine | [Master PRD](../prds/agent-as-data-prd.md) | Root Phase 1 Spec (Informed by `agent-schema-spec.md`) |
 | **Phase 2** | [02-knowledge-engine-spec.md](./02-knowledge-engine-spec.md) | `complete` | Text Chunks RAG, SPO Graph Store, Canonical Entity Resolution, & Pruning | [Knowledge PRD](../prds/knowledge-data-system-prd.md) | Depends on [01-core-storage-spec.md](./01-core-storage-spec.md) |
 | **Phase 2** | [03-declarative-agent-registry-spec.md](./03-declarative-agent-registry-spec.md) | `complete` | Declarative Agents, Managed Skills, Skill Promotion, & Trait Verification | [Agent Registry PRD](../prds/agent-registry-execution-prd.md) | Depends on [01-core-storage-spec.md](./01-core-storage-spec.md) |
+| **Phase 3** | [04-mcp-server-spec.md](./04-mcp-server-spec.md) | `complete` | Native MCP Server (Stdio/SSE), 11 Tools, & Remote MCP Registration | [Master PRD](../prds/agent-as-data-prd.md) | Depends on [02-knowledge-engine-spec.md](./02-knowledge-engine-spec.md) & [03-declarative-agent-registry-spec.md](./03-declarative-agent-registry-spec.md) |
 
-| **Phase 3** | [04-mcp-server-spec.md](./04-mcp-server-spec.md) | `draft` | Native MCP Server (Stdio/SSE), 11 Tools, & Remote MCP Registration | [Master PRD](../prds/agent-as-data-prd.md) | Depends on [02-knowledge-engine-spec.md](./02-knowledge-engine-spec.md) & [03-declarative-agent-registry-spec.md](./03-declarative-agent-registry-spec.md) |
 | **Phase 3** | [05-execution-guardrails-engine-spec.md](./05-execution-guardrails-engine-spec.md) | `draft` | Sync/Async Execution Engine, Guardrails, OCC State Sync, & Webhooks | [Agent Registry PRD](../prds/agent-registry-execution-prd.md) | Depends on [01-core-storage-spec.md](./01-core-storage-spec.md) & [03-declarative-agent-registry-spec.md](./03-declarative-agent-registry-spec.md) |
 | **Phase 4** | [06-agent-test-judge-engine-spec.md](./06-agent-test-judge-engine-spec.md) | `draft` | Probabilistic Unit Testing, LLM-as-a-Judge Evaluation, & CI Quality Gates | [Agent Registry PRD](../prds/agent-registry-execution-prd.md) | Depends on [03-declarative-agent-registry-spec.md](./03-declarative-agent-registry-spec.md) & [05-execution-guardrails-engine-spec.md](./05-execution-guardrails-engine-spec.md) |
 | **Phase 4** | [07-refactoring-compiler-engine-spec.md](./07-refactoring-compiler-engine-spec.md) | `draft` | Overlap Cluster Refactoring Engine & Pre-Flight Agent Network Compiler | [Agent Registry PRD](../prds/agent-registry-execution-prd.md) | Depends on [03-declarative-agent-registry-spec.md](./03-declarative-agent-registry-spec.md) |

@@ -127,3 +127,19 @@ pub struct VerifyContractResponse {
     pub semantic_fit_score: f64,
     pub contract_valid: bool,
 }
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct RegisterMcpServerRequest {
+    pub server_name: String,
+    pub transport_type: String,
+    pub endpoint_config: serde_json::Value,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct RegisterMcpServerResponse {
+    pub id: Uuid,
+    pub server_name: String,
+    pub transport_type: String,
+    pub cached_tools_count: usize,
+}
+
