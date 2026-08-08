@@ -120,8 +120,10 @@ Agent-As-Data (AAD) is an enterprise-grade declarative platform and specificatio
 ### 19. Remote MCP Server Authentication & Secret Management
 - **Encrypted Secret Credentials**: Remote MCP server configurations in `mcp_servers.endpoint_config` support encrypted bearer tokens and API keys stored in environment secrets (`auth_secret_name`).
 
-### 20. Database Migration Runner & Seed Engine
+### 20. Database Migration Runner, Reversible Migrations & Seed Engine
 - **Automated Migration Runner**: Container startup executes `sqlx` database migrations from `/migrations`, populating base traits (`SecurityAuditor`, `CodeReviewer`) and default guardrail templates.
+- **Mandatory Reversible Migrations (`.up.sql` & `.down.sql`)**: Every schema migration MUST strictly consist of paired forward (`<version>_<name>.up.sql`) and reverse (`<version>_<name>.down.sql`) SQL migration files. Reverse migrations provide deterministic rollback capabilities in the event of bad updates or deployment rollbacks.
+
 
 ### 21. HaMS Sidecar Health Monitoring & Fail-Fast Startup Validation
 - **Out-of-Band HaMS Probes (`hams`)**: Runs dedicated sidecar health listener on port `8079` exposing `GET /hams/alive` (liveness probe), `GET /hams/ready` (readiness probe), and `GET /metrics` (Prometheus metrics).

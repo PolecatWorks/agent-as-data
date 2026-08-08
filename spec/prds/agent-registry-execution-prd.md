@@ -104,6 +104,8 @@ The **Agent Registry & Execution Engine** in **Agent-As-Data (AAD)** treats AI a
 - **Decoupled Job Queue**: Asynchronous background agent runs are isolate-tracked in the `executions` table, preventing long-running agent tasks from blocking vector discovery endpoints.
 - **Deterministic Version Snapshots**: All executions bind to explicit `version` snapshots in `agent_revisions`, guaranteeing that agent behavior remains immutable even if an agent prompt is edited mid-task.
 - **Guardrail Interceptors**: Strict pre-submission (`incoming_guardrails`) and post-execution (`outgoing_guardrails`) validation steps block malformed JSON or prompt injection attacks.
+- **Reversible Schema Rollback**: All agent and execution schema migrations (`agents`, `agent_revisions`, `executions`, `skills`, `mcp_servers`) require paired forward (`.up.sql`) and reverse (`.down.sql`) scripts to guarantee safe rollbacks.
+
 
 
 
