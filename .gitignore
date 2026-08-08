@@ -1,5 +1,7 @@
+__pycache__
 target/
 .tokensave/
 .idea/
 .vscode/
 *.log
+integration-tests/reports/

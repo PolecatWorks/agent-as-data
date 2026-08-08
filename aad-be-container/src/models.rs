@@ -67,17 +67,42 @@ pub struct CreateAgentRequest {
     pub execute_groups: Option<Vec<String>>,
     pub agent_definition: serde_json::Value,
     pub model: Option<serde_json::Value>,
+    pub judge_threshold: Option<f64>,
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct AgentResponse {
     pub id: Uuid,
     pub name: String,
-    pub description: Option<String>,
+    pub description: String,
     pub tags: Vec<String>,
     pub implements_traits: Vec<String>,
     pub current_version: i32,
     pub owner_id: Uuid,
+    pub judge_threshold: f64,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct TestCase {
+    pub input: serde_json::Value,
+    pub expected_schema: Option<serde_json::Value>,
+    pub rubric: String,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct TestAgentRequest {
+    pub suite_id: Option<Uuid>,
+    pub test_cases: Vec<TestCase>,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct TestAgentResponse {
+    pub test_run_id: Uuid,
+    pub agent_id: Uuid,
+    pub status: String,
+    pub average_score: f64,
+    pub version_bumped: bool,
+    pub new_version: i32,
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]

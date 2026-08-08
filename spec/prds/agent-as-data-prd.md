@@ -127,6 +127,13 @@ Agent-As-Data (AAD) is an enterprise-grade declarative platform and specificatio
 - **Out-of-Band HaMS Probes (`hams`)**: Runs dedicated sidecar health listener on port `8079` exposing `GET /hams/alive` (liveness probe), `GET /hams/ready` (readiness probe), and `GET /metrics` (Prometheus metrics).
 - **Fail-Fast Early Startup Validation**: Application configuration, YAML overrides, secret files, database connectivity, and required `pgvector` PostgreSQL extensions are validated **at process startup** before opening the main webservice port (`8080`). Invalid configurations, missing credentials, or missing database extensions abort execution immediately with error logs (failing fast).
 
+### 22. Essential Developer Ergonomics & Build Automation Tooling
+- **Mandatory Development Features & Workflow Rules**: Developer ergonomics tooling is classified as an **essential platform requirement**, not optional scripts.
+- **Unified Build Automation (`Makefile`)**: Must provide explicit, human-readable CLI targets (`make help`, `make aad-be-dev`, `make aad-be-watch`, `make aad-fe-dev`, `make compose-db-up`, `make compose-db-clean`, `make robot-test`, `make garden-up`).
+- **Hot-Reloading Watch Modes**: Rust backend supports `cargo watch` auto-recompilation (`make aad-be-watch`), and Angular frontend supports live `ng serve` hot-module reloading (`make aad-fe-dev`).
+- **Container Cleanup & Port Management**: Targets automatically detect and kill stale process listeners on ports `8080`, `8079`, and `4200` (`lsof -t -i`) and clean up conflicting database containers (`make stop-other-db`).
+
+
 ## Data Model Requirements
 
 
