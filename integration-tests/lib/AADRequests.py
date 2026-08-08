@@ -15,3 +15,18 @@ class AADRequests:
     def check_health(self):
         resp = requests.get(f"{self.base_url}/health")
         return resp.status_code == 200
+
+    def create_agent(self, payload):
+        resp = requests.post(f"{self.base_url}/api/v1/agents", json=payload)
+        resp.raise_for_status()
+        return resp.json()
+
+    def update_agent(self, agent_id, payload):
+        resp = requests.put(f"{self.base_url}/api/v1/agents/{agent_id}", json=payload)
+        resp.raise_for_status()
+        return resp.json()
+
+    def test_agent(self, agent_id, payload):
+        resp = requests.post(f"{self.base_url}/api/v1/agents/{agent_id}/test", json=payload)
+        resp.raise_for_status()
+        return resp.json()
