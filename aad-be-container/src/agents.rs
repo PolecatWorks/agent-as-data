@@ -10,6 +10,7 @@ use crate::models::{
     AgentResponse, AgentSearchRequest, AgentSearchResult, CreateAgentRequest, CreateSkillRequest,
     SkillResponse, VerifyContractRequest, VerifyContractResponse,
     TestAgentRequest, TestAgentResponse,
+    RefactorAnalyzeRequest, RefactorAnalyzeResponse, CompileAgentRequest, CompileAgentResponse, DiagnosticMessage,
 };
 
 pub async fn create_agent(
@@ -380,11 +381,48 @@ pub async fn promote_skill(
 
 pub async fn verify_contract(
     State(_pool): State<PgPool>,
-    Json(payload): Json<VerifyContractRequest>,
+    Json(_payload): Json<VerifyContractRequest>,
 ) -> Result<Json<VerifyContractResponse>, (StatusCode, String)> {
     Ok(Json(VerifyContractResponse {
         status: "verified".to_string(),
         semantic_fit_score: 0.96,
         contract_valid: true,
+    }))
+}
+
+pub async fn analyze_refactor(
+    State(_pool): State<PgPool>,
+    Json(_payload): Json<RefactorAnalyzeRequest>,
+) -> Result<Json<RefactorAnalyzeResponse>, (StatusCode, String)> {
+    // Mock implementation for overlap & duplication detection
+    Ok(Json(RefactorAnalyzeResponse {
+        clusters: vec![serde_json::json!({
+            "cluster_id": Uuid::new_v4(),
+            "agents": [Uuid::new_v4(), Uuid::new_v4()],
+            "overlap_score": 0.92
+        })],
+        redundant_agents: vec![Uuid::new_v4()],
+        deliberate_contradictions: vec![serde_json::json!({
+            "agent_a": Uuid::new_v4(),
+            "agent_b": Uuid::new_v4(),
+            "conflict_type": "guardrail_mismatch"
+        })],
+    }))
+}
+
+pub async fn compile_agent(
+    State(_pool): State<PgPool>,
+    Json(_payload): Json<CompileAgentRequest>,
+) -> Result<Json<CompileAgentResponse>, (StatusCode, String)> {
+    // Mock implementation for agent network compilation
+    Ok(Json(CompileAgentResponse {
+        status: "clean".to_string(),
+        diagnostics: vec![
+            DiagnosticMessage {
+                code: "INFO_DAG_CLEAN".to_string(),
+                message: "DAG topology verified, no circular dependencies found.".to_string(),
+                severity: "info".to_string(),
+            }
+        ],
     }))
 }
