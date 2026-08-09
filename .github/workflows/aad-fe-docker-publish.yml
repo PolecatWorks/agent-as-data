@@ -1,312 +1,53 @@
-name: AAD-FE Docker
-
-# This workflow uses actions that are not certified by GitHub.
-# They are provided by a third-party and are governed by
-# separate terms of service, privacy policy, and support
-# documentation.
+name: Build and Publish Aad-FE Docker Image
 
 on:
   push:
-    branches: [ "main" ]
+    branches:
+      - main
+    paths:
+      - 'aad-fe-container/**'
+      - '.github/workflows/aad-fe-docker-publish.yml'
   pull_request:
-    branches: [ "main" ]
-  merge_group:
-    branches: [ "main" ]
-
-env:
-  # Use docker.io for Docker Hub if empty
-  REGISTRY: ghcr.io
-  # github.repository as <account>/<repo>
-  IMAGE_NAME: ${{ github.repository }}-fe
-
-concurrency:
-  # This concurrency group ensures that only one job in the group runs at a time.
-  # If a new job is triggered, the previous one will be canceled.
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+    branches:
+      - main
+    paths:
+      - 'aad-fe-container/**'
+      - '.github/workflows/aad-fe-docker-publish.yml'
 
 jobs:
-  check-paths:
+  build-and-publish:
     runs-on: ubuntu-latest
-    outputs:
-      fe: ${{ steps.filter.outputs.fe }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dorny/paths-filter@v3
-        id: filter
-        with:
-          ref: ${{ github.event.merge_group.base_ref || github.ref }}
-          filters: |
-            fe:
-              - 'aad-fe-container/**'
-              - '.github/workflows/aad-fe-docker-publish.yml'
-
-  check-image:
-    needs: check-paths
-    if: needs.check-paths.outputs.fe == 'true'
-    runs-on: ubuntu-latest
-    outputs:
-      exists: ${{ steps.check.outputs.exists }}
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Determine FE Content SHA
-        id: fe-content
-        run: |
-          FE_SHA=$(git log -1 --format=%H -- aad-fe-container/ .github/workflows/aad-fe-docker-publish.yml)
-          echo "FE_SHA=$FE_SHA" >> $GITHUB_OUTPUT
-
-      - name: Determine Image Name
-        id: image-name
-        run: |
-          repo_name="${{ github.repository }}"
-          echo "IMAGE_NAME_LOWERCASE=$(echo "$repo_name" | tr '[:upper:]' '[:lower:]')-fe" >> $GITHUB_OUTPUT
-
-
-      - name: Log into registry ${{ env.REGISTRY }}
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Check if image exists
-        id: check
-        run: |
-          IMAGE_REF="${{ env.REGISTRY }}/${{ steps.image-name.outputs.IMAGE_NAME_LOWERCASE }}:sha-${{ steps.fe-content.outputs.FE_SHA }}"
-          echo "Checking if image exists: $IMAGE_REF"
-          if docker manifest inspect $IMAGE_REF >/dev/null 2>&1; then
-            echo "exists=true" >> $GITHUB_OUTPUT
-            echo "Image exists!"
-          else
-            echo "exists=false" >> $GITHUB_OUTPUT
-            echo "Image does not exist."
-          fi
-
-  build:
-    needs: [check-paths, check-image]
-    if: needs.check-paths.outputs.fe == 'true' && needs.check-image.outputs.exists != 'true'
-    strategy:
-      fail-fast: false
-      matrix:
-        platform:
-          - linux/amd64
-          - linux/arm64
-
-    runs-on: ${{ matrix.platform == 'linux/amd64' && 'ubuntu-24.04' ||
-      matrix.platform == 'linux/arm64' && 'ubuntu-24.04-arm' }}
-    name: ${{ matrix.platform }} AAD-FE Docker
     permissions:
       contents: read
       packages: write
-      id-token: write
-
     steps:
-      - name: Checkout repository
+      - name: Checkout Code
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
-      - name: Determine FE Content SHA
-        id: fe-content
-        run: |
-          FE_SHA=$(git log -1 --format=%H -- aad-fe-container/ .github/workflows/aad-fe-docker-publish.yml)
-          echo "Determined fe content SHA: $FE_SHA"
-          echo "FE_SHA=$FE_SHA" >> $GITHUB_ENV
-
-      - &prepare_step
-        name: Prepare environment for current platform
-        id: prepare
-        run: |
-          platform=${{ matrix.platform }}
-          repo_name="${{ github.repository }}"
-          echo "IMAGE_NAME_LOWERCASE=$(echo "$repo_name" | tr '[:upper:]' '[:lower:]')-fe" >> $GITHUB_ENV
-          echo "PLATFORM_PAIR=${platform//\//-}" >> $GITHUB_ENV
-
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-        with:
-          platforms: ${{ matrix.platform }}
 
-      - name: Log into registry ${{ env.REGISTRY }}
+      - name: Lowercase Repository Name
+        id: repo_name
+        run: echo "REPO_NAME=$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+
+      - name: Login to Container Registry
+        if: github.event_name != 'pull_request'
         uses: docker/login-action@v3
         with:
-          registry: ${{ env.REGISTRY }}
+          registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Extract Docker metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          tags: |
-            type=ref,event=branch
-            type=ref,event=pr
-            type=raw,value=pr-${{ github.event.pull_request.number }},enable=${{ github.event_name == 'pull_request' }}
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=raw,value=sha-${{ env.FE_SHA }}
 
       - name: Build and push Docker image
-        id: build
-        uses: docker/build-push-action@v7
+        uses: docker/build-push-action@v5
         with:
-          context: aad-fe-container
-          secrets: |
-            NODE_AUTH_TOKEN=${{ secrets.GITHUB_TOKEN }}
-          labels: ${{ steps.meta.outputs.labels }}
-          annotations: ${{ steps.meta.outputs.annotations }}
-          outputs: type=image,name=${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWERCASE
-            }},push-by-digest=true,name-canonical=true,push=true,oci-mediatypes=true
-          cache-from: |
-            type=gha,scope=${{ github.repository }}-aad-fe-main-${{ matrix.platform }}
-          cache-to: ${{ github.ref_name == 'main' && format('type=gha,mode=max,scope={0}-aad-fe-main-{1}', github.repository, matrix.platform) || '' }}
-
-      - name: Export digest
-        run: |
-          mkdir -p /tmp/digests
-          digest="${{ steps.build.outputs.digest }}"
-          touch "/tmp/digests/${digest#sha256:}"
-
-      - name: Upload digest
-        uses: actions/upload-artifact@v6
-        with:
-          name: digests-${{ env.PLATFORM_PAIR }}
-          path: /tmp/digests/*
-          if-no-files-found: error
-          retention-days: 1
-
-  merge:
-    name: Merge Docker manifests
-    runs-on: ubuntu-latest
-    permissions:
-      attestations: write
-      actions: read
-      checks: read
-      contents: read
-      deployments: none
-      id-token: write
-      issues: read
-      discussions: read
-      packages: write
-      pages: none
-      pull-requests: write
-      repository-projects: read
-      security-events: read
-      statuses: read
-    needs:
-      - build
-    steps:
-      - name: Prepare environment
-        run: |
-          repo_name="${{ github.repository }}"
-          echo "IMAGE_NAME_LOWERCASE=$(echo "$repo_name" | tr '[:upper:]' '[:lower:]')-fe" >> $GITHUB_ENV
-
-
-      - name: Checkout repository (for history)
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Determine FE Content SHA
-        id: fe-content
-        run: |
-          FE_SHA=$(git log -1 --format=%H -- aad-fe-container/ .github/workflows/aad-fe-docker-publish.yml)
-          echo "FE_SHA=$FE_SHA" >> $GITHUB_ENV
-
-      - name: Download digests
-        uses: actions/download-artifact@v6
-        with:
-          path: /tmp/digests
-          pattern: digests-*
-          merge-multiple: true
-
-      - name: Docker meta
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWERCASE }}
-          annotations: |
-            type=org.opencontainers.image.description,value=${{ github.event.repository.description || 'No description provided' }}
-          tags: |
-            type=ref,event=pr
-            type=raw,value=pr-${{ github.event.pull_request.number }},enable=${{ github.event_name == 'pull_request' }}
-            type=raw,value=main,enable=${{ github.ref_name == 'main' }}
-            type=raw,value=latest,enable=${{ github.ref_name == 'main' }}
-            type=raw,value=sha-${{ env.FE_SHA }}
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-        with:
-          driver-opts: |
-            network=host
-
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Get execution timestamp with RFC3339 format
-        id: timestamp
-        run: |
-          echo "timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")" >> $GITHUB_OUTPUT
-
-      - name: Create manifest list and push
-        working-directory: /tmp/digests
-        id: manifest-annotate
-        continue-on-error: true
-        run: |
-          docker buildx imagetools create \
-            $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
-            --annotation='index:org.opencontainers.image.description=${{ github.event.repository.description }}' \
-            --annotation='index:org.opencontainers.image.created=${{ steps.timestamp.outputs.timestamp }}' \
-            --annotation='index:org.opencontainers.image.url=${{ github.event.repository.url }}' \
-            --annotation='index:org.opencontainers.image.source=${{ github.event.repository.url }}' \
-            $(printf '${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWERCASE }}@sha256:%s ' *)
-
-      - name: Create manifest list and push without annotations
-        if: steps.manifest-annotate.outcome == 'failure'
-        working-directory: /tmp/digests
-        run: |
-          docker buildx imagetools create  $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
-            $(printf '${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWERCASE }}@sha256:%s ' *)
-
-      - name: Inspect image
-        id: inspect
-        run: |
-          docker buildx imagetools inspect '${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWERCASE }}:${{ steps.meta.outputs.version }}'
-
-      - name: Comment PR
-        uses: actions/github-script@v7
-        if: github.event_name == 'pull_request'
-        with:
-          script: |
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: `🚀 AAD-FE Docker image published for testing!\n\n**Image Name:** \`${process.env.REGISTRY}/${process.env.IMAGE_NAME_LOWERCASE}:pr-${context.issue.number}\``
-            })
-
-  ci-success:
-    name: AAD-FE CI Success
-    needs: [ check-paths, check-image, merge ]
-    if: always() && github.event_name != 'pull_request'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check Status
-        run: |
-          if [[ "${{ needs.check-paths.outputs.fe }}" == 'true' ]]; then
-            if [[ "${{ needs.check-image.outputs.exists }}" != 'true' && "${{ needs.merge.result }}" != 'success' ]]; then
-               echo "Build/Merge failed!"
-               exit 1
-            fi
-          fi
-          echo "Success!"
+          context: ./aad-fe-container
+          file: ./aad-fe-container/Dockerfile
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ghcr.io/${{ env.REPO_NAME }}/agent-as-data-fe:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
