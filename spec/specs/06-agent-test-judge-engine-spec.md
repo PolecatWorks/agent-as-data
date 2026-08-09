@@ -1,6 +1,6 @@
 # Spec 06: Probabilistic Unit Testing & LLM-as-a-Judge Engine
 
-**Status**: `complete`
+**Status**: `draft`
 
 ## Overview & Scope
 This specification defines the **Probabilistic Agent Unit Testing Subsystem**, regression detection gates, and the **LLM-as-a-Judge Evaluation Engine**.

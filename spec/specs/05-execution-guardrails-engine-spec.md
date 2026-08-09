@@ -1,6 +1,6 @@
 # Spec 05: Agent Execution Engine & Safety Guardrails
 
-**Status**: `complete`
+**Status**: `draft`
 
 
 ## Overview & Scope

@@ -1,6 +1,6 @@
 # Spec 07: Refactoring, Compression & Agent Compiler Engine
 
-**Status**: `complete`
+**Status**: `draft`
 
 ## Overview & Scope
 This specification defines the **Agent Refactoring & Compression Engine** (`POST /api/v1/agents/refactor/analyze`) and the **Pre-Flight Agent Network Compiler** (`POST /api/v1/agents/compile`).
