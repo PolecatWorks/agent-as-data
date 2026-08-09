@@ -1,0 +1,17 @@
+.sidenav-container {
+  height: 100vh;
+}
+
+.sidenav {
+  width: 280px;
+  background-color: #fafafa;
+}
+
+.main-content {
+  padding: 20px;
+}
+
+.active-link {
+  background-color: rgba(0, 0, 0, 0.04);
+  font-weight: 500;
+}

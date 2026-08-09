@@ -5,3 +5,4 @@ target/
 .vscode/
 *.log
 integration-tests/reports/
+node_modules/
