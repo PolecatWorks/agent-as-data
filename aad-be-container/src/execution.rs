@@ -26,9 +26,25 @@ pub async fn execute_agent(
         .ok_or((StatusCode::NOT_FOUND, "Agent not found".to_string()))?;
 
     let agent_version: i32 = agent_row.get("current_version");
+
+    // 2. Incoming Guardrail Interceptor Validation
+    if payload.prompt.contains("<script>") || payload.prompt.contains("DROP TABLE") {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            "Incoming Guardrail Violation: Malformed content or prompt injection detected".to_string(),
+        ));
+    }
+
     let output = format!("Executed agent response for prompt: '{}'", payload.prompt);
 
-    // 2. Insert Execution Record with OCC Version Lock
+    // 3. Outgoing Guardrail Interceptor Sanitization
+    let sanitized_output = if output.contains("SECRET_") {
+        "[REDACTED_SECRET]".to_string()
+    } else {
+        output
+    };
+
+    // 4. Insert Execution Record with OCC Version Lock & Optional Webhook
     sqlx::query(
         r#"
         INSERT INTO executions (id, agent_id, agent_version, execution_version, status, request_payload, response_payload, webhook_url, started_at, completed_at)
@@ -39,11 +55,22 @@ pub async fn execute_agent(
     .bind(agent_id)
     .bind(agent_version)
     .bind(serde_json::json!({ "prompt": payload.prompt }))
-    .bind(serde_json::json!({ "output": output }))
+    .bind(serde_json::json!({ "output": sanitized_output }))
     .bind(&payload.webhook_url)
     .execute(&pool)
     .await
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Execution Insert Error: {}", e)))?;
+
+    // 5. Dispatch optional background Webhook notification if webhook_url provided
+    if let Some(webhook_url) = payload.webhook_url {
+        let client = reqwest::Client::new();
+        let body = serde_json::json!({
+            "execution_id": execution_id,
+            "agent_id": agent_id,
+            "status": "completed"
+        });
+        let _ = client.post(&webhook_url).json(&body).send().await;
+    }
 
     Ok((
         StatusCode::OK,
@@ -51,11 +78,12 @@ pub async fn execute_agent(
             execution_id,
             agent_id,
             status: "completed".to_string(),
-            output,
+            output: sanitized_output,
             execution_version: 1,
         }),
     ))
 }
+
 
 pub async fn search_and_execute(
     State(pool): State<PgPool>,

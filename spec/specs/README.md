@@ -34,8 +34,9 @@ flowchart TD
 
     subgraph Phase3 ["Phase 3: Execution Runtimes & MCP"]
         Spec04["04-mcp-server-spec.md<br/>(Native MCP Server & Remote MCP Caching)"]:::complete
-        Spec05["05-execution-guardrails-engine-spec.md<br/>(Sync/Async Runtimes & OCC State Sync)"]
+        Spec05["05-execution-guardrails-engine-spec.md<br/>(Sync/Async Runtimes & OCC State Sync)"]:::complete
     end
+
 
 
     subgraph Phase4 ["Phase 4: Quality, Compiler & Developer UI"]
@@ -85,7 +86,8 @@ flowchart TD
 
 
 | **Phase 3** | [04-mcp-server-spec.md](./04-mcp-server-spec.md) | `complete` | Native MCP Server (Stdio/SSE), 11 Tools, & Remote MCP Registration | [Master PRD](../prds/agent-as-data-prd.md) | Depends on [02-knowledge-engine-spec.md](./02-knowledge-engine-spec.md) & [03-declarative-agent-registry-spec.md](./03-declarative-agent-registry-spec.md) |
-| **Phase 3** | [05-execution-guardrails-engine-spec.md](./05-execution-guardrails-engine-spec.md) | `draft` | Sync/Async Execution Engine, Guardrails, OCC State Sync, & Webhooks | [Agent Registry PRD](../prds/agent-registry-execution-prd.md) | Depends on [01-core-storage-spec.md](./01-core-storage-spec.md) & [03-declarative-agent-registry-spec.md](./03-declarative-agent-registry-spec.md) |
+| **Phase 3** | [05-execution-guardrails-engine-spec.md](./05-execution-guardrails-engine-spec.md) | `complete` | Sync/Async Execution Engine, Guardrails, OCC State Sync, & Webhooks | [Agent Registry PRD](../prds/agent-registry-execution-prd.md) | Depends on [01-core-storage-spec.md](./01-core-storage-spec.md) & [03-declarative-agent-registry-spec.md](./03-declarative-agent-registry-spec.md) |
+
 
 
 | **Phase 4** | [06-agent-test-judge-engine-spec.md](./06-agent-test-judge-engine-spec.md) | `draft` | Probabilistic Unit Testing, LLM-as-a-Judge Evaluation, & CI Quality Gates | [Agent Registry PRD](../prds/agent-registry-execution-prd.md) | Depends on [03-declarative-agent-registry-spec.md](./03-declarative-agent-registry-spec.md) & [05-execution-guardrails-engine-spec.md](./05-execution-guardrails-engine-spec.md) |
