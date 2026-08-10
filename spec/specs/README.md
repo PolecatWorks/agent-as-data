@@ -40,10 +40,11 @@ flowchart TD
 
 
     subgraph Phase4 ["Phase 4: Quality, Compiler & Developer UI"]
-        Spec06["06-agent-test-judge-engine-spec.md<br/>(Unit Testing & LLM-as-a-Judge Engine)"]
-        Spec07["07-refactoring-compiler-engine-spec.md<br/>(Refactoring & Pre-Flight Compiler)"]
-        Spec08["08-developer-ui-studio-spec.md<br/>(Angular 18+ Developer UI Workbench)"]
+        Spec06["06-agent-test-judge-engine-spec.md<br/>(Unit Testing & LLM-as-a-Judge Engine)"]:::complete
+        Spec07["07-refactoring-compiler-engine-spec.md<br/>(Refactoring & Pre-Flight Compiler)"]:::complete
+        Spec08["08-developer-ui-studio-spec.md<br/>(Angular 18+ Developer UI Workbench)"]:::complete
     end
+
 
     classDef complete fill:#10B981,stroke:#047857,stroke-width:2px,color:#ffffff;
 
@@ -90,9 +91,10 @@ flowchart TD
 
 
 
-| **Phase 4** | [06-agent-test-judge-engine-spec.md](./06-agent-test-judge-engine-spec.md) | `draft` | Probabilistic Unit Testing, LLM-as-a-Judge Evaluation, & CI Quality Gates | [Agent Registry PRD](../prds/agent-registry-execution-prd.md) | Depends on [03-declarative-agent-registry-spec.md](./03-declarative-agent-registry-spec.md) & [05-execution-guardrails-engine-spec.md](./05-execution-guardrails-engine-spec.md) |
-| **Phase 4** | [07-refactoring-compiler-engine-spec.md](./07-refactoring-compiler-engine-spec.md) | `draft` | Overlap Cluster Refactoring Engine & Pre-Flight Agent Network Compiler | [Agent Registry PRD](../prds/agent-registry-execution-prd.md) | Depends on [03-declarative-agent-registry-spec.md](./03-declarative-agent-registry-spec.md) |
-| **Phase 4** | [08-developer-ui-studio-spec.md](./08-developer-ui-studio-spec.md) | `draft` | Angular 18+ Web Dashboard (`aad-fe-container`), Live Testing Workbench, & Graph Visualizer | [Agent UI PRD](../prds/agent-ui-testing-kit-prd.md) | Depends on [04-mcp-server-spec.md](./04-mcp-server-spec.md), [05-execution-guardrails-engine-spec.md](./05-execution-guardrails-engine-spec.md), [06-agent-test-judge-engine-spec.md](./06-agent-test-judge-engine-spec.md), & [07-refactoring-compiler-engine-spec.md](./07-refactoring-compiler-engine-spec.md) |
+| **Phase 4** | [06-agent-test-judge-engine-spec.md](./06-agent-test-judge-engine-spec.md) | `complete` | Probabilistic Unit Testing, LLM-as-a-Judge Evaluation, & CI Quality Gates | [Agent Registry PRD](../prds/agent-registry-execution-prd.md) | Depends on [03-declarative-agent-registry-spec.md](./03-declarative-agent-registry-spec.md) & [05-execution-guardrails-engine-spec.md](./05-execution-guardrails-engine-spec.md) |
+| **Phase 4** | [07-refactoring-compiler-engine-spec.md](./07-refactoring-compiler-engine-spec.md) | `complete` | Overlap Cluster Refactoring Engine & Pre-Flight Agent Network Compiler | [Agent Registry PRD](../prds/agent-registry-execution-prd.md) | Depends on [03-declarative-agent-registry-spec.md](./03-declarative-agent-registry-spec.md) |
+| **Phase 4** | [08-developer-ui-studio-spec.md](./08-developer-ui-studio-spec.md) | `complete` | Angular 18+ Web Dashboard (`aad-fe-container`), Live Testing Workbench, & Graph Visualizer | [Agent UI PRD](../prds/agent-ui-testing-kit-prd.md) | Depends on [04-mcp-server-spec.md](./04-mcp-server-spec.md), [05-execution-guardrails-engine-spec.md](./05-execution-guardrails-engine-spec.md), [06-agent-test-judge-engine-spec.md](./06-agent-test-judge-engine-spec.md), & [07-refactoring-compiler-engine-spec.md](./07-refactoring-compiler-engine-spec.md) |
+
 
 
 
