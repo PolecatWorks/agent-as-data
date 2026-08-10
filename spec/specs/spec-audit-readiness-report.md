@@ -41,4 +41,4 @@ This document provides a comprehensive cross-verification audit comparing all **
 
 **The specifications and PRDs are 100% complete, fully cross-verified, internally consistent, and ready to progress to Phase 3 (Strict TDD Code Execution).**
 
-Prompt the user for explicit confirmation to transition `agent-schema-spec.md`, `user-journeys-spec.md`, and task specs `01` through `08` from `draft` to `complete` and begin coding implementation starting with **Phase 1: Foundation Layer (`01-core-storage-spec.md`)**.
+Prompt the user for explicit confirmation to transition `agent-schema-spec.md`, `user-journeys-spec.md`, and task specs `02` through `08` from `draft` to `complete` once they are implemented. Task spec `01-core-storage-spec.md` is currently `complete`.

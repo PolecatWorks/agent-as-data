@@ -1,6 +1,6 @@
 # Spec 08: Developer UI Container & Testing Studio (`aad-fe-container`)
 
-**Status**: `complete`
+**Status**: `draft`
 
 ## Overview & Scope
 This specification defines the frontend web application container **`aad-fe-container`** built with **Angular 18+ (Standalone Components, Angular Material, RxJS, TailwindCSS, Fontsource Inter, and Mermaid.js)** mirroring the `sward-warden/sw-fe-container` architecture.

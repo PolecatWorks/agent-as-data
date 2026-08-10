@@ -1,6 +1,6 @@
 # Spec 03: Declarative Agent & Managed Skills Registry
 
-**Status**: `complete`
+**Status**: `draft`
 
 
 ## Overview & Scope
