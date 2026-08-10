@@ -1,6 +1,7 @@
 # Spec 02: Knowledge & RAG/Graph System
 
-**Status**: `draft`
+**Status**: `complete`
+
 
 
 ## Overview & Scope
