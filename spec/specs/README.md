@@ -27,8 +27,9 @@ flowchart TD
 
     subgraph Phase2 ["Phase 2: Core Domain Engines"]
         Spec02["02-knowledge-engine-spec.md<br/>(RAG & Graph Store Engine)"]:::complete
-        Spec03["03-declarative-agent-registry-spec.md<br/>(Agent & Skills Registry)"]
+        Spec03["03-declarative-agent-registry-spec.md<br/>(Agent & Skills Registry)"]:::complete
     end
+
 
 
     subgraph Phase3 ["Phase 3: Execution Runtimes & MCP"]
@@ -79,7 +80,8 @@ flowchart TD
 | **Reference** | [user-journeys-spec.md](./user-journeys-spec.md) | `draft` | Sequence Diagrams & End-to-End User Journeys (Knowledge, RAG, MCP, Compiler) | [Master PRD](../prds/agent-as-data-prd.md) | **Cross-Cutting Spec**: E2E integration test criteria and sequence flows validating Phases 2-4 |
 | **Phase 1** | [01-core-storage-spec.md](./01-core-storage-spec.md) | `complete` | Database DDL Tables, Extension Init (`pgvector`), `sqlx` Migrations, & Seed Engine | [Master PRD](../prds/agent-as-data-prd.md) | Root Phase 1 Spec (Informed by `agent-schema-spec.md`) |
 | **Phase 2** | [02-knowledge-engine-spec.md](./02-knowledge-engine-spec.md) | `complete` | Text Chunks RAG, SPO Graph Store, Canonical Entity Resolution, & Pruning | [Knowledge PRD](../prds/knowledge-data-system-prd.md) | Depends on [01-core-storage-spec.md](./01-core-storage-spec.md) |
-| **Phase 2** | [03-declarative-agent-registry-spec.md](./03-declarative-agent-registry-spec.md) | `draft` | Declarative Agents, Managed Skills, Skill Promotion, & Trait Verification | [Agent Registry PRD](../prds/agent-registry-execution-prd.md) | Depends on [01-core-storage-spec.md](./01-core-storage-spec.md) |
+| **Phase 2** | [03-declarative-agent-registry-spec.md](./03-declarative-agent-registry-spec.md) | `complete` | Declarative Agents, Managed Skills, Skill Promotion, & Trait Verification | [Agent Registry PRD](../prds/agent-registry-execution-prd.md) | Depends on [01-core-storage-spec.md](./01-core-storage-spec.md) |
+
 
 | **Phase 3** | [04-mcp-server-spec.md](./04-mcp-server-spec.md) | `draft` | Native MCP Server (Stdio/SSE), 11 Tools, & Remote MCP Registration | [Master PRD](../prds/agent-as-data-prd.md) | Depends on [02-knowledge-engine-spec.md](./02-knowledge-engine-spec.md) & [03-declarative-agent-registry-spec.md](./03-declarative-agent-registry-spec.md) |
 | **Phase 3** | [05-execution-guardrails-engine-spec.md](./05-execution-guardrails-engine-spec.md) | `draft` | Sync/Async Execution Engine, Guardrails, OCC State Sync, & Webhooks | [Agent Registry PRD](../prds/agent-registry-execution-prd.md) | Depends on [01-core-storage-spec.md](./01-core-storage-spec.md) & [03-declarative-agent-registry-spec.md](./03-declarative-agent-registry-spec.md) |

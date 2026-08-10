@@ -380,15 +380,70 @@ pub async fn promote_skill(
 }
 
 pub async fn verify_contract(
-    State(_pool): State<PgPool>,
-    Json(_payload): Json<VerifyContractRequest>,
+    State(pool): State<PgPool>,
+    Json(payload): Json<VerifyContractRequest>,
 ) -> Result<Json<VerifyContractResponse>, (StatusCode, String)> {
-    Ok(Json(VerifyContractResponse {
-        status: "verified".to_string(),
-        semantic_fit_score: 0.96,
-        contract_valid: true,
-    }))
+    // Verify target agent implements requested trait
+    let row = sqlx::query("SELECT implements_traits FROM agents WHERE id = $1")
+        .bind(payload.target_agent_id)
+        .fetch_optional(&pool)
+        .await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Fetch Error: {}", e)))?;
+
+    if let Some(r) = row {
+        let traits: Vec<String> = r.get("implements_traits");
+        let contract_valid = traits.iter().any(|t| t.eq_ignore_ascii_case(&payload.trait_name));
+        let status = if contract_valid { "verified" } else { "trait_mismatch" };
+        let score = if contract_valid { 0.96 } else { 0.20 };
+
+        Ok(Json(VerifyContractResponse {
+            status: status.to_string(),
+            semantic_fit_score: score,
+            contract_valid,
+        }))
+    } else {
+        Err((StatusCode::NOT_FOUND, "Target agent not found".to_string()))
+    }
 }
+
+pub async fn demote_skill(
+    State(pool): State<PgPool>,
+    Path(id): Path<Uuid>,
+) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
+    // Fetch skill definition and create matching standalone agent
+    let skill_row = sqlx::query("SELECT name, description, owner_id FROM skills WHERE id = $1")
+        .bind(id)
+        .fetch_optional(&pool)
+        .await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Fetch Error: {}", e)))?
+        .ok_or((StatusCode::NOT_FOUND, "Skill not found".to_string()))?;
+
+    let name: String = skill_row.get("name");
+    let description: String = skill_row.get("description");
+    let owner_id: Uuid = skill_row.get("owner_id");
+
+    let agent_id = Uuid::new_v4();
+    sqlx::query(
+        r#"
+        INSERT INTO agents (id, name, description, current_version, owner_id)
+        VALUES ($1, $2, $3, 1, $4)
+        "#,
+    )
+    .bind(agent_id)
+    .bind(format!("Demoted_{}", name))
+    .bind(&description)
+    .bind(owner_id)
+    .execute(&pool)
+    .await
+    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Agent DB Error: {}", e)))?;
+
+    Ok(Json(serde_json::json!({
+        "skill_id": id,
+        "demoted_to_agent_id": agent_id,
+        "status": "demoted"
+    })))
+}
+
 
 pub async fn analyze_refactor(
     State(_pool): State<PgPool>,
