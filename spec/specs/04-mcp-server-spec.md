@@ -1,6 +1,7 @@
 # Spec 04: Native Model Context Protocol (MCP) Server & Remote Registration
 
-**Status**: `draft`
+**Status**: `complete`
+
 
 
 ## Overview & Scope
