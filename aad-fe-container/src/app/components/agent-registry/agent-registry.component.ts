@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, Location } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatInputModule } from '@angular/material/input';
@@ -48,19 +49,24 @@ export class AgentRegistryComponent implements OnInit {
   newTag: string = '';
   newTrait: string = '';
 
-  constructor(private apiService: ApiService, private snackBar: MatSnackBar) {}
+  constructor(
+    private apiService: ApiService,
+    private snackBar: MatSnackBar,
+    private route: ActivatedRoute,
+    private location: Location
+  ) {}
 
   ngOnInit(): void {
     this.loadAgents();
   }
 
   loadAgents(): void {
+    const routeId = this.route.snapshot.paramMap.get('id');
+
     this.apiService.getAgents().subscribe({
       next: (agents) => {
         this.agents = agents;
-        if (agents.length > 0 && !this.selectedAgent) {
-          this.selectAgent(agents[0]);
-        }
+        this.applySelectedAgentFromRoute(routeId);
       },
       error: (err) => {
         // Fallback sample data if backend DB is offline
@@ -88,18 +94,31 @@ export class AgentRegistryComponent implements OnInit {
             agent_definition: 'You are an agent network compiler. Validate DAG topologies and trait compatibility.'
           }
         ];
-        if (!this.selectedAgent && this.agents.length > 0) {
-          this.selectAgent(this.agents[0]);
-        }
+        this.applySelectedAgentFromRoute(routeId);
       }
     });
+  }
+
+  private applySelectedAgentFromRoute(routeId: string | null): void {
+    if (routeId) {
+      const match = this.agents.find(a => a.id === routeId || a.id.startsWith(routeId));
+      if (match) {
+        this.selectAgent(match);
+        return;
+      }
+    }
+    if (this.agents.length > 0 && !this.selectedAgent) {
+      this.selectAgent(this.agents[0]);
+    }
   }
 
   selectAgent(agent: Agent): void {
     this.selectedAgent = agent;
     this.agentForm = { ...agent };
     this.isEditing = false;
+    this.location.go(`/agent-registry/${agent.id}`);
   }
+
 
   createNewAgent(): void {
     this.selectedAgent = null;

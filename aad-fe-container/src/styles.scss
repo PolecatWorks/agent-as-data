@@ -26,3 +26,16 @@ html, body {
   --mat-tab-header-active-label-text-color: #4f46e5;
 }
 
+/* Angular Material Input & Textarea Styling Resets */
+.mat-mdc-form-field input.mat-mdc-input-element,
+.mat-mdc-form-field textarea.mat-mdc-input-element {
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  width: 100% !important;
+}
+
+
