@@ -1,1 +1,68 @@
-<p>mcp-manager works!</p>
+<div class="p-6 max-w-7xl mx-auto space-y-6">
+  <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex justify-between items-center">
+    <div class="flex items-center space-x-3">
+      <mat-icon class="text-indigo-600">dns</mat-icon>
+      <div>
+        <h1 class="text-xl font-bold text-slate-800 m-0">Remote Model Context Protocol (MCP) Server Manager</h1>
+        <p class="text-sm text-slate-500 m-0">Register external Stdio or SSE transport MCP servers and inspect cached tool argument schemas</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Registration Form -->
+    <mat-card class="rounded-xl border border-slate-200">
+      <mat-card-header class="border-b border-slate-100 pb-3">
+        <mat-card-title class="text-base font-bold text-slate-800">Register Remote MCP Server</mat-card-title>
+      </mat-card-header>
+      <mat-card-content class="p-4 space-y-4">
+        <mat-form-field appearance="outline" class="w-full">
+          <mat-label>Server Identifier</mat-label>
+          <input matInput [(ngModel)]="serverName" placeholder="e.g. github-mcp-server">
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="w-full">
+          <mat-label>Transport Protocol</mat-label>
+          <mat-select [(ngModel)]="transportType">
+            <mat-option value="sse">SSE (Server-Sent Events HTTP)</mat-option>
+            <mat-option value="stdio">Stdio (Standard Input/Output Command)</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="w-full">
+          <mat-label>Endpoint URL or Command</mat-label>
+          <input matInput [(ngModel)]="endpointUrl" placeholder="http://localhost:3000/sse">
+        </mat-form-field>
+
+        <button mat-flat-button color="primary" class="w-full h-12" [disabled]="isRegistering" (click)="registerServer()">
+          <mat-icon>add_link</mat-icon> Register & Ingest Capabilities
+        </button>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Registered Servers List -->
+    <div class="lg:col-span-2">
+      <mat-card class="rounded-xl border border-slate-200">
+        <mat-card-header class="border-b border-slate-100 pb-3">
+          <mat-card-title class="text-base font-bold text-slate-800">Active MCP Server Registry & Cached Tools</mat-card-title>
+        </mat-card-header>
+        <mat-card-content class="p-4 space-y-3">
+          @for (s of registeredServers; track s.server_name) {
+            <div class="p-4 bg-white rounded-xl border border-slate-200 flex justify-between items-center shadow-sm">
+              <div class="space-y-1">
+                <div class="flex items-center space-x-2">
+                  <h3 class="font-bold text-slate-800 m-0 text-base">{{ s.server_name }}</h3>
+                  <span class="px-2 py-0.5 text-[10px] font-bold rounded uppercase" [ngClass]="s.transport_type === 'sse' ? 'bg-indigo-100 text-indigo-800' : 'bg-amber-100 text-amber-800'">
+                    {{ s.transport_type }}
+                  </span>
+                </div>
+                <p class="text-xs text-slate-500 m-0">Cached Tools: {{ s.tools_count }} tools parsed & embedded</p>
+              </div>
+              <span class="text-xs text-slate-400 font-medium">Last Synced: {{ s.last_synced }}</span>
+            </div>
+          }
+        </mat-card-content>
+      </mat-card>
+    </div>
+  </div>
+</div>

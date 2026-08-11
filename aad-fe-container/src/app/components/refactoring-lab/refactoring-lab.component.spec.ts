@@ -1,5 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
+import { provideHttpClient } from '@angular/common/http';
+import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
 import { RefactoringLabComponent } from './refactoring-lab.component';
 
 describe('RefactoringLabComponent', () => {
@@ -8,7 +10,8 @@ describe('RefactoringLabComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [RefactoringLabComponent]
+      imports: [RefactoringLabComponent],
+      providers: [provideHttpClient(), provideAnimationsAsync()]
     })
     .compileComponents();
 
