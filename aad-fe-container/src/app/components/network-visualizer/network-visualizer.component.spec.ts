@@ -1,5 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
+import { provideHttpClient } from '@angular/common/http';
+import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
 import { NetworkVisualizerComponent } from './network-visualizer.component';
 
 describe('NetworkVisualizerComponent', () => {
@@ -8,7 +10,8 @@ describe('NetworkVisualizerComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [NetworkVisualizerComponent]
+      imports: [NetworkVisualizerComponent],
+      providers: [provideHttpClient(), provideAnimationsAsync()]
     })
     .compileComponents();
 

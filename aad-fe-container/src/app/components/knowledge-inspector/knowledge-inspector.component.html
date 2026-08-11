@@ -1,1 +1,74 @@
-<p>knowledge-inspector works!</p>
+<div class="p-6 max-w-7xl mx-auto space-y-6">
+  <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex justify-between items-center">
+    <div class="flex items-center space-x-3">
+      <mat-icon class="text-blue-600">library_books</mat-icon>
+      <div>
+        <h1 class="text-xl font-bold text-slate-800 m-0">Knowledge & SPO Relation Tuple Inspector</h1>
+        <p class="text-sm text-slate-500 m-0">Hybrid pgvector semantic chunk search and multi-hop entity relation tuple graph inspector</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- RAG Vector Search Card -->
+    <mat-card class="rounded-xl border border-slate-200">
+      <mat-card-header class="border-b border-slate-100 pb-3">
+        <mat-card-title class="text-base font-bold text-slate-800">Hybrid Vector RAG Search</mat-card-title>
+      </mat-card-header>
+      <mat-card-content class="p-4 space-y-4">
+        <div class="flex gap-2">
+          <mat-form-field appearance="outline" class="flex-1">
+            <mat-label>Semantic Search Query</mat-label>
+            <input matInput [(ngModel)]="searchQuery" (keyup.enter)="runSearch()">
+          </mat-form-field>
+          <button mat-flat-button color="primary" class="h-14" (click)="runSearch()">
+            <mat-icon>search</mat-icon> Search
+          </button>
+        </div>
+
+        <div class="space-y-2 max-h-[400px] overflow-y-auto">
+          @for (res of searchResults; track res.chunk_index) {
+            <div class="p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-1">
+              <div class="flex justify-between items-center text-xs text-slate-500 font-medium">
+                <span>Chunk #{{ res.chunk_index }}</span>
+                <span class="px-2 py-0.5 bg-blue-100 text-blue-800 rounded font-bold">Similarity Score: {{ (res.score * 100).toFixed(1) }}%</span>
+              </div>
+              <p class="text-xs text-slate-800 m-0 leading-relaxed">{{ res.chunk_text }}</p>
+            </div>
+          }
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- SPO Relation Tuple Card -->
+    <mat-card class="rounded-xl border border-slate-200">
+      <mat-card-header class="border-b border-slate-100 pb-3">
+        <mat-card-title class="text-base font-bold text-slate-800">SPO Tuple Graph Traversal</mat-card-title>
+      </mat-card-header>
+      <mat-card-content class="p-4 space-y-4">
+        <div class="flex gap-2">
+          <mat-form-field appearance="outline" class="flex-1">
+            <mat-label>Subject Canonical Entity</mat-label>
+            <input matInput [(ngModel)]="subjectQuery" (keyup.enter)="runTraverse()">
+          </mat-form-field>
+          <button mat-flat-button color="accent" class="h-14" (click)="runTraverse()">
+            <mat-icon>account_tree</mat-icon> Traverse Graph
+          </button>
+        </div>
+
+        <div class="space-y-2 max-h-[400px] overflow-y-auto">
+          @for (tuple of graphResults; track tuple.object) {
+            <div class="p-3 bg-emerald-50 rounded-lg border border-emerald-200 flex items-center justify-between text-xs">
+              <div class="flex items-center space-x-2 font-mono">
+                <span class="px-2 py-1 bg-emerald-200 text-emerald-900 rounded font-bold">{{ tuple.subject }}</span>
+                <span class="text-emerald-600 font-semibold">─[{{ tuple.predicate }}]─►</span>
+                <span class="px-2 py-1 bg-emerald-200 text-emerald-900 rounded font-bold">{{ tuple.object }}</span>
+              </div>
+              <span class="text-[10px] text-emerald-700 font-bold">Confidence: {{ tuple.confidence }}</span>
+            </div>
+          }
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </div>
+</div>

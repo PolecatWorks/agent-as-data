@@ -1,5 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
+import { provideHttpClient } from '@angular/common/http';
+import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
 import { KnowledgeInspectorComponent } from './knowledge-inspector.component';
 
 describe('KnowledgeInspectorComponent', () => {
@@ -8,7 +10,8 @@ describe('KnowledgeInspectorComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [KnowledgeInspectorComponent]
+      imports: [KnowledgeInspectorComponent],
+      providers: [provideHttpClient(), provideAnimationsAsync()]
     })
     .compileComponents();
 
