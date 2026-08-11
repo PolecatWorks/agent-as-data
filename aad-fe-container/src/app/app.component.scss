@@ -3,15 +3,23 @@
 }
 
 .sidenav {
-  width: 280px;
-  background-color: #fafafa;
+  width: 290px;
+  background-color: #ffffff;
+  border-right: 1px solid #e2e8f0;
 }
 
 .main-content {
-  padding: 20px;
+  background-color: #f8fafc;
+  min-height: calc(100vh - 64px);
 }
 
 .active-link {
-  background-color: rgba(0, 0, 0, 0.04);
-  font-weight: 500;
+  background-color: #e0e7ff !important;
+  color: #4338ca !important;
+  font-weight: 600 !important;
+  border-radius: 0.75rem !important;
+}
+
+.active-link mat-icon {
+  color: #4338ca !important;
 }

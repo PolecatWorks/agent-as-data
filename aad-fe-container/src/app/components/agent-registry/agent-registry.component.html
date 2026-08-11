@@ -1,45 +1,76 @@
-<div class="p-6 max-w-7xl mx-auto space-y-6">
-  <!-- Top Header Action Bar -->
-  <div class="flex justify-between items-center bg-white p-4 rounded-xl shadow-sm border border-slate-200">
-    <div class="flex items-center space-x-3">
-      <mat-icon class="text-indigo-600">app_registration</mat-icon>
+<div class="p-8 max-w-[1600px] mx-auto space-y-8">
+  <!-- Header Bar -->
+  <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white p-6 rounded-2xl shadow-sm border border-slate-200/80 gap-4">
+    <div class="flex items-center space-x-4">
+      <div class="p-3 bg-indigo-50 text-indigo-600 rounded-xl">
+        <mat-icon class="!w-7 !h-7 !text-[28px]">app_registration</mat-icon>
+      </div>
       <div>
-        <h1 class="text-xl font-bold text-slate-800 m-0">Declarative Agent Registry & Visual Builder</h1>
-        <p class="text-sm text-slate-500 m-0">Manage declarative agent specifications, trait contracts, and version revisions</p>
+        <h1 class="text-2xl font-bold text-slate-900 tracking-tight m-0">Agent Registry & Visual Builder</h1>
+        <p class="text-sm text-slate-500 mt-1 m-0">Browse declarative agent specifications, manage trait contracts, and build persona prompts</p>
       </div>
     </div>
-    <button mat-flat-button color="primary" class="rounded-lg" (click)="createNewAgent()">
+    <button mat-flat-button color="primary" class="!px-5 !py-2.5 !rounded-xl !font-semibold" (click)="createNewAgent()">
       <mat-icon>add</mat-icon> Create New Agent
     </button>
   </div>
 
-  <!-- Main Grid Layout -->
-  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-    <!-- Left Master List -->
-    <div class="lg:col-span-1 space-y-4">
-      <mat-card class="rounded-xl border border-slate-200">
-        <mat-card-content class="p-4 space-y-3">
-          <mat-form-field appearance="outline" class="w-full">
-            <mat-label>Search Agents by Name or Trait</mat-label>
-            <input matInput [(ngModel)]="searchQuery" placeholder="Filter agents...">
-            <mat-icon matSuffix>search</mat-icon>
-          </mat-form-field>
+  <!-- Master-Detail Split Grid Layout -->
+  <div class="grid grid-cols-1 xl:grid-cols-12 gap-8">
+    
+    <!-- LEFT PANEL: Agent Master List (5 cols) -->
+    <div class="xl:col-span-5 space-y-4">
+      <mat-card class="!rounded-2xl !border !border-slate-200/80 !bg-slate-50/50">
+        <mat-card-header class="p-5 border-b border-slate-200/80 bg-white rounded-t-2xl">
+          <div class="w-full space-y-3">
+            <div class="flex justify-between items-center">
+              <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Registered Agents ({{ agents.length }})</span>
+              <span class="text-xs font-semibold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-full border border-indigo-100">Live Registry</span>
+            </div>
+            <mat-form-field appearance="outline" class="w-full !mb-0 dense-form-field">
+              <mat-label>Filter agents by name, tag, or trait</mat-label>
+              <input matInput [(ngModel)]="searchQuery" placeholder="Search...">
+              <mat-icon matSuffix class="text-slate-400">search</mat-icon>
+            </mat-form-field>
+          </div>
+        </mat-card-header>
 
-          <div class="space-y-2 max-h-[600px] overflow-y-auto pr-1">
+        <mat-card-content class="p-4">
+          <div class="space-y-3.5 max-h-[720px] overflow-y-auto pr-1">
             @for (agent of agents; track agent.id) {
               <div 
-                class="p-4 rounded-xl border transition-all cursor-pointer hover:border-indigo-400 hover:shadow-md"
-                [ngClass]="selectedAgent?.id === agent.id ? 'border-indigo-600 bg-indigo-50/50' : 'border-slate-200 bg-white'"
+                class="p-5 rounded-2xl border-2 transition-all cursor-pointer relative overflow-hidden group"
+                [ngClass]="selectedAgent?.id === agent.id 
+                  ? 'border-indigo-600 bg-white shadow-md shadow-indigo-100/50 ring-1 ring-indigo-600' 
+                  : 'border-slate-200/80 bg-white hover:border-slate-300 hover:shadow-sm'"
                 (click)="selectAgent(agent)">
-                <div class="flex justify-between items-start">
-                  <h3 class="font-semibold text-slate-900 text-base m-0">{{ agent.name }}</h3>
-                  <span class="px-2 py-0.5 text-xs font-medium bg-indigo-100 text-indigo-800 rounded-full">v{{ agent.current_version }}</span>
+                
+                <!-- Active Indicator Pill -->
+                @if (selectedAgent?.id === agent.id) {
+                  <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-indigo-600"></div>
+                }
+
+                <div class="flex justify-between items-start mb-2">
+                  <div>
+                    <h3 class="font-bold text-slate-900 text-base m-0 group-hover:text-indigo-600 transition-colors">{{ agent.name }}</h3>
+                    <span class="text-xs text-slate-400 font-mono mt-0.5 block">ID: {{ agent.id.substring(0, 8) }}...</span>
+                  </div>
+                  <span class="px-2.5 py-1 text-xs font-bold bg-slate-100 text-slate-700 rounded-lg border border-slate-200/80">
+                    v{{ agent.current_version }}
+                  </span>
                 </div>
-                <p class="text-xs text-slate-600 line-clamp-2 mt-1 mb-2">{{ agent.description }}</p>
-                <div class="flex flex-wrap gap-1">
+
+                <p class="text-xs text-slate-600 line-clamp-2 leading-relaxed mb-3">{{ agent.description }}</p>
+
+                <div class="flex flex-wrap gap-1.5 pt-2 border-t border-slate-100">
                   @for (trait of agent.implements_traits; track trait) {
-                    <span class="px-2 py-0.5 text-[10px] font-semibold bg-emerald-100 text-emerald-800 rounded-md">
+                    <span class="px-2.5 py-1 text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200/80 rounded-md">
                       {{ trait }}
+                    </span>
+                  }
+                  @for (tag of agent.tags; track tag) {
+                    <span class="px-2 py-0.5 text-[10px] font-semibold bg-slate-100 text-slate-600 rounded">
+                      #{{ tag }}
                     </span>
                   }
                 </div>
@@ -50,85 +81,104 @@
       </mat-card>
     </div>
 
-    <!-- Right Editor Detail Form -->
-    <div class="lg:col-span-2">
-      <mat-card class="rounded-xl border border-slate-200 bg-white">
-        <mat-card-header class="border-b border-slate-100 pb-3">
-          <div class="flex justify-between items-center w-full">
-            <mat-card-title class="text-lg font-bold text-slate-800">
-              {{ selectedAgent ? 'Edit Agent: ' + selectedAgent.name : 'Create New Declarative Agent' }}
+    <!-- RIGHT PANEL: Agent Detail Form & Persona Prompt Editor (7 cols) -->
+    <div class="xl:col-span-7">
+      <mat-card class="!rounded-2xl !border !border-slate-200/80 !bg-white">
+        <mat-card-header class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50 rounded-t-2xl">
+          <div>
+            <div class="flex items-center space-x-2 mb-1">
+              <span class="px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-md"
+                [ngClass]="selectedAgent ? 'bg-indigo-100 text-indigo-800' : 'bg-emerald-100 text-emerald-800'">
+                {{ selectedAgent ? 'EDITING SPECIFICATION' : 'NEW SPECIFICATION' }}
+              </span>
+            </div>
+            <mat-card-title class="text-xl font-bold text-slate-900 m-0">
+              {{ selectedAgent ? selectedAgent.name : 'Create New Declarative Agent' }}
             </mat-card-title>
-            <button mat-raised-button color="accent" (click)="saveAgent()">
-              <mat-icon>save</mat-icon> Save Specification
-            </button>
           </div>
+          <button mat-raised-button color="accent" class="!px-6 !py-2.5 !rounded-xl !font-bold" (click)="saveAgent()">
+            <mat-icon>save</mat-icon> Save Specification
+          </button>
         </mat-card-header>
 
         <mat-card-content class="p-6 space-y-6">
-          <mat-tab-group>
-            <!-- Tab 1: General & Persona Prompt -->
-            <mat-tab label="Specification & Prompt">
-              <div class="space-y-4 pt-4">
-                <div class="grid grid-cols-2 gap-4">
+          <mat-tab-group class="border-b border-slate-200">
+            <!-- TAB 1: General Info & Persona Prompt -->
+            <mat-tab label="Specification & Persona Prompt">
+              <div class="space-y-5 pt-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                   <mat-form-field appearance="outline" class="w-full">
                     <mat-label>Agent Name</mat-label>
                     <input matInput [(ngModel)]="agentForm.name" placeholder="e.g. SecurityAuditor">
                   </mat-form-field>
 
                   <mat-form-field appearance="outline" class="w-full">
-                    <mat-label>Judge Threshold Score (0.0 - 1.0)</mat-label>
+                    <mat-label>Judge Evaluation Threshold (0.0 - 1.0)</mat-label>
                     <input matInput type="number" step="0.05" [(ngModel)]="agentForm.judge_threshold">
                   </mat-form-field>
                 </div>
 
                 <mat-form-field appearance="outline" class="w-full">
-                  <mat-label>Description</mat-label>
-                  <textarea matInput rows="2" [(ngModel)]="agentForm.description" placeholder="Short operational summary..."></textarea>
+                  <mat-label>Operational Description</mat-label>
+                  <textarea matInput rows="2" [(ngModel)]="agentForm.description" placeholder="Summary of responsibilities..."></textarea>
                 </mat-form-field>
 
-                <mat-form-field appearance="outline" class="w-full">
-                  <mat-label>Agent Definition (System Prompt & Persona)</mat-label>
-                  <textarea matInput rows="8" class="font-mono text-sm" [(ngModel)]="agentForm.agent_definition" placeholder="You are an autonomous AI agent..."></textarea>
-                </mat-form-field>
+                <div>
+                  <div class="flex justify-between items-center mb-2">
+                    <label class="text-xs font-bold text-slate-700 uppercase tracking-wider">Agent Definition System Prompt (Persona)</label>
+                    <span class="text-[11px] text-slate-400 font-mono">Monospace Monokai</span>
+                  </div>
+                  <mat-form-field appearance="outline" class="w-full">
+                    <textarea matInput rows="10" class="font-mono text-sm leading-relaxed text-slate-800" [(ngModel)]="agentForm.agent_definition" placeholder="You are an autonomous AI agent..."></textarea>
+                  </mat-form-field>
+                </div>
               </div>
             </mat-tab>
 
-            <!-- Tab 2: Traits & Tags -->
-            <mat-tab label="Traits & Tags">
-              <div class="space-y-4 pt-4">
-                <div>
-                  <h4 class="text-sm font-semibold text-slate-700 mb-2">Implemented Traits Contracts</h4>
-                  <div class="flex gap-2 mb-2">
+            <!-- TAB 2: Trait Contracts & Search Tags -->
+            <mat-tab label="Trait Contracts & Tags">
+              <div class="space-y-6 pt-6">
+                <!-- Trait Contracts -->
+                <div class="p-5 bg-slate-50 rounded-xl border border-slate-200/80 space-y-3">
+                  <h4 class="text-sm font-bold text-slate-800 m-0">Implemented Trait Contracts</h4>
+                  <p class="text-xs text-slate-500 m-0">Declare adherence to abstract trait interfaces for sub-agent contract negotiation</p>
+                  
+                  <div class="flex gap-3">
                     <mat-form-field appearance="outline" class="flex-1">
-                      <mat-label>Add Implemented Trait Interface</mat-label>
-                      <input matInput [(ngModel)]="newTrait" placeholder="e.g. SecurityAuditor">
+                      <mat-label>Add Trait Interface Name</mat-label>
+                      <input matInput [(ngModel)]="newTrait" placeholder="e.g. SecurityAuditor" (keyup.enter)="addTrait()">
                     </mat-form-field>
-                    <button mat-stroked-button color="primary" class="h-14" (click)="addTrait()">Add Trait</button>
+                    <button mat-flat-button color="primary" class="!h-14 !px-5 !rounded-xl" (click)="addTrait()">Add Trait</button>
                   </div>
-                  <div class="flex flex-wrap gap-2">
+
+                  <div class="flex flex-wrap gap-2 pt-2">
                     @for (trait of agentForm.implements_traits; track trait) {
-                      <span class="px-3 py-1 bg-emerald-100 text-emerald-800 font-medium text-xs rounded-lg flex items-center gap-1">
+                      <span class="px-3 py-1.5 bg-emerald-100 text-emerald-800 font-bold text-xs rounded-xl flex items-center gap-2 border border-emerald-200">
                         {{ trait }}
-                        <button class="hover:text-red-600 font-bold border-none bg-transparent cursor-pointer" (click)="removeTrait(trait)">×</button>
+                        <button class="text-emerald-600 hover:text-red-600 font-bold border-none bg-transparent cursor-pointer text-sm" (click)="removeTrait(trait)">×</button>
                       </span>
                     }
                   </div>
                 </div>
 
-                <div class="pt-4 border-t border-slate-100">
-                  <h4 class="text-sm font-semibold text-slate-700 mb-2">Search Tags</h4>
-                  <div class="flex gap-2 mb-2">
+                <!-- Search Tags -->
+                <div class="p-5 bg-slate-50 rounded-xl border border-slate-200/80 space-y-3">
+                  <h4 class="text-sm font-bold text-slate-800 m-0">Search & RAG Tags</h4>
+                  <p class="text-xs text-slate-500 m-0">Tags used for dynamic agent discovery</p>
+                  
+                  <div class="flex gap-3">
                     <mat-form-field appearance="outline" class="flex-1">
                       <mat-label>Add Tag</mat-label>
-                      <input matInput [(ngModel)]="newTag" placeholder="e.g. rust">
+                      <input matInput [(ngModel)]="newTag" placeholder="e.g. rust" (keyup.enter)="addTag()">
                     </mat-form-field>
-                    <button mat-stroked-button color="primary" class="h-14" (click)="addTag()">Add Tag</button>
+                    <button mat-flat-button color="primary" class="!h-14 !px-5 !rounded-xl" (click)="addTag()">Add Tag</button>
                   </div>
-                  <div class="flex flex-wrap gap-2">
+
+                  <div class="flex flex-wrap gap-2 pt-2">
                     @for (tag of agentForm.tags; track tag) {
-                      <span class="px-3 py-1 bg-indigo-100 text-indigo-800 font-medium text-xs rounded-lg flex items-center gap-1">
+                      <span class="px-3 py-1.5 bg-indigo-100 text-indigo-800 font-bold text-xs rounded-xl flex items-center gap-2 border border-indigo-200">
                         #{{ tag }}
-                        <button class="hover:text-red-600 font-bold border-none bg-transparent cursor-pointer" (click)="removeTag(tag)">×</button>
+                        <button class="text-indigo-600 hover:text-red-600 font-bold border-none bg-transparent cursor-pointer text-sm" (click)="removeTag(tag)">×</button>
                       </span>
                     }
                   </div>
