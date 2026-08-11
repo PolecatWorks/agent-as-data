@@ -2,6 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { provideHttpClient } from '@angular/common/http';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
+import { provideRouter } from '@angular/router';
 import { AgentRegistryComponent } from './agent-registry.component';
 
 describe('AgentRegistryComponent', () => {
@@ -11,9 +12,10 @@ describe('AgentRegistryComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [AgentRegistryComponent],
-      providers: [provideHttpClient(), provideAnimationsAsync()]
+      providers: [provideHttpClient(), provideAnimationsAsync(), provideRouter([])]
     })
     .compileComponents();
+
 
     fixture = TestBed.createComponent(AgentRegistryComponent);
     component = fixture.componentInstance;
