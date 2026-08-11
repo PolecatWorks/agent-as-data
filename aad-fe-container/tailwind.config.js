@@ -7,7 +7,10 @@ module.exports = {
     extend: {},
   },
   plugins: [
-    require('@tailwindcss/forms'),
+    require('@tailwindcss/forms')({
+      strategy: 'class', // avoid resetting Angular Material input / textarea borders
+    }),
     require('@tailwindcss/container-queries')
   ],
 }
+
