@@ -78,11 +78,18 @@ pub async fn create_agent(
             description: payload.description.unwrap_or_default(),
             tags,
             implements_traits: traits,
+            attached_tools: payload.attached_tools.unwrap_or_default(),
+            attached_agents: payload.attached_agents.unwrap_or_default(),
+            attached_skills: payload.attached_skills.unwrap_or_default(),
             current_version: 1,
             owner_id: payload.owner_id,
             judge_threshold,
+            input_guardrails: payload.input_guardrails.unwrap_or_default(),
+            output_guardrails: payload.output_guardrails.unwrap_or_default(),
+            guardrail_config: payload.guardrail_config,
         }),
     ))
+
 }
 
 pub async fn update_agent(
@@ -145,10 +152,17 @@ pub async fn update_agent(
             description: payload.description.unwrap_or_default(),
             tags,
             implements_traits: traits,
+            attached_tools: payload.attached_tools.unwrap_or_default(),
+            attached_agents: payload.attached_agents.unwrap_or_default(),
+            attached_skills: payload.attached_skills.unwrap_or_default(),
             current_version,
             owner_id,
             judge_threshold,
+            input_guardrails: payload.input_guardrails.unwrap_or_default(),
+            output_guardrails: payload.output_guardrails.unwrap_or_default(),
+            guardrail_config: payload.guardrail_config,
         }))
+
     } else {
         Err((StatusCode::NOT_FOUND, "Agent not found".to_string()))
     }
@@ -372,10 +386,17 @@ pub async fn promote_skill(
             description,
             tags: vec![],
             implements_traits: vec![],
+            attached_tools: vec![],
+            attached_agents: vec![],
+            attached_skills: vec![],
             current_version: 1,
             owner_id,
             judge_threshold: 0.8,
+            input_guardrails: vec![],
+            output_guardrails: vec![],
+            guardrail_config: None,
         }),
+
     ))
 }
 

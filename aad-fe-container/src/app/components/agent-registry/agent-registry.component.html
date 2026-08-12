@@ -106,58 +106,186 @@
             <!-- TAB 1: General Info & Persona Prompt -->
             <mat-tab label="Specification & Persona Prompt">
               <div class="space-y-5 pt-6">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  <mat-form-field appearance="outline" class="w-full">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+
+                  <mat-form-field appearance="outline" class="w-full" matTooltip="Unique identifier name for this declarative agent spec (e.g. SecurityAuditorAgent)">
                     <mat-label>Agent Name</mat-label>
                     <input matInput [(ngModel)]="agentForm.name" placeholder="e.g. SecurityAuditor">
                   </mat-form-field>
 
-                  <mat-form-field appearance="outline" class="w-full">
-                    <mat-label>Judge Evaluation Threshold (0.0 - 1.0)</mat-label>
+                  <mat-form-field appearance="outline" class="w-full" matTooltip="Select the target LLM foundational model architecture and version for prompt execution">
+                    <mat-label>LLM Model & Version</mat-label>
+                    <mat-select [(ngModel)]="agentForm.model">
+                      @for (m of availableModels; track m.id) {
+                        <mat-option [value]="m.id">
+                          {{ m.name }} ({{ m.version }}) — {{ m.provider }}
+                        </mat-option>
+                      }
+                    </mat-select>
+                  </mat-form-field>
+
+                  <mat-form-field appearance="outline" class="w-full" matTooltip="Minimum required LLM-as-a-Judge quality score threshold (0.0 to 1.0) before passing quality gate verification">
+                    <mat-label>Judge Evaluation Threshold</mat-label>
                     <input matInput type="number" step="0.05" [(ngModel)]="agentForm.judge_threshold">
                   </mat-form-field>
                 </div>
 
-                <mat-form-field appearance="outline" class="w-full">
+                <mat-form-field appearance="outline" class="w-full" matTooltip="Summary of agent responsibilities, operational boundaries, and dynamic routing intent">
                   <mat-label>Operational Description</mat-label>
                   <textarea matInput rows="2" [(ngModel)]="agentForm.description" placeholder="Summary of responsibilities..."></textarea>
                 </mat-form-field>
+
 
                 <div>
                   <div class="flex justify-between items-center mb-2">
                     <label class="text-xs font-bold text-slate-700 uppercase tracking-wider">Agent Definition System Prompt (Persona)</label>
                     <span class="text-[11px] text-slate-400 font-mono">Monospace Monokai</span>
                   </div>
-                  <mat-form-field appearance="outline" class="w-full">
+                  <mat-form-field appearance="outline" class="w-full" matTooltip="Core system prompt defining persona rules, context constraints, tool usage directives, and role identity">
                     <textarea matInput rows="10" class="font-mono text-sm leading-relaxed text-slate-800" [(ngModel)]="agentForm.agent_definition" placeholder="You are an autonomous AI agent..."></textarea>
                   </mat-form-field>
                 </div>
               </div>
             </mat-tab>
 
-            <!-- TAB 2: Trait Contracts & Search Tags -->
-            <mat-tab label="Trait Contracts & Tags">
+            <!-- TAB 2: Capabilities (Tools, Agents, Skills, Traits) & Tags -->
+            <mat-tab label="Capabilities & Traits">
               <div class="space-y-6 pt-6">
-                <!-- Trait Contracts -->
+
+                <!-- Section 1: Attached MCP Tools & APIs -->
                 <div class="p-5 bg-slate-50 rounded-xl border border-slate-200/80 space-y-3">
-                  <h4 class="text-sm font-bold text-slate-800 m-0">Implemented Trait Contracts</h4>
-                  <p class="text-xs text-slate-500 m-0">Declare adherence to abstract trait interfaces for sub-agent contract negotiation</p>
+                  <h4 class="text-sm font-bold text-slate-800 m-0">Attached MCP Tools & System APIs</h4>
+                  <p class="text-xs text-slate-500 m-0">Select executable MCP tool bridges and native APIs exposed to this agent</p>
                   
                   <div class="flex gap-3">
-                    <mat-form-field appearance="outline" class="flex-1">
-                      <mat-label>Add Trait Interface Name</mat-label>
-                      <input matInput [(ngModel)]="newTrait" placeholder="e.g. SecurityAuditor" (keyup.enter)="addTrait()">
+                    <mat-form-field appearance="outline" class="flex-1" matTooltip="Select an MCP tool or system API from registered tool catalog">
+                      <mat-label>Select Registered MCP Tool to Attach...</mat-label>
+                      <mat-select [(ngModel)]="selectedToolToAdd">
+                        @for (tool of registeredToolsCatalog; track tool.id) {
+                          <mat-option [value]="tool.id">
+                            <span class="font-semibold text-slate-800">{{ tool.name }}</span>
+                            <span class="text-xs text-slate-400 font-normal"> — {{ tool.category }}</span>
+                          </mat-option>
+                        }
+                      </mat-select>
                     </mat-form-field>
-                    <button mat-flat-button color="primary" class="!h-14 !px-5 !rounded-xl" (click)="addTrait()">Add Trait</button>
+                    <button mat-flat-button color="primary" class="!h-14 !px-5 !rounded-xl" matTooltip="Attach selected tool to agent capability list" [disabled]="!selectedToolToAdd" (click)="addTool()">Attach Tool</button>
                   </div>
 
                   <div class="flex flex-wrap gap-2 pt-2">
-                    @for (trait of agentForm.implements_traits; track trait) {
-                      <span class="px-3 py-1.5 bg-emerald-100 text-emerald-800 font-bold text-xs rounded-xl flex items-center gap-2 border border-emerald-200">
-                        {{ trait }}
-                        <button class="text-emerald-600 hover:text-red-600 font-bold border-none bg-transparent cursor-pointer text-sm" (click)="removeTrait(trait)">×</button>
+                    @for (toolId of agentForm.attached_tools || []; track toolId) {
+                      <span class="px-3 py-1.5 bg-blue-100 text-blue-900 font-bold text-xs rounded-xl flex items-center gap-2 border border-blue-200" matTooltip="Attached tool">
+                        🛠️ {{ toolId }}
+                        <button class="text-blue-700 hover:text-red-600 font-bold border-none bg-transparent cursor-pointer text-sm" (click)="removeTool(toolId)">×</button>
                       </span>
                     }
+                  </div>
+                </div>
+
+                <!-- Section 2: Attached Sub-Agents (Multi-Agent Delegation) -->
+                <div class="p-5 bg-slate-50 rounded-xl border border-slate-200/80 space-y-3">
+                  <h4 class="text-sm font-bold text-slate-800 m-0">Attached Sub-Agents (Multi-Agent Network)</h4>
+                  <p class="text-xs text-slate-500 m-0">Attach registered agents available for delegation or orchestration</p>
+                  
+                  <div class="flex gap-3">
+                    <mat-form-field appearance="outline" class="flex-1" matTooltip="Select registered agent to attach as a sub-agent worker">
+                      <mat-label>Select Sub-Agent Worker to Attach...</mat-label>
+                      <mat-select [(ngModel)]="selectedSubAgentToAdd">
+                        @for (a of agents; track a.id) {
+                          <mat-option [value]="a.id">
+                            <span class="font-semibold text-slate-800">{{ a.name }}</span>
+                            <span class="text-xs text-slate-400 font-normal"> (v{{ a.current_version }})</span>
+                          </mat-option>
+                        }
+                      </mat-select>
+                    </mat-form-field>
+                    <button mat-flat-button color="primary" class="!h-14 !px-5 !rounded-xl" matTooltip="Attach sub-agent" [disabled]="!selectedSubAgentToAdd" (click)="addSubAgent()">Attach Sub-Agent</button>
+                  </div>
+
+                  <div class="flex flex-wrap gap-2 pt-2">
+                    @for (subId of agentForm.attached_agents || []; track subId) {
+                      <span class="px-3 py-1.5 bg-purple-100 text-purple-900 font-bold text-xs rounded-xl flex items-center gap-2 border border-purple-200" matTooltip="Attached sub-agent worker">
+                        🤖 {{ subId }}
+                        <button class="text-purple-700 hover:text-red-600 font-bold border-none bg-transparent cursor-pointer text-sm" (click)="removeSubAgent(subId)">×</button>
+                      </span>
+                    }
+                  </div>
+                </div>
+
+                <!-- Section 3: Attached Skills -->
+                <div class="p-5 bg-slate-50 rounded-xl border border-slate-200/80 space-y-3">
+                  <h4 class="text-sm font-bold text-slate-800 m-0">Attached Skill Packages</h4>
+                  <p class="text-xs text-slate-500 m-0">Attach reusable domain skill packages</p>
+                  
+                  <div class="flex gap-3">
+                    <mat-form-field appearance="outline" class="flex-1" matTooltip="Select registered skill package">
+                      <mat-label>Select Registered Skill Package...</mat-label>
+                      <mat-select [(ngModel)]="selectedSkillToAdd">
+                        @for (skill of registeredSkillsCatalog; track skill.id) {
+                          <mat-option [value]="skill.id">
+                            <span class="font-semibold text-slate-800">{{ skill.name }}</span>
+                          </mat-option>
+                        }
+                      </mat-select>
+                    </mat-form-field>
+                    <button mat-flat-button color="primary" class="!h-14 !px-5 !rounded-xl" matTooltip="Attach skill package" [disabled]="!selectedSkillToAdd" (click)="addSkill()">Attach Skill</button>
+                  </div>
+
+                  <div class="flex flex-wrap gap-2 pt-2">
+                    @for (skillId of agentForm.attached_skills || []; track skillId) {
+                      <span class="px-3 py-1.5 bg-teal-100 text-teal-900 font-bold text-xs rounded-xl flex items-center gap-2 border border-teal-200" matTooltip="Attached skill package">
+                        ⚡ {{ skillId }}
+                        <button class="text-teal-700 hover:text-red-600 font-bold border-none bg-transparent cursor-pointer text-sm" (click)="removeSkill(skillId)">×</button>
+                      </span>
+                    }
+                  </div>
+                </div>
+
+                <!-- Section 4: Trait Contracts (Search Existing or Create New) -->
+                <div class="p-5 bg-slate-50 rounded-xl border border-slate-200/80 space-y-4">
+                  <div>
+                    <h4 class="text-sm font-bold text-slate-800 m-0">Implemented Trait Contracts</h4>
+                    <p class="text-xs text-slate-500 m-0">Search existing registered traits to attach, or create a new custom trait contract</p>
+                  </div>
+                  
+                  <!-- Search Existing Registered Traits -->
+                  <div class="space-y-2">
+                    <mat-form-field appearance="outline" class="w-full" matTooltip="Type to filter registered trait interface contracts">
+                      <mat-label>Search Registered Trait Contracts...</mat-label>
+                      <input matInput [(ngModel)]="traitSearchQuery" placeholder="Filter traits e.g. SecurityAuditor">
+                    </mat-form-field>
+
+                    <div class="flex flex-wrap gap-2 p-3 bg-white rounded-xl border border-slate-200 max-h-36 overflow-y-auto">
+                      @for (t of filteredTraitsCatalog; track t) {
+                        <button mat-stroked-button color="primary" class="!rounded-lg !text-xs" (click)="attachTraitFromCatalog(t)">
+                          + {{ t }}
+                        </button>
+                      }
+                    </div>
+                  </div>
+
+                  <!-- Create New Trait Contract -->
+                  <div class="pt-2">
+                    <div class="flex gap-3">
+                      <mat-form-field appearance="outline" class="flex-1" matTooltip="Create a new custom trait contract if not listed above">
+                        <mat-label>Create & Add New Trait Contract</mat-label>
+                        <input matInput [(ngModel)]="newTrait" placeholder="e.g. CustomSecurityInspector" (keyup.enter)="addTrait()">
+                      </mat-form-field>
+                      <button mat-flat-button color="primary" class="!h-14 !px-5 !rounded-xl" (click)="addTrait()">Create Trait</button>
+                    </div>
+                  </div>
+
+                  <!-- Currently Implemented Traits -->
+                  <div class="space-y-2 pt-2 border-t border-slate-200">
+                    <label class="text-xs font-bold text-slate-700 uppercase tracking-wider">Active Implemented Traits</label>
+                    <div class="flex flex-wrap gap-2">
+                      @for (trait of agentForm.implements_traits; track trait) {
+                        <span class="px-3 py-1.5 bg-emerald-100 text-emerald-800 font-bold text-xs rounded-xl flex items-center gap-2 border border-emerald-200" matTooltip="Click × to remove this trait contract">
+                          🛡️ {{ trait }}
+                          <button class="text-emerald-600 hover:text-red-600 font-bold border-none bg-transparent cursor-pointer text-sm" (click)="removeTrait(trait)">×</button>
+                        </span>
+                      }
+                    </div>
                   </div>
                 </div>
 
@@ -167,27 +295,402 @@
                   <p class="text-xs text-slate-500 m-0">Tags used for dynamic agent discovery</p>
                   
                   <div class="flex gap-3">
-                    <mat-form-field appearance="outline" class="flex-1">
+                    <mat-form-field appearance="outline" class="flex-1" matTooltip="Enter a metadata tag for dynamic sub-agent discovery and routing">
                       <mat-label>Add Tag</mat-label>
                       <input matInput [(ngModel)]="newTag" placeholder="e.g. rust" (keyup.enter)="addTag()">
                     </mat-form-field>
-                    <button mat-flat-button color="primary" class="!h-14 !px-5 !rounded-xl" (click)="addTag()">Add Tag</button>
+                    <button mat-flat-button color="primary" class="!h-14 !px-5 !rounded-xl" matTooltip="Add tag to agent metadata" (click)="addTag()">Add Tag</button>
                   </div>
 
                   <div class="flex flex-wrap gap-2 pt-2">
                     @for (tag of agentForm.tags; track tag) {
-                      <span class="px-3 py-1.5 bg-indigo-100 text-indigo-800 font-bold text-xs rounded-xl flex items-center gap-2 border border-indigo-200">
+                      <span class="px-3 py-1.5 bg-indigo-100 text-indigo-800 font-bold text-xs rounded-xl flex items-center gap-2 border border-indigo-200" matTooltip="Click × to remove this tag">
                         #{{ tag }}
                         <button class="text-indigo-600 hover:text-red-600 font-bold border-none bg-transparent cursor-pointer text-sm" (click)="removeTag(tag)">×</button>
                       </span>
                     }
                   </div>
                 </div>
+
+              </div>
+            </mat-tab>
+
+
+            <!-- TAB 3: Execution Guardrails (Input & Output) -->
+            <mat-tab label="Execution Guardrails">
+              <div class="space-y-6 pt-6">
+                <!-- Section 1: Dynamic Input Guardrails (Dropdown Catalog Picker) -->
+                <div class="p-5 bg-amber-50/50 rounded-2xl border border-amber-200/80 space-y-5" *ngIf="agentForm.guardrails?.input_guardrails">
+                  <div class="flex items-center space-x-3">
+                    <mat-icon class="text-amber-600">shield</mat-icon>
+                    <div>
+                      <h4 class="text-sm font-bold text-slate-900 m-0">Input Guardrails Pipeline</h4>
+                      <p class="text-xs text-slate-500 m-0">By default no input guardrails are active. Select a guardrail from the dropdown to add it, configure its parameters, or delete it.</p>
+                    </div>
+                  </div>
+
+                  <!-- Dropdown Add Guardrail Control -->
+                  <div class="p-4 bg-white rounded-xl border border-amber-200 flex flex-col sm:flex-row gap-4 items-center">
+                    <mat-form-field appearance="outline" class="w-full sm:flex-1" matTooltip="Select an input guardrail from the catalog to activate for this agent">
+                      <mat-label>Select Input Guardrail to Add...</mat-label>
+                      <mat-select [(ngModel)]="selectedGuardrailTypeToAdd">
+                        @for (g of guardrailCatalog; track g.type) {
+                          <mat-option [value]="g.type">
+                            <span class="font-semibold text-slate-800">{{ g.name }}</span>
+                            <span class="text-xs text-slate-400 font-normal"> — {{ g.tier }}</span>
+                          </mat-option>
+                        }
+                      </mat-select>
+                    </mat-form-field>
+                    <button mat-flat-button color="primary" class="!h-14 !px-6 !rounded-xl w-full sm:w-auto" [disabled]="!selectedGuardrailTypeToAdd" matTooltip="Add selected guardrail to active input pipeline" (click)="addGuardrailFromDropdown()">
+                      <mat-icon>add</mat-icon> Add Guardrail
+                    </button>
+                  </div>
+
+                  <!-- Empty State -->
+                  <div *ngIf="!agentForm.guardrails!.input_guardrails.active_guardrails || agentForm.guardrails!.input_guardrails.active_guardrails.length === 0" class="p-6 text-center bg-white/60 rounded-xl border border-dashed border-amber-300">
+                    <p class="text-sm font-semibold text-slate-600 m-0">No active input guardrails configured.</p>
+                    <p class="text-xs text-slate-400 m-0 mt-1">Use the dropdown above to add prompt injection checks, PII filters, vector matchers, or safety classifiers.</p>
+                  </div>
+
+                  <!-- Active Guardrails List -->
+                  <div class="space-y-4" *ngIf="agentForm.guardrails!.input_guardrails.active_guardrails && agentForm.guardrails!.input_guardrails.active_guardrails.length > 0">
+                    @for (g of agentForm.guardrails!.input_guardrails.active_guardrails; track g.id) {
+                      <div class="p-5 bg-white rounded-xl border border-slate-200 space-y-4 shadow-sm relative">
+                        <!-- Header with Name, Tier Badge, and Delete Action -->
+                        <div class="flex justify-between items-start border-b border-slate-100 pb-3">
+                          <div>
+                            <div class="flex items-center gap-2">
+                              <h5 class="text-sm font-bold text-slate-900 m-0">{{ g.name }}</h5>
+                              <span class="px-2 py-0.5 bg-amber-100 text-amber-900 font-bold text-[10px] rounded-md border border-amber-200">{{ g.tier }}</span>
+                            </div>
+                            <p class="text-xs text-slate-500 m-0 mt-0.5">{{ g.description }}</p>
+                          </div>
+                          <button mat-icon-button color="warn" matTooltip="Delete this guardrail from pipeline" (click)="deleteGuardrail(g.id)">
+                            <mat-icon class="text-red-500">delete_outline</mat-icon>
+                          </button>
+                        </div>
+
+                        <!-- Guardrail Specific Configurations -->
+
+                        <!-- Type 1: Prompt Injection Interceptor -->
+                        <div *ngIf="g.type === 'prompt_injection'" class="flex items-center justify-between p-3 bg-amber-50/40 rounded-lg border border-amber-200/60">
+                          <span class="text-xs font-semibold text-slate-800">Heuristic Prompt Injection Signature Detection</span>
+                          <span class="px-2.5 py-1 bg-emerald-100 text-emerald-800 text-xs font-bold rounded-md">ACTIVE</span>
+                        </div>
+
+                        <!-- Type 2: PII Regex Filtering -->
+                        <div *ngIf="g.type === 'pii_regex'" class="flex items-center justify-between p-3 bg-amber-50/40 rounded-lg border border-amber-200/60">
+                          <span class="text-xs font-semibold text-slate-800">Scan & Block SSNs, Emails, Credit Cards, API Credentials</span>
+                          <span class="px-2.5 py-1 bg-emerald-100 text-emerald-800 text-xs font-bold rounded-md">ACTIVE</span>
+                        </div>
+
+                        <!-- Type 3: Max Input Token Limit -->
+                        <div *ngIf="g.type === 'max_input_tokens'">
+                          <mat-form-field appearance="outline" class="w-full" matTooltip="Hard upper token cap for incoming prompt payload">
+                            <mat-label>Max Input Token Limit Cap</mat-label>
+                            <input matInput type="number" step="256" [(ngModel)]="g.config.max_input_tokens">
+                          </mat-form-field>
+                        </div>
+
+                        <!-- Type 4: Blocked Keywords -->
+                        <div *ngIf="g.type === 'blocked_keywords'" class="space-y-3">
+                          <div class="flex gap-3">
+                            <mat-form-field appearance="outline" class="flex-1" matTooltip="Add exact keyword or regex pattern to reject">
+                              <mat-label>Add Blocked Keyword Pattern</mat-label>
+                              <input #kwInput matInput placeholder="e.g. ignore previous instructions" (keyup.enter)="addKeywordToGuardrail(g, kwInput)">
+                            </mat-form-field>
+                            <button mat-flat-button color="primary" class="!h-14 !px-5 !rounded-xl" (click)="addKeywordToGuardrail(g, kwInput)">Add</button>
+                          </div>
+                          <div class="flex flex-wrap gap-2">
+                            @for (kw of g.config.blocked_input_keywords || []; track kw) {
+                              <span class="px-3 py-1 bg-amber-100 text-amber-900 font-bold text-xs rounded-lg flex items-center gap-2 border border-amber-200">
+                                🚫 {{ kw }}
+                                <button class="text-amber-700 hover:text-red-600 font-bold border-none bg-transparent cursor-pointer text-sm" (click)="removeKeywordFromGuardrail(g, kw)">×</button>
+                              </span>
+                            }
+                          </div>
+                        </div>
+
+                        <!-- Type 5: Vector Similarity Matcher -->
+                        <div *ngIf="g.type === 'vector_similarity'">
+                          <mat-form-field appearance="outline" class="w-full" matTooltip="Cosine similarity rejection threshold against known jailbreak embedding clusters">
+                            <mat-label>Cosine Similarity Rejection Threshold (0.00 to 1.00)</mat-label>
+                            <input matInput type="number" step="0.05" [(ngModel)]="g.config.vector_similarity_threshold">
+                          </mat-form-field>
+                        </div>
+
+                        <!-- Type 6: Specialized Classifier Model -->
+                        <div *ngIf="g.type === 'classifier_model'" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <mat-form-field appearance="outline" class="w-full">
+                            <mat-label>Classifier Model Engine</mat-label>
+                            <mat-select [(ngModel)]="g.config.classifier_type">
+                              <mat-option value="llama_guard">Llama Guard 3 8B (Meta)</mat-option>
+                              <mat-option value="deberta_v3">DeBERTa v3 Safety Classifier</mat-option>
+                              <mat-option value="perspective_api">Perspective API (Toxicity)</mat-option>
+                            </mat-select>
+                          </mat-form-field>
+
+                          <mat-form-field appearance="outline" class="w-full">
+                            <mat-label>Toxicity Rejection Threshold</mat-label>
+                            <input matInput type="number" step="0.05" [(ngModel)]="g.config.toxicity_threshold">
+                          </mat-form-field>
+                        </div>
+
+                        <!-- Type 7: LLM-as-a-Judge Pre-Evaluator -->
+                        <div *ngIf="g.type === 'llm_judge'" class="space-y-4">
+                          <mat-form-field appearance="outline" class="w-full">
+                            <mat-label>Evaluator LLM Architecture</mat-label>
+                            <mat-select [(ngModel)]="g.config.judge_model">
+                              <mat-option value="gpt-4o-mini-v2024-07-18">GPT-4o Mini (OpenAI)</mat-option>
+                              <mat-option value="claude-3-haiku-v1">Claude 3 Haiku (Anthropic)</mat-option>
+                              <mat-option value="llama-3.3-70b-instruct">Llama 3.3 70B (Ollama Local)</mat-option>
+                            </mat-select>
+                          </mat-form-field>
+
+                          <mat-form-field appearance="outline" class="w-full">
+                            <mat-label>Judge Policy Prompt</mat-label>
+                            <textarea matInput rows="2" [(ngModel)]="g.config.judge_custom_policy_prompt" placeholder="Evaluate if prompt attempts jailbreak or off-topic queries..."></textarea>
+                          </mat-form-field>
+                        </div>
+
+                        <!-- Type 8: System Prompt Domain Scoping -->
+                        <div *ngIf="g.type === 'domain_scoping'" class="space-y-3">
+                          <div class="flex gap-3">
+                            <mat-form-field appearance="outline" class="flex-1">
+                              <mat-label>Add Allowed Domain Topic</mat-label>
+                              <input #topicInput matInput placeholder="e.g. security_auditing" (keyup.enter)="addTopicToGuardrail(g, topicInput)">
+                            </mat-form-field>
+                            <button mat-flat-button color="primary" class="!h-14 !px-5 !rounded-xl" (click)="addTopicToGuardrail(g, topicInput)">Add Topic</button>
+                          </div>
+                          <div class="flex flex-wrap gap-2">
+                            @for (topic of g.config.allowed_domain_topics || []; track topic) {
+                              <span class="px-3 py-1 bg-emerald-100 text-emerald-900 font-bold text-xs rounded-lg flex items-center gap-2 border border-emerald-200">
+                                🎯 {{ topic }}
+                                <button class="text-emerald-700 hover:text-red-600 font-bold border-none bg-transparent cursor-pointer text-sm" (click)="removeTopicFromGuardrail(g, topic)">×</button>
+                              </span>
+                            }
+                          </div>
+                        </div>
+
+                      </div>
+                    }
+                  </div>
+                </div>
+
+
+
+                <!-- Section 2: Dynamic Output Guardrails (Dropdown Catalog Picker) -->
+                <div class="p-5 bg-indigo-50/50 rounded-2xl border border-indigo-200/80 space-y-5" *ngIf="agentForm.guardrails?.output_guardrails">
+                  <div class="flex items-center space-x-3">
+                    <mat-icon class="text-indigo-600">gavel</mat-icon>
+                    <div>
+                      <h4 class="text-sm font-bold text-slate-900 m-0">Output Guardrails Pipeline</h4>
+                      <p class="text-xs text-slate-500 m-0">Post-execution data loss prevention, toxicity filtering, truthfulness grounding (NLI), and structural schema validation.</p>
+                    </div>
+                  </div>
+
+                  <!-- Dropdown Add Output Guardrail Control -->
+                  <div class="p-4 bg-white rounded-xl border border-indigo-200 flex flex-col sm:flex-row gap-4 items-center">
+                    <mat-form-field appearance="outline" class="w-full sm:flex-1" matTooltip="Select a post-execution output guardrail to activate">
+                      <mat-label>Select Output Guardrail to Add...</mat-label>
+                      <mat-select [(ngModel)]="selectedOutputGuardrailTypeToAdd">
+                        @for (g of outputGuardrailCatalog; track g.type) {
+                          <mat-option [value]="g.type">
+                            <span class="font-semibold text-slate-800">{{ g.name }}</span>
+                            <span class="text-xs text-slate-400 font-normal"> — {{ g.category }}</span>
+                          </mat-option>
+                        }
+                      </mat-select>
+                    </mat-form-field>
+                    <button mat-flat-button color="primary" class="!h-14 !px-6 !rounded-xl w-full sm:w-auto" [disabled]="!selectedOutputGuardrailTypeToAdd" matTooltip="Add selected output guardrail to active pipeline" (click)="addOutputGuardrailFromDropdown()">
+                      <mat-icon>add</mat-icon> Add Guardrail
+                    </button>
+                  </div>
+
+                  <!-- Empty State -->
+                  <div *ngIf="!agentForm.guardrails!.output_guardrails.active_guardrails || agentForm.guardrails!.output_guardrails.active_guardrails.length === 0" class="p-6 text-center bg-white/60 rounded-xl border border-dashed border-indigo-300">
+                    <p class="text-sm font-semibold text-slate-600 m-0">No active output guardrails configured.</p>
+                    <p class="text-xs text-slate-400 m-0 mt-1">Use the dropdown above to add secret redaction, PII NER masking, RAG grounding scoring, or JSON schema enforcement.</p>
+                  </div>
+
+                  <!-- Active Output Guardrails List -->
+                  <div class="space-y-4" *ngIf="agentForm.guardrails!.output_guardrails.active_guardrails && agentForm.guardrails!.output_guardrails.active_guardrails.length > 0">
+                    @for (g of agentForm.guardrails!.output_guardrails.active_guardrails; track g.id) {
+                      <div class="p-5 bg-white rounded-xl border border-slate-200 space-y-4 shadow-sm relative">
+                        <!-- Header with Name, Category Badge, and Delete Action -->
+                        <div class="flex justify-between items-start border-b border-slate-100 pb-3">
+                          <div>
+                            <div class="flex items-center gap-2">
+                              <h5 class="text-sm font-bold text-slate-900 m-0">{{ g.name }}</h5>
+                              <span class="px-2 py-0.5 bg-indigo-100 text-indigo-900 font-bold text-[10px] rounded-md border border-indigo-200">{{ g.tier }}</span>
+                            </div>
+                            <p class="text-xs text-slate-500 m-0 mt-0.5">{{ g.description }}</p>
+                          </div>
+                          <button mat-icon-button color="warn" matTooltip="Delete this output guardrail from pipeline" (click)="deleteOutputGuardrail(g.id)">
+                            <mat-icon class="text-red-500">delete_outline</mat-icon>
+                          </button>
+                        </div>
+
+                        <!-- Guardrail Specific Controls -->
+
+                        <!-- Secret & API Key Redaction -->
+                        <div *ngIf="g.type === 'secret_redaction'" class="flex items-center justify-between p-3 bg-indigo-50/40 rounded-lg border border-indigo-200/60">
+                          <span class="text-xs font-semibold text-slate-800">Automatic Masking of API Keys, RSA Keys, AWS Secrets & JWT Tokens</span>
+                          <span class="px-2.5 py-1 bg-emerald-100 text-emerald-800 text-xs font-bold rounded-md">ACTIVE</span>
+                        </div>
+
+                        <!-- PII & Sensitive Data Redaction (NER) -->
+                        <div *ngIf="g.type === 'pii_ner_redaction'" class="space-y-3">
+                          <div class="flex gap-3">
+                            <mat-form-field appearance="outline" class="flex-1" matTooltip="Add PII entity type for Named Entity Recognition masking">
+                              <mat-label>Add PII Entity Type (Presidio)</mat-label>
+                              <input #piiInput matInput placeholder="e.g. SSN, EMAIL, PHONE_NUMBER" (keyup.enter)="addPiiEntityToGuardrail(g, piiInput)">
+                            </mat-form-field>
+                            <button mat-flat-button color="primary" class="!h-14 !px-5 !rounded-xl" (click)="addPiiEntityToGuardrail(g, piiInput)">Add</button>
+                          </div>
+                          <div class="flex flex-wrap gap-2">
+                            @for (entity of g.config.pii_ner_entities || []; track entity) {
+                              <span class="px-3 py-1 bg-indigo-100 text-indigo-900 font-bold text-xs rounded-lg flex items-center gap-2 border border-indigo-200">
+                                🕵️ {{ entity }}
+                                <button class="text-indigo-700 hover:text-red-600 font-bold border-none bg-transparent cursor-pointer text-sm" (click)="removePiiEntityFromGuardrail(g, entity)">×</button>
+                              </span>
+                            }
+                          </div>
+                        </div>
+
+                        <!-- Internal Network / Infrastructure Leakage -->
+                        <div *ngIf="g.type === 'infra_leakage_filter'" class="space-y-3">
+                          <div class="flex gap-3">
+                            <mat-form-field appearance="outline" class="flex-1" matTooltip="Add infrastructure leakage filter category">
+                              <mat-label>Add Infra Leak Filter</mat-label>
+                              <input #infraInput matInput placeholder="e.g. STACK_TRACE, DATABASE_URI" (keyup.enter)="addInfraLeakToGuardrail(g, infraInput)">
+                            </mat-form-field>
+                            <button mat-flat-button color="primary" class="!h-14 !px-5 !rounded-xl" (click)="addInfraLeakToGuardrail(g, infraInput)">Add</button>
+                          </div>
+                          <div class="flex flex-wrap gap-2">
+                            @for (item of g.config.infra_leak_types || []; track item) {
+                              <span class="px-3 py-1 bg-rose-100 text-rose-900 font-bold text-xs rounded-lg flex items-center gap-2 border border-rose-200">
+                                🚨 {{ item }}
+                                <button class="text-rose-700 hover:text-red-600 font-bold border-none bg-transparent cursor-pointer text-sm" (click)="removeInfraLeakFromGuardrail(g, item)">×</button>
+                              </span>
+                            }
+                          </div>
+                        </div>
+
+                        <!-- Strict JSON Schema Contract Enforcement -->
+                        <div *ngIf="g.type === 'enforce_json_schema'" class="flex items-center justify-between p-3 bg-indigo-50/40 rounded-lg border border-indigo-200/60">
+                          <span class="text-xs font-semibold text-slate-800">Validate Output Against Formal JSON Schema Specifications</span>
+                          <span class="px-2.5 py-1 bg-emerald-100 text-emerald-800 text-xs font-bold rounded-md">ACTIVE</span>
+                        </div>
+
+                        <!-- Max Output Token Limit -->
+                        <div *ngIf="g.type === 'max_output_tokens'">
+                          <mat-form-field appearance="outline" class="w-full">
+                            <mat-label>Max Output Token Generation Limit Cap</mat-label>
+                            <input matInput type="number" step="256" [(ngModel)]="g.config.max_output_tokens">
+                          </mat-form-field>
+                        </div>
+
+                        <!-- Blocked Output Keywords -->
+                        <div *ngIf="g.type === 'blocked_output_keywords'" class="space-y-3">
+                          <div class="flex gap-3">
+                            <mat-form-field appearance="outline" class="flex-1">
+                              <mat-label>Add Secret Pattern or Banned Output Keyword</mat-label>
+                              <input #okwInput matInput placeholder="e.g. AWS_SECRET_ACCESS_KEY" (keyup.enter)="addOutputKeywordToGuardrail(g, okwInput)">
+                            </mat-form-field>
+                            <button mat-flat-button color="primary" class="!h-14 !px-5 !rounded-xl" (click)="addOutputKeywordToGuardrail(g, okwInput)">Add</button>
+                          </div>
+                          <div class="flex flex-wrap gap-2">
+                            @for (kw of g.config.blocked_output_keywords || []; track kw) {
+                              <span class="px-3 py-1 bg-indigo-100 text-indigo-900 font-bold text-xs rounded-lg flex items-center gap-2 border border-indigo-200">
+                                🔒 {{ kw }}
+                                <button class="text-indigo-700 hover:text-red-600 font-bold border-none bg-transparent cursor-pointer text-sm" (click)="removeOutputKeywordFromGuardrail(g, kw)">×</button>
+                              </span>
+                            }
+                          </div>
+                        </div>
+
+                        <!-- Toxicity & Harm Classifier -->
+                        <div *ngIf="g.type === 'toxicity_classifier'" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <mat-form-field appearance="outline" class="w-full">
+                            <mat-label>Classifier Model Engine</mat-label>
+                            <mat-select [(ngModel)]="g.config.classifier_type">
+                              <mat-option value="llama_guard">Llama Guard 3 8B (Meta)</mat-option>
+                              <mat-option value="perspective_api">Perspective API (Google)</mat-option>
+                            </mat-select>
+                          </mat-form-field>
+
+                          <mat-form-field appearance="outline" class="w-full">
+                            <mat-label>Toxicity Rejection Threshold</mat-label>
+                            <input matInput type="number" step="0.05" [(ngModel)]="g.config.toxicity_threshold">
+                          </mat-form-field>
+                        </div>
+
+                        <!-- Competitor & Brand Protection -->
+                        <div *ngIf="g.type === 'brand_competitor_protection'" class="space-y-3">
+                          <div class="flex gap-3">
+                            <mat-form-field appearance="outline" class="flex-1">
+                              <mat-label>Add Banned Competitor Brand or Product</mat-label>
+                              <input #brandInput matInput placeholder="e.g. CompetitorX" (keyup.enter)="addBannedBrandToGuardrail(g, brandInput)">
+                            </mat-form-field>
+                            <button mat-flat-button color="primary" class="!h-14 !px-5 !rounded-xl" (click)="addBannedBrandToGuardrail(g, brandInput)">Add</button>
+                          </div>
+                          <div class="flex flex-wrap gap-2">
+                            @for (brand of g.config.banned_competitor_brands || []; track brand) {
+                              <span class="px-3 py-1 bg-amber-100 text-amber-900 font-bold text-xs rounded-lg flex items-center gap-2 border border-amber-200">
+                                🏷️ {{ brand }}
+                                <button class="text-amber-700 hover:text-red-600 font-bold border-none bg-transparent cursor-pointer text-sm" (click)="removeBannedBrandFromGuardrail(g, brand)">×</button>
+                              </span>
+                            }
+                          </div>
+                        </div>
+
+                        <!-- RAG Grounding & Hallucination Scoring (NLI) -->
+                        <div *ngIf="g.type === 'rag_grounding_hallucination'">
+                          <mat-form-field appearance="outline" class="w-full" matTooltip="Natural Language Inference (NLI) minimum grounding score required to pass hallucination gate">
+                            <mat-label>NLI Grounding Score Threshold (0.00 to 1.00)</mat-label>
+                            <input matInput type="number" step="0.05" [(ngModel)]="g.config.grounding_min_score">
+                          </mat-form-field>
+                        </div>
+
+                        <!-- Refusal & Off-Topic Detector -->
+                        <div *ngIf="g.type === 'refusal_offtopic_detector'" class="flex items-center justify-between p-3 bg-indigo-50/40 rounded-lg border border-indigo-200/60">
+                          <span class="text-xs font-semibold text-slate-800">Detect & Block Hallucinated Refusals ("As an AI language model...") and Off-Topic Drift</span>
+                          <span class="px-2.5 py-1 bg-emerald-100 text-emerald-800 text-xs font-bold rounded-md">ACTIVE</span>
+                        </div>
+
+                        <!-- Custom Structural & Regex Rules -->
+                        <div *ngIf="g.type === 'structural_formatting_rules'" class="space-y-3">
+                          <div class="flex gap-3">
+                            <mat-form-field appearance="outline" class="flex-1">
+                              <mat-label>Add Custom Regex Formatting Constraint</mat-label>
+                              <input #regexInput matInput placeholder="e.g. ```json[\s\S]*```" (keyup.enter)="addRegexRuleToGuardrail(g, regexInput)">
+                            </mat-form-field>
+                            <button mat-flat-button color="primary" class="!h-14 !px-5 !rounded-xl" (click)="addRegexRuleToGuardrail(g, regexInput)">Add Rule</button>
+                          </div>
+                          <div class="flex flex-wrap gap-2">
+                            @for (rule of g.config.custom_regex_rules || []; track rule) {
+                              <span class="px-3 py-1 bg-violet-100 text-violet-900 font-bold text-xs rounded-lg flex items-center gap-2 border border-violet-200 font-mono">
+                                📐 {{ rule }}
+                                <button class="text-violet-700 hover:text-red-600 font-bold border-none bg-transparent cursor-pointer text-sm" (click)="removeRegexRuleFromGuardrail(g, rule)">×</button>
+                              </span>
+                            }
+                          </div>
+                        </div>
+
+                      </div>
+                    }
+                  </div>
+                </div>
               </div>
             </mat-tab>
           </mat-tab-group>
+
         </mat-card-content>
       </mat-card>
     </div>
   </div>
+
+
 </div>

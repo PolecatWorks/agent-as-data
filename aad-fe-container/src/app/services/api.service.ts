@@ -2,12 +2,94 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
 
+export type InputGuardrailType = 
+  | 'prompt_injection'
+  | 'pii_regex'
+  | 'max_input_tokens'
+  | 'blocked_keywords'
+  | 'vector_similarity'
+  | 'classifier_model'
+  | 'llm_judge'
+  | 'domain_scoping';
+
+export interface ActiveGuardrailItem {
+  id: string;
+  type: InputGuardrailType;
+  name: string;
+  tier: string;
+  description: string;
+  config: {
+    max_input_tokens?: number;
+    blocked_input_keywords?: string[];
+    vector_similarity_threshold?: number;
+    classifier_type?: 'llama_guard' | 'deberta_v3' | 'perspective_api';
+    toxicity_threshold?: number;
+    judge_model?: string;
+    judge_custom_policy_prompt?: string;
+    allowed_domain_topics?: string[];
+  };
+}
+
+export interface InputGuardrails {
+  active_guardrails: ActiveGuardrailItem[];
+}
+
+export type OutputGuardrailType =
+  | 'secret_redaction'
+  | 'pii_ner_redaction'
+  | 'infra_leakage_filter'
+  | 'enforce_json_schema'
+  | 'max_output_tokens'
+  | 'blocked_output_keywords'
+  | 'toxicity_classifier'
+  | 'brand_competitor_protection'
+  | 'rag_grounding_hallucination'
+  | 'refusal_offtopic_detector'
+  | 'structural_formatting_rules';
+
+export interface ActiveOutputGuardrailItem {
+  id: string;
+  type: OutputGuardrailType;
+  name: string;
+  tier: string;
+  description: string;
+  config: {
+    secret_redaction?: boolean;
+    pii_ner_entities?: string[];
+    infra_leak_types?: string[];
+    enforce_json_schema?: boolean;
+    max_output_tokens?: number;
+    blocked_output_keywords?: string[];
+    classifier_type?: 'llama_guard' | 'perspective_api';
+    toxicity_threshold?: number;
+    banned_competitor_brands?: string[];
+    grounding_min_score?: number;
+    detect_refusal_hallucinations?: boolean;
+    custom_regex_rules?: string[];
+  };
+}
+
+export interface OutputGuardrails {
+  active_guardrails: ActiveOutputGuardrailItem[];
+}
+
+
+export interface GuardrailConfig {
+  input_guardrails: InputGuardrails;
+  output_guardrails: OutputGuardrails;
+}
+
+
+
 export interface Agent {
   id: string;
   name: string;
   description: string;
   tags: string[];
   implements_traits: string[];
+  attached_tools?: string[];
+  attached_agents?: string[];
+  attached_skills?: string[];
   current_version: number;
   owner_id: string;
   judge_threshold: number;
@@ -15,8 +97,30 @@ export interface Agent {
   write_groups?: string[];
   execute_groups?: string[];
   agent_definition?: string;
-  model?: any;
+  model?: string;
+  input_guardrails_enums?: InputGuardrailType[];
+  output_guardrails_enums?: OutputGuardrailType[];
+  guardrails?: GuardrailConfig;
 }
+
+
+
+
+export interface TraitContract {
+  id: string;
+  name: string;
+  description: string;
+  version: number;
+  capability_requirements: string[];
+  behavioral_invariants: string[];
+  evaluation_criteria: string[];
+  tags: string[];
+  input_guardrails_enums?: InputGuardrailType[];
+  output_guardrails_enums?: OutputGuardrailType[];
+  guardrails?: GuardrailConfig;
+}
+
+
 
 export interface Skill {
   id: string;
@@ -26,6 +130,7 @@ export interface Skill {
   current_version: number;
   owner_id: string;
 }
+
 
 @Injectable({
   providedIn: 'root'
