@@ -38,4 +38,17 @@ html, body {
   width: 100% !important;
 }
 
+/* Angular Material MDC Notched Outline Tailwind Reset Fix */
+.mdc-notched-outline__leading {
+  border-right: none !important;
+}
+.mdc-notched-outline__notch {
+  border-left: none !important;
+  border-right: none !important;
+}
+.mdc-notched-outline__trailing {
+  border-left: none !important;
+}
+
+
 

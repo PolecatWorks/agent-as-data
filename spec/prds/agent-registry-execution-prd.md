@@ -15,12 +15,17 @@ The **Agent Registry & Execution Engine** in **Agent-As-Data (AAD)** treats AI a
 - **RBAC Delegation Context Inheritance**: When Agent A delegates to Agent B, the caller's identity (`caller_identity`) is inherited. Child invocation is rejected (`423 Forbidden`) if caller identity lacks `execute_groups` access to Agent B. Pre-delegation guardrails sanitize secrets/PII before cross-team transfer.
 - **Immutable Revisions**: Any modification increments the agent's version counter and creates an immutable snapshot in `agent_revisions`, ensuring execution determinism.
 
-### 2. Agent Traits, Semantic Verification & Contract Negotiation
-- **Agent Traits (`implements_traits`)**: Agents declare adherence to abstract trait interfaces (e.g. `CodeReviewer`, `SecurityAuditor`, `DataSummarizer`). Traits serve as contractual definitions holding agents mutually accountable for expected inputs, outputs, and behaviors.
+### 2. Agent Traits, 3-Element Definition & Trait-Inherited Guardrails
+- **3-Element Agent Trait Specification (`implements_traits`)**: Agents declare adherence to abstract traits (e.g. `CodeReviewer`, `SecurityAuditor`, `Compiler`). Traits are authored independently from data-type schemas via three core elements:
+  1. *Capability Requirements*: Necessary tools, state access, or environmental interaction permissions (e.g. AST parser, read-only repo access).
+  2. *Behavioral Invariants*: Strict rules and constraints the agent MUST ALWAYS or MUST NEVER violate (e.g. *MUST NEVER execute untrusted binaries*).
+  3. *Evaluation Criteria*: Semantic guidelines and scoring rubrics for LLM judges or evaluators to grade performance.
+- **Inherited & Mandatory Trait Guardrails**: Traits attach mandatory pre-execution and post-execution guardrails. When an Agent implements a Trait, it automatically inherits the Trait's baseline guardrails alongside any Agent-specific guardrails.
 - **Semantic Compatibility Verification**: When an agent references a concrete sub-agent or trait implementation, AAD executes a semantic similarity and contract check (`POST /api/v1/agents/verify-contract`):
   - *Conceptual Fit Check*: Verifies vector similarity (`pgvector`) between the referring agent's prompt intent and the referenced agent's capabilities to ensure the sub-agent conceptually "fits".
-  - *Trait Contract Validation*: Ensures the referenced agent satisfies the required trait contract (matching input/output JSON schemas and guardrail boundaries).
+  - *Trait Contract Validation*: Ensures the referenced agent satisfies required capability requirements, behavioral invariants, and guardrail boundaries.
 - **Dynamic Contract Negotiation & Fallback Resolution**: Trait resolution uses Depth-First Search (DFS) topological cycle detection (`ERR_CIRCULAR_DELEGATION`). If a user's custom `trait_mappings` fail contract verification, AAD attempts fallback negotiation to default trait agents or rejects with `422 Unprocessable Entity` in strict mode.
+
 
 ### 3. Remote MCP Server Agent Registration & Tool Schema Caching
 - **External MCP Server Ingestion**: Endpoint `POST /api/v1/agents/mcp/register` registers external MCP servers (Stdio command or SSE URL transport).

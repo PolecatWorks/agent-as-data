@@ -62,11 +62,16 @@ Agent-As-Data (AAD) is an enterprise-grade declarative platform and specificatio
 
 
 
-### 8. Agent Traits, Semantic Verification & Contract Accountability Engine
-- **Trait Contracts (`implements_traits`)**: Declarative trait bindings serving as formal contracts that holding referring and referenced agents mutually accountable for inputs, outputs, and guardrail constraints.
-- **Semantic Compatibility Verification**: Endpoint `POST /api/v1/agents/verify-contract` executes a semantic similarity check (`pgvector`) to ensure a referenced sub-agent conceptually "fits" the referring agent's domain context.
+### 8. Agent Traits, 3-Element Definition & Trait Guardrail Inheritance Engine
+- **3-Element Trait Definition (`implements_traits`)**: Declarative trait bindings defined by three core elements:
+  1. *Capability Requirements*: Necessary tools, state access, or environmental interaction permissions (e.g. AST parser, read-only repo access).
+  2. *Behavioral Invariants*: Strict rules and constraints the agent MUST ALWAYS or MUST NEVER violate (e.g. *MUST NEVER execute untrusted binaries*).
+  3. *Evaluation Criteria*: Semantic guidelines and scoring rubrics for LLM judges or evaluators to grade performance.
+- **Inherited & Baseline Trait Guardrails**: Traits attach mandatory pre-execution and post-execution guardrails (e.g. `SecurityAuditor` trait carries `Prompt Injection Interceptor`, `PII Regex Filtering`, `Secret & API Key Redaction`, and `Internal Infra & Network Leakage Filter`). Any agent implementing a Trait automatically inherits its baseline guardrails.
+- **Semantic Compatibility Verification**: Endpoint `POST /api/v1/agents/verify-contract` executes a semantic similarity check (`pgvector`) to ensure a referenced sub-agent conceptually "fits" the referring agent's domain context and satisfies required capability traits.
 - **Abstract Sub-Agent Delegation**: Agents delegate tasks to trait signatures rather than concrete UUIDs, ensuring loose coupling and trait-contract enforcement.
 - **Dynamic User Trait Mapping**: At runtime, clients specify `trait_mappings` to substitute out-of-scope agents, which automatically pass contract verification before execution.
+
 
 
 ### 9. Remote MCP Server Registration & Tool Schema Caching Engine
@@ -76,8 +81,10 @@ Agent-As-Data (AAD) is an enterprise-grade declarative platform and specificatio
 
 ### 10. Agent Development UI & Testing Kit Container (`aad-fe-container`)
 - **Interactive Development Studio**: Web dashboard container built with Angular 18+ (Standalone Components, Angular Material, RxJS, and TailwindCSS) following the `sward-warden/sw-fe-container` architecture.
+- **Top-Level Trait Definition Registry (`/traits-registry`)**: Dedicated workspace to inspect, define, and edit Trait specifications across Capability Requirements, Behavioral Invariants, Evaluation Criteria, and Mandatory Execution Guardrails.
 - **Testing Kit & SSE Workbench**: Interactive testing playground for running synchronous agents, streaming real-time SSE token events, and testing dynamic trait mapping overrides.
 - **Visual Diagnostics**: Embedded Mermaid network diagram visualizer, Refactoring & Compression lab, Knowledge SPO tuple inspector, and Remote MCP Server manager.
+
 
 ### 11. Probabilistic Agent Unit Testing & LLM-as-a-Judge Evaluation Engine
 - **Test Suite Declarations (`agent_test_suites`)**: Store test cases with input payloads and expected outcome rubrics.

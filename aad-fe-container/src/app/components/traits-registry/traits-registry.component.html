@@ -1,0 +1,338 @@
+<div class="container mx-auto p-6 space-y-6">
+
+  <!-- Header Banner -->
+  <div class="flex justify-between items-center bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+    <div class="space-y-1">
+      <h1 class="text-2xl font-black text-slate-900 m-0 flex items-center gap-2">
+        <mat-icon class="!w-8 !h-8 !text-3xl text-emerald-600">verified</mat-icon> Trait Definition Registry
+      </h1>
+      <p class="text-sm text-slate-500 m-0">
+        Define Agent Traits through Capability Requirements, Behavioral Invariants, Evaluation Criteria, and Mandatory Execution Guardrails
+      </p>
+    </div>
+    <button mat-raised-button color="primary" class="!px-6 !py-3 !rounded-xl !font-bold" (click)="createNewTraitContract()">
+      <mat-icon>add</mat-icon> Create Trait Definition
+    </button>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+    <!-- Left Column: Search & Registered Trait List -->
+    <div class="space-y-4">
+      <mat-card class="!rounded-2xl border border-slate-200/80 shadow-sm">
+        <mat-card-header class="p-4 border-b border-slate-100">
+          <mat-card-title class="text-sm font-bold text-slate-800 m-0 uppercase tracking-wider">
+            Registered Trait Catalog ({{ filteredTraitContracts.length }})
+          </mat-card-title>
+        </mat-card-header>
+        <mat-card-content class="p-4 space-y-3">
+
+          <!-- Search Filter -->
+          <mat-form-field appearance="outline" class="w-full" matTooltip="Filter trait definitions by name, description, or tags">
+            <mat-label>Search Traits...</mat-label>
+            <input matInput [(ngModel)]="searchQuery" placeholder="e.g. SecurityAuditor">
+            <mat-icon matSuffix>search</mat-icon>
+          </mat-form-field>
+
+          <!-- Trait Cards List -->
+          <div class="space-y-2 max-h-[750px] overflow-y-auto pr-1">
+            @for (trait of filteredTraitContracts; track trait.id) {
+              <div class="p-4 rounded-xl border transition-all cursor-pointer bg-white hover:border-slate-300"
+                   [class.border-emerald-500]="selectedTraitContract?.id === trait.id"
+                   [class.shadow-md]="selectedTraitContract?.id === trait.id"
+                   [class.border-slate-200]="selectedTraitContract?.id !== trait.id"
+                   (click)="selectTraitContract(trait)">
+                <div class="flex justify-between items-center">
+                  <h5 class="text-sm font-bold text-slate-900 m-0">🛡️ {{ trait.name }}</h5>
+                  <span class="px-2.5 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded-md">v{{ trait.version }}</span>
+                </div>
+                <p class="text-xs text-slate-500 m-0 mt-1 line-clamp-2 leading-relaxed">{{ trait.description }}</p>
+                <div class="flex flex-wrap gap-1 pt-2">
+                  @for (tag of trait.tags; track tag) {
+                    <span class="px-2 py-0.5 bg-slate-100 text-slate-600 text-[10px] font-mono rounded">#{{ tag }}</span>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- Right Column: Trait Definition Editor Form with Dedicated Tabs -->
+    <div class="lg:col-span-2">
+      <mat-card class="!rounded-2xl border border-slate-200/80 shadow-sm">
+        <mat-card-header class="p-5 border-b border-slate-100 flex justify-between items-center">
+          <mat-card-title class="text-lg font-bold text-slate-900 m-0 flex items-center gap-2">
+            <mat-icon color="accent">edit_note</mat-icon>
+            {{ selectedTraitContract ? 'Edit Trait: ' + selectedTraitContract.name : 'Create Trait Definition Specification' }}
+          </mat-card-title>
+          <button mat-raised-button color="accent" class="!px-6 !py-2.5 !rounded-xl !font-bold" (click)="saveTraitContract()">
+            <mat-icon>save</mat-icon> Save Trait Definition
+          </button>
+        </mat-card-header>
+
+        <mat-card-content class="p-6 space-y-6">
+
+          <!-- Name & Version -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <mat-form-field appearance="outline" class="sm:col-span-2 w-full" matTooltip="Unique name for this agent trait definition">
+              <mat-label>Trait Name</mat-label>
+              <input matInput [(ngModel)]="traitForm.name" placeholder="e.g. SecurityAuditor">
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="w-full" matTooltip="Specification version (auto-incremented on updates)">
+              <mat-label>Version</mat-label>
+              <input matInput type="number" [(ngModel)]="traitForm.version" readonly>
+            </mat-form-field>
+          </div>
+
+          <!-- Description -->
+          <mat-form-field appearance="outline" class="w-full" matTooltip="Overview of domain responsibility and intent of this trait">
+            <mat-label>Operational Description</mat-label>
+            <textarea matInput rows="2" [(ngModel)]="traitForm.description" placeholder="Describe what this trait represents..."></textarea>
+          </mat-form-field>
+
+          <!-- DEDICATED TABS: Core Specification Elements vs Execution Guardrails -->
+          <mat-tab-group class="border-b border-slate-200">
+            
+            <!-- TAB 1: Core Trait Elements (Capabilities, Invariants, Criteria, Tags) -->
+            <mat-tab label="Core Specification Elements">
+              <div class="space-y-6 pt-6">
+
+                <!-- Element 1: Capability Requirements -->
+                <div class="p-5 bg-blue-50/50 rounded-xl border border-blue-200/80 space-y-3">
+                  <div class="flex items-center justify-between">
+                    <div>
+                      <h4 class="text-sm font-bold text-blue-950 m-0 flex items-center gap-2">
+                        🛠️ 1. Capability Requirements
+                      </h4>
+                      <p class="text-xs text-blue-700 m-0">Tools, state access, or environmental interactions the agent must possess to execute this trait</p>
+                    </div>
+                  </div>
+
+                  <div class="flex gap-3">
+                    <mat-form-field appearance="outline" class="flex-1" matTooltip="Enter required tool, state access, or interaction capability">
+                      <mat-label>Add Capability Requirement</mat-label>
+                      <input matInput [(ngModel)]="newRequirement" placeholder="e.g. Read access to source code AST parser" (keyup.enter)="addRequirement()">
+                    </mat-form-field>
+                    <button mat-flat-button color="primary" class="!h-14 !px-5 !rounded-xl" (click)="addRequirement()">Add Requirement</button>
+                  </div>
+
+                  <div class="space-y-2 pt-1">
+                    @for (req of traitForm.capability_requirements || []; track req) {
+                      <div class="p-3 bg-white rounded-lg border border-blue-200 flex justify-between items-center text-xs font-semibold text-slate-800">
+                        <span class="flex items-center gap-2">🔹 {{ req }}</span>
+                        <button class="text-slate-400 hover:text-red-600 font-bold border-none bg-transparent cursor-pointer text-sm" (click)="removeRequirement(req)">×</button>
+                      </div>
+                    }
+                  </div>
+                </div>
+
+                <!-- Element 2: Behavioral Invariants -->
+                <div class="p-5 bg-amber-50/50 rounded-xl border border-amber-200/80 space-y-3">
+                  <div class="flex items-center justify-between">
+                    <div>
+                      <h4 class="text-sm font-bold text-amber-950 m-0 flex items-center gap-2">
+                        🛑 2. Behavioral Invariants
+                      </h4>
+                      <p class="text-xs text-amber-700 m-0">Strict constraints and invariants the agent MUST ALWAYS or MUST NEVER violate</p>
+                    </div>
+                  </div>
+
+                  <div class="flex gap-3">
+                    <mat-form-field appearance="outline" class="flex-1" matTooltip="Enter mandatory execution rule or constraint invariant">
+                      <mat-label>Add Behavioral Invariant</mat-label>
+                      <input matInput [(ngModel)]="newInvariant" placeholder="e.g. MUST NEVER execute untrusted binaries during audit" (keyup.enter)="addInvariant()">
+                    </mat-form-field>
+                    <button mat-flat-button color="primary" class="!h-14 !px-5 !rounded-xl" (click)="addInvariant()">Add Invariant</button>
+                  </div>
+
+                  <div class="space-y-2 pt-1">
+                    @for (inv of traitForm.behavioral_invariants || []; track inv) {
+                      <div class="p-3 bg-white rounded-lg border border-amber-200 flex justify-between items-center text-xs font-semibold text-slate-800">
+                        <span class="flex items-center gap-2">⚠️ {{ inv }}</span>
+                        <button class="text-slate-400 hover:text-red-600 font-bold border-none bg-transparent cursor-pointer text-sm" (click)="removeInvariant(inv)">×</button>
+                      </div>
+                    }
+                  </div>
+                </div>
+
+                <!-- Element 3: Evaluation Criteria -->
+                <div class="p-5 bg-emerald-50/50 rounded-xl border border-emerald-200/80 space-y-3">
+                  <div class="flex items-center justify-between">
+                    <div>
+                      <h4 class="text-sm font-bold text-emerald-950 m-0 flex items-center gap-2">
+                        ⚖️ 3. Evaluation Criteria
+                      </h4>
+                      <p class="text-xs text-emerald-700 m-0">Semantic guidelines and scoring rubrics for LLM judges or evaluators to grade performance</p>
+                    </div>
+                  </div>
+
+                  <div class="flex gap-3">
+                    <mat-form-field appearance="outline" class="flex-1" matTooltip="Enter evaluation criteria or grading rubric standard">
+                      <mat-label>Add Evaluation Criterion</mat-label>
+                      <input matInput [(ngModel)]="newCriterion" placeholder="e.g. Zero false negatives on OWASP Top 10 benchmark" (keyup.enter)="addCriterion()">
+                    </mat-form-field>
+                    <button mat-flat-button color="primary" class="!h-14 !px-5 !rounded-xl" (click)="addCriterion()">Add Criterion</button>
+                  </div>
+
+                  <div class="space-y-2 pt-1">
+                    @for (crit of traitForm.evaluation_criteria || []; track crit) {
+                      <div class="p-3 bg-white rounded-lg border border-emerald-200 flex justify-between items-center text-xs font-semibold text-slate-800">
+                        <span class="flex items-center gap-2">✅ {{ crit }}</span>
+                        <button class="text-slate-400 hover:text-red-600 font-bold border-none bg-transparent cursor-pointer text-sm" (click)="removeCriterion(crit)">×</button>
+                      </div>
+                    }
+                  </div>
+                </div>
+
+                <!-- Metadata Tags -->
+                <div class="p-4 bg-slate-50 rounded-xl border border-slate-200/80 space-y-3">
+                  <label class="text-xs font-bold text-slate-700 uppercase tracking-wider">Trait Metadata Tags</label>
+                  <div class="flex gap-3">
+                    <mat-form-field appearance="outline" class="flex-1">
+                      <mat-label>Add Tag</mat-label>
+                      <input matInput [(ngModel)]="newTag" placeholder="e.g. security" (keyup.enter)="addTag()">
+                    </mat-form-field>
+                    <button mat-flat-button color="primary" class="!h-14 !px-5 !rounded-xl" (click)="addTag()">Add Tag</button>
+                  </div>
+                  <div class="flex flex-wrap gap-2">
+                    @for (tag of traitForm.tags || []; track tag) {
+                      <span class="px-3 py-1 bg-emerald-100 text-emerald-800 font-bold text-xs rounded-xl flex items-center gap-2 border border-emerald-200">
+                        #{{ tag }}
+                        <button class="text-emerald-600 hover:text-red-600 font-bold border-none bg-transparent cursor-pointer text-sm" (click)="removeTag(tag)">×</button>
+                      </span>
+                    }
+                  </div>
+                </div>
+
+              </div>
+            </mat-tab>
+
+            <!-- TAB 2: DEDICATED TRAIT GUARDRAILS TAB -->
+            <mat-tab label="Trait Execution Guardrails">
+              <div class="space-y-6 pt-6">
+                
+                <div class="p-5 bg-purple-50/50 rounded-2xl border border-purple-200/80 space-y-6">
+                  <div class="flex items-center space-x-3">
+                    <mat-icon class="text-purple-600">shield</mat-icon>
+                    <div>
+                      <h4 class="text-sm font-bold text-purple-950 m-0">Mandatory Trait Guardrails Pipeline</h4>
+                      <p class="text-xs text-purple-700 m-0">Pre-execution and post-execution guardrails attached directly to this trait. Any agent implementing this trait automatically inherits this safety boundary.</p>
+                    </div>
+                  </div>
+
+                  <!-- Trait Input Guardrails Section -->
+                  <div class="p-5 bg-white rounded-xl border border-purple-200 space-y-4">
+                    <div class="flex justify-between items-center">
+                      <h5 class="text-xs font-bold text-slate-800 uppercase tracking-wider m-0">Trait Input Guardrails</h5>
+                      <span class="px-2.5 py-0.5 bg-purple-100 text-purple-800 text-[10px] font-bold rounded-md">
+                        {{ traitForm.guardrails?.input_guardrails?.active_guardrails?.length || 0 }} Active
+                      </span>
+                    </div>
+
+                    <div class="flex flex-col sm:flex-row gap-4 items-center">
+                      <mat-form-field appearance="outline" class="w-full sm:flex-1" matTooltip="Select an input guardrail to attach to this trait definition">
+                        <mat-label>Select Input Guardrail to Attach to Trait...</mat-label>
+                        <mat-select [(ngModel)]="selectedGuardrailTypeToAdd">
+                          @for (g of guardrailCatalog; track g.type) {
+                            <mat-option [value]="g.type">
+                              <span class="font-semibold text-slate-800">{{ g.name }}</span>
+                              <span class="text-xs text-slate-400 font-normal"> — {{ g.tier }}</span>
+                            </mat-option>
+                          }
+                        </mat-select>
+                      </mat-form-field>
+                      <button mat-flat-button color="primary" class="!h-14 !px-5 !rounded-xl" [disabled]="!selectedGuardrailTypeToAdd" (click)="addInputGuardrailFromDropdown()">
+                        + Attach Input Guardrail
+                      </button>
+                    </div>
+
+                    <div class="space-y-3 pt-2">
+                      @for (g of traitForm.guardrails?.input_guardrails?.active_guardrails || []; track g.id) {
+                        <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 flex justify-between items-center">
+                          <div>
+                            <div class="flex items-center gap-2">
+                              <span class="text-sm font-bold text-slate-900">🛡️ {{ g.name }}</span>
+                              <span class="px-2 py-0.5 bg-purple-100 text-purple-800 text-[10px] font-bold rounded-md">{{ g.tier }}</span>
+                            </div>
+                            <p class="text-xs text-slate-500 m-0 mt-1 leading-relaxed">{{ g.description }}</p>
+                          </div>
+                          <button class="text-slate-400 hover:text-red-600 border-none bg-transparent cursor-pointer p-2" matTooltip="Remove guardrail from trait" (click)="deleteInputGuardrail(g.id)">
+                            <mat-icon class="!w-5 !h-5 !text-lg">delete_outline</mat-icon>
+                          </button>
+                        </div>
+                      }
+                      @if (!traitForm.guardrails?.input_guardrails?.active_guardrails?.length) {
+                        <div class="p-4 bg-slate-50 rounded-xl border border-dashed border-slate-300 text-center text-xs text-slate-400">
+                          No input guardrails currently attached to this trait definition.
+                        </div>
+                      }
+                    </div>
+                  </div>
+
+                  <!-- Trait Output Guardrails Section -->
+                  <div class="p-5 bg-white rounded-xl border border-purple-200 space-y-4">
+                    <div class="flex justify-between items-center">
+                      <h5 class="text-xs font-bold text-slate-800 uppercase tracking-wider m-0">Trait Output Guardrails</h5>
+                      <span class="px-2.5 py-0.5 bg-purple-100 text-purple-800 text-[10px] font-bold rounded-md">
+                        {{ traitForm.guardrails?.output_guardrails?.active_guardrails?.length || 0 }} Active
+                      </span>
+                    </div>
+
+                    <div class="flex flex-col sm:flex-row gap-4 items-center">
+                      <mat-form-field appearance="outline" class="w-full sm:flex-1" matTooltip="Select an output guardrail to attach to this trait definition">
+                        <mat-label>Select Output Guardrail to Attach to Trait...</mat-label>
+                        <mat-select [(ngModel)]="selectedOutputGuardrailTypeToAdd">
+                          @for (og of outputGuardrailCatalog; track og.type) {
+                            <mat-option [value]="og.type">
+                              <span class="font-semibold text-slate-800">{{ og.name }}</span>
+                              <span class="text-xs text-slate-400 font-normal"> — {{ og.category }}</span>
+                            </mat-option>
+                          }
+                        </mat-select>
+                      </mat-form-field>
+                      <button mat-flat-button color="primary" class="!h-14 !px-5 !rounded-xl" [disabled]="!selectedOutputGuardrailTypeToAdd" (click)="addOutputGuardrailFromDropdown()">
+                        + Attach Output Guardrail
+                      </button>
+                    </div>
+
+                    <div class="space-y-3 pt-2">
+                      @for (og of traitForm.guardrails?.output_guardrails?.active_guardrails || []; track og.id) {
+                        <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 flex justify-between items-center">
+                          <div>
+                            <div class="flex items-center gap-2">
+                              <span class="text-sm font-bold text-slate-900">🔒 {{ og.name }}</span>
+                              <span class="px-2 py-0.5 bg-purple-100 text-purple-800 text-[10px] font-bold rounded-md">{{ og.tier }}</span>
+                            </div>
+                            <p class="text-xs text-slate-500 m-0 mt-1 leading-relaxed">{{ og.description }}</p>
+                          </div>
+                          <button class="text-slate-400 hover:text-red-600 border-none bg-transparent cursor-pointer p-2" matTooltip="Remove guardrail from trait" (click)="deleteOutputGuardrail(og.id)">
+                            <mat-icon class="!w-5 !h-5 !text-lg">delete_outline</mat-icon>
+                          </button>
+                        </div>
+                      }
+                      @if (!traitForm.guardrails?.output_guardrails?.active_guardrails?.length) {
+                        <div class="p-4 bg-slate-50 rounded-xl border border-dashed border-slate-300 text-center text-xs text-slate-400">
+                          No output guardrails currently attached to this trait definition.
+                        </div>
+                      }
+                    </div>
+                  </div>
+
+                </div>
+
+              </div>
+            </mat-tab>
+
+          </mat-tab-group>
+
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+  </div>
+
+</div>

@@ -55,12 +55,44 @@ pub struct GraphTraverseResult {
     pub depth: usize,
 }
 
+#[derive(Deserialize, Serialize, Debug, Clone, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum InputGuardrailType {
+    PromptInjection,
+    PiiRegex,
+    MaxInputTokens,
+    BlockedKeywords,
+    VectorSimilarity,
+    ClassifierModel,
+    LlmJudge,
+    DomainScoping,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum OutputGuardrailType {
+    SecretRedaction,
+    PiiNerRedaction,
+    InfraLeakageFilter,
+    EnforceJsonSchema,
+    MaxOutputTokens,
+    BlockedOutputKeywords,
+    ToxicityClassifier,
+    BrandCompetitorProtection,
+    RagGroundingHallucination,
+    RefusalOfftopicDetector,
+    StructuralFormattingRules,
+}
+
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct CreateAgentRequest {
     pub name: String,
     pub description: Option<String>,
     pub tags: Option<Vec<String>>,
     pub implements_traits: Option<Vec<String>>,
+    pub attached_tools: Option<Vec<String>>,
+    pub attached_agents: Option<Vec<Uuid>>,
+    pub attached_skills: Option<Vec<String>>,
     pub owner_id: Uuid,
     pub read_groups: Option<Vec<String>>,
     pub write_groups: Option<Vec<String>>,
@@ -68,6 +100,9 @@ pub struct CreateAgentRequest {
     pub agent_definition: serde_json::Value,
     pub model: Option<serde_json::Value>,
     pub judge_threshold: Option<f64>,
+    pub input_guardrails: Option<Vec<InputGuardrailType>>,
+    pub output_guardrails: Option<Vec<OutputGuardrailType>>,
+    pub guardrail_config: Option<serde_json::Value>,
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
@@ -77,10 +112,17 @@ pub struct AgentResponse {
     pub description: String,
     pub tags: Vec<String>,
     pub implements_traits: Vec<String>,
+    pub attached_tools: Vec<String>,
+    pub attached_agents: Vec<Uuid>,
+    pub attached_skills: Vec<String>,
     pub current_version: i32,
     pub owner_id: Uuid,
     pub judge_threshold: f64,
+    pub input_guardrails: Vec<InputGuardrailType>,
+    pub output_guardrails: Vec<OutputGuardrailType>,
+    pub guardrail_config: Option<serde_json::Value>,
 }
+
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct TestCase {

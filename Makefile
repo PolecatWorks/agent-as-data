@@ -23,6 +23,7 @@ help:
 	@echo "  aad-be-migrate     - Run database migrations against PostgreSQL"
 	@echo "  aad-be-docker      - Build Rust backend Docker image"
 	@echo "  aad-be-docker-run  - Build and run backend container locally"
+	@echo "  ensure-pgvector    - Ensure pgvector extension is installed in PostgreSQL"
 	@echo "  aad-fe-dev         - Run Angular frontend dev server"
 	@echo "  aad-fe-docker      - Build Angular frontend Docker image"
 	@echo "  aad-fe-docker-run  - Build and run frontend container locally"
@@ -48,10 +49,13 @@ compose-db-up:
 compose-db-down:
 	docker compose -f docker-compose/postgres.yaml down
 
+ensure-pgvector:
+	@docker exec -i aad-postgres psql -U postgres -d aaddb -c "CREATE EXTENSION IF NOT EXISTS vector;"
+
 compose-db-clean:
 	docker compose -f docker-compose/postgres.yaml down -v
 
-db-up: compose-db-up
+db-up: compose-db-up ensure-pgvector
 
 db-down: compose-db-down
 
