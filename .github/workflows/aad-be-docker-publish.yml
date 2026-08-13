@@ -1,4 +1,4 @@
-name: AAD-FE Docker
+name: AAD-BE Docker
 
 on:
   push:
@@ -8,7 +8,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}-fe
+  IMAGE_NAME: ${{ github.repository }}-be
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -18,7 +18,7 @@ jobs:
   check-paths:
     runs-on: ubuntu-latest
     outputs:
-      fe: ${{ steps.filter.outputs.fe }}
+      backend: ${{ steps.filter.outputs.backend }}
     steps:
       - uses: actions/checkout@v4
       - uses: dorny/paths-filter@v3
@@ -26,13 +26,13 @@ jobs:
         with:
           ref: ${{ github.event.merge_group.base_ref || github.ref }}
           filters: |
-            fe:
-              - 'aad-fe-container/**'
-              - '.github/workflows/aad-fe-docker-publish.yml'
+            backend:
+              - 'aad-be-container/**'
+              - '.github/workflows/aad-be-docker-publish.yml'
 
   check-image:
     needs: check-paths
-    if: needs.check-paths.outputs.fe == 'true'
+    if: needs.check-paths.outputs.backend == 'true'
     runs-on: ubuntu-latest
     outputs:
       exists: ${{ steps.check.outputs.exists }}
@@ -42,19 +42,19 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Determine FE Content SHA
-        id: fe-content
+      - name: Determine Backend Content SHA
+        id: backend-content
         run: |
           # shellcheck disable=SC2086
-          FE_SHA=$(git log -1 --format=%H -- aad-fe-container/ .github/workflows/aad-fe-docker-publish.yml)
-          echo "FE_SHA=$FE_SHA" >> "$GITHUB_OUTPUT"
+          BACKEND_SHA=$(git log -1 --format=%H -- aad-be-container/ .github/workflows/aad-be-docker-publish.yml)
+          echo "BACKEND_SHA=$BACKEND_SHA" >> "$GITHUB_OUTPUT"
 
       - name: Determine Image Name
         id: image-name
         run: |
           # shellcheck disable=SC2086
           repo_name="${{ github.repository }}"
-          echo "IMAGE_NAME_LOWERCASE=$(echo "$repo_name" | tr '[:upper:]' '[:lower:]')-fe" >> "$GITHUB_OUTPUT"
+          echo "IMAGE_NAME_LOWERCASE=$(echo "$repo_name" | tr '[:upper:]' '[:lower:]')-be" >> "$GITHUB_OUTPUT"
 
       - name: Log into registry ${{ env.REGISTRY }}
         uses: docker/login-action@v3
@@ -67,7 +67,7 @@ jobs:
         id: check
         run: |
           # shellcheck disable=SC2086
-          IMAGE_REF="${{ env.REGISTRY }}/${{ steps.image-name.outputs.IMAGE_NAME_LOWERCASE }}:sha-${{ steps.fe-content.outputs.FE_SHA }}"
+          IMAGE_REF="${{ env.REGISTRY }}/${{ steps.image-name.outputs.IMAGE_NAME_LOWERCASE }}:sha-${{ steps.backend-content.outputs.BACKEND_SHA }}"
           echo "Checking if image exists: $IMAGE_REF"
           if docker manifest inspect "$IMAGE_REF" >/dev/null 2>&1; then
             echo "exists=true" >> "$GITHUB_OUTPUT"
@@ -79,7 +79,7 @@ jobs:
 
   build:
     needs: [check-paths, check-image]
-    if: needs.check-paths.outputs.fe == 'true' && needs.check-image.outputs.exists != 'true'
+    if: needs.check-paths.outputs.backend == 'true' && needs.check-image.outputs.exists != 'true'
     strategy:
       fail-fast: false
       matrix:
@@ -88,7 +88,7 @@ jobs:
           - linux/arm64
 
     runs-on: ${{ matrix.platform == 'linux/amd64' && 'ubuntu-24.04' || matrix.platform == 'linux/arm64' && 'ubuntu-24.04-arm' }}
-    name: ${{ matrix.platform }} AAD-FE Docker
+    name: ${{ matrix.platform }} AAD-BE Docker
     permissions:
       contents: read
       packages: write
@@ -100,13 +100,13 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Determine FE Content SHA
-        id: fe-content
+      - name: Determine Backend Content SHA
+        id: backend-content
         run: |
           # shellcheck disable=SC2086
-          FE_SHA=$(git log -1 --format=%H -- aad-fe-container/ .github/workflows/aad-fe-docker-publish.yml)
-          echo "Determined fe content SHA: $FE_SHA"
-          echo "FE_SHA=$FE_SHA" >> "$GITHUB_ENV"
+          BACKEND_SHA=$(git log -1 --format=%H -- aad-be-container/ .github/workflows/aad-be-docker-publish.yml)
+          echo "Determined backend content SHA: $BACKEND_SHA"
+          echo "BACKEND_SHA=$BACKEND_SHA" >> "$GITHUB_ENV"
 
       - name: Prepare environment for current platform
         id: prepare
@@ -114,7 +114,7 @@ jobs:
           # shellcheck disable=SC2086
           platform=${{ matrix.platform }}
           repo_name="${{ github.repository }}"
-          echo "IMAGE_NAME_LOWERCASE=$(echo "$repo_name" | tr '[:upper:]' '[:lower:]')-fe" >> "$GITHUB_ENV"
+          echo "IMAGE_NAME_LOWERCASE=$(echo "$repo_name" | tr '[:upper:]' '[:lower:]')-be" >> "$GITHUB_ENV"
           echo "PLATFORM_PAIR=${platform//\//-}" >> "$GITHUB_ENV"
 
       - name: Set up Docker Buildx
@@ -137,21 +137,21 @@ jobs:
           tags: |
             type=raw,value=main,enable=${{ github.ref_name == 'main' }}
             type=raw,value=latest,enable=${{ github.ref_name == 'main' }}
-            type=raw,value=sha-${{ env.FE_SHA }}
+            type=raw,value=sha-${{ env.BACKEND_SHA }}
 
       - name: Build and push Docker image
         id: build
         uses: docker/build-push-action@v7
         with:
-          context: aad-fe-container
-          file: aad-fe-container/Dockerfile
+          context: aad-be-container
+          file: aad-be-container/Dockerfile
           push: true
           labels: ${{ steps.meta.outputs.labels }}
           annotations: ${{ steps.meta.outputs.annotations }}
           outputs: type=image,name=${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWERCASE }},push-by-digest=true,name-canonical=true,push=true,oci-mediatypes=true
           cache-from: |
-            type=gha,scope=${{ github.repository }}-aad-fe-main-${{ matrix.platform }}
-          cache-to: ${{ github.ref_name == 'main' && format('type=gha,mode=max,scope={0}-aad-fe-main-{1}', github.repository, matrix.platform) || '' }}
+            type=gha,scope=${{ github.repository }}-aad-be-main-${{ matrix.platform }}
+          cache-to: ${{ github.ref_name == 'main' && format('type=gha,mode=max,scope={0}-aad-be-main-{1}', github.repository, matrix.platform) || '' }}
 
       - name: Export digest
         run: |
@@ -181,19 +181,19 @@ jobs:
         run: |
           # shellcheck disable=SC2086
           repo_name="${{ github.repository }}"
-          echo "IMAGE_NAME_LOWERCASE=$(echo "$repo_name" | tr '[:upper:]' '[:lower:]')-fe" >> "$GITHUB_ENV"
+          echo "IMAGE_NAME_LOWERCASE=$(echo "$repo_name" | tr '[:upper:]' '[:lower:]')-be" >> "$GITHUB_ENV"
 
       - name: Checkout repository (for history)
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Determine FE Content SHA
-        id: fe-content
+      - name: Determine Backend Content SHA
+        id: backend-content
         run: |
           # shellcheck disable=SC2086
-          FE_SHA=$(git log -1 --format=%H -- aad-fe-container/ .github/workflows/aad-fe-docker-publish.yml)
-          echo "FE_SHA=$FE_SHA" >> "$GITHUB_ENV"
+          BACKEND_SHA=$(git log -1 --format=%H -- aad-be-container/ .github/workflows/aad-be-docker-publish.yml)
+          echo "BACKEND_SHA=$BACKEND_SHA" >> "$GITHUB_ENV"
 
       - name: Download digests
         uses: actions/download-artifact@v6
@@ -212,7 +212,7 @@ jobs:
           tags: |
             type=raw,value=main,enable=${{ github.ref_name == 'main' }}
             type=raw,value=latest,enable=${{ github.ref_name == 'main' }}
-            type=raw,value=sha-${{ env.FE_SHA }}
+            type=raw,value=sha-${{ env.BACKEND_SHA }}
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -264,7 +264,7 @@ jobs:
     needs: [check-paths, check-image, merge]
     if: |
       always() &&
-      needs.check-paths.outputs.fe == 'true' &&
+      needs.check-paths.outputs.backend == 'true' &&
       github.event_name == 'push' &&
       github.ref == 'refs/heads/main' &&
       (needs.check-image.outputs.exists == 'true' || needs.merge.result == 'success')
@@ -284,17 +284,17 @@ jobs:
 
       - name: Trigger Rolling Restart
         run: |
-          kubectl rollout restart deployment/aad-fe-nginx-view -n agent-as-data-dev
+          kubectl rollout restart deployment/agent-as-data-be -n agent-as-data-dev
 
   ci-success:
-    name: AAD-FE CI Success
+    name: AAD-BE CI Success
     needs: [check-paths, check-image, merge, rollout-dev]
     if: always()
     runs-on: ubuntu-latest
     steps:
       - name: Check Status
         run: |
-          if [[ "${{ needs.check-paths.outputs.fe }}" == 'true' ]]; then
+          if [[ "${{ needs.check-paths.outputs.backend }}" == 'true' ]]; then
             if [[ "${{ needs.check-image.outputs.exists }}" != 'true' && "${{ needs.merge.result }}" != 'success' ]]; then
                echo "Build/Merge failed!"
                exit 1
