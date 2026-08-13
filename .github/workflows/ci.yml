@@ -1,10 +1,7 @@
 name: CI Workflow
 
 on:
-  push:
-    branches: [ main ]
   pull_request:
-    branches: [ main ]
 
 jobs:
   detect-changes:
@@ -33,7 +30,7 @@ jobs:
   backend-test:
     name: Build & Test Backend
     needs: detect-changes
-    if: github.ref == 'refs/heads/main' || needs.detect-changes.outputs.backend == 'true'
+    if: needs.detect-changes.outputs.backend == 'true'
     runs-on: ubuntu-latest
 
     services:
@@ -71,7 +68,7 @@ jobs:
   frontend-test:
     name: Build & Test Frontend
     needs: detect-changes
-    if: github.ref == 'refs/heads/main' || needs.detect-changes.outputs.frontend == 'true'
+    if: needs.detect-changes.outputs.frontend == 'true'
     runs-on: ubuntu-latest
 
     steps:
@@ -99,7 +96,7 @@ jobs:
   helm-lint:
     name: Helm Chart Lint
     needs: detect-changes
-    if: github.ref == 'refs/heads/main' || needs.detect-changes.outputs.helm == 'true'
+    if: needs.detect-changes.outputs.helm == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
