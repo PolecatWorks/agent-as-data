@@ -47,3 +47,28 @@ class AADRequests:
                 "version_bumped": "True",
                 "new_version": 2
             }
+
+    def list_traits(self):
+        resp = requests.get(f"{self.base_url}/api/v1/traits", timeout=2)
+        resp.raise_for_status()
+        return resp.json()
+
+    def get_trait(self, trait_id):
+        resp = requests.get(f"{self.base_url}/api/v1/traits/{trait_id}", timeout=2)
+        resp.raise_for_status()
+        return resp.json()
+
+    def create_trait(self, payload):
+        resp = requests.post(f"{self.base_url}/api/v1/traits", json=payload, timeout=2)
+        resp.raise_for_status()
+        return resp.json()
+
+    def update_trait(self, trait_id, payload):
+        resp = requests.put(f"{self.base_url}/api/v1/traits/{trait_id}", json=payload, timeout=2)
+        resp.raise_for_status()
+        return resp.json()
+
+    def delete_trait(self, trait_id):
+        resp = requests.delete(f"{self.base_url}/api/v1/traits/{trait_id}", timeout=2)
+        resp.raise_for_status()
+        return resp.status_code
