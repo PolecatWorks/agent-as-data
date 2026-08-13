@@ -262,3 +262,40 @@ pub struct CompileAgentResponse {
     pub diagnostics: Vec<DiagnosticMessage>,
 }
 
+#[derive(Deserialize, Serialize, Debug, Clone, sqlx::FromRow)]
+pub struct TraitContract {
+    pub id: Uuid,
+    pub name: String,
+    pub description: String,
+    pub version: i32,
+    pub capability_requirements: Vec<String>,
+    pub behavioral_invariants: Vec<String>,
+    pub evaluation_criteria: Vec<String>,
+    pub tags: Vec<String>,
+    pub guardrails: serde_json::Value,
+    pub created_at: chrono::DateTime<chrono::Utc>,
+    pub updated_at: chrono::DateTime<chrono::Utc>,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct CreateTraitRequest {
+    pub name: String,
+    pub description: String,
+    pub capability_requirements: Option<Vec<String>>,
+    pub behavioral_invariants: Option<Vec<String>>,
+    pub evaluation_criteria: Option<Vec<String>>,
+    pub tags: Option<Vec<String>>,
+    pub guardrails: Option<serde_json::Value>,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct UpdateTraitRequest {
+    pub name: Option<String>,
+    pub description: Option<String>,
+    pub capability_requirements: Option<Vec<String>>,
+    pub behavioral_invariants: Option<Vec<String>>,
+    pub evaluation_criteria: Option<Vec<String>>,
+    pub tags: Option<Vec<String>>,
+    pub guardrails: Option<serde_json::Value>,
+}
+

@@ -5,6 +5,7 @@ export const routes: Routes = [
   { path: 'agent-registry', loadComponent: () => import('./components/agent-registry/agent-registry.component').then(m => m.AgentRegistryComponent) },
   { path: 'agent-registry/:id', loadComponent: () => import('./components/agent-registry/agent-registry.component').then(m => m.AgentRegistryComponent) },
   { path: 'traits-registry', loadComponent: () => import('./components/traits-registry/traits-registry.component').then(m => m.TraitsRegistryComponent) },
+  { path: 'traits-registry/:id', loadComponent: () => import('./components/traits-registry/traits-registry.component').then(m => m.TraitsRegistryComponent) },
 
   { path: 'interactive-testing', loadComponent: () => import('./components/interactive-testing/interactive-testing.component').then(m => m.InteractiveTestingComponent) },
   { path: 'network-visualizer', loadComponent: () => import('./components/network-visualizer/network-visualizer.component').then(m => m.NetworkVisualizerComponent) },

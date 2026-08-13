@@ -103,6 +103,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     .route("/api/v1/skills/{id}/promote", axum::routing::post(aad_be_container::agents::promote_skill))
                     .route("/api/v1/agents/{id}/demote", axum::routing::post(aad_be_container::agents::demote_skill))
                     .route("/api/v1/agents/mcp/register", axum::routing::post(aad_be_container::mcp::register_mcp_server))
+                    .route("/api/v1/traits", axum::routing::get(aad_be_container::traits::list_traits))
+                    .route("/api/v1/traits", axum::routing::post(aad_be_container::traits::create_trait))
+                    .route("/api/v1/traits/{id}", axum::routing::get(aad_be_container::traits::get_trait))
+                    .route("/api/v1/traits/{id}", axum::routing::put(aad_be_container::traits::update_trait))
+                    .route("/api/v1/traits/{id}", axum::routing::delete(aad_be_container::traits::delete_trait))
 
                     .route("/api/v1/agents/{id}/execute", axum::routing::post(aad_be_container::execution::execute_agent))
                     .route("/api/v1/agents/search-and-execute", axum::routing::post(aad_be_container::execution::search_and_execute))

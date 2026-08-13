@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
@@ -11,6 +12,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTabsModule } from '@angular/material/tabs';
 import { ApiService, TraitContract } from '../../services/api.service';
+import { GuardrailsEditorComponent } from '../guardrails-editor/guardrails-editor.component';
 
 @Component({
   selector: 'app-traits-registry',
@@ -26,38 +28,15 @@ import { ApiService, TraitContract } from '../../services/api.service';
     MatTooltipModule,
     MatSelectModule,
     MatTabsModule,
-    MatSnackBarModule
+    MatSnackBarModule,
+    GuardrailsEditorComponent
   ],
 
   templateUrl: './traits-registry.component.html',
   styleUrl: './traits-registry.component.scss'
 })
 export class TraitsRegistryComponent implements OnInit {
-  // Guardrail Catalogs for Selection
-  guardrailCatalog = [
-    { type: 'prompt_injection', name: 'Prompt Injection Interceptor', tier: 'Tier 1: Deterministic', description: 'Real-time heuristic scanning to intercept injection signatures before reaching LLM' },
-    { type: 'pii_regex', name: 'PII Regex Filtering', tier: 'Tier 1: Deterministic', description: 'Regex scanning to block SSNs, emails, credit cards, and secret credentials' },
-    { type: 'max_input_tokens', name: 'Max Input Token Limit Cap', tier: 'Tier 1: Deterministic', description: 'Enforce hard upper limit cap on incoming prompt tokens' },
-    { type: 'blocked_keywords', name: 'Blocked Input Keyword Blacklist', tier: 'Tier 1: Deterministic', description: 'Reject exact matching phrases or regex keywords in prompts' },
-    { type: 'vector_similarity', name: 'Vector Attack Similarity Matcher', tier: 'Tier 2: Vector Matching', description: 'Cosine similarity matching against vector database of known jailbreaks' },
-    { type: 'classifier_model', name: 'Specialized Safety Classifier Model', tier: 'Tier 3: Dedicated Classifier', description: 'Route input to Llama Guard, DeBERTa v3, or Perspective API classifier' },
-    { type: 'llm_judge', name: 'LLM-as-a-Judge Pre-Evaluator', tier: 'Tier 4: LLM Judge', description: 'Run lightweight fast LLM evaluator against custom policy rules' },
-    { type: 'domain_scoping', name: 'System Prompt Domain Scoping', tier: 'Tier 5: System Rules', description: 'Inject allowed topic constraints into system prompt' }
-  ];
-
-  outputGuardrailCatalog = [
-    { type: 'secret_redaction', name: 'Secret & API Key Redaction', category: 'Data Safety & Privacy', description: 'Automatically scan and mask credentials, RSA private keys, and API tokens in responses' },
-    { type: 'pii_ner_redaction', name: 'PII & Sensitive Data Redaction (NER)', category: 'Data Safety & Privacy', description: 'Mask names, emails, phone numbers, SSNs, and credit cards using Named Entity Recognition (Presidio)' },
-    { type: 'infra_leakage_filter', name: 'Internal Infra & Network Leakage Filter', category: 'Data Safety & Privacy', description: 'Redact internal stack traces, cluster IPs, private domain names, and database URIs' },
-    { type: 'enforce_json_schema', name: 'Strict JSON Schema Contract Enforcement', category: 'Quality & Structure', description: 'Validate output against formal JSON Schema contracts prior to returning payload' },
-    { type: 'max_output_tokens', name: 'Max Output Token Generation Limit', category: 'Generation Boundaries', description: 'Hard token limit cap on total output generation per request' },
-    { type: 'blocked_output_keywords', name: 'Blocked Output Keyword & Secret Redaction', category: 'Data Safety & Privacy', description: 'Banned terms or secret pattern blacklists redacted from LLM output' },
-    { type: 'toxicity_classifier', name: 'Post-Execution Toxicity & Harm Classifier', category: 'Safety & Policy', description: 'Filter hate speech, harassment, or explicit material using Llama Guard or Perspective API' },
-    { type: 'brand_competitor_protection', name: 'Competitor & Brand Protection Filter', category: 'Safety & Policy', description: 'Redact or restrict mentions of banned competitor brands or restricted products' },
-    { type: 'rag_grounding_hallucination', name: 'RAG Grounding & Hallucination Scoring (NLI)', category: 'Truthfulness & Quality', description: 'Natural Language Inference grounding checks against retrieved context chunks' },
-    { type: 'refusal_offtopic_detector', name: 'Refusal & Off-Topic Detector', category: 'Truthfulness & Quality', description: 'Detect hallucinated refusals or domain boundary drift' },
-    { type: 'structural_formatting_rules', name: 'Custom Structural & Regex Formatting Rules', category: 'Quality & Structure', description: 'Validate Markdown formatting, custom code block structures, or mandatory URL patterns' }
-  ];
+  
 
   traitContracts: TraitContract[] = [
     {
@@ -221,19 +200,72 @@ export class TraitsRegistryComponent implements OnInit {
     }
   };
 
-  selectedGuardrailTypeToAdd: string = '';
-  selectedOutputGuardrailTypeToAdd: string = '';
+  
   searchQuery: string = '';
   newRequirement: string = '';
   newInvariant: string = '';
   newCriterion: string = '';
   newTag: string = '';
 
-  constructor(private snackBar: MatSnackBar) {}
+  constructor(
+    private snackBar: MatSnackBar,
+    private apiService: ApiService,
+    private route: ActivatedRoute,
+    private router: Router
+  ) {}
 
   ngOnInit(): void {
-    if (this.traitContracts.length > 0) {
-      this.selectTraitContract(this.traitContracts[0]);
+    this.loadTraits();
+    this.route.paramMap.subscribe(params => {
+      const id = params.get('id');
+      if (id) {
+        this.selectTraitById(id);
+      }
+    });
+  }
+
+  loadTraits(): void {
+    this.apiService.getTraits().subscribe({
+      next: (traits) => {
+        if (traits && traits.length > 0) {
+          this.traitContracts = traits;
+          const id = this.route.snapshot.paramMap.get('id');
+          if (id) {
+            this.selectTraitById(id);
+          } else {
+            this.selectTraitContract(this.traitContracts[0]);
+          }
+        } else {
+          if (this.traitContracts.length > 0) {
+            const id = this.route.snapshot.paramMap.get('id');
+            if (id) {
+              this.selectTraitById(id);
+            } else {
+              this.selectTraitContract(this.traitContracts[0]);
+            }
+          } else {
+            this.createNewTraitContract();
+          }
+        }
+      },
+      error: () => {
+        this.snackBar.open("Failed to load traits from backend, using catalog stubs.", "Close", { duration: 3000 });
+        if (this.traitContracts.length > 0) {
+          const id = this.route.snapshot.paramMap.get('id');
+          if (id) {
+            this.selectTraitById(id);
+          } else {
+            this.selectTraitContract(this.traitContracts[0]);
+          }
+        }
+      }
+    });
+  }
+
+  selectTraitById(id: string): void {
+    const trait = this.traitContracts.find(t => t.id === id);
+    if (trait) {
+      this.selectTraitContract(trait);
     }
   }
 
@@ -251,6 +283,7 @@ export class TraitsRegistryComponent implements OnInit {
 
   selectTraitContract(trait: TraitContract): void {
     this.selectedTraitContract = trait;
+    this.router.navigate(['/traits-registry', trait.id]);
     this.traitForm = {
       ...trait,
       capability_requirements: trait.capability_requirements ? [...trait.capability_requirements] : [],
@@ -295,110 +328,70 @@ export class TraitsRegistryComponent implements OnInit {
 
   saveTraitContract(): void {
     if (!this.traitForm.name) return;
-    const existingIdx = this.traitContracts.findIndex(t => t.id === this.selectedTraitContract?.id || t.name === this.traitForm.name);
-    
-    if (existingIdx >= 0) {
-      this.traitContracts[existingIdx] = {
-        ...this.traitContracts[existingIdx],
-        ...this.traitForm,
-        version: (this.traitContracts[existingIdx].version || 1) + 1
-      } as TraitContract;
-      this.selectedTraitContract = this.traitContracts[existingIdx];
-      this.snackBar.open(`Updated trait ${this.traitForm.name} (v${this.traitContracts[existingIdx].version})`, 'Close', { duration: 3000 });
-    } else {
-      const newTrait: TraitContract = {
-        id: 'trait-' + Date.now(),
-        name: this.traitForm.name,
-        description: this.traitForm.description || '',
-        version: 1,
-        capability_requirements: this.traitForm.capability_requirements || [],
-        behavioral_invariants: this.traitForm.behavioral_invariants || [],
-        evaluation_criteria: this.traitForm.evaluation_criteria || [],
-        tags: this.traitForm.tags || ['trait'],
-        guardrails: this.traitForm.guardrails || {
-          input_guardrails: { active_guardrails: [] },
-          output_guardrails: { active_guardrails: [] }
+
+    if (this.selectedTraitContract?.id && this.selectedTraitContract.id.length > 10 && !this.selectedTraitContract.id.startsWith('trait-')) {
+      // Update existing trait on backend
+      this.apiService.updateTrait(this.selectedTraitContract.id, this.traitForm).subscribe({
+        next: (updated) => {
+          const idx = this.traitContracts.findIndex(t => t.id === updated.id);
+          if (idx >= 0) {
+            this.traitContracts[idx] = updated;
+          }
+          this.selectedTraitContract = updated;
+          this.snackBar.open(`Updated trait ${updated.name} (v${updated.version})`, 'Close', { duration: 3000 });
+        },
+        error: (err: any) => {
+          this.snackBar.open(`Failed to save trait contract: ${err.message || err}`, 'Close', { duration: 3000 });
         }
-      };
-      this.traitContracts.push(newTrait);
-      this.selectedTraitContract = newTrait;
-      this.snackBar.open(`Created new trait ${newTrait.name}`, 'Close', { duration: 3000 });
+      });
+    } else {
+      // Create new trait on backend
+      this.apiService.createTrait(this.traitForm).subscribe({
+        next: (created) => {
+          // Remove local stub if existed
+          if (this.selectedTraitContract?.id && this.selectedTraitContract.id.startsWith('trait-')) {
+            this.traitContracts = this.traitContracts.filter(t => t.id !== this.selectedTraitContract!.id);
+          }
+          this.traitContracts.push(created);
+          this.selectedTraitContract = created;
+          this.snackBar.open(`Created new trait ${created.name}`, 'Close', { duration: 3000 });
+        },
+        error: (err: any) => {
+          this.snackBar.open(`Failed to create trait contract: ${err.message || err}`, 'Close', { duration: 3000 });
+        }
+      });
     }
   }
 
-  // Trait Guardrails Management
-  addInputGuardrailFromDropdown(): void {
-    if (!this.selectedGuardrailTypeToAdd) return;
-    const catItem = this.guardrailCatalog.find(g => g.type === this.selectedGuardrailTypeToAdd);
-    if (!catItem) return;
-
-    if (!this.traitForm.guardrails) {
-      this.traitForm.guardrails = {
-        input_guardrails: { active_guardrails: [] },
-        output_guardrails: { active_guardrails: [] }
-      };
-    }
-    if (!this.traitForm.guardrails.input_guardrails) {
-      this.traitForm.guardrails.input_guardrails = { active_guardrails: [] };
-    }
-
-    const newGuardrail: any = {
-      id: 'tg-' + Date.now(),
-      type: catItem.type,
-      name: catItem.name,
-      tier: catItem.tier,
-      description: catItem.description,
-      config: {}
-    };
-
-    this.traitForm.guardrails.input_guardrails.active_guardrails.push(newGuardrail);
-    this.selectedGuardrailTypeToAdd = '';
-    this.snackBar.open(`Added trait input guardrail ${catItem.name}`, 'Close', { duration: 2500 });
-  }
-
-  deleteInputGuardrail(id: string): void {
-    if (this.traitForm.guardrails?.input_guardrails?.active_guardrails) {
-      this.traitForm.guardrails.input_guardrails.active_guardrails = 
-        this.traitForm.guardrails.input_guardrails.active_guardrails.filter(g => g.id !== id);
-      this.snackBar.open('Trait input guardrail removed', 'Close', { duration: 2000 });
-    }
-  }
-
-  addOutputGuardrailFromDropdown(): void {
-    if (!this.selectedOutputGuardrailTypeToAdd) return;
-    const catItem = this.outputGuardrailCatalog.find(g => g.type === this.selectedOutputGuardrailTypeToAdd);
-    if (!catItem) return;
-
-    if (!this.traitForm.guardrails) {
-      this.traitForm.guardrails = {
-        input_guardrails: { active_guardrails: [] },
-        output_guardrails: { active_guardrails: [] }
-      };
-    }
-    if (!this.traitForm.guardrails.output_guardrails) {
-      this.traitForm.guardrails.output_guardrails = { active_guardrails: [] };
+  deleteTraitContract(): void {
+    if (!this.selectedTraitContract) return;
+    const id = this.selectedTraitContract.id;
+    if (id.startsWith('trait-')) {
+      // Local stub only
+      this.traitContracts = this.traitContracts.filter(t => t.id !== id);
+      if (this.traitContracts.length > 0) {
+        this.selectTraitContract(this.traitContracts[0]);
+      } else {
+        this.createNewTraitContract();
+      }
+      this.snackBar.open('Removed temporary trait definition', 'Close', { duration: 3000 });
+      return;
     }
 
-    const newGuardrail: any = {
-      id: 'tog-' + Date.now(),
-      type: catItem.type,
-      name: catItem.name,
-      tier: catItem.category,
-      description: catItem.description,
-      config: {}
-    };
-
-    this.traitForm.guardrails.output_guardrails.active_guardrails.push(newGuardrail);
-    this.selectedOutputGuardrailTypeToAdd = '';
-    this.snackBar.open(`Added trait output guardrail ${catItem.name}`, 'Close', { duration: 2500 });
-  }
-
-  deleteOutputGuardrail(id: string): void {
-    if (this.traitForm.guardrails?.output_guardrails?.active_guardrails) {
-      this.traitForm.guardrails.output_guardrails.active_guardrails = 
-        this.traitForm.guardrails.output_guardrails.active_guardrails.filter(g => g.id !== id);
-      this.snackBar.open('Trait output guardrail removed', 'Close', { duration: 2000 });
-    }
+    this.apiService.deleteTrait(id).subscribe({
+      next: () => {
+        this.traitContracts = this.traitContracts.filter(t => t.id !== id);
+        if (this.traitContracts.length > 0) {
+          this.selectTraitContract(this.traitContracts[0]);
+        } else {
+          this.createNewTraitContract();
+        }
+        this.snackBar.open('Trait contract deleted successfully', 'Close', { duration: 3000 });
+      },
+      error: (err: any) => {
+        this.snackBar.open(`Failed to delete trait contract: ${err.message || err}`, 'Close', { duration: 3000 });
+      }
+    });
   }
 
   // Capability Requirements Helper Methods

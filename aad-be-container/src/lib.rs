@@ -6,6 +6,7 @@ pub mod hams_tools;
 pub mod knowledge;
 pub mod mcp;
 pub mod models;
+pub mod traits;
 pub mod tokio_tools;
 
 

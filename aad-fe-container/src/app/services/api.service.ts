@@ -210,4 +210,21 @@ export class ApiService {
   analyzeRefactor(): Observable<any> {
     return this.http.post(`${this.baseUrl}/agents/refactor/analyze`, {});
   }
+
+  // Trait Contract APIs
+  getTraits(): Observable<TraitContract[]> {
+    return this.http.get<TraitContract[]>(`${this.baseUrl}/traits`);
+  }
+
+  createTrait(trait: Partial<TraitContract>): Observable<TraitContract> {
+    return this.http.post<TraitContract>(`${this.baseUrl}/traits`, trait);
+  }
+
+  updateTrait(id: string, trait: Partial<TraitContract>): Observable<TraitContract> {
+    return this.http.put<TraitContract>(`${this.baseUrl}/traits/${id}`, trait);
+  }
+
+  deleteTrait(id: string): Observable<any> {
+    return this.http.delete(`${this.baseUrl}/traits/${id}`);
+  }
 }
