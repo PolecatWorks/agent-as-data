@@ -61,5 +61,4 @@ flowchart TD
 2. **Feature Branch & PR Workflow**: **Do NOT push directly to the `main` branch**. Always create a dedicated feature branch (e.g. `feat/reversible-migrations`), commit changes to the feature branch, push the feature branch to `origin`, and open a Pull Request (PR) using `gh pr create`.
 3. **Strict TDD Execution**: Build out code using a strict TDD approach (Write failing integration/unit test -> Implement code -> Verify test passes -> Refactor).
 4. **Per-Spec Verification Gate**: After completing implementation of a spec file, run **all unit tests** and **Robot Framework integration tests** (`/integration-tests/run-tests-local.sh`). Confirm clean pass before transitioning spec status to `complete` and progressing to the next spec file.
-
-
+5. **Pull Request Validation Checks**: Every PR must pass all required validation status checks (Backend Build & Test, Frontend Build & Test, Helm Chart Lint). These validation checks run in parallel and are conditionally run based on the files changed in the PR to ensure efficiency and safety. Any skipped checks are treated as passing by GitHub branch protection settings.
