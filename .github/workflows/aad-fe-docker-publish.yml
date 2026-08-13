@@ -3,6 +3,8 @@ name: AAD-FE Docker
 on:
   push:
     branches: ["main"]
+  pull_request:
+    branches: ["main"]
   merge_group:
     branches: ["main"]
 
@@ -79,7 +81,7 @@ jobs:
 
   build:
     needs: [check-paths, check-image]
-    if: needs.check-paths.outputs.fe == 'true' && needs.check-image.outputs.exists != 'true'
+    if: github.event_name != 'pull_request' && needs.check-paths.outputs.fe == 'true' && needs.check-image.outputs.exists != 'true'
     strategy:
       fail-fast: false
       matrix:
@@ -176,6 +178,7 @@ jobs:
       contents: read
     needs:
       - build
+    if: github.event_name != 'pull_request' && needs.build.result == 'success'
     steps:
       - name: Prepare environment
         run: |
@@ -264,9 +267,9 @@ jobs:
     needs: [check-paths, check-image, merge]
     if: |
       always() &&
-      needs.check-paths.outputs.fe == 'true' &&
       github.event_name == 'push' &&
       github.ref == 'refs/heads/main' &&
+      needs.check-paths.outputs.fe == 'true' &&
       (needs.check-image.outputs.exists == 'true' || needs.merge.result == 'success')
     runs-on: polecatworks-runner
     steps:
@@ -294,7 +297,7 @@ jobs:
     steps:
       - name: Check Status
         run: |
-          if [[ "${{ needs.check-paths.outputs.fe }}" == 'true' ]]; then
+          if [[ "${{ github.event_name }}" != 'pull_request' && "${{ needs.check-paths.outputs.fe }}" == 'true' ]]; then
             if [[ "${{ needs.check-image.outputs.exists }}" != 'true' && "${{ needs.merge.result }}" != 'success' ]]; then
                echo "Build/Merge failed!"
                exit 1
