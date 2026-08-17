@@ -124,6 +124,8 @@ pub struct Agent {
     pub agent_definition: serde_json::Value,
     #[serde(default)]
     pub model: serde_json::Value,
+    #[serde(default)]
+    pub archived_at: Option<chrono::DateTime<chrono::Utc>>,
 }
 
 
