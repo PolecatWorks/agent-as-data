@@ -21,7 +21,66 @@
     </mat-card-header>
     <mat-card-content class="p-6">
       <div class="flex justify-center bg-slate-50/50 p-4 rounded-xl border border-slate-100">
-        <div #mermaidContainer class="w-full max-w-4xl overflow-x-auto"></div>
+        <!-- Direct Responsive SVG Architecture Flow -->
+        <svg viewBox="0 0 800 210" class="w-full h-auto max-w-4xl" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="arrow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M 0 1 L 10 5 L 0 9 z" fill="#64748b" />
+            </marker>
+            <filter id="shadow" x="-5%" y="-5%" width="110%" height="110%">
+              <feDropShadow dx="0" dy="2" stdDeviation="4" flood-opacity="0.05" flood-color="#0f172a"/>
+            </filter>
+          </defs>
+
+          <!-- Step 1: Ingestion -->
+          <g filter="url(#shadow)">
+            <rect x="10" y="15" width="165" height="155" rx="16" fill="#eff6ff" stroke="#bfdbfe" stroke-width="1.5"/>
+            <text x="92.5" y="42" font-family="Inter, system-ui, sans-serif" font-size="11" font-weight="900" fill="#1e3a8a" text-anchor="middle" letter-spacing="0.5">1. KNOWLEDGE STORE</text>
+            <rect x="22.5" y="65" width="140" height="34" rx="8" fill="#ffffff" stroke="#dbeafe" stroke-width="1"/>
+            <text x="92.5" y="86" font-family="Inter, system-ui, sans-serif" font-size="10" font-weight="700" fill="#1e40af" text-anchor="middle">Semantic RAG Chunks</text>
+            <rect x="22.5" y="112" width="140" height="34" rx="8" fill="#ffffff" stroke="#dbeafe" stroke-width="1"/>
+            <text x="92.5" y="133" font-family="Inter, system-ui, sans-serif" font-size="10" font-weight="700" fill="#1e40af" text-anchor="middle">Graph Triples (SPO)</text>
+          </g>
+
+          <!-- Connection 1 -> 2 -->
+          <path d="M 175 92.5 L 202 92.5" fill="none" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrow)"/>
+
+          <!-- Step 2: Definition -->
+          <g filter="url(#shadow)">
+            <rect x="210" y="15" width="165" height="155" rx="16" fill="#ecfdf5" stroke="#a7f3d0" stroke-width="1.5"/>
+            <text x="292.5" y="42" font-family="Inter, system-ui, sans-serif" font-size="11" font-weight="900" fill="#064e3b" text-anchor="middle" letter-spacing="0.5">2. SPECIFICATIONS</text>
+            <rect x="222.5" y="65" width="140" height="34" rx="8" fill="#ffffff" stroke="#d1fae5" stroke-width="1"/>
+            <text x="292.5" y="86" font-family="Inter, system-ui, sans-serif" font-size="10" font-weight="700" fill="#065f46" text-anchor="middle">Trait Contracts</text>
+            <rect x="222.5" y="112" width="140" height="34" rx="8" fill="#ffffff" stroke="#d1fae5" stroke-width="1"/>
+            <text x="292.5" y="133" font-family="Inter, system-ui, sans-serif" font-size="10" font-weight="700" fill="#065f46" text-anchor="middle">Agent Registry</text>
+          </g>
+
+          <!-- Connection 2 -> 3 -->
+          <path d="M 375 92.5 L 402 92.5" fill="none" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrow)"/>
+
+          <!-- Step 3: Validation -->
+          <g filter="url(#shadow)">
+            <rect x="410" y="15" width="165" height="155" rx="16" fill="#fffbeb" stroke="#fde68a" stroke-width="1.5"/>
+            <text x="492.5" y="42" font-family="Inter, system-ui, sans-serif" font-size="11" font-weight="900" fill="#78350f" text-anchor="middle" letter-spacing="0.5">3. VERIFICATION</text>
+            <rect x="422.5" y="65" width="140" height="34" rx="8" fill="#ffffff" stroke="#fef3c7" stroke-width="1"/>
+            <text x="492.5" y="86" font-family="Inter, system-ui, sans-serif" font-size="10" font-weight="700" fill="#92400e" text-anchor="middle">DAG Compiler Check</text>
+            <rect x="422.5" y="112" width="140" height="34" rx="8" fill="#ffffff" stroke="#fef3c7" stroke-width="1"/>
+            <text x="492.5" y="133" font-family="Inter, system-ui, sans-serif" font-size="10" font-weight="700" fill="#92400e" text-anchor="middle">LLM-as-a-Judge test</text>
+          </g>
+
+          <!-- Connection 3 -> 4 -->
+          <path d="M 575 92.5 L 602 92.5" fill="none" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrow)"/>
+
+          <!-- Step 4: Execution -->
+          <g filter="url(#shadow)">
+            <rect x="610" y="15" width="165" height="155" rx="16" fill="#fdf2f8" stroke="#fbcfe8" stroke-width="1.5"/>
+            <text x="692.5" y="42" font-family="Inter, system-ui, sans-serif" font-size="11" font-weight="900" fill="#701a75" text-anchor="middle" letter-spacing="0.5">4. RUNTIMES</text>
+            <rect x="622.5" y="65" width="140" height="34" rx="8" fill="#ffffff" stroke="#fce7f3" stroke-width="1"/>
+            <text x="692.5" y="86" font-family="Inter, system-ui, sans-serif" font-size="10" font-weight="700" fill="#86198f" text-anchor="middle">Execution Engine</text>
+            <rect x="622.5" y="112" width="140" height="34" rx="8" fill="#ffffff" stroke="#fce7f3" stroke-width="1"/>
+            <text x="692.5" y="133" font-family="Inter, system-ui, sans-serif" font-size="10" font-weight="700" fill="#86198f" text-anchor="middle">Native MCP Server</text>
+          </g>
+        </svg>
       </div>
     </mat-card-content>
   </mat-card>
