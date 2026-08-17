@@ -262,28 +262,19 @@
 
                     <div class="flex flex-wrap gap-2 p-3 bg-white rounded-xl border border-slate-200 max-h-36 overflow-y-auto">
                       @for (t of filteredTraitsCatalog; track t) {
-                        <button mat-stroked-button color="primary" class="!rounded-lg !text-xs" (click)="attachTraitFromCatalog(t)">
+                        <button mat-stroked-button color="primary" class="!rounded-lg !text-xs" [matTooltip]="getTraitDescription(t)" (click)="attachTraitFromCatalog(t)">
                           + {{ t }}
                         </button>
                       }
                     </div>
                   </div>
 
-                  <div class="pt-2">
-                    <div class="flex gap-3">
-                      <mat-form-field appearance="outline" class="flex-1" matTooltip="Create a new custom trait contract if not listed above">
-                        <mat-label>Create & Add New Trait Contract</mat-label>
-                        <input matInput [(ngModel)]="newTrait" placeholder="e.g. CustomSecurityInspector" (keyup.enter)="addTrait()">
-                      </mat-form-field>
-                      <button mat-flat-button color="primary" class="!h-14 !px-5 !rounded-xl" (click)="addTrait()">Create Trait</button>
-                    </div>
-                  </div>
-
                   <div class="space-y-2 pt-2 border-t border-slate-200">
                     <label class="text-xs font-bold text-slate-700 uppercase tracking-wider">Active Implemented Traits</label>
+
                     <div class="flex flex-wrap gap-2">
                       @for (trait of agentForm.implements_traits; track trait) {
-                        <span class="px-3 py-1 bg-emerald-100 text-emerald-800 font-bold text-xs rounded-xl flex items-center gap-2 border border-emerald-200">
+                        <span class="px-3 py-1 bg-emerald-100 text-emerald-800 font-bold text-xs rounded-xl flex items-center gap-2 border border-emerald-200" [matTooltip]="getTraitDescription(trait)">
                           🛡️ {{ trait }}
                           <button class="text-emerald-600 hover:text-red-600 font-bold border-none bg-transparent cursor-pointer text-sm" (click)="removeTrait(trait)">×</button>
                         </span>
