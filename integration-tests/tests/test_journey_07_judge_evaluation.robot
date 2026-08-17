@@ -57,3 +57,9 @@ Test LLM-as-a-Judge Evaluation Engine & Regression Blocker
     Should Be Equal    ${status2}    passed
     Should Be Equal As Strings    ${version_bumped2}    True
     Should Be Equal As Integers    ${new_version}    2
+
+    # 5. Delete agent -> Should succeed and cascade delete all test suites, runs, and revisions
+    ${delete_response}=    Delete Agent    ${agent_id}
+    ${deleted_id}=    Get From Dictionary    ${delete_response}    id
+    Should Be Equal As Strings    ${deleted_id}    ${agent_id}
+
