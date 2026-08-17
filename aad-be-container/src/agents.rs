@@ -7,8 +7,8 @@ use sqlx::{PgPool, Row};
 use uuid::Uuid;
 
 use crate::models::{
-    Agent, AgentSearchRequest, AgentSearchResult, CreateSkillRequest,
-    SkillResponse, VerifyContractRequest, VerifyContractResponse,
+    Agent, AgentSearchRequest, AgentSearchResult, Skill,
+    VerifyContractRequest, VerifyContractResponse,
     TestAgentRequest, TestAgentResponse,
     RefactorAnalyzeRequest, RefactorAnalyzeResponse, CompileAgentRequest, CompileAgentResponse, DiagnosticMessage,
     InputGuardrailType, OutputGuardrailType,
@@ -363,24 +363,26 @@ pub async fn search_agents(
 
 pub async fn create_skill(
     State(pool): State<PgPool>,
-    Json(payload): Json<CreateSkillRequest>,
-) -> Result<(StatusCode, Json<SkillResponse>), (StatusCode, String)> {
-    let skill_id = Uuid::new_v4();
-    let tags = payload.tags.unwrap_or_default();
-    let input_schema = payload.input_schema.unwrap_or_else(|| serde_json::json!({}));
-    let output_schema = payload.output_schema.unwrap_or_else(|| serde_json::json!({}));
-    let implementation = payload.implementation.unwrap_or_else(|| serde_json::json!({}));
+    Json(payload): Json<Skill>,
+) -> Result<(StatusCode, Json<Skill>), (StatusCode, String)> {
+    let skill_id = payload.id.unwrap_or_else(Uuid::new_v4);
+    let input_schema = payload.input_schema.clone().unwrap_or_else(|| serde_json::json!({}));
+    let output_schema = payload.output_schema.clone().unwrap_or_else(|| serde_json::json!({}));
+    let implementation = payload.implementation.clone().unwrap_or_else(|| serde_json::json!({}));
+
+    let current_version = if payload.current_version == 0 { 1 } else { payload.current_version };
 
     sqlx::query(
         r#"
         INSERT INTO skills (id, name, description, tags, current_version, owner_id, input_schema, output_schema, implementation)
-        VALUES ($1, $2, $3, $4, 1, $5, $6, $7, $8)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
         "#,
     )
     .bind(skill_id)
     .bind(&payload.name)
     .bind(&payload.description)
-    .bind(&tags)
+    .bind(&payload.tags)
+    .bind(current_version)
     .bind(payload.owner_id)
     .bind(input_schema)
     .bind(output_schema)
@@ -389,15 +391,13 @@ pub async fn create_skill(
     .await
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Skill DB Error: {}", e)))?;
 
+    let mut response_skill = payload.clone();
+    response_skill.id = Some(skill_id);
+    response_skill.current_version = current_version;
+
     Ok((
         StatusCode::CREATED,
-        Json(SkillResponse {
-            id: skill_id,
-            name: payload.name,
-            description: payload.description,
-            current_version: 1,
-            owner_id: payload.owner_id,
-        }),
+        Json(response_skill),
     ))
 }
 

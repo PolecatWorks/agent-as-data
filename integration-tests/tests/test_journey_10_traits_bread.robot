@@ -96,19 +96,14 @@ Test Traits BREAD Flow
     List Should Not Contain Value    ${fetched2_tags}    audit
 
     # 3. List (Browse) and confirm presence
-    ${traits_list}=    List Traits
-    ${found_trait}=    Set Variable    ${False}
-    FOR    ${t}    IN    @{traits_list}
-        ${id_item}=    Get From Dictionary    ${t}    id
-        IF    '${id_item}' == '${trait_id}'
-            ${found_trait}=    Set Variable    ${True}
-        END
-    END
-    Should Be True    ${found_trait}
+    ${traits_response}=    List Traits
+    ${ids}=    Get From Dictionary    ${traits_response}    ids
+    List Should Contain Value    ${ids}    ${trait_id}
 
     # 4. Delete Trait
-    ${delete_status}=    Delete Trait    ${trait_id}
-    Should Be Equal As Integers    ${delete_status}    204
+    ${deleted_trait}=    Delete Trait    ${trait_id}
+    ${deleted_name}=    Get From Dictionary    ${deleted_trait}    name
+    Should Be Equal    ${deleted_name}    RobotSecurityTrait
 
     # 5. Verify Deleted Trait is missing (404)
     Run Keyword And Expect Error    *    Get Trait    ${trait_id}

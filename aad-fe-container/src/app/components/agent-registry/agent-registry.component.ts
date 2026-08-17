@@ -257,7 +257,7 @@ export class AgentRegistryComponent implements OnInit {
           ...fullAgent,
           guardrails: fullAgent.guardrails || {
             input_guardrails: {
-              active_guardrails: fullAgent.input_guardrails?.map(gType => ({
+              active_guardrails: fullAgent.input_guardrails?.map((gType: string) => ({
                 id: 'g-' + Math.random().toString(36).substring(2, 9),
                 type: gType,
                 name: gType.replace('_', ' ').toUpperCase(),
@@ -267,7 +267,7 @@ export class AgentRegistryComponent implements OnInit {
               })) || []
             },
             output_guardrails: {
-              active_guardrails: fullAgent.output_guardrails?.map(gType => ({
+              active_guardrails: fullAgent.output_guardrails?.map((gType: string) => ({
                 id: 'og-' + Math.random().toString(36).substring(2, 9),
                 type: gType,
                 name: gType.replace('_', ' ').toUpperCase(),
@@ -432,7 +432,7 @@ export class AgentRegistryComponent implements OnInit {
 
   removeTag(tag: string): void {
     if (this.agentForm.tags) {
-      this.agentForm.tags = this.agentForm.tags.filter(t => t !== tag);
+      this.agentForm.tags = this.agentForm.tags.filter((t: string) => t !== tag);
     }
   }
 
@@ -448,7 +448,7 @@ export class AgentRegistryComponent implements OnInit {
 
   removeTool(toolId: string): void {
     if (this.agentForm?.attached_tools) {
-      this.agentForm.attached_tools = this.agentForm.attached_tools.filter(t => t !== toolId);
+      this.agentForm.attached_tools = this.agentForm.attached_tools.filter((t: string) => t !== toolId);
     }
   }
 
@@ -464,7 +464,7 @@ export class AgentRegistryComponent implements OnInit {
 
   removeSubAgent(agentId: string): void {
     if (this.agentForm?.attached_agents) {
-      this.agentForm.attached_agents = this.agentForm.attached_agents.filter(a => a !== agentId);
+      this.agentForm.attached_agents = this.agentForm.attached_agents.filter((a: string) => a !== agentId);
     }
   }
 
@@ -480,7 +480,7 @@ export class AgentRegistryComponent implements OnInit {
 
   removeSkill(skillId: string): void {
     if (this.agentForm?.attached_skills) {
-      this.agentForm.attached_skills = this.agentForm.attached_skills.filter(s => s !== skillId);
+      this.agentForm.attached_skills = this.agentForm.attached_skills.filter((s: string) => s !== skillId);
     }
   }
 
@@ -560,7 +560,7 @@ export class AgentRegistryComponent implements OnInit {
 
   removeTrait(trait: string): void {
     if (this.agentForm?.implements_traits) {
-      this.agentForm.implements_traits = this.agentForm.implements_traits.filter(t => t !== trait);
+      this.agentForm.implements_traits = this.agentForm.implements_traits.filter((t: string) => t !== trait);
     }
   }
 }

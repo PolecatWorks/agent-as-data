@@ -33,14 +33,16 @@ Verify Trait Editor UI Sync with Backend
     Wait For Elements State    text=Created new trait ${trait_name}    visible    timeout=5s
 
     # 5. Confirm persistence against backend REST API (using AADRequests library)
-    ${traits_list}=    List Traits
+    ${traits_response}=    List Traits
+    ${ids}=    Get From Dictionary    ${traits_response}    ids
     ${found_trait}=    Set Variable    ${False}
     ${trait_id}=    Set Variable    ${EMPTY}
-    FOR    ${t}    IN    @{traits_list}
-        ${name_val}=    Get From Dictionary    ${t}    name
+    FOR    ${id_item}    IN    @{ids}
+        ${fetched_t}=    Get Trait    ${id_item}
+        ${name_val}=    Get From Dictionary    ${fetched_t}    name
         IF    '${name_val}' == '${trait_name}'
             ${found_trait}=    Set Variable    ${True}
-            ${trait_id}=    Get From Dictionary    ${t}    id
+            ${trait_id}=    Set Variable    ${id_item}
             BREAK
         END
     END

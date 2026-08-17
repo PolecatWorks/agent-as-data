@@ -71,4 +71,9 @@ class AADRequests:
     def delete_trait(self, trait_id):
         resp = requests.delete(f"{self.base_url}/api/v1/traits/{trait_id}", timeout=2)
         resp.raise_for_status()
-        return resp.status_code
+        return resp.json()
+
+    def delete_agent(self, agent_id):
+        resp = requests.delete(f"{self.base_url}/api/v1/agents/{agent_id}", timeout=2)
+        resp.raise_for_status()
+        return resp.json()

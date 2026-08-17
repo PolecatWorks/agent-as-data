@@ -84,26 +84,45 @@ pub enum OutputGuardrailType {
     StructuralFormattingRules,
 }
 
+fn default_version() -> i32 {
+    1
+}
+
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct Agent {
     pub id: Option<Uuid>,
     pub name: String,
+    #[serde(default)]
     pub description: String,
+    #[serde(default)]
     pub tags: Vec<String>,
+    #[serde(default)]
     pub implements_traits: Vec<String>,
+    #[serde(default)]
     pub attached_tools: Vec<String>,
+    #[serde(default)]
     pub attached_agents: Vec<Uuid>,
+    #[serde(default)]
     pub attached_skills: Vec<String>,
+    #[serde(default = "default_version")]
     pub current_version: i32,
     pub owner_id: Uuid,
+    #[serde(default)]
     pub judge_threshold: f64,
+    #[serde(default)]
     pub input_guardrails: Vec<InputGuardrailType>,
+    #[serde(default)]
     pub output_guardrails: Vec<OutputGuardrailType>,
     pub guardrail_config: Option<serde_json::Value>,
+    #[serde(default)]
     pub read_groups: Vec<String>,
+    #[serde(default)]
     pub write_groups: Vec<String>,
+    #[serde(default)]
     pub execute_groups: Vec<String>,
+    #[serde(default)]
     pub agent_definition: serde_json::Value,
+    #[serde(default)]
     pub model: serde_json::Value,
 }
 
@@ -145,24 +164,18 @@ pub struct AgentSearchResult {
     pub score: f64,
 }
 
-#[derive(Deserialize, Serialize, Debug, Clone)]
-pub struct CreateSkillRequest {
+#[derive(Deserialize, Serialize, Debug, Clone, sqlx::FromRow)]
+pub struct Skill {
+    pub id: Option<Uuid>,
     pub name: String,
     pub description: String,
-    pub tags: Option<Vec<String>>,
+    pub tags: Vec<String>,
     pub owner_id: Uuid,
+    #[serde(default)]
+    pub current_version: i32,
     pub input_schema: Option<serde_json::Value>,
     pub output_schema: Option<serde_json::Value>,
     pub implementation: Option<serde_json::Value>,
-}
-
-#[derive(Deserialize, Serialize, Debug, Clone)]
-pub struct SkillResponse {
-    pub id: Uuid,
-    pub name: String,
-    pub description: String,
-    pub current_version: i32,
-    pub owner_id: Uuid,
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
@@ -248,38 +261,49 @@ pub struct CompileAgentResponse {
 
 #[derive(Deserialize, Serialize, Debug, Clone, sqlx::FromRow)]
 pub struct TraitContract {
-    pub id: Uuid,
+    pub id: Option<Uuid>,
     pub name: String,
     pub description: String,
+    #[serde(default)]
     pub version: i32,
     pub capability_requirements: Vec<String>,
     pub behavioral_invariants: Vec<String>,
     pub evaluation_criteria: Vec<String>,
     pub tags: Vec<String>,
     pub guardrails: serde_json::Value,
-    pub created_at: chrono::DateTime<chrono::Utc>,
-    pub updated_at: chrono::DateTime<chrono::Utc>,
+    #[sqlx(default)]
+    pub created_at: Option<chrono::DateTime<chrono::Utc>>,
+    #[sqlx(default)]
+    pub updated_at: Option<chrono::DateTime<chrono::Utc>>,
 }
 
-#[derive(Deserialize, Serialize, Debug, Clone)]
-pub struct CreateTraitRequest {
-    pub name: String,
-    pub description: String,
-    pub capability_requirements: Option<Vec<String>>,
-    pub behavioral_invariants: Option<Vec<String>>,
-    pub evaluation_criteria: Option<Vec<String>>,
-    pub tags: Option<Vec<String>>,
-    pub guardrails: Option<serde_json::Value>,
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct PageOptions {
+    pub page: Option<i64>,
+    pub size: Option<i64>,
 }
 
-#[derive(Deserialize, Serialize, Debug, Clone)]
-pub struct UpdateTraitRequest {
-    pub name: Option<String>,
-    pub description: Option<String>,
-    pub capability_requirements: Option<Vec<String>>,
-    pub behavioral_invariants: Option<Vec<String>>,
-    pub evaluation_criteria: Option<Vec<String>>,
-    pub tags: Option<Vec<String>>,
-    pub guardrails: Option<serde_json::Value>,
+impl Default for PageOptions {
+    fn default() -> Self {
+        Self {
+            size: Some(10),
+            page: Some(0),
+        }
+    }
+}
+
+impl PageOptions {
+    pub fn defaulting(inval: PageOptions) -> PageOptions {
+        PageOptions {
+            size: Some(inval.size.unwrap_or(10)),
+            page: Some(inval.page.unwrap_or(0)),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct ListPages {
+    pub ids: Vec<Uuid>,
+    pub pagination: PageOptions,
 }
 
