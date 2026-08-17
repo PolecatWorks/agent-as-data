@@ -195,7 +195,8 @@ export class AgentRegistryComponent implements OnInit {
     private apiService: ApiService,
     private snackBar: MatSnackBar,
     private route: ActivatedRoute,
-    private location: Location
+    private location: Location,
+    private router: Router
   ) {}
 
   ngOnInit(): void {
@@ -450,6 +451,20 @@ export class AgentRegistryComponent implements OnInit {
             this.selectedAgent = null;
             this.createNewAgent();
           }
+        }
+      });
+    }
+  }
+
+  demoteToSkill(): void {
+    if (this.selectedAgent && this.selectedAgent.id) {
+      this.apiService.demoteAgent(this.selectedAgent.id).subscribe({
+        next: (res) => {
+          this.snackBar.open(`Successfully demoted agent to Skill: ${res.skill_id || ''}`, 'Close', { duration: 3000 });
+          this.router.navigate(['/skills-registry', res.skill_id]);
+        },
+        error: (err) => {
+          this.snackBar.open(`Demotion failed: ${err.message || err}`, 'Close', { duration: 3000 });
         }
       });
     }

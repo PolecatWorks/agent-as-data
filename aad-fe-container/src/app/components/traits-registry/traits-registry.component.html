@@ -20,19 +20,14 @@
     <!-- Left Column: Search & Registered Trait List -->
     <div class="space-y-4">
       <mat-card class="!rounded-2xl border border-slate-200/80 shadow-sm">
-        <mat-card-header class="p-4 border-b border-slate-100">
-          <mat-card-title class="text-sm font-bold text-slate-800 m-0 uppercase tracking-wider">
-            Registered Trait Catalog ({{ filteredTraitContracts.length }})
-          </mat-card-title>
-        </mat-card-header>
-        <mat-card-content class="p-4 space-y-3">
+        <mat-card-content class="p-4 space-y-4">
 
-          <!-- Search Filter -->
-          <mat-form-field appearance="outline" class="w-full" matTooltip="Filter trait definitions by name, description, or tags">
-            <mat-label>Search Traits...</mat-label>
-            <input matInput [(ngModel)]="searchQuery" placeholder="e.g. SecurityAuditor">
-            <mat-icon matSuffix>search</mat-icon>
-          </mat-form-field>
+          <div class="relative">
+            <mat-icon class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">search</mat-icon>
+            <input type="text" placeholder="Search traits by name, description, or tags..."
+                   class="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                   [(ngModel)]="searchQuery" />
+          </div>
 
           <!-- Trait Cards List -->
           <div class="space-y-2 max-h-[750px] overflow-y-auto pr-1">
