@@ -326,6 +326,34 @@ export class AgentRegistryComponent implements OnInit {
     const inputGuardrailsEnums = this.agentForm.guardrails?.input_guardrails?.active_guardrails?.map((g: any) => g.type) || [];
     const outputGuardrailsEnums = this.agentForm.guardrails?.output_guardrails?.active_guardrails?.map((g: any) => g.type) || [];
 
+    let version = this.agentForm.current_version || 1;
+
+    if (this.selectedAgent) {
+      const originalInputGuardrails = 
+        this.selectedAgent.guardrails?.input_guardrails?.active_guardrails?.map((g: any) => g.type) || 
+        this.selectedAgent.input_guardrails || [];
+      const originalOutputGuardrails = 
+        this.selectedAgent.guardrails?.output_guardrails?.active_guardrails?.map((g: any) => g.type) || 
+        this.selectedAgent.output_guardrails || [];
+
+      const hasFunctionalChanges = 
+        this.selectedAgent.name !== (this.agentForm.name || 'New Agent') ||
+        this.selectedAgent.agent_definition !== (this.agentForm.agent_definition || 'You are an autonomous AI agent.') ||
+        this.selectedAgent.model !== (this.agentForm.model || 'claude-3-5-sonnet-v2') ||
+        this.selectedAgent.judge_threshold !== (this.agentForm.judge_threshold || 0.8) ||
+        !this.areArraysEqual(this.selectedAgent.implements_traits, this.agentForm.implements_traits) ||
+        !this.areArraysEqual(this.selectedAgent.attached_tools, this.agentForm.attached_tools) ||
+        !this.areArraysEqual(this.selectedAgent.attached_skills, this.agentForm.attached_skills) ||
+        !this.areArraysEqual(
+          this.selectedAgent.attached_agents?.map(String),
+          this.agentForm.attached_agents?.map(String)
+        ) ||
+        !this.areArraysEqual(originalInputGuardrails, inputGuardrailsEnums) ||
+        !this.areArraysEqual(originalOutputGuardrails, outputGuardrailsEnums);
+
+      version = hasFunctionalChanges ? (this.selectedAgent.current_version || 1) + 1 : (this.selectedAgent.current_version || 1);
+    }
+
     return {
       id: this.agentForm.id,
       name: this.agentForm.name || 'New Agent',
@@ -335,7 +363,7 @@ export class AgentRegistryComponent implements OnInit {
       attached_tools: this.agentForm.attached_tools || [],
       attached_agents: this.agentForm.attached_agents || [],
       attached_skills: this.agentForm.attached_skills || [],
-      current_version: this.agentForm.current_version || 1,
+      current_version: version,
       owner_id: this.agentForm.owner_id || '00000000-0000-0000-0000-000000000000',
       judge_threshold: this.agentForm.judge_threshold || 0.8,
       model: this.agentForm.model || 'claude-3-5-sonnet-v2',

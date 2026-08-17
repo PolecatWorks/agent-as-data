@@ -85,4 +85,59 @@ describe('AgentRegistryComponent', () => {
     component.saveTraitContract();
     expect(component.traitContracts[0].version).toBe(4);
   });
+
+  it('should only advance agent version when functional fields change, and not on description or tags change', () => {
+    const originalAgent: any = {
+      id: 'agent-123',
+      name: 'AgentOne',
+      description: 'Original description',
+      tags: ['tag1'],
+      implements_traits: ['Trait1'],
+      attached_tools: ['tool1'],
+      attached_skills: ['skill1'],
+      attached_agents: ['sub-agent1'],
+      current_version: 1,
+      owner_id: 'owner-123',
+      judge_threshold: 0.8,
+      model: 'gpt-4o',
+      agent_definition: 'Original prompt',
+      guardrails: {
+        input_guardrails: { active_guardrails: [{ id: '1', type: 'prompt_injection', name: 'PI', tier: 'Deterministic', description: 'desc', config: {} }] },
+        output_guardrails: { active_guardrails: [] }
+      }
+    };
+
+    component.selectedAgent = originalAgent;
+    component.agentForm = {
+      ...originalAgent,
+      guardrails: {
+        input_guardrails: { active_guardrails: [{ id: '1', type: 'prompt_injection', name: 'PI', tier: 'Deterministic', description: 'desc', config: {} }] },
+        output_guardrails: { active_guardrails: [] }
+      }
+    };
+
+    // Case 1: Changing description and tags -> version remains 1
+    component.agentForm.description = 'Updated description';
+    component.agentForm.tags = ['tag1', 'tag2'];
+    
+    let payload = (component as any).preparePayload();
+    expect(payload.current_version).toBe(1);
+
+    // Case 2: Changing name -> version advances to 2
+    component.agentForm.name = 'AgentTwo';
+    payload = (component as any).preparePayload();
+    expect(payload.current_version).toBe(2);
+
+    // Reset name and Case 3: Changing agent_definition -> version advances to 2
+    component.agentForm.name = 'AgentOne';
+    component.agentForm.agent_definition = 'New prompt';
+    payload = (component as any).preparePayload();
+    expect(payload.current_version).toBe(2);
+
+    // Reset agent_definition and Case 4: Changing tools -> version advances to 2
+    component.agentForm.agent_definition = 'Original prompt';
+    component.agentForm.attached_tools = ['tool1', 'tool2'];
+    payload = (component as any).preparePayload();
+    expect(payload.current_version).toBe(2);
+  });
 });
