@@ -77,16 +77,24 @@ The **Agent Registry & Execution Engine** in **Agent-As-Data (AAD)** treats AI a
   - `guardrail_events` (JSONB): Pass/fail status of pre-execution (`incoming_guardrails`) and post-execution (`outgoing_guardrails`) checks.
 - **Audit & Analytics APIs**: Endpoints `GET /api/v1/agents/:id/logs` and `GET /api/v1/analytics/usage` for querying tool invocation frequencies, token consumption trends, error rates, and caller activity.
 
-### 8. Managed Skills & Promotion/Demotion Lifecycle Engine
+### 8. Managed Skills Registry, Builder & Lifecycle Engine
 - **Dedicated Skills Registry (`skills` Table)**: Managed database repository for deterministic, single-purpose skills (`name`, `description`, `input_schema`, `output_schema`, `implementation`). Agents bind to skills via `available_skills`.
 - **Skill vs. Agent Distinction**:
   - *Skills*: Direct, single-purpose execution routines without autonomous reasoning loops or sub-agent delegation.
   - *Agents*: Autonomous reasoners with system prompts, guardrails, dynamic tool choice, and sub-agent delegation.
-- **Skill -> Agent Promotion (`POST /api/v1/skills/:id/promote`)**:
-  - Converts a growing skill into a full declarative agent, creating an `agent_definition`, wrapping it in guardrail defaults, and deprecating the original skill.
-- **Agent -> Skill Demotion (`POST /api/v1/agents/:id/demote`)**:
-  - Simplifies a prompt-wrapped agent down to a single-purpose deterministic skill entry.
+- **Full Skills CRUD APIs**: 
+  - `GET /api/v1/skills` — Lists all registered skills (with optional tag and name filter).
+  * `GET /api/v1/skills/{id}` — Fetches the complete specification of a skill.
+  * `POST /api/v1/skills` — Registers a new skill.
+  * `PUT /api/v1/skills/{id}` — Updates an existing skill's schemas, tags, or execution template.
+  * `DELETE /api/v1/skills/{id}` — Deletes/archives a skill.
+- **Skill <-> Agent Lifecycle Actions**:
+  - **Skill -> Agent Promotion (`POST /api/v1/skills/:id/promote`)**: Converts a growing skill into a full declarative agent, creating an `agent_definition`, wrapping it in guardrail defaults, and deprecating the original skill.
+  - **Agent -> Skill Demotion (`POST /api/v1/agents/:id/demote`)**: Simplifies a prompt-wrapped agent down to a single-purpose deterministic skill entry.
 - **Developer Guidance API (`GET /api/v1/skills/guidance`)**: Provides actionable feedback to developers on whether a proposed capability should be built as a Skill or an Agent based on complexity metrics.
+- **Skills Registry & Builder UI**:
+  - **Skills Registry**: An interactive UI dashboard showcasing registered skills, filtering by tag, search capabilities, and usage stats.
+  - **Skills Builder**: A schema-driven editor enabling developers to construct and configure new skills, define deterministic input/output JSON schemas, configure code/MCP implementation templates, and trigger lifecycle actions (Promote/Demote) directly from the interface.
 
 ### 9. Distributed State Synchronization & Working Memory Persistence Subsystem
 - **Three-Tier Memory Persistence**:

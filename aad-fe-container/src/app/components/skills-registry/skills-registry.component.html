@@ -1,0 +1,202 @@
+<div class="container mx-auto p-6 space-y-6">
+
+  <!-- Top Banner -->
+  <div class="flex justify-between items-center bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+    <div class="space-y-1">
+      <h1 class="text-2xl font-black text-slate-900 m-0 flex items-center gap-2">
+        <mat-icon class="!w-8 !h-8 !text-3xl text-indigo-600 font-bold">extension</mat-icon> Skills
+      </h1>
+      <p class="text-sm text-slate-500 m-0">
+        Register, configure, and maintain deterministic execution routines. Promote complex skills to autonomous agents.
+      </p>
+    </div>
+    <button mat-flat-button color="primary" class="!rounded-xl !px-6 !font-bold" (click)="startNewSkill()">
+      <mat-icon>add</mat-icon> Register New Skill
+    </button>
+  </div>
+
+  <!-- Main Split-Pane Workspace -->
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+    <!-- Left Sidebar: Skill List & Discovery -->
+    <div class="lg:col-span-4 space-y-4">
+      <mat-card class="!rounded-2xl border border-slate-200/80 shadow-sm">
+        <mat-card-content class="p-4 space-y-4">
+          <div class="relative">
+            <mat-icon class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">search</mat-icon>
+            <input type="text" placeholder="Search skills by name, tag..."
+                   class="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                   [(ngModel)]="searchQuery" />
+          </div>
+
+          <div class="space-y-2 max-h-[600px] overflow-y-auto">
+            @if (getFilteredSkills().length === 0) {
+              <div class="text-center py-8 text-slate-400 text-xs">
+                No matching skills found.
+              </div>
+            }
+            @for (skill of getFilteredSkills(); track skill.id) {
+              <div class="p-4 rounded-xl border transition-all cursor-pointer bg-white hover:border-slate-300"
+                   [class.border-indigo-500]="selectedSkill?.id === skill.id"
+                   [class.shadow-md]="selectedSkill?.id === skill.id"
+                   [class.border-slate-200]="selectedSkill?.id !== skill.id"
+                   (click)="selectSkill(skill)">
+                <div class="flex justify-between items-center">
+                  <h5 class="text-sm font-bold text-slate-900 m-0">🛠️ {{ skill.name }}</h5>
+                  <span class="px-2.5 py-0.5 bg-indigo-100 text-indigo-800 text-[10px] font-bold rounded-md">
+                    v{{ skill.current_version }}
+                  </span>
+                </div>
+                <p class="text-xs text-slate-500 m-0 mt-1 line-clamp-2 leading-relaxed">
+                  {{ skill.description }}
+                </p>
+                <div class="flex flex-wrap gap-1 pt-2">
+                  @for (tag of skill.tags; track tag) {
+                    <span class="px-2 py-0.5 bg-slate-100 text-slate-600 text-[10px] font-mono rounded">
+                      #{{ tag }}
+                    </span>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- Right Content Panel: Skill Editor & Viewer -->
+    <div class="lg:col-span-8">
+      @if (selectedSkill || isEditing) {
+        <mat-card class="!rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+          <div class="p-6 bg-slate-50/80 border-b border-slate-200/60 flex justify-between items-center">
+            <div>
+              <h2 class="text-base font-black text-slate-800 m-0">
+                {{ isEditing ? (selectedSkill ? 'Edit Skill Configuration' : 'Register New Skill') : 'Skill Blueprint' }}
+              </h2>
+              @if (selectedSkill) {
+                <p class="text-xs text-slate-400 m-0 mt-0.5">ID: {{ selectedSkill.id }}</p>
+              }
+            </div>
+
+            <!-- Promotion / Action buttons -->
+            <div class="flex gap-2">
+              @if (!isEditing && selectedSkill) {
+                <button mat-stroked-button color="warn" class="!rounded-xl !font-semibold" (click)="confirmDeleteState()">
+                  <mat-icon>delete</mat-icon> Delete
+                </button>
+                <button mat-stroked-button class="!rounded-xl !font-semibold !text-indigo-600 !border-indigo-200 hover:!bg-indigo-50" (click)="promoteToAgent()">
+                  <mat-icon>bolt</mat-icon> Promote to Agent
+                </button>
+                <button mat-stroked-button class="!rounded-xl !font-semibold" (click)="enableEdit()">
+                  <mat-icon>edit</mat-icon> Edit
+                </button>
+              }
+              @if (isEditing) {
+                <button mat-stroked-button class="!rounded-xl !font-bold" (click)="cancelEdit()">
+                  Cancel
+                </button>
+                <button mat-flat-button color="primary" class="!rounded-xl !font-bold" (click)="saveSkill()">
+                  Save Skill
+                </button>
+              }
+            </div>
+          </div>
+
+          @if (showDeleteConfirm) {
+            <div class="p-3 bg-red-50 border-b border-red-200 text-red-900 text-xs font-semibold flex items-center justify-between px-6">
+              <span class="flex items-center gap-1.5">
+                <mat-icon class="!w-4 !h-4 !text-base text-red-600">warning</mat-icon>
+                Warning: Deleting this skill will permanently remove its validation contracts from the registry. Confirm deletion?
+              </span>
+              <div class="flex gap-2">
+                <button mat-button color="warn" class="!text-xs !font-bold" (click)="executeDelete()">Confirm Delete</button>
+                <button mat-button class="!text-xs" (click)="cancelDelete()">Cancel</button>
+              </div>
+            </div>
+          }
+
+          <mat-card-content class="p-6 space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <!-- Name -->
+              <div class="space-y-1 text-left">
+                <label class="text-xs font-bold text-slate-500">Skill Name</label>
+                <input type="text" [(ngModel)]="skillForm.name" [disabled]="!isEditing"
+                       class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 disabled:bg-slate-50 disabled:text-slate-500 transition-all" />
+              </div>
+
+              <!-- Owner -->
+              <div class="space-y-1 text-left">
+                <label class="text-xs font-bold text-slate-500">Owner ID (UUID)</label>
+                <input type="text" [(ngModel)]="skillForm.owner_id" [disabled]="!isEditing"
+                       class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 disabled:bg-slate-50 disabled:text-slate-500 transition-all" />
+              </div>
+            </div>
+
+            <!-- Description -->
+            <div class="space-y-1 text-left">
+              <label class="text-xs font-bold text-slate-500">Description</label>
+              <textarea rows="3" [(ngModel)]="skillForm.description" [disabled]="!isEditing"
+                        class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 disabled:bg-slate-50 disabled:text-slate-500 transition-all"></textarea>
+            </div>
+
+            <!-- Tags -->
+            <div class="space-y-2 text-left">
+              <label class="text-xs font-bold text-slate-500 block">Tags</label>
+              @if (isEditing) {
+                <div class="flex gap-2 mb-2">
+                  <input type="text" placeholder="Add tag..." [(ngModel)]="newTagInput" (keyup.enter)="addTag()"
+                         class="px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all" />
+                  <button mat-stroked-button class="!rounded-xl !text-xs" (click)="addTag()">Add</button>
+                </div>
+              }
+              <div class="flex flex-wrap gap-1.5">
+                @for (tag of skillForm.tags; track tag) {
+                  <mat-chip-row [removable]="isEditing" (removed)="removeTag(tag)" class="!bg-indigo-50 !text-indigo-700 !text-xs !font-bold">
+                    {{ tag }}
+                    @if (isEditing) {
+                      <button matChipRemove class="!text-indigo-400 hover:!text-indigo-600"><mat-icon>cancel</mat-icon></button>
+                    }
+                  </mat-chip-row>
+                }
+              </div>
+            </div>
+
+            <div class="border-t border-slate-100 pt-6 space-y-6">
+              <!-- JSON Input Schema -->
+              <div class="space-y-1 text-left">
+                <label class="text-xs font-bold text-slate-600 block">Deterministic Input Schema (JSON)</label>
+                <textarea rows="6" [(ngModel)]="inputSchemaStr" [disabled]="!isEditing"
+                          class="w-full font-mono px-3 py-2 bg-slate-900 text-emerald-400 border border-slate-800 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 disabled:opacity-90 disabled:bg-slate-950 transition-all"></textarea>
+              </div>
+
+              <!-- JSON Output Schema -->
+              <div class="space-y-1 text-left">
+                <label class="text-xs font-bold text-slate-600 block">Deterministic Output Schema (JSON)</label>
+                <textarea rows="6" [(ngModel)]="outputSchemaStr" [disabled]="!isEditing"
+                          class="w-full font-mono px-3 py-2 bg-slate-900 text-emerald-400 border border-slate-800 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 disabled:opacity-90 disabled:bg-slate-950 transition-all"></textarea>
+              </div>
+
+              <!-- JSON Implementation / Mappings -->
+              <div class="space-y-1 text-left">
+                <label class="text-xs font-bold text-slate-600 block">Implementation Configuration / Mappings (JSON)</label>
+                <textarea rows="6" [(ngModel)]="implementationStr" [disabled]="!isEditing"
+                          class="w-full font-mono px-3 py-2 bg-slate-900 text-indigo-300 border border-slate-800 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 disabled:opacity-90 disabled:bg-slate-950 transition-all"></textarea>
+              </div>
+            </div>
+
+          </mat-card-content>
+        </mat-card>
+      } @else {
+        <div class="flex flex-col items-center justify-center py-24 bg-white rounded-2xl border border-slate-200 shadow-sm text-slate-400">
+          <mat-icon class="!w-16 !h-16 !text-6xl text-slate-200 mb-4">extension_off</mat-icon>
+          <h3 class="text-sm font-bold text-slate-700 m-0">No Skill Selected</h3>
+          <p class="text-xs text-slate-400 max-w-xs text-center mt-1">
+            Choose a skill from the list, or register a new one to begin editing its blueprint configuration.
+          </p>
+        </div>
+      }
+    </div>
+
+  </div>
+
+</div>

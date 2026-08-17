@@ -127,12 +127,15 @@ export interface TraitContract {
 
 
 export interface Skill {
-  id: string;
+  id?: string;
   name: string;
   description: string;
   tags: string[];
   current_version: number;
   owner_id: string;
+  input_schema?: any;
+  output_schema?: any;
+  implementation?: any;
 }
 
 
@@ -235,6 +238,35 @@ export class ApiService {
 
   deleteTrait(id: string): Observable<any> {
     return this.http.delete(`${this.baseUrl}/traits/${id}`);
+  }
+
+  // Skill Registry APIs
+  getSkills(): Observable<Skill[]> {
+    return this.http.get<Skill[]>(`${this.baseUrl}/skills`);
+  }
+
+  getSkill(id: string): Observable<Skill> {
+    return this.http.get<Skill>(`${this.baseUrl}/skills/${id}`);
+  }
+
+  createSkill(skill: Partial<Skill>): Observable<Skill> {
+    return this.http.post<Skill>(`${this.baseUrl}/skills`, skill);
+  }
+
+  updateSkill(id: string, skill: Partial<Skill>): Observable<Skill> {
+    return this.http.put<Skill>(`${this.baseUrl}/skills/${id}`, skill);
+  }
+
+  deleteSkill(id: string): Observable<any> {
+    return this.http.delete(`${this.baseUrl}/skills/${id}`);
+  }
+
+  promoteSkill(id: string): Observable<Agent> {
+    return this.http.post<Agent>(`${this.baseUrl}/skills/${id}/promote`, {});
+  }
+
+  demoteAgent(id: string): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/agents/${id}/demote`, {});
   }
 }
 

@@ -607,3 +607,77 @@ pub async fn compile_agent(
     }))
 }
 
+pub async fn list_skills(
+    State(pool): State<PgPool>,
+) -> Result<Json<Vec<Skill>>, (StatusCode, String)> {
+    let skills = sqlx::query_as::<_, Skill>(
+        "SELECT id, name, description, tags, current_version, owner_id, input_schema, output_schema, implementation FROM skills ORDER BY created_at DESC"
+    )
+    .fetch_all(&pool)
+    .await
+    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Fetch Skills Error: {}", e)))?;
+    Ok(Json(skills))
+}
+
+pub async fn get_skill(
+    State(pool): State<PgPool>,
+    Path(id): Path<Uuid>,
+) -> Result<Json<Skill>, (StatusCode, String)> {
+    let skill = sqlx::query_as::<_, Skill>(
+        "SELECT id, name, description, tags, current_version, owner_id, input_schema, output_schema, implementation FROM skills WHERE id = $1"
+    )
+    .bind(id)
+    .fetch_optional(&pool)
+    .await
+    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Fetch Skill Error: {}", e)))?
+    .ok_or((StatusCode::NOT_FOUND, "Skill not found".to_string()))?;
+    Ok(Json(skill))
+}
+
+pub async fn update_skill(
+    State(pool): State<PgPool>,
+    Path(id): Path<Uuid>,
+    Json(payload): Json<Skill>,
+) -> Result<Json<Skill>, (StatusCode, String)> {
+    let input_schema = payload.input_schema.clone().unwrap_or_else(|| serde_json::json!({}));
+    let output_schema = payload.output_schema.clone().unwrap_or_else(|| serde_json::json!({}));
+    let implementation = payload.implementation.clone().unwrap_or_else(|| serde_json::json!({}));
+    let current_version = payload.current_version + 1;
+
+    sqlx::query(
+        r#"
+        UPDATE skills
+        SET name = $1, description = $2, tags = $3, current_version = $4, input_schema = $5, output_schema = $6, implementation = $7, updated_at = NOW()
+        WHERE id = $8
+        "#,
+    )
+    .bind(&payload.name)
+    .bind(&payload.description)
+    .bind(&payload.tags)
+    .bind(current_version)
+    .bind(input_schema)
+    .bind(output_schema)
+    .bind(implementation)
+    .bind(id)
+    .execute(&pool)
+    .await
+    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Update Skill Error: {}", e)))?;
+
+    let mut response_skill = payload.clone();
+    response_skill.current_version = current_version;
+    Ok(Json(response_skill))
+}
+
+pub async fn delete_skill(
+    State(pool): State<PgPool>,
+    Path(id): Path<Uuid>,
+) -> Result<StatusCode, (StatusCode, String)> {
+    sqlx::query("DELETE FROM skills WHERE id = $1")
+        .bind(id)
+        .execute(&pool)
+        .await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Delete Skill Error: {}", e)))?;
+    Ok(StatusCode::NO_CONTENT)
+}
+
+
