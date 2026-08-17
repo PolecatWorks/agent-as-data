@@ -38,4 +38,22 @@ describe('AgentRegistryComponent', () => {
     component.addTag();
     expect(component.agentForm.tags).toEqual(['security', 'audit', 'new-tag']);
   });
+
+  it('should retrieve trait contract descriptions on hover/query', () => {
+    component.traitContracts = [
+      {
+        id: '1',
+        name: 'SecurityAuditor',
+        description: 'Vulnerability scanner.',
+        version: 1,
+        capability_requirements: [],
+        behavioral_invariants: [],
+        evaluation_criteria: [],
+        tags: []
+      }
+    ];
+
+    expect(component.getTraitDescription('SecurityAuditor')).toBe('Vulnerability scanner.');
+    expect(component.getTraitDescription('NonExistent')).toBe('No description available');
+  });
 });

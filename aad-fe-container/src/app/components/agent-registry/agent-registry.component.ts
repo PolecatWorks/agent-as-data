@@ -15,6 +15,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { ApiService, Agent, GuardrailConfig, TraitContract } from '../../services/api.service';
 import { GuardrailsEditorComponent } from '../guardrails-editor/guardrails-editor.component';
+import { forkJoin } from 'rxjs';
 
 
 export interface LLMModelOption {
@@ -184,6 +185,11 @@ export class AgentRegistryComponent implements OnInit {
     return this.registeredTraitsCatalog.filter(t => t.toLowerCase().includes(q));
   }
 
+  getTraitDescription(traitName: string): string {
+    const trait = this.traitContracts.find(t => t.name === traitName);
+    return trait && trait.description ? trait.description : 'No description available';
+  }
+
 
   constructor(
     private apiService: ApiService,
@@ -194,6 +200,32 @@ export class AgentRegistryComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadAgents();
+    this.loadTraits();
+  }
+
+  loadTraits(): void {
+    this.apiService.getTraits().subscribe({
+      next: (listPages: any) => {
+        const ids = listPages.ids || [];
+        if (ids.length > 0) {
+          const obs = ids.map((id: string) => this.apiService.getTrait(id));
+          (forkJoin(obs) as any).subscribe({
+            next: (fullTraits: TraitContract[]) => {
+              if (fullTraits && fullTraits.length > 0) {
+                this.traitContracts = fullTraits;
+                this.registeredTraitsCatalog = fullTraits.map(t => t.name);
+              }
+            },
+            error: () => {
+              console.error("Failed to load details for traits.");
+            }
+          });
+        }
+      },
+      error: () => {
+        console.error("Failed to load traits from backend.");
+      }
+    });
   }
 
   loadAgents(): void {

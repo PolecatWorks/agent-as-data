@@ -41,6 +41,7 @@ graph TD
 
 ### 1. Declarative Agent Registry & Builder Module
 - **Visual Agent Editor**: Form fields for `name`, `description`, `tags`, `implements_traits`, `model`, `agent_definition` (system prompt), `tools`, `available_skills`, and `available_agents`.
+  - **Active Trait Filtering & Hover Descriptions**: Search filter for active implemented traits (`implements_traits`) and tooltips displaying contract descriptions on hover.
 - **Guardrail Configurator**: Visual JSON/rule builder for `incoming_guardrails` and `outgoing_guardrails`.
 - **RBAC Group Assignment**: Interface to select `owner_id`, `read_groups`, `write_groups`, and `execute_groups`.
 - **Version Lineage Viewer**: Inspect historical snapshots from `agent_revisions` with visual side-by-side diffing.
