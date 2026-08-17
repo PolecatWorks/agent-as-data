@@ -73,7 +73,17 @@ class AADRequests:
         resp.raise_for_status()
         return resp.json()
 
-    def delete_agent(self, agent_id):
-        resp = requests.delete(f"{self.base_url}/api/v1/agents/{agent_id}", timeout=2)
+    def delete_agent(self, agent_id, hard=None):
+        params = {}
+        if hard is not None:
+            params['hard'] = str(hard).lower()
+        resp = requests.delete(f"{self.base_url}/api/v1/agents/{agent_id}", params=params, timeout=2)
         resp.raise_for_status()
         return resp.json()
+
+    def execute_agent(self, agent_id, payload):
+        resp = requests.post(f"{self.base_url}/api/v1/agents/{agent_id}/execute", json=payload, timeout=2)
+        resp.raise_for_status()
+        return resp.json()
+
+

@@ -58,8 +58,17 @@ Test LLM-as-a-Judge Evaluation Engine & Regression Blocker
     Should Be Equal As Strings    ${version_bumped2}    True
     Should Be Equal As Integers    ${new_version}    2
 
-    # 5. Delete agent -> Should succeed and cascade delete all test suites, runs, and revisions
+    # 5. Execute agent to create a referencing record in executions table
+    ${exec_payload}=    Create Dictionary    prompt=run diagnostic checks
+    ${exec_response}=    Execute Agent    ${agent_id}    ${exec_payload}
+
+
+    # 6. Soft Delete agent -> Should succeed and mark it archived
     ${delete_response}=    Delete Agent    ${agent_id}
     ${deleted_id}=    Get From Dictionary    ${delete_response}    id
     Should Be Equal As Strings    ${deleted_id}    ${agent_id}
+    ${archived_at}=    Get From Dictionary    ${delete_response}    archived_at
+    Should Not Be Equal    ${archived_at}    ${None}
 
+    # 7. Attempt Hard Delete -> Should fail because agent has referencing revisions/test runs/executions
+    Run Keyword And Expect Error    *    Delete Agent    ${agent_id}    hard=True

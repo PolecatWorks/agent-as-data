@@ -1,6 +1,6 @@
 use axum::{
     Json,
-    extract::{Path, State},
+    extract::{Path, State, Query},
     http::StatusCode,
 };
 use sqlx::{PgPool, Row};
@@ -91,7 +91,7 @@ pub async fn update_agent(
     Path(id): Path<Uuid>,
     Json(payload): Json<Agent>,
 ) -> Result<Json<Agent>, (StatusCode, String)> {
-    let row = sqlx::query("SELECT id FROM agents WHERE id = $1")
+    let row = sqlx::query("SELECT id FROM agents WHERE id = $1 AND archived_at IS NULL")
         .bind(id)
         .fetch_optional(&pool)
         .await
@@ -151,7 +151,7 @@ pub async fn get_agent(
 ) -> Result<Json<Agent>, (StatusCode, String)> {
     let row = sqlx::query(
         r#"
-        SELECT id, name, description, tags, implements_traits, current_version, owner_id, read_groups, write_groups, execute_groups, agent_definition, model, judge_threshold, tools, available_skills, available_agents, incoming_guardrails, outgoing_guardrails, guardrail_config
+        SELECT id, name, description, tags, implements_traits, current_version, owner_id, read_groups, write_groups, execute_groups, agent_definition, model, judge_threshold, tools, available_skills, available_agents, incoming_guardrails, outgoing_guardrails, guardrail_config, archived_at
         FROM agents
         WHERE id = $1
         "#
@@ -173,6 +173,7 @@ pub async fn get_agent(
         let current_version: i32 = r.get("current_version");
         let judge_threshold: f64 = r.get("judge_threshold");
         let guardrail_config: Option<serde_json::Value> = r.get("guardrail_config");
+        let archived_at: Option<chrono::DateTime<chrono::Utc>> = r.get("archived_at");
 
         let tools_val: serde_json::Value = r.get("tools");
         let skills_val: serde_json::Value = r.get("available_skills");
@@ -206,23 +207,39 @@ pub async fn get_agent(
             execute_groups,
             agent_definition,
             model,
+            archived_at,
         }))
     } else {
         Err((StatusCode::NOT_FOUND, "Agent not found".to_string()))
     }
 }
 
+#[derive(serde::Deserialize)]
+pub struct DeleteAgentParams {
+    pub hard: Option<bool>,
+}
+
 pub async fn delete_agent(
     State(pool): State<PgPool>,
     Path(id): Path<Uuid>,
+    Query(params): Query<DeleteAgentParams>,
 ) -> Result<Json<Agent>, (StatusCode, String)> {
-    let agent_res = get_agent(State(pool.clone()), Path(id)).await?;
+    let mut agent_res = get_agent(State(pool.clone()), Path(id)).await?;
 
-    sqlx::query("DELETE FROM agents WHERE id = $1")
-        .bind(id)
-        .execute(&pool)
-        .await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Delete Error: {}", e)))?;
+    if params.hard.unwrap_or(false) {
+        sqlx::query("DELETE FROM agents WHERE id = $1")
+            .bind(id)
+            .execute(&pool)
+            .await
+            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Delete Error: {}", e)))?;
+    } else {
+        sqlx::query("UPDATE agents SET archived_at = NOW(), updated_at = NOW() WHERE id = $1")
+            .bind(id)
+            .execute(&pool)
+            .await
+            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Soft Delete Error: {}", e)))?;
+        agent_res.0.archived_at = Some(chrono::Utc::now());
+    }
 
     Ok(agent_res)
 }
@@ -338,7 +355,7 @@ pub async fn search_agents(
         r#"
         SELECT id, name, description
         FROM agents
-        WHERE name ILIKE $1 OR description ILIKE $1
+        WHERE (name ILIKE $1 OR description ILIKE $1) AND archived_at IS NULL
         LIMIT $2
         "#,
     )
@@ -459,6 +476,7 @@ pub async fn promote_skill(
             execute_groups: vec![],
             agent_definition,
             model: serde_json::json!({}),
+            archived_at: None,
         }),
     ))
 }
@@ -534,7 +552,7 @@ pub async fn analyze_refactor(
     Json(_payload): Json<RefactorAnalyzeRequest>,
 ) -> Result<Json<RefactorAnalyzeResponse>, (StatusCode, String)> {
     // Fetch registered agents to analyze overlap clusters
-    let rows = sqlx::query("SELECT id FROM agents LIMIT 10")
+    let rows = sqlx::query("SELECT id FROM agents WHERE archived_at IS NULL LIMIT 10")
         .fetch_all(&pool)
         .await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Fetch Error: {}", e)))?;
