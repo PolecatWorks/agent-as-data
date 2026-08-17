@@ -25,8 +25,8 @@ export class AppComponent {
   title = 'Agent-As-Data Studio';
 
   menuItems = [
-    { path: '/agent-registry', icon: 'app_registration', label: 'Agent Registry & Builder' },
     { path: '/traits-registry', icon: 'verified', label: 'Trait Contracts Registry' },
+    { path: '/agent-registry', icon: 'app_registration', label: 'Agent Registry & Builder' },
     { path: '/interactive-testing', icon: 'bug_report', label: 'Interactive Testing Studio' },
     { path: '/network-visualizer', icon: 'account_tree', label: 'Network Graph Visualizer' },
     { path: '/refactoring-lab', icon: 'build_circle', label: 'Refactoring & Compression Lab' },
