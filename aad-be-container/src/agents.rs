@@ -7,44 +7,50 @@ use sqlx::{PgPool, Row};
 use uuid::Uuid;
 
 use crate::models::{
-    AgentResponse, AgentSearchRequest, AgentSearchResult, CreateAgentRequest, CreateSkillRequest,
+    Agent, AgentSearchRequest, AgentSearchResult, CreateSkillRequest,
     SkillResponse, VerifyContractRequest, VerifyContractResponse,
     TestAgentRequest, TestAgentResponse,
     RefactorAnalyzeRequest, RefactorAnalyzeResponse, CompileAgentRequest, CompileAgentResponse, DiagnosticMessage,
+    InputGuardrailType, OutputGuardrailType,
 };
 
 pub async fn create_agent(
     State(pool): State<PgPool>,
-    Json(payload): Json<CreateAgentRequest>,
-) -> Result<(StatusCode, Json<AgentResponse>), (StatusCode, String)> {
-    let agent_id = Uuid::new_v4();
-    let tags = payload.tags.unwrap_or_default();
-    let traits = payload.implements_traits.unwrap_or_default();
-    let read_groups = payload.read_groups.unwrap_or_default();
-    let write_groups = payload.write_groups.unwrap_or_default();
-    let execute_groups = payload.execute_groups.unwrap_or_default();
-    let model = payload.model.unwrap_or_else(|| serde_json::json!({}));
-    let judge_threshold = payload.judge_threshold.unwrap_or(0.8);
+    Json(payload): Json<Agent>,
+) -> Result<(StatusCode, Json<Agent>), (StatusCode, String)> {
+    let agent_id = payload.id.unwrap_or_else(Uuid::new_v4);
+    
+    let tools_json = serde_json::to_value(&payload.attached_tools).unwrap_or_else(|_| serde_json::json!([]));
+    let skills_json = serde_json::to_value(&payload.attached_skills).unwrap_or_else(|_| serde_json::json!([]));
+    let agents_json = serde_json::to_value(&payload.attached_agents).unwrap_or_else(|_| serde_json::json!([]));
+    let incoming_json = serde_json::to_value(&payload.input_guardrails).unwrap_or_else(|_| serde_json::json!([]));
+    let outgoing_json = serde_json::to_value(&payload.output_guardrails).unwrap_or_else(|_| serde_json::json!([]));
 
     // 1. Insert Agent
     sqlx::query(
         r#"
-        INSERT INTO agents (id, name, description, tags, implements_traits, current_version, owner_id, read_groups, write_groups, execute_groups, agent_definition, model, judge_threshold)
-        VALUES ($1, $2, $3, $4, $5, 1, $6, $7, $8, $9, $10, $11, $12)
+        INSERT INTO agents (id, name, description, tags, implements_traits, current_version, owner_id, read_groups, write_groups, execute_groups, agent_definition, model, judge_threshold, tools, available_skills, available_agents, incoming_guardrails, outgoing_guardrails)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
         "#,
     )
     .bind(agent_id)
     .bind(&payload.name)
     .bind(&payload.description)
-    .bind(&tags)
-    .bind(&traits)
+    .bind(&payload.tags)
+    .bind(&payload.implements_traits)
+    .bind(payload.current_version)
     .bind(payload.owner_id)
-    .bind(&read_groups)
-    .bind(&write_groups)
-    .bind(&execute_groups)
+    .bind(&payload.read_groups)
+    .bind(&payload.write_groups)
+    .bind(&payload.execute_groups)
     .bind(&payload.agent_definition)
-    .bind(&model)
-    .bind(judge_threshold)
+    .bind(&payload.model)
+    .bind(payload.judge_threshold)
+    .bind(&tools_json)
+    .bind(&skills_json)
+    .bind(&agents_json)
+    .bind(&incoming_json)
+    .bind(&outgoing_json)
     .execute(&pool)
     .await
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Agent DB Error: {}", e)))?;
@@ -54,118 +60,171 @@ pub async fn create_agent(
         "id": agent_id,
         "name": payload.name,
         "agent_definition": payload.agent_definition,
-        "version": 1
+        "version": payload.current_version
     });
 
     sqlx::query(
         r#"
         INSERT INTO agent_revisions (id, agent_id, version, snapshot)
-        VALUES ($1, $2, 1, $3)
+        VALUES ($1, $2, $3, $4)
         "#,
     )
     .bind(Uuid::new_v4())
     .bind(agent_id)
+    .bind(payload.current_version)
     .bind(snapshot)
     .execute(&pool)
     .await
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Revision DB Error: {}", e)))?;
 
+    let mut response_agent = payload.clone();
+    response_agent.id = Some(agent_id);
+
     Ok((
         StatusCode::CREATED,
-        Json(AgentResponse {
-            id: agent_id,
-            name: payload.name,
-            description: payload.description.unwrap_or_default(),
-            tags,
-            implements_traits: traits,
-            attached_tools: payload.attached_tools.unwrap_or_default(),
-            attached_agents: payload.attached_agents.unwrap_or_default(),
-            attached_skills: payload.attached_skills.unwrap_or_default(),
-            current_version: 1,
-            owner_id: payload.owner_id,
-            judge_threshold,
-            input_guardrails: payload.input_guardrails.unwrap_or_default(),
-            output_guardrails: payload.output_guardrails.unwrap_or_default(),
-            guardrail_config: payload.guardrail_config,
-        }),
+        Json(response_agent),
     ))
-
 }
 
 pub async fn update_agent(
     State(pool): State<PgPool>,
     Path(id): Path<Uuid>,
-    Json(payload): Json<CreateAgentRequest>,
-) -> Result<Json<AgentResponse>, (StatusCode, String)> {
-    let row = sqlx::query("SELECT current_version, owner_id FROM agents WHERE id = $1")
+    Json(payload): Json<Agent>,
+) -> Result<Json<Agent>, (StatusCode, String)> {
+    let row = sqlx::query("SELECT id FROM agents WHERE id = $1")
         .bind(id)
         .fetch_optional(&pool)
         .await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Fetch Error: {}", e)))?;
 
-    if let Some(r) = row {
-        let current_version: i32 = r.get("current_version");
-        let owner_id: Uuid = r.get("owner_id");
+    if row.is_some() {
+        let tools_json = serde_json::to_value(&payload.attached_tools).unwrap_or_else(|_| serde_json::json!([]));
+        let skills_json = serde_json::to_value(&payload.attached_skills).unwrap_or_else(|_| serde_json::json!([]));
+        let agents_json = serde_json::to_value(&payload.attached_agents).unwrap_or_else(|_| serde_json::json!([]));
+        let incoming_json = serde_json::to_value(&payload.input_guardrails).unwrap_or_else(|_| serde_json::json!([]));
+        let outgoing_json = serde_json::to_value(&payload.output_guardrails).unwrap_or_else(|_| serde_json::json!([]));
 
-        let tags = payload.tags.unwrap_or_default();
-        let traits = payload.implements_traits.unwrap_or_default();
-        let read_groups = payload.read_groups.unwrap_or_default();
-        let write_groups = payload.write_groups.unwrap_or_default();
-        let execute_groups = payload.execute_groups.unwrap_or_default();
-        let model = payload.model.unwrap_or_else(|| serde_json::json!({}));
-        let judge_threshold = payload.judge_threshold.unwrap_or(0.8);
-
-        // Keep the changes in a draft table or draft field until tests pass.
-        // For simplicity and to not alter the schema too much beyond requirements,
-        // we will update the main agent table but *not* bump the version.
-        // In the original spec, an agent "revision snapshot" is only created on a version bump.
-        // The instructions ask to "propose changes ... then test and if test passes then complete changes".
-        // Therefore, we update the agent record with the new config, but leave current_version as is.
-        // The test_agent endpoint will bump the version if tests pass.
         sqlx::query(
             r#"
             UPDATE agents
             SET name = $1, description = $2, tags = $3, implements_traits = $4, read_groups = $5,
                 write_groups = $6, execute_groups = $7, agent_definition = $8, model = $9, judge_threshold = $10,
-                updated_at = NOW()
-            WHERE id = $11
+                tools = $11, available_skills = $12, available_agents = $13, incoming_guardrails = $14, outgoing_guardrails = $15,
+                current_version = $16, owner_id = $17, guardrail_config = $18, updated_at = NOW()
+            WHERE id = $19
             "#,
         )
         .bind(&payload.name)
         .bind(&payload.description)
-        .bind(&tags)
-        .bind(&traits)
-        .bind(&read_groups)
-        .bind(&write_groups)
-        .bind(&execute_groups)
+        .bind(&payload.tags)
+        .bind(&payload.implements_traits)
+        .bind(&payload.read_groups)
+        .bind(&payload.write_groups)
+        .bind(&payload.execute_groups)
         .bind(&payload.agent_definition)
-        .bind(&model)
-        .bind(judge_threshold)
+        .bind(&payload.model)
+        .bind(payload.judge_threshold)
+        .bind(&tools_json)
+        .bind(&skills_json)
+        .bind(&agents_json)
+        .bind(&incoming_json)
+        .bind(&outgoing_json)
+        .bind(payload.current_version)
+        .bind(payload.owner_id)
+        .bind(&payload.guardrail_config)
         .bind(id)
         .execute(&pool)
         .await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Update Error: {}", e)))?;
 
-        Ok(Json(AgentResponse {
-            id,
-            name: payload.name,
-            description: payload.description.unwrap_or_default(),
-            tags,
-            implements_traits: traits,
-            attached_tools: payload.attached_tools.unwrap_or_default(),
-            attached_agents: payload.attached_agents.unwrap_or_default(),
-            attached_skills: payload.attached_skills.unwrap_or_default(),
-            current_version,
-            owner_id,
-            judge_threshold,
-            input_guardrails: payload.input_guardrails.unwrap_or_default(),
-            output_guardrails: payload.output_guardrails.unwrap_or_default(),
-            guardrail_config: payload.guardrail_config,
-        }))
-
+        let mut response_agent = payload.clone();
+        response_agent.id = Some(id);
+        Ok(Json(response_agent))
     } else {
         Err((StatusCode::NOT_FOUND, "Agent not found".to_string()))
     }
+}
+
+pub async fn get_agent(
+    State(pool): State<PgPool>,
+    Path(id): Path<Uuid>,
+) -> Result<Json<Agent>, (StatusCode, String)> {
+    let row = sqlx::query(
+        r#"
+        SELECT id, name, description, tags, implements_traits, current_version, owner_id, read_groups, write_groups, execute_groups, agent_definition, model, judge_threshold, tools, available_skills, available_agents, incoming_guardrails, outgoing_guardrails, guardrail_config
+        FROM agents
+        WHERE id = $1
+        "#
+    )
+    .bind(id)
+    .fetch_optional(&pool)
+    .await
+    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Fetch Error: {}", e)))?;
+
+    if let Some(r) = row {
+        let tags: Vec<String> = r.get("tags");
+        let implements_traits: Vec<String> = r.get("implements_traits");
+        let read_groups: Vec<String> = r.get("read_groups");
+        let write_groups: Vec<String> = r.get("write_groups");
+        let execute_groups: Vec<String> = r.get("execute_groups");
+        let agent_definition: serde_json::Value = r.get("agent_definition");
+        let model: serde_json::Value = r.get("model");
+        let owner_id: Uuid = r.get("owner_id");
+        let current_version: i32 = r.get("current_version");
+        let judge_threshold: f64 = r.get("judge_threshold");
+        let guardrail_config: Option<serde_json::Value> = r.get("guardrail_config");
+
+        let tools_val: serde_json::Value = r.get("tools");
+        let skills_val: serde_json::Value = r.get("available_skills");
+        let agents_val: serde_json::Value = r.get("available_agents");
+        let incoming_val: serde_json::Value = r.get("incoming_guardrails");
+        let outgoing_val: serde_json::Value = r.get("outgoing_guardrails");
+
+        let attached_tools: Vec<String> = serde_json::from_value(tools_val).unwrap_or_default();
+        let attached_skills: Vec<String> = serde_json::from_value(skills_val).unwrap_or_default();
+        let attached_agents: Vec<Uuid> = serde_json::from_value(agents_val).unwrap_or_default();
+        let input_guardrails: Vec<InputGuardrailType> = serde_json::from_value(incoming_val).unwrap_or_default();
+        let output_guardrails: Vec<OutputGuardrailType> = serde_json::from_value(outgoing_val).unwrap_or_default();
+
+        Ok(Json(Agent {
+            id: Some(id),
+            name: r.get("name"),
+            description: r.get("description"),
+            tags,
+            implements_traits,
+            attached_tools,
+            attached_agents,
+            attached_skills,
+            current_version,
+            owner_id,
+            judge_threshold,
+            input_guardrails,
+            output_guardrails,
+            guardrail_config,
+            read_groups,
+            write_groups,
+            execute_groups,
+            agent_definition,
+            model,
+        }))
+    } else {
+        Err((StatusCode::NOT_FOUND, "Agent not found".to_string()))
+    }
+}
+
+pub async fn delete_agent(
+    State(pool): State<PgPool>,
+    Path(id): Path<Uuid>,
+) -> Result<Json<Agent>, (StatusCode, String)> {
+    let agent_res = get_agent(State(pool.clone()), Path(id)).await?;
+
+    sqlx::query("DELETE FROM agents WHERE id = $1")
+        .bind(id)
+        .execute(&pool)
+        .await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Delete Error: {}", e)))?;
+
+    Ok(agent_res)
 }
 
 pub async fn test_agent(
@@ -345,7 +404,7 @@ pub async fn create_skill(
 pub async fn promote_skill(
     State(pool): State<PgPool>,
     Path(id): Path<Uuid>,
-) -> Result<(StatusCode, Json<AgentResponse>), (StatusCode, String)> {
+) -> Result<(StatusCode, Json<Agent>), (StatusCode, String)> {
     let skill_row = sqlx::query("SELECT name, description, owner_id FROM skills WHERE id = $1")
         .bind(id)
         .fetch_optional(&pool)
@@ -380,8 +439,8 @@ pub async fn promote_skill(
 
     Ok((
         StatusCode::CREATED,
-        Json(AgentResponse {
-            id: agent_id,
+        Json(Agent {
+            id: Some(agent_id),
             name,
             description,
             tags: vec![],
@@ -395,8 +454,12 @@ pub async fn promote_skill(
             input_guardrails: vec![],
             output_guardrails: vec![],
             guardrail_config: None,
+            read_groups: vec![],
+            write_groups: vec![],
+            execute_groups: vec![],
+            agent_definition,
+            model: serde_json::json!({}),
         }),
-
     ))
 }
 
