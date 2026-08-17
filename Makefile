@@ -75,7 +75,10 @@ aad-be-watch:
 	cd aad-be-container && \
 	DATABASE_URL="$(DATABASE_URL)" \
 	AAD_BE__DATABASE__URL="$(DATABASE_URL)" \
+	AAD_BE__DEBUGGING__LOG_LEVEL="debug" \
+	RUST_LOG="debug" \
 	cargo watch -x 'run -- serve'
+
 
 aad-be-migrate:
 	cd aad-be-container && \
