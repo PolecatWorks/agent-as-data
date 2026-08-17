@@ -19,6 +19,9 @@ Agent-As-Data (AAD) is an enterprise-grade declarative platform and specificatio
 ### 1. Storage & Version Management
 - **Agent Registry**: CRUD operations for agents with metadata (`name`, `description`, `tags`).
 - **Immutable Revisions**: Each modification creates an immutable version snapshot (`agent_revisions`), ensuring existing executions and client bindings remain deterministic.
+- **Soft Delete by Default**: To preserve database referential integrity and historical execution records, deleting an agent sets `archived_at` to mark it archived. Archived agents are hidden from registries and searches, but their execution logs remain intact.
+- **Optional Hard Delete**: Active deletions via `DELETE` can specify a `hard=true` query parameter to attempt a physical delete. The delete will naturally fail if active referenced records exist (such as in `executions`).
+
 
 ### 2. RAG Agent Search & Discovery
 - **Vector Embeddings**: Automated embedding generation for agent definitions, descriptions, and tags stored in `pgvector`.
