@@ -101,7 +101,10 @@ export interface Agent {
   model?: string;
   input_guardrails_enums?: InputGuardrailType[];
   output_guardrails_enums?: OutputGuardrailType[];
+  input_guardrails?: string[];
+  output_guardrails?: string[];
   guardrails?: GuardrailConfig;
+  guardrail_config?: any;
 }
 
 
@@ -213,10 +216,13 @@ export class ApiService {
   analyzeRefactor(): Observable<any> {
     return this.http.post(`${this.baseUrl}/agents/refactor/analyze`, {});
   }
-
   // Trait Contract APIs
-  getTraits(): Observable<TraitContract[]> {
-    return this.http.get<TraitContract[]>(`${this.baseUrl}/traits`);
+  getTraits(): Observable<ListPages> {
+    return this.http.get<ListPages>(`${this.baseUrl}/traits`);
+  }
+
+  getTrait(id: string): Observable<TraitContract> {
+    return this.http.get<TraitContract>(`${this.baseUrl}/traits/${id}`);
   }
 
   createTrait(trait: Partial<TraitContract>): Observable<TraitContract> {
@@ -230,4 +236,12 @@ export class ApiService {
   deleteTrait(id: string): Observable<any> {
     return this.http.delete(`${this.baseUrl}/traits/${id}`);
   }
+}
+
+export interface ListPages {
+  ids: string[];
+  pagination: {
+    page?: number;
+    size?: number;
+  };
 }

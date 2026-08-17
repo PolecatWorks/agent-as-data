@@ -145,13 +145,11 @@ Agent-As-Data (AAD) is an enterprise-grade declarative platform and specificatio
 
 ## Data Model Requirements
 
-
-
-
-
-
-
-
+### Unified Struct Pattern
+- **Single Representation**: Core entities (Agents, Skills, Trait Contracts) use single, unified data models for both requests and responses (no separate `CreateAgentRequest` or `AgentResponse` types).
+- **ID Optionality**: The resource `id` is the only optional field in the struct (allowing creations where the server generates the ID). For all updates, gets, and deletes, the ID must be provided.
+- **Full Replacement Updates**: Updates are performed via full replacement payloads (`PUT`) rather than partial patches, keeping models clean and deterministic.
+- **Payload-Enriched Deletion**: Delete endpoints return the fully deleted record details inside the HTTP response body rather than returning empty payloads.
 
 ### Agent Entity
 - `id` (UUID): Unique agent identifier.
@@ -214,6 +212,17 @@ To prevent common architecture anti-patterns and performance degradation, AAD in
 ### REST Endpoints
 - **Agents**: `/api/v1/agents` (CRUD, revisions, search, execute).
 - **Executions**: `/api/v1/executions` (Async job creation & status).
+- **Traits**: `/api/v1/traits` (CRUD for Trait Contracts).
+  - *Browse Pagination Pattern*: `GET /api/v1/traits` accepts page options query parameters and returns a paged list of IDs with the structure:
+    ```json
+    {
+      "ids": ["uuid-1", "uuid-2"],
+      "pagination": {
+        "page": 0,
+        "size": 10
+      }
+    }
+    ```
 - **Knowledge**:
   - `POST /api/v1/knowledge`: Store document/chunk.
   - `POST /api/v1/knowledge/search`: RAG semantic search over knowledge.

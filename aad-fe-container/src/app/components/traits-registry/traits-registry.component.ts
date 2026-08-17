@@ -13,6 +13,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTabsModule } from '@angular/material/tabs';
 import { ApiService, TraitContract } from '../../services/api.service';
 import { GuardrailsEditorComponent } from '../guardrails-editor/guardrails-editor.component';
+import { forkJoin } from 'rxjs';
 
 @Component({
   selector: 'app-traits-registry',
@@ -226,26 +227,27 @@ export class TraitsRegistryComponent implements OnInit {
 
   loadTraits(): void {
     this.apiService.getTraits().subscribe({
-      next: (traits) => {
-        if (traits && traits.length > 0) {
-          this.traitContracts = traits;
-          const id = this.route.snapshot.paramMap.get('id');
-          if (id) {
-            this.selectTraitById(id);
-          } else {
-            this.selectTraitContract(this.traitContracts[0]);
-          }
-        } else {
-          if (this.traitContracts.length > 0) {
-            const id = this.route.snapshot.paramMap.get('id');
-            if (id) {
-              this.selectTraitById(id);
-            } else {
-              this.selectTraitContract(this.traitContracts[0]);
+      next: (listPages: any) => {
+        const ids = listPages.ids || [];
+        if (ids.length > 0) {
+          const obs = ids.map((id: string) => this.apiService.getTrait(id));
+          (forkJoin(obs) as any).subscribe({
+            next: (fullTraits: any[]) => {
+              this.traitContracts = fullTraits;
+              const routeId = this.route.snapshot.paramMap.get('id');
+              if (routeId) {
+                this.selectTraitById(routeId);
+              } else {
+                this.selectTraitContract(this.traitContracts[0]);
+              }
+            },
+            error: () => {
+              this.snackBar.open("Failed to load details for traits.", "Close", { duration: 3000 });
             }
-          } else {
-            this.createNewTraitContract();
-          }
+          });
+        } else {
+          this.traitContracts = [];
+          this.createNewTraitContract();
         }
       },
       error: () => {
