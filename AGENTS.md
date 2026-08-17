@@ -41,7 +41,8 @@ flowchart TD
 1. **Review Existing PRDs**: When a new feature or capability is requested, first review existing PRDs in `spec/prds/` to determine if it fits within an existing PRD or warrants a new one.
 2. **Modular PRD Structure**: If a PRD becomes too long or begins covering multiple distinct domain concepts, refactor it into separate, focused PRDs.
 3. **Consistency & Detail Check**: Verify that new PRD requirements contain sufficient detail and do not contradict existing features or architectural objectives.
-4. **User Confirmation**: Once PRDs are updated/created and validated, **explicitly ask the user** if they wish to proceed to creating build spec files (`spec/specs/`).
+4. **Pattern & Journey Sync**: Whenever implementation updates alter design patterns, database constraints, or end-to-end user journeys, immediately sync and update the corresponding PRD files in `spec/prds/`.
+5. **User Confirmation**: Once PRDs are updated/created and validated, **explicitly ask the user** if they wish to proceed to creating build spec files (`spec/specs/`).
 
 ### Phase 2: Specification & TDD Test Planning (`spec/specs/`)
 1. **Drive TDD Execution**: Spec files in `spec/specs/` are derived from PRDs to serve as definitions for a Test-Driven Development (TDD) build process.
