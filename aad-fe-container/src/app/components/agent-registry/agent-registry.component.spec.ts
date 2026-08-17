@@ -25,4 +25,17 @@ describe('AgentRegistryComponent', () => {
   it('should create', () => {
     expect(component).toBeTruthy();
   });
+
+  it('should not add duplicate metadata tags', () => {
+    component.agentForm = {
+      tags: ['security', 'audit']
+    };
+    component.newTag = 'security';
+    component.addTag();
+    expect(component.agentForm.tags).toEqual(['security', 'audit']);
+    
+    component.newTag = 'new-tag';
+    component.addTag();
+    expect(component.agentForm.tags).toEqual(['security', 'audit', 'new-tag']);
+  });
 });
