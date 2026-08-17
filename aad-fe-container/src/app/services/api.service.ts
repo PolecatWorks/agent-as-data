@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
+import { map } from 'rxjs/operators';
 
 export type InputGuardrailType = 
   | 'prompt_injection'
@@ -142,26 +143,28 @@ export class ApiService {
 
   // Agent Registry APIs
   getAgents(): Observable<Agent[]> {
-    return this.http.post<Agent[]>(`${this.baseUrl}/agents/search`, { query: '', limit: 50 });
+    return this.http.post<any[]>(`${this.baseUrl}/agents/search`, { query: '', limit: 50 }).pipe(
+      map(agents => agents.map(agent => ({
+        ...agent,
+        id: agent.id || agent.agent_id
+      })))
+    );
   }
 
-  createAgent(agent: Partial<Agent>): Observable<Agent> {
-    return this.http.post<Agent>(`${this.baseUrl}/agents`, {
-      name: agent.name || 'New Agent',
-      description: agent.description || '',
-      tags: agent.tags || [],
-      implements_traits: agent.implements_traits || [],
-      owner_id: agent.owner_id || '00000000-0000-0000-0000-000000000000',
-      agent_definition: agent.agent_definition || 'You are a helpful AI assistant.',
-      read_groups: agent.read_groups || [],
-      write_groups: agent.write_groups || [],
-      execute_groups: agent.execute_groups || [],
-      judge_threshold: agent.judge_threshold || 0.8
-    });
+  createAgent(agent: Agent): Observable<Agent> {
+    return this.http.post<Agent>(`${this.baseUrl}/agents`, agent);
   }
 
-  updateAgent(id: string, agent: Partial<Agent>): Observable<Agent> {
+  updateAgent(id: string, agent: Agent): Observable<Agent> {
     return this.http.put<Agent>(`${this.baseUrl}/agents/${id}`, agent);
+  }
+
+  getAgent(id: string): Observable<Agent> {
+    return this.http.get<Agent>(`${this.baseUrl}/agents/${id}`);
+  }
+
+  deleteAgent(id: string): Observable<Agent> {
+    return this.http.delete<Agent>(`${this.baseUrl}/agents/${id}`);
   }
 
   verifyContract(targetAgentId: string, traitName: string): Observable<any> {

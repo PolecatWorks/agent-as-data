@@ -156,7 +156,7 @@ export class AgentRegistryComponent implements OnInit {
 
 
   // Form Model
-  agentForm: Partial<Agent> = {
+  agentForm: any = {
     name: '',
     description: '',
     tags: [],
@@ -250,60 +250,50 @@ export class AgentRegistryComponent implements OnInit {
   }
 
   selectAgent(agent: Agent): void {
-    this.selectedAgent = agent;
-    this.agentForm = {
-      ...agent,
-      guardrails: agent.guardrails || {
-        input_guardrails: {
-          active_guardrails: [
-            {
-              id: 'g-1',
-              type: 'prompt_injection',
-              name: 'Prompt Injection Interceptor',
-              tier: 'Tier 1: Deterministic',
-              description: 'Real-time heuristic scanning to intercept injection signatures before reaching LLM',
-              config: {}
+    this.apiService.getAgent(agent.id!).subscribe({
+      next: (fullAgent) => {
+        this.selectedAgent = fullAgent;
+        this.agentForm = {
+          ...fullAgent,
+          guardrails: fullAgent.guardrails || {
+            input_guardrails: {
+              active_guardrails: fullAgent.input_guardrails?.map(gType => ({
+                id: 'g-' + Math.random().toString(36).substring(2, 9),
+                type: gType,
+                name: gType.replace('_', ' ').toUpperCase(),
+                tier: 'Deterministic',
+                description: 'Imported guardrail constraint',
+                config: {}
+              })) || []
             },
-            {
-              id: 'g-2',
-              type: 'blocked_keywords',
-              name: 'Blocked Input Keyword Blacklist',
-              tier: 'Tier 1: Deterministic',
-              description: 'Reject exact matching phrases or regex keywords in prompts',
-              config: { blocked_input_keywords: ['ignore previous instructions', 'system prompt reveal'] }
+            output_guardrails: {
+              active_guardrails: fullAgent.output_guardrails?.map(gType => ({
+                id: 'og-' + Math.random().toString(36).substring(2, 9),
+                type: gType,
+                name: gType.replace('_', ' ').toUpperCase(),
+                tier: 'Deterministic',
+                description: 'Imported guardrail constraint',
+                config: {}
+              })) || []
             }
-          ]
-        },
-        output_guardrails: {
-          active_guardrails: [
-            {
-              id: 'og-1',
-              type: 'secret_redaction',
-              name: 'Secret & API Key Redaction',
-              tier: 'Data Safety & Privacy',
-              description: 'Automatically scan and mask credentials, RSA private keys, and API tokens in responses',
-              config: { secret_redaction: true }
-            },
-            {
-              id: 'og-2',
-              type: 'enforce_json_schema',
-              name: 'Strict JSON Schema Contract Enforcement',
-              tier: 'Quality & Structure',
-              description: 'Validate output against formal JSON Schema contracts prior to returning payload',
-              config: { enforce_json_schema: true }
-            }
-          ]
-        }
+          }
+        };
+        this.isEditing = false;
+        this.location.go(`/agent-registry/${fullAgent.id}`);
+      },
+      error: () => {
+        this.selectedAgent = agent;
+        this.agentForm = {
+          ...agent,
+          guardrails: agent.guardrails || {
+            input_guardrails: { active_guardrails: [] },
+            output_guardrails: { active_guardrails: [] }
+          }
+        };
+        this.isEditing = false;
+        this.location.go(`/agent-registry/${agent.id}`);
       }
-    };
-    if (!this.agentForm.guardrails?.input_guardrails?.active_guardrails) {
-      this.agentForm.guardrails!.input_guardrails = { active_guardrails: [] };
-    }
-    if (!this.agentForm.guardrails?.output_guardrails?.active_guardrails) {
-      this.agentForm.guardrails!.output_guardrails = { active_guardrails: [] };
-    }
-    this.isEditing = false;
-    this.location.go(`/agent-registry/${agent.id}`);
+    });
   }
 
   createNewAgent(): void {
@@ -313,9 +303,17 @@ export class AgentRegistryComponent implements OnInit {
       description: 'Describe the purpose and capabilities of this agent...',
       tags: ['draft'],
       implements_traits: ['BasicAgent'],
-      agent_definition: 'You are an autonomous AI agent designed for specialized tasks.',
-      judge_threshold: 0.8,
+      attached_tools: [],
+      attached_agents: [],
+      attached_skills: [],
+      current_version: 1,
       owner_id: '00000000-0000-0000-0000-000000000000',
+      judge_threshold: 0.8,
+      model: 'claude-3-5-sonnet-v2',
+      read_groups: [],
+      write_groups: [],
+      execute_groups: [],
+      agent_definition: 'You are an autonomous AI agent designed for specialized tasks.',
       guardrails: {
         input_guardrails: { active_guardrails: [] },
         output_guardrails: { active_guardrails: [] }
@@ -324,15 +322,102 @@ export class AgentRegistryComponent implements OnInit {
     this.isEditing = true;
   }
 
+  private preparePayload(): Agent {
+    const inputGuardrailsEnums = this.agentForm.guardrails?.input_guardrails?.active_guardrails?.map((g: any) => g.type) || [];
+    const outputGuardrailsEnums = this.agentForm.guardrails?.output_guardrails?.active_guardrails?.map((g: any) => g.type) || [];
+
+    return {
+      id: this.agentForm.id,
+      name: this.agentForm.name || 'New Agent',
+      description: this.agentForm.description || '',
+      tags: this.agentForm.tags || [],
+      implements_traits: this.agentForm.implements_traits || [],
+      attached_tools: this.agentForm.attached_tools || [],
+      attached_agents: this.agentForm.attached_agents || [],
+      attached_skills: this.agentForm.attached_skills || [],
+      current_version: this.agentForm.current_version || 1,
+      owner_id: this.agentForm.owner_id || '00000000-0000-0000-0000-000000000000',
+      judge_threshold: this.agentForm.judge_threshold || 0.8,
+      model: this.agentForm.model || 'claude-3-5-sonnet-v2',
+      read_groups: this.agentForm.read_groups || [],
+      write_groups: this.agentForm.write_groups || [],
+      execute_groups: this.agentForm.execute_groups || [],
+      agent_definition: this.agentForm.agent_definition || 'You are an autonomous AI agent.',
+      input_guardrails: inputGuardrailsEnums,
+      output_guardrails: outputGuardrailsEnums,
+      guardrail_config: this.agentForm.guardrails
+    };
+  }
+
   saveAgent(): void {
+    const payload = this.preparePayload();
+
     if (this.selectedAgent && this.selectedAgent.id) {
-      this.apiService.updateAgent(this.selectedAgent.id, this.agentForm).subscribe({
-        next: () => {
+      this.apiService.updateAgent(this.selectedAgent.id, payload).subscribe({
+        next: (res) => {
           this.snackBar.open('Agent updated successfully!', 'Close', { duration: 3000 });
           this.loadAgents();
         },
         error: () => {
+          const idx = this.agents.findIndex(a => a.id === this.selectedAgent!.id);
+          if (idx >= 0) {
+            this.agents[idx] = { ...this.agents[idx], ...payload } as Agent;
+          }
           this.snackBar.open('Updated agent specifications locally.', 'Close', { duration: 3000 });
+        }
+      });
+    } else {
+      this.apiService.createAgent(payload).subscribe({
+        next: (newAgent) => {
+          this.snackBar.open('Agent created successfully!', 'Close', { duration: 3000 });
+          const processedAgent = {
+            ...newAgent,
+            id: newAgent.id || (newAgent as any).agent_id
+          };
+          this.agents.push(processedAgent);
+          this.selectAgent(processedAgent);
+          this.loadAgents();
+        },
+        error: () => {
+          const fallbackId = 'agent-' + Date.now();
+          const newAgent: Agent = {
+            ...payload,
+            id: fallbackId,
+            current_version: 1
+          } as Agent;
+          this.agents.push(newAgent);
+          this.selectAgent(newAgent);
+          this.snackBar.open('Created new agent locally.', 'Close', { duration: 3000 });
+        }
+      });
+    }
+  }
+
+  deleteAgent(): void {
+    if (this.selectedAgent && this.selectedAgent.id) {
+      this.apiService.deleteAgent(this.selectedAgent.id).subscribe({
+        next: (deletedAgent) => {
+          const agentName = deletedAgent.name || this.selectedAgent?.name || 'Agent';
+          this.snackBar.open(`Deleted agent ${agentName} successfully!`, 'Close', { duration: 3000 });
+          const deleteId = deletedAgent.id || this.selectedAgent?.id;
+          this.agents = this.agents.filter(a => a.id !== deleteId);
+          if (this.agents.length > 0) {
+            this.selectAgent(this.agents[0]);
+          } else {
+            this.selectedAgent = null;
+            this.createNewAgent();
+          }
+          this.loadAgents();
+        },
+        error: () => {
+          this.agents = this.agents.filter(a => a.id !== this.selectedAgent!.id);
+          this.snackBar.open('Deleted agent specifications locally.', 'Close', { duration: 3000 });
+          if (this.agents.length > 0) {
+            this.selectAgent(this.agents[0]);
+          } else {
+            this.selectedAgent = null;
+            this.createNewAgent();
+          }
         }
       });
     }
