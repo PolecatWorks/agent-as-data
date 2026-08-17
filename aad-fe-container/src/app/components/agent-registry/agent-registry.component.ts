@@ -425,7 +425,10 @@ export class AgentRegistryComponent implements OnInit {
 
   addTag(): void {
     if (this.newTag.trim() && this.agentForm.tags) {
-      this.agentForm.tags.push(this.newTag.trim());
+      const tag = this.newTag.trim();
+      if (!this.agentForm.tags.includes(tag)) {
+        this.agentForm.tags.push(tag);
+      }
       this.newTag = '';
     }
   }
