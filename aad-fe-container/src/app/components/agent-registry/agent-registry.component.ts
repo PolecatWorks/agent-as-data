@@ -528,15 +528,30 @@ export class AgentRegistryComponent implements OnInit {
     };
   }
 
+  private areArraysEqual(a?: string[], b?: string[]): boolean {
+    const arrA = a || [];
+    const arrB = b || [];
+    if (arrA.length !== arrB.length) return false;
+    return arrA.every((val, index) => val === arrB[index]);
+  }
+
   saveTraitContract(): void {
     if (!this.traitForm.name) return;
     const existingIdx = this.traitContracts.findIndex(t => t.id === this.selectedTraitContract?.id || t.name === this.traitForm.name);
     
     if (existingIdx >= 0) {
+      const existing = this.traitContracts[existingIdx];
+      const hasFunctionalChanges = 
+        !this.areArraysEqual(existing.capability_requirements, this.traitForm.capability_requirements) ||
+        !this.areArraysEqual(existing.behavioral_invariants, this.traitForm.behavioral_invariants) ||
+        !this.areArraysEqual(existing.evaluation_criteria, this.traitForm.evaluation_criteria);
+
+      const nextVersion = hasFunctionalChanges ? (existing.version || 1) + 1 : (existing.version || 1);
+
       this.traitContracts[existingIdx] = {
-        ...this.traitContracts[existingIdx],
+        ...existing,
         ...this.traitForm,
-        version: (this.traitContracts[existingIdx].version || 1) + 1
+        version: nextVersion
       } as TraitContract;
       this.selectedTraitContract = this.traitContracts[existingIdx];
       this.snackBar.open(`Updated trait ${this.traitForm.name} (v${this.traitContracts[existingIdx].version})`, 'Close', { duration: 3000 });
