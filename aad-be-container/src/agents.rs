@@ -353,7 +353,7 @@ pub async fn search_agents(
 
     let rows = sqlx::query(
         r#"
-        SELECT id, name, description
+        SELECT id, name, description, current_version, implements_traits, tags
         FROM agents
         WHERE (name ILIKE $1 OR description ILIKE $1) AND archived_at IS NULL
         LIMIT $2
@@ -371,6 +371,9 @@ pub async fn search_agents(
             agent_id: r.get("id"),
             name: r.get("name"),
             description: r.get("description"),
+            current_version: r.get("current_version"),
+            implements_traits: r.get("implements_traits"),
+            tags: r.get("tags"),
             score: 0.98,
         })
         .collect();

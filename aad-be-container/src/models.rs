@@ -163,6 +163,9 @@ pub struct AgentSearchResult {
     pub agent_id: Uuid,
     pub name: String,
     pub description: Option<String>,
+    pub current_version: i32,
+    pub implements_traits: Vec<String>,
+    pub tags: Vec<String>,
     pub score: f64,
 }
 
