@@ -1,0 +1,88 @@
+<div class="container mx-auto p-6 space-y-6">
+
+  <!-- Header Banner -->
+  <div class="flex justify-between items-center bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+    <div class="space-y-1">
+      <h1 class="text-2xl font-black text-slate-900 m-0 flex items-center gap-2">
+        <mat-icon class="!w-8 !h-8 !text-3xl text-indigo-600 font-bold">home</mat-icon> Agent-As-Data Studio
+      </h1>
+      <p class="text-sm text-slate-500 m-0">
+        Enterprise-grade declarative platform to capture, organize, and reason over tacit domain knowledge.
+      </p>
+    </div>
+  </div>
+
+  <!-- Flowchart Diagram Card -->
+  <mat-card class="!rounded-2xl border border-slate-200/80 shadow-sm">
+    <mat-card-header class="p-4 border-b border-slate-100">
+      <mat-card-title class="text-base font-bold text-slate-800 m-0 flex items-center gap-2">
+        <mat-icon class="text-indigo-600">account_tree</mat-icon> System Workflow & Lifecycle Architecture
+      </mat-card-title>
+    </mat-card-header>
+    <mat-card-content class="p-6">
+      <div class="flex justify-center bg-slate-50/50 p-4 rounded-xl border border-slate-100">
+        <div #mermaidContainer class="w-full max-w-4xl overflow-x-auto"></div>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- Core Modules Grid -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    
+    <!-- Card 1: Trait Contracts -->
+    <mat-card class="!rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md transition-shadow">
+      <mat-card-header class="p-4 flex items-center gap-3">
+        <div class="p-3 bg-emerald-50 text-emerald-600 rounded-xl">
+          <mat-icon>verified</mat-icon>
+        </div>
+        <mat-card-title class="text-sm font-bold text-slate-800 m-0">Trait Contracts</mat-card-title>
+      </mat-card-header>
+      <mat-card-content class="p-4 pt-0">
+        <p class="text-xs text-slate-500 leading-relaxed mb-4">
+          Define capability requirements, behavioral invariants, and evaluation rubrics for reusable agent contracts.
+        </p>
+        <a mat-stroked-button color="accent" class="w-full !rounded-xl !font-semibold" routerLink="/traits-registry">
+          Go to Traits Registry
+        </a>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Card 2: Agent Builder -->
+    <mat-card class="!rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md transition-shadow">
+      <mat-card-header class="p-4 flex items-center gap-3">
+        <div class="p-3 bg-indigo-50 text-indigo-600 rounded-xl">
+          <mat-icon>app_registration</mat-icon>
+        </div>
+        <mat-card-title class="text-sm font-bold text-slate-800 m-0">Agent Registry</mat-card-title>
+      </mat-card-header>
+      <mat-card-content class="p-4 pt-0">
+        <p class="text-xs text-slate-500 leading-relaxed mb-4">
+          Compose declarative agent specifications, wire up guardrail interceptors, and configure LLM reasoning parameters.
+        </p>
+        <a mat-stroked-button color="accent" class="w-full !rounded-xl !font-semibold" routerLink="/agent-registry">
+          Go to Agent Builder
+        </a>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Card 3: Interactive Testing -->
+    <mat-card class="!rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md transition-shadow">
+      <mat-card-header class="p-4 flex items-center gap-3">
+        <div class="p-3 bg-amber-50 text-amber-600 rounded-xl">
+          <mat-icon>bug_report</mat-icon>
+        </div>
+        <mat-card-title class="text-sm font-bold text-slate-800 m-0">Testing Workbench</mat-card-title>
+      </mat-card-header>
+      <mat-card-content class="p-4 pt-0">
+        <p class="text-xs text-slate-500 leading-relaxed mb-4">
+          Test agents with real-time SSE token streaming, evaluate custom judge rubrics, and inspect OCC snapshot concurrency.
+        </p>
+        <a mat-stroked-button color="accent" class="w-full !rounded-xl !font-semibold" routerLink="/interactive-testing">
+          Go to Testing Workbench
+        </a>
+      </mat-card-content>
+    </mat-card>
+
+  </div>
+
+</div>
