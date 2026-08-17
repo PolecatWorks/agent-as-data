@@ -1,7 +1,7 @@
 import { Routes } from '@angular/router';
 
 export const routes: Routes = [
-  { path: '', redirectTo: 'agent-registry', pathMatch: 'full' },
+  { path: '', redirectTo: 'traits-registry', pathMatch: 'full' },
   { path: 'agent-registry', loadComponent: () => import('./components/agent-registry/agent-registry.component').then(m => m.AgentRegistryComponent) },
   { path: 'agent-registry/:id', loadComponent: () => import('./components/agent-registry/agent-registry.component').then(m => m.AgentRegistryComponent) },
   { path: 'traits-registry', loadComponent: () => import('./components/traits-registry/traits-registry.component').then(m => m.TraitsRegistryComponent) },
