@@ -116,12 +116,19 @@
           }
 
           <mat-card-content class="p-6 space-y-6">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
               <!-- Name -->
               <div class="space-y-1 text-left">
                 <label class="text-xs font-bold text-slate-500">Skill Name</label>
                 <input type="text" [(ngModel)]="skillForm.name" [disabled]="!isEditing"
                        class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 disabled:bg-slate-50 disabled:text-slate-500 transition-all" />
+              </div>
+
+              <!-- Version -->
+              <div class="space-y-1 text-left">
+                <label class="text-xs font-bold text-slate-500">Version</label>
+                <input type="number" [(ngModel)]="skillForm.current_version" readonly
+                       class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-500 transition-all" />
               </div>
 
               <!-- Owner -->
