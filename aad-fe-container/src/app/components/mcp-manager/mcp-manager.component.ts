@@ -32,11 +32,12 @@ export class McpManagerComponent implements OnInit {
   showDeleteConfirm: boolean = false;
   selectedServer: any | null = null;
 
-  serverForm = {
+  serverForm: any = {
     server_name: '',
     transport_type: 'sse',
     url: '',
-    tags: [] as string[]
+    description: '',
+    tags: []
   };
 
   newTag: string = '';
@@ -92,8 +93,10 @@ export class McpManagerComponent implements OnInit {
             count = s.cached_capabilities.tools.length;
           }
           let tags = [] as string[];
-          if (s.endpoint_config && s.endpoint_config.tags) {
-            tags = s.endpoint_config.tags;
+          let description = '';
+          if (s.endpoint_config) {
+            if (s.endpoint_config.tags) tags = s.endpoint_config.tags;
+            if (s.endpoint_config.description) description = s.endpoint_config.description;
           }
           return {
             id: s.id,
@@ -102,7 +105,8 @@ export class McpManagerComponent implements OnInit {
             url: s.endpoint_config ? s.endpoint_config.url : '',
             tools_count: count,
             last_synced: 'Just now',
-            tags: tags
+            tags: tags,
+            description: description
           };
         });
         const routeId = this.route.snapshot.paramMap.get('id');
@@ -154,6 +158,7 @@ export class McpManagerComponent implements OnInit {
       server_name: server.server_name,
       transport_type: server.transport_type,
       url: server.url || '',
+      description: server.description || '',
       tags: server.tags ? [...server.tags] : []
     };
     this.router.navigate(['/mcp-manager', server.id], {
@@ -169,6 +174,7 @@ export class McpManagerComponent implements OnInit {
       server_name: '',
       transport_type: 'sse',
       url: '',
+      description: '',
       tags: []
     };
     this.router.navigate(['/mcp-manager'], { queryParams: { edit: 'true' } });
@@ -209,7 +215,7 @@ export class McpManagerComponent implements OnInit {
   }
 
   removeTag(tag: string): void {
-    this.serverForm.tags = this.serverForm.tags.filter(t => t !== tag);
+    this.serverForm.tags = this.serverForm.tags.filter((t: string) => t !== tag);
   }
 
   registerServer(): void {
@@ -221,7 +227,8 @@ export class McpManagerComponent implements OnInit {
       this.serverForm.transport_type,
       {
         url: this.serverForm.url,
-        tags: this.serverForm.tags
+        tags: this.serverForm.tags,
+        description: this.serverForm.description
       }
     ).subscribe({
       next: (res) => {
@@ -233,7 +240,8 @@ export class McpManagerComponent implements OnInit {
           url: this.serverForm.url,
           tools_count: res.cached_tools_count,
           last_synced: 'Just now',
-          tags: [...this.serverForm.tags]
+          tags: [...this.serverForm.tags],
+          description: this.serverForm.description
         };
 
         const idx = this.registeredServers.findIndex(s => s.server_name === res.server_name);
