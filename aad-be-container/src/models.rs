@@ -174,6 +174,8 @@ pub struct Skill {
     pub id: Option<Uuid>,
     pub name: String,
     pub description: String,
+    #[serde(default)]
+    pub definition: String,
     pub tags: Vec<String>,
     pub owner_id: Uuid,
     #[serde(default)]
