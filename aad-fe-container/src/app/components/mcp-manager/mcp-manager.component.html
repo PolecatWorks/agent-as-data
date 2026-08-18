@@ -50,6 +50,13 @@
                 <div class="flex items-center justify-between pt-2">
                   <span class="text-[10px] text-slate-400">Last Synced: {{ s.last_synced }}</span>
                 </div>
+                @if (s.tags && s.tags.length > 0) {
+                  <div class="flex flex-wrap gap-1 mt-2">
+                    @for (tag of s.tags; track tag) {
+                      <span class="px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded text-[9px] font-semibold">#{{ tag }}</span>
+                    }
+                  </div>
+                }
               </div>
             }
           </div>
@@ -139,6 +146,28 @@
               <input type="text" [(ngModel)]="serverForm.url" [disabled]="!isEditing"
                      placeholder="e.g. http://localhost:3000/sse"
                      class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 disabled:bg-slate-50 disabled:text-slate-500 transition-all" />
+            </div>
+
+            <!-- Metadata Tags -->
+            <div class="space-y-2 text-left pt-2">
+              <label class="text-xs font-bold text-slate-500 block">Metadata Tags</label>
+              @if (isEditing) {
+                <div class="flex gap-2 mb-2">
+                  <input type="text" placeholder="Add tag..." [(ngModel)]="newTag" (keyup.enter)="addTag()"
+                         class="flex-1 px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all" />
+                  <button mat-stroked-button class="!rounded-xl !text-xs" (click)="addTag()">Add</button>
+                </div>
+              }
+              <div class="flex flex-wrap gap-1.5">
+                @for (tag of serverForm.tags || []; track tag) {
+                  <span class="px-2.5 py-1 bg-indigo-50 text-indigo-700 font-bold text-[11px] rounded-xl flex items-center gap-1.5 border border-indigo-100">
+                    #{{ tag }}
+                    @if (isEditing) {
+                      <button class="text-indigo-400 hover:text-red-600 font-bold border-none bg-transparent cursor-pointer text-xs" (click)="removeTag(tag)">×</button>
+                    }
+                  </span>
+                }
+              </div>
             </div>
           </mat-card-content>
         </mat-card>
