@@ -42,6 +42,7 @@ export class McpManagerComponent implements OnInit {
 
   registeredServers: any[] = [
     {
+      id: '00000000-0000-0000-0000-000000000001',
       server_name: 'github-mcp-server',
       transport_type: 'sse',
       url: 'http://localhost:3000/sse',
@@ -49,6 +50,7 @@ export class McpManagerComponent implements OnInit {
       last_synced: '2 mins ago'
     },
     {
+      id: '00000000-0000-0000-0000-000000000002',
       server_name: 'postgres-mcp-server',
       transport_type: 'stdio',
       url: 'npx -y @modelcontextprotocol/server-postgres postgresql://localhost/db',
@@ -67,9 +69,9 @@ export class McpManagerComponent implements OnInit {
   ngOnInit(): void {
     this.loadServers();
     this.route.paramMap.subscribe(params => {
-      const name = params.get('name');
-      if (name) {
-        this.selectServerByName(name);
+      const id = params.get('id');
+      if (id) {
+        this.selectServerById(id);
       }
     });
     this.route.queryParams.subscribe(queryParams => {
@@ -86,6 +88,7 @@ export class McpManagerComponent implements OnInit {
             count = s.cached_capabilities.tools.length;
           }
           return {
+            id: s.id,
             server_name: s.server_name,
             transport_type: s.transport_type,
             url: s.endpoint_config ? s.endpoint_config.url : '',
@@ -93,9 +96,9 @@ export class McpManagerComponent implements OnInit {
             last_synced: 'Just now'
           };
         });
-        const routeName = this.route.snapshot.paramMap.get('name');
-        if (routeName) {
-          this.selectServerByName(routeName);
+        const routeId = this.route.snapshot.paramMap.get('id');
+        if (routeId) {
+          this.selectServerById(routeId);
         } else if (this.registeredServers.length > 0) {
           this.selectServer(this.registeredServers[0]);
         } else {
@@ -104,9 +107,9 @@ export class McpManagerComponent implements OnInit {
       },
       error: () => {
         this.snackBar.open("Failed to load registered MCP servers from backend, using stubs.", "Close", { duration: 3000 });
-        const routeName = this.route.snapshot.paramMap.get('name');
-        if (routeName) {
-          this.selectServerByName(routeName);
+        const routeId = this.route.snapshot.paramMap.get('id');
+        if (routeId) {
+          this.selectServerById(routeId);
         } else if (this.registeredServers.length > 0) {
           this.selectServer(this.registeredServers[0]);
         }
@@ -125,8 +128,8 @@ export class McpManagerComponent implements OnInit {
     );
   }
 
-  selectServerByName(name: string): void {
-    const server = this.registeredServers.find(s => s.server_name === name);
+  selectServerById(id: string): void {
+    const server = this.registeredServers.find(s => s.id === id);
     if (server) {
       const isEdit = this.route.snapshot.queryParams['edit'] === 'true';
       this.selectServer(server, isEdit);
@@ -142,7 +145,7 @@ export class McpManagerComponent implements OnInit {
       transport_type: server.transport_type,
       url: server.url || ''
     };
-    this.router.navigate(['/mcp-manager', server.server_name], {
+    this.router.navigate(['/mcp-manager', server.id], {
       queryParams: keepEdit ? { edit: 'true' } : {}
     });
   }
@@ -162,7 +165,7 @@ export class McpManagerComponent implements OnInit {
   enableEdit(): void {
     this.isEditing = true;
     if (this.selectedServer) {
-      this.router.navigate(['/mcp-manager', this.selectedServer.server_name], { queryParams: { edit: 'true' } });
+      this.router.navigate(['/mcp-manager', this.selectedServer.id], { queryParams: { edit: 'true' } });
     } else {
       this.router.navigate(['/mcp-manager'], { queryParams: { edit: 'true' } });
     }
@@ -197,6 +200,7 @@ export class McpManagerComponent implements OnInit {
       next: (res) => {
         this.isRegistering = false;
         const newServer = {
+          id: res.id,
           server_name: res.server_name,
           transport_type: res.transport_type,
           url: this.serverForm.url,
@@ -216,6 +220,7 @@ export class McpManagerComponent implements OnInit {
       error: () => {
         this.isRegistering = false;
         const fallbackServer = {
+          id: '00000000-0000-0000-0000-000000000009',
           server_name: this.serverForm.server_name,
           transport_type: this.serverForm.transport_type,
           url: this.serverForm.url,
@@ -237,13 +242,13 @@ export class McpManagerComponent implements OnInit {
 
   deleteServer(): void {
     if (!this.selectedServer) return;
-    const name = this.selectedServer.server_name;
-    this.apiService.deleteMcpServer(name).subscribe({
+    const id = this.selectedServer.id;
+    this.apiService.deleteMcpServer(id).subscribe({
       next: () => {
-        this.registeredServers = this.registeredServers.filter(s => s.server_name !== name);
+        this.registeredServers = this.registeredServers.filter(s => s.id !== id);
         this.showDeleteConfirm = false;
         this.isEditing = false;
-        this.snackBar.open(`Removed MCP server: ${name}`, 'Close', { duration: 3000 });
+        this.snackBar.open(`Removed MCP server`, 'Close', { duration: 3000 });
         if (this.registeredServers.length > 0) {
           this.selectServer(this.registeredServers[0]);
         } else {

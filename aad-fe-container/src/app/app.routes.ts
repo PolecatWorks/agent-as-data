@@ -15,6 +15,6 @@ export const routes: Routes = [
   { path: 'refactoring-lab', loadComponent: () => import('./components/refactoring-lab/refactoring-lab.component').then(m => m.RefactoringLabComponent) },
   { path: 'knowledge-inspector', loadComponent: () => import('./components/knowledge-inspector/knowledge-inspector.component').then(m => m.KnowledgeInspectorComponent) },
   { path: 'mcp-manager', loadComponent: () => import('./components/mcp-manager/mcp-manager.component').then(m => m.McpManagerComponent) },
-  { path: 'mcp-manager/:name', loadComponent: () => import('./components/mcp-manager/mcp-manager.component').then(m => m.McpManagerComponent) },
+  { path: 'mcp-manager/:id', loadComponent: () => import('./components/mcp-manager/mcp-manager.component').then(m => m.McpManagerComponent) },
 ];
 
