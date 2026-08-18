@@ -53,6 +53,7 @@ export class AgentRegistryComponent implements OnInit {
   selectedAgent: Agent | null = null;
   searchQuery: string = '';
   isEditing: boolean = false;
+  showDeleteConfirm: boolean = false;
 
   availableModels: LLMModelOption[] = [
     { id: 'claude-3-5-sonnet-v2', name: 'Claude 3.5 Sonnet', version: '20241022', provider: 'Anthropic' },
@@ -202,6 +203,9 @@ export class AgentRegistryComponent implements OnInit {
   ngOnInit(): void {
     this.loadAgents();
     this.loadTraits();
+    this.route.queryParams.subscribe(queryParams => {
+      this.isEditing = queryParams['edit'] === 'true';
+    });
   }
 
   loadTraits(): void {
@@ -311,8 +315,12 @@ export class AgentRegistryComponent implements OnInit {
             }
           }
         };
-        this.isEditing = false;
-        this.location.go(`/agent-registry/${fullAgent.id}`);
+        const isEdit = this.route.snapshot.queryParams['edit'] === 'true';
+        this.isEditing = isEdit;
+        this.showDeleteConfirm = false;
+        this.router.navigate(['/agent-registry', fullAgent.id], {
+          queryParams: isEdit ? { edit: 'true' } : {}
+        });
       },
       error: () => {
         this.selectedAgent = agent;
@@ -323,8 +331,12 @@ export class AgentRegistryComponent implements OnInit {
             output_guardrails: { active_guardrails: [] }
           }
         };
-        this.isEditing = false;
-        this.location.go(`/agent-registry/${agent.id}`);
+        const isEdit = this.route.snapshot.queryParams['edit'] === 'true';
+        this.isEditing = isEdit;
+        this.showDeleteConfirm = false;
+        this.router.navigate(['/agent-registry', agent.id], {
+          queryParams: isEdit ? { edit: 'true' } : {}
+        });
       }
     });
   }
@@ -332,10 +344,10 @@ export class AgentRegistryComponent implements OnInit {
   createNewAgent(): void {
     this.selectedAgent = null;
     this.agentForm = {
-      name: 'New Agent',
-      description: 'Describe the purpose and capabilities of this agent...',
-      tags: ['draft'],
-      implements_traits: ['BasicAgent'],
+      name: '',
+      description: '',
+      tags: [],
+      implements_traits: [],
       attached_tools: [],
       attached_agents: [],
       attached_skills: [],
@@ -346,13 +358,41 @@ export class AgentRegistryComponent implements OnInit {
       read_groups: [],
       write_groups: [],
       execute_groups: [],
-      agent_definition: 'You are an autonomous AI agent designed for specialized tasks.',
+      agent_definition: '',
       guardrails: {
         input_guardrails: { active_guardrails: [] },
         output_guardrails: { active_guardrails: [] }
       }
     };
     this.isEditing = true;
+    this.showDeleteConfirm = false;
+    this.router.navigate(['/agent-registry'], { queryParams: { edit: 'true' } });
+  }
+
+  enableEdit(): void {
+    this.isEditing = true;
+    if (this.selectedAgent) {
+      this.router.navigate(['/agent-registry', this.selectedAgent.id], { queryParams: { edit: 'true' } });
+    } else {
+      this.router.navigate(['/agent-registry'], { queryParams: { edit: 'true' } });
+    }
+  }
+
+  cancelEdit(): void {
+    if (this.selectedAgent) {
+      this.selectAgent(this.selectedAgent);
+    } else {
+      this.isEditing = false;
+      this.router.navigate(['/agent-registry'], { queryParams: {} });
+    }
+  }
+
+  confirmDeleteState(): void {
+    this.showDeleteConfirm = true;
+  }
+
+  cancelDelete(): void {
+    this.showDeleteConfirm = false;
   }
 
   private preparePayload(): Agent {

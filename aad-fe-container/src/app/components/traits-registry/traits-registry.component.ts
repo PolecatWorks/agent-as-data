@@ -208,6 +208,9 @@ export class TraitsRegistryComponent implements OnInit {
   newCriterion: string = '';
   newTag: string = '';
 
+  isEditing: boolean = false;
+  showDeleteConfirm: boolean = false;
+
   constructor(
     private snackBar: MatSnackBar,
     private apiService: ApiService,
@@ -222,6 +225,9 @@ export class TraitsRegistryComponent implements OnInit {
       if (id) {
         this.selectTraitById(id);
       }
+    });
+    this.route.queryParams.subscribe(queryParams => {
+      this.isEditing = queryParams['edit'] === 'true';
     });
   }
 
@@ -267,7 +273,8 @@ export class TraitsRegistryComponent implements OnInit {
   selectTraitById(id: string): void {
     const trait = this.traitContracts.find(t => t.id === id);
     if (trait) {
-      this.selectTraitContract(trait);
+      const isEdit = this.route.snapshot.queryParams['edit'] === 'true';
+      this.selectTraitContract(trait, isEdit);
     }
   }
 
@@ -283,9 +290,13 @@ export class TraitsRegistryComponent implements OnInit {
     );
   }
 
-  selectTraitContract(trait: TraitContract): void {
+  selectTraitContract(trait: TraitContract, keepEdit = false): void {
     this.selectedTraitContract = trait;
-    this.router.navigate(['/traits-registry', trait.id]);
+    this.isEditing = keepEdit;
+    this.showDeleteConfirm = false;
+    this.router.navigate(['/traits-registry', trait.id], {
+      queryParams: keepEdit ? { edit: 'true' } : {}
+    });
     this.traitForm = {
       ...trait,
       capability_requirements: trait.capability_requirements ? [...trait.capability_requirements] : [],
@@ -297,35 +308,63 @@ export class TraitsRegistryComponent implements OnInit {
         output_guardrails: { active_guardrails: [] }
       }
     };
-    if (!this.traitForm.guardrails?.input_guardrails?.active_guardrails) {
-      if (!this.traitForm.guardrails) {
-        this.traitForm.guardrails = {
-          input_guardrails: { active_guardrails: [] },
-          output_guardrails: { active_guardrails: [] }
-        };
-      }
+    if (!this.traitForm.guardrails) {
+      this.traitForm.guardrails = {
+        input_guardrails: { active_guardrails: [] },
+        output_guardrails: { active_guardrails: [] }
+      };
+    }
+    if (!this.traitForm.guardrails.input_guardrails) {
       this.traitForm.guardrails.input_guardrails = { active_guardrails: [] };
     }
-    if (!this.traitForm.guardrails?.output_guardrails?.active_guardrails) {
+    if (!this.traitForm.guardrails.output_guardrails) {
       this.traitForm.guardrails.output_guardrails = { active_guardrails: [] };
     }
   }
 
   createNewTraitContract(): void {
     this.selectedTraitContract = null;
+    this.isEditing = true;
     this.traitForm = {
-      name: 'NewTraitDefinition',
-      description: 'Describe the purpose and domain expectations of this agent trait...',
+      name: '',
+      description: '',
       version: 1,
       capability_requirements: [],
       behavioral_invariants: [],
       evaluation_criteria: [],
-      tags: ['trait'],
+      tags: [],
       guardrails: {
         input_guardrails: { active_guardrails: [] },
         output_guardrails: { active_guardrails: [] }
       }
     };
+    this.router.navigate(['/traits-registry'], { queryParams: { edit: 'true' } });
+  }
+
+  enableEdit(): void {
+    this.isEditing = true;
+    if (this.selectedTraitContract) {
+      this.router.navigate(['/traits-registry', this.selectedTraitContract.id], { queryParams: { edit: 'true' } });
+    } else {
+      this.router.navigate(['/traits-registry'], { queryParams: { edit: 'true' } });
+    }
+  }
+
+  cancelEdit(): void {
+    if (this.selectedTraitContract) {
+      this.selectTraitContract(this.selectedTraitContract, false);
+    } else {
+      this.isEditing = false;
+      this.router.navigate(['/traits-registry'], { queryParams: {} });
+    }
+  }
+
+  confirmDeleteState(): void {
+    this.showDeleteConfirm = true;
+  }
+
+  cancelDelete(): void {
+    this.showDeleteConfirm = false;
   }
 
   saveTraitContract(): void {
@@ -339,8 +378,8 @@ export class TraitsRegistryComponent implements OnInit {
           if (idx >= 0) {
             this.traitContracts[idx] = updated;
           }
-          this.selectedTraitContract = updated;
           this.snackBar.open(`Updated trait ${updated.name} (v${updated.version})`, 'Close', { duration: 3000 });
+          this.selectTraitContract(updated, false);
         },
         error: (err: any) => {
           this.snackBar.open(`Failed to save trait contract: ${err.message || err}`, 'Close', { duration: 3000 });
@@ -355,8 +394,8 @@ export class TraitsRegistryComponent implements OnInit {
             this.traitContracts = this.traitContracts.filter(t => t.id !== this.selectedTraitContract!.id);
           }
           this.traitContracts.push(created);
-          this.selectedTraitContract = created;
           this.snackBar.open(`Created new trait ${created.name}`, 'Close', { duration: 3000 });
+          this.selectTraitContract(created, false);
         },
         error: (err: any) => {
           this.snackBar.open(`Failed to create trait contract: ${err.message || err}`, 'Close', { duration: 3000 });
@@ -371,6 +410,8 @@ export class TraitsRegistryComponent implements OnInit {
     if (id.startsWith('trait-')) {
       // Local stub only
       this.traitContracts = this.traitContracts.filter(t => t.id !== id);
+      this.isEditing = false;
+      this.showDeleteConfirm = false;
       if (this.traitContracts.length > 0) {
         this.selectTraitContract(this.traitContracts[0]);
       } else {
@@ -383,6 +424,8 @@ export class TraitsRegistryComponent implements OnInit {
     this.apiService.deleteTrait(id).subscribe({
       next: () => {
         this.traitContracts = this.traitContracts.filter(t => t.id !== id);
+        this.isEditing = false;
+        this.showDeleteConfirm = false;
         if (this.traitContracts.length > 0) {
           this.selectTraitContract(this.traitContracts[0]);
         } else {

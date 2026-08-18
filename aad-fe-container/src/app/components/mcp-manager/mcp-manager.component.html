@@ -1,68 +1,141 @@
-<div class="p-6 max-w-7xl mx-auto space-y-6">
-  <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex justify-between items-center">
-    <div class="flex items-center space-x-3">
-      <mat-icon class="text-indigo-600">dns</mat-icon>
-      <div>
-        <h1 class="text-xl font-bold text-slate-800 m-0">Remote Model Context Protocol (MCP) Server Manager</h1>
-        <p class="text-sm text-slate-500 m-0">Register external Stdio or SSE transport MCP servers and inspect cached tool argument schemas</p>
-      </div>
+<div class="container mx-auto p-6 space-y-6">
+
+  <!-- Top Banner -->
+  <div class="flex justify-between items-center bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+    <div class="space-y-1">
+      <h1 class="text-2xl font-black text-slate-900 m-0 flex items-center gap-2">
+        <mat-icon class="!w-8 !h-8 !text-3xl text-indigo-600 font-bold">dns</mat-icon> MCP Servers
+      </h1>
+      <p class="text-sm text-slate-500 m-0">
+        Register, configure, and inspect Model Context Protocol (MCP) server endpoints.
+      </p>
     </div>
+    <button mat-flat-button color="primary" class="!rounded-xl !px-6 !font-bold" (click)="startNewServer()">
+      <mat-icon>add</mat-icon> Register New Server
+    </button>
   </div>
 
-  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-    <!-- Registration Form -->
-    <mat-card class="rounded-xl border border-slate-200">
-      <mat-card-header class="border-b border-slate-100 pb-3">
-        <mat-card-title class="text-base font-bold text-slate-800">Register Remote MCP Server</mat-card-title>
-      </mat-card-header>
-      <mat-card-content class="p-4 space-y-4">
-        <mat-form-field appearance="outline" class="w-full">
-          <mat-label>Server Identifier</mat-label>
-          <input matInput [(ngModel)]="serverName" placeholder="e.g. github-mcp-server">
-        </mat-form-field>
+  <!-- Main Split-Pane Workspace -->
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 
-        <mat-form-field appearance="outline" class="w-full">
-          <mat-label>Transport Protocol</mat-label>
-          <mat-select [(ngModel)]="transportType">
-            <mat-option value="sse">SSE (Server-Sent Events HTTP)</mat-option>
-            <mat-option value="stdio">Stdio (Standard Input/Output Command)</mat-option>
-          </mat-select>
-        </mat-form-field>
+    <!-- Left Sidebar: Servers List -->
+    <div class="lg:col-span-4 space-y-4">
+      <mat-card class="!rounded-2xl border border-slate-200/80 shadow-sm">
+        <mat-card-content class="p-4 space-y-4">
+          <div class="relative">
+            <mat-icon class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">search</mat-icon>
+            <input type="text" placeholder="Search servers by name..."
+                   class="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                   [(ngModel)]="searchQuery" />
+          </div>
 
-        <mat-form-field appearance="outline" class="w-full">
-          <mat-label>Endpoint URL or Command</mat-label>
-          <input matInput [(ngModel)]="endpointUrl" placeholder="http://localhost:3000/sse">
-        </mat-form-field>
-
-        <button mat-flat-button color="primary" class="w-full h-12" [disabled]="isRegistering" (click)="registerServer()">
-          <mat-icon>add_link</mat-icon> Register & Ingest Capabilities
-        </button>
-      </mat-card-content>
-    </mat-card>
-
-    <!-- Registered Servers List -->
-    <div class="lg:col-span-2">
-      <mat-card class="rounded-xl border border-slate-200">
-        <mat-card-header class="border-b border-slate-100 pb-3">
-          <mat-card-title class="text-base font-bold text-slate-800">Active MCP Server Registry & Cached Tools</mat-card-title>
-        </mat-card-header>
-        <mat-card-content class="p-4 space-y-3">
-          @for (s of registeredServers; track s.server_name) {
-            <div class="p-4 bg-white rounded-xl border border-slate-200 flex justify-between items-center shadow-sm">
-              <div class="space-y-1">
-                <div class="flex items-center space-x-2">
-                  <h3 class="font-bold text-slate-800 m-0 text-base">{{ s.server_name }}</h3>
-                  <span class="px-2 py-0.5 text-[10px] font-bold rounded uppercase" [ngClass]="s.transport_type === 'sse' ? 'bg-indigo-100 text-indigo-800' : 'bg-amber-100 text-amber-800'">
+          <!-- Server Cards List -->
+          <div class="space-y-2 max-h-[750px] overflow-y-auto pr-1">
+            @for (s of getFilteredServers(); track s.server_name) {
+              <div class="p-4 rounded-xl border transition-all cursor-pointer bg-white hover:border-slate-300"
+                   [class.border-indigo-500]="selectedServer?.server_name === s.server_name"
+                   [class.shadow-md]="selectedServer?.server_name === s.server_name"
+                   [class.border-slate-200]="selectedServer?.server_name !== s.server_name"
+                   (click)="selectServer(s)">
+                <div class="flex justify-between items-center">
+                  <h5 class="text-sm font-bold text-slate-900 m-0">🖧 {{ s.server_name }}</h5>
+                  <span class="px-2.5 py-0.5 text-[10px] font-bold rounded-md uppercase"
+                        [ngClass]="s.transport_type === 'sse' ? 'bg-indigo-100 text-indigo-800' : 'bg-amber-100 text-amber-800'">
                     {{ s.transport_type }}
                   </span>
                 </div>
-                <p class="text-xs text-slate-500 m-0">Cached Tools: {{ s.tools_count }} tools parsed & embedded</p>
+                <p class="text-xs text-slate-500 m-0 mt-1 line-clamp-2 leading-relaxed">
+                  Cached Tools: {{ s.tools_count }} tools parsed & embedded
+                </p>
+                <div class="flex items-center justify-between pt-2">
+                  <span class="text-[10px] text-slate-400">Last Synced: {{ s.last_synced }}</span>
+                </div>
               </div>
-              <span class="text-xs text-slate-400 font-medium">Last Synced: {{ s.last_synced }}</span>
-            </div>
-          }
+            }
+          </div>
         </mat-card-content>
       </mat-card>
+    </div>
+
+    <!-- Right Content Panel: Server Details & Editor -->
+    <div class="lg:col-span-8">
+      @if (selectedServer || isEditing) {
+        <mat-card class="!rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+          <div class="p-6 bg-slate-50/80 border-b border-slate-200/60 flex justify-between items-center">
+            <div>
+              <h2 class="text-base font-black text-slate-800 m-0">
+                {{ isEditing ? (selectedServer ? 'Edit MCP Configuration' : 'Register New MCP Server') : 'MCP Server Connection Details' }}
+              </h2>
+              @if (selectedServer) {
+                <p class="text-xs text-slate-400 m-0 mt-0.5">Name: {{ selectedServer.server_name }}</p>
+              }
+            </div>
+
+            <!-- Header Action buttons -->
+            <div class="flex gap-2">
+              @if (!isEditing && selectedServer) {
+                <button mat-stroked-button color="warn" class="!rounded-xl !font-semibold" (click)="confirmDeleteState()">
+                  <mat-icon>delete</mat-icon> Remove Server
+                </button>
+                <button mat-stroked-button class="!rounded-xl !font-semibold" (click)="enableEdit()">
+                  <mat-icon>edit</mat-icon> Edit
+                </button>
+              }
+              @if (isEditing) {
+                <button mat-stroked-button class="!rounded-xl !font-bold" (click)="cancelEdit()">
+                  Cancel
+                </button>
+                <button mat-flat-button color="primary" class="!rounded-xl !font-bold" [disabled]="isRegistering" (click)="registerServer()">
+                  <mat-icon>add_link</mat-icon> Register Server
+                </button>
+              }
+            </div>
+          </div>
+
+          @if (showDeleteConfirm) {
+            <div class="p-3 bg-red-50 border-b border-red-200 text-red-900 text-xs font-semibold flex items-center justify-between px-6">
+              <span class="flex items-center gap-1.5">
+                <mat-icon class="!w-4 !h-4 !text-base text-red-600">warning</mat-icon>
+                Warning: Deleting this server will remove all its tools from the registry cache. Confirm removal?
+              </span>
+              <div class="flex gap-2">
+                <button mat-button color="warn" class="!text-xs !font-bold" (click)="deleteServer()">Confirm Delete</button>
+                <button mat-button class="!text-xs" (click)="cancelDelete()">Cancel</button>
+              </div>
+            </div>
+          }
+
+          <mat-card-content class="p-6 space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <!-- Name -->
+              <div class="space-y-1 text-left">
+                <label class="text-xs font-bold text-slate-500">Server Identifier</label>
+                <input type="text" [(ngModel)]="serverForm.server_name" [disabled]="!isEditing || selectedServer"
+                       placeholder="e.g. github-mcp-server"
+                       class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 disabled:bg-slate-50 disabled:text-slate-500 transition-all" />
+              </div>
+
+              <!-- Transport Protocol -->
+              <div class="space-y-1 text-left">
+                <label class="text-xs font-bold text-slate-500 block">Transport Protocol</label>
+                <mat-select [(ngModel)]="serverForm.transport_type" [disabled]="!isEditing"
+                            class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 disabled:bg-slate-50 disabled:text-slate-500 transition-all">
+                  <mat-option value="sse">SSE (Server-Sent Events HTTP)</mat-option>
+                  <mat-option value="stdio">Stdio (Standard Input/Output Command)</mat-option>
+                </mat-select>
+              </div>
+            </div>
+
+            <!-- Endpoint URL or Command -->
+            <div class="space-y-1 text-left">
+              <label class="text-xs font-bold text-slate-500">Endpoint URL or Executable Command</label>
+              <input type="text" [(ngModel)]="serverForm.url" [disabled]="!isEditing"
+                     placeholder="e.g. http://localhost:3000/sse"
+                     class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 disabled:bg-slate-50 disabled:text-slate-500 transition-all" />
+            </div>
+          </mat-card-content>
+        </mat-card>
+      }
     </div>
   </div>
 </div>

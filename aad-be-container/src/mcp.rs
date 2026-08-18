@@ -45,3 +45,31 @@ pub async fn register_mcp_server(
         }),
     ))
 }
+
+pub async fn list_mcp_servers(
+    State(pool): State<PgPool>,
+) -> Result<(StatusCode, Json<Vec<crate::models::McpServer>>), (StatusCode, String)> {
+    let servers = sqlx::query_as::<_, crate::models::McpServer>(
+        "SELECT id, server_name, transport_type, endpoint_config, cached_capabilities FROM mcp_servers"
+    )
+    .fetch_all(&pool)
+    .await
+    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to list MCP servers: {}", e)))?;
+
+    Ok((StatusCode::OK, Json(servers)))
+}
+
+use axum::extract::Path;
+
+pub async fn delete_mcp_server(
+    State(pool): State<PgPool>,
+    Path(server_name): Path<String>,
+) -> Result<StatusCode, (StatusCode, String)> {
+    sqlx::query("DELETE FROM mcp_servers WHERE server_name = $1")
+        .bind(&server_name)
+        .execute(&pool)
+        .await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to delete MCP server: {}", e)))?;
+
+    Ok(StatusCode::NO_CONTENT)
+}
