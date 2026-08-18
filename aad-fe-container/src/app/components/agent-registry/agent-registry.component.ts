@@ -15,6 +15,8 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { ApiService, Agent, GuardrailConfig, TraitContract } from '../../services/api.service';
 import { GuardrailsEditorComponent } from '../guardrails-editor/guardrails-editor.component';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
+import { marked } from 'marked';
 import { forkJoin } from 'rxjs';
 
 
@@ -197,7 +199,8 @@ export class AgentRegistryComponent implements OnInit {
     private snackBar: MatSnackBar,
     private route: ActivatedRoute,
     private location: Location,
-    private router: Router
+    private router: Router,
+    private sanitizer: DomSanitizer
   ) {}
 
   ngOnInit(): void {
@@ -649,6 +652,16 @@ export class AgentRegistryComponent implements OnInit {
   removeTrait(trait: string): void {
     if (this.agentForm?.implements_traits) {
       this.agentForm.implements_traits = this.agentForm.implements_traits.filter((t: string) => t !== trait);
+    }
+  }
+
+  getRenderedMarkdown(text: string): SafeHtml {
+    if (!text) return '';
+    try {
+      const rawHtml = marked.parse(text) as string;
+      return this.sanitizer.bypassSecurityTrustHtml(rawHtml);
+    } catch (e) {
+      return text;
     }
   }
 }
