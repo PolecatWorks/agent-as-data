@@ -10,6 +10,7 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatTabsModule } from '@angular/material/tabs';
 import { ApiService, TraitContract } from '../../services/api.service';
 import { GuardrailsEditorComponent } from '../guardrails-editor/guardrails-editor.component';
@@ -30,7 +31,8 @@ import { forkJoin } from 'rxjs';
     MatSelectModule,
     MatTabsModule,
     MatSnackBarModule,
-    GuardrailsEditorComponent
+    GuardrailsEditorComponent,
+    MatFormFieldModule
   ],
 
   templateUrl: './traits-registry.component.html',
