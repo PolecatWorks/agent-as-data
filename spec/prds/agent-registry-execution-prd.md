@@ -154,3 +154,8 @@ sequenceDiagram
 - [Knowledge & Data System PRD](./knowledge-data-system-prd.md)
 - [Detailed Schema Specification](../specs/agent-schema-spec.md)
 
+
+## UI Behavior Updates
+
+- The **Register New** buttons for **Agents**, **MCP Servers**, and **Traits** now initialize a fresh form without performing a router navigation. This eliminates the brief screen flicker previously observed when creating new items.
+- Existing UI flows remain unchanged; the form state is reset and ready for input, improving user experience and stability.
