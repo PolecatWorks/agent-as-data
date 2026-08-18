@@ -367,7 +367,7 @@ export class AgentRegistryComponent implements OnInit {
     };
     this.isEditing = true;
     this.showDeleteConfirm = false;
-    this.router.navigate(['/agent-registry'], { queryParams: { edit: 'true' } });
+    // Removed navigation to avoid flickering when already on the same route.
   }
 
   enableEdit(): void {

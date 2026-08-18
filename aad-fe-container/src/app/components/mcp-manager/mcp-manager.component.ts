@@ -177,7 +177,7 @@ export class McpManagerComponent implements OnInit {
       description: '',
       tags: []
     };
-    this.router.navigate(['/mcp-manager'], { queryParams: { edit: 'true' } });
+    // Removed navigation to avoid flickering when already on the same route.
   }
 
   enableEdit(): void {

@@ -20,10 +20,16 @@ pub async fn register_mcp_server(
         "prompts": []
     });
 
-    sqlx::query(
+    use sqlx::Row;
+    let row = sqlx::query(
         r#"
         INSERT INTO mcp_servers (id, server_name, transport_type, endpoint_config, cached_capabilities)
         VALUES ($1, $2, $3, $4, $5)
+        ON CONFLICT (server_name) DO UPDATE 
+        SET transport_type = EXCLUDED.transport_type, 
+            endpoint_config = EXCLUDED.endpoint_config,
+            last_synced_at = NOW()
+        RETURNING id
         "#,
     )
     .bind(server_id)
@@ -31,14 +37,16 @@ pub async fn register_mcp_server(
     .bind(&payload.transport_type)
     .bind(&payload.endpoint_config)
     .bind(&cached_capabilities)
-    .execute(&pool)
+    .fetch_one(&pool)
     .await
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("MCP Register Error: {}", e)))?;
+
+    let final_id: Uuid = row.get("id");
 
     Ok((
         StatusCode::CREATED,
         Json(RegisterMcpServerResponse {
-            id: server_id,
+            id: final_id,
             server_name: payload.server_name,
             transport_type: payload.transport_type,
             cached_tools_count: 2,

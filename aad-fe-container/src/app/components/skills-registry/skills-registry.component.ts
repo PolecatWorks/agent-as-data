@@ -84,7 +84,26 @@ export class SkillsRegistryComponent implements OnInit {
   loadMcpServers(): void {
     this.apiService.getMcpServers().subscribe({
       next: (servers) => {
-        this.allMcpServers = servers || [];
+        this.allMcpServers = (servers || []).map(s => {
+          // Ensure endpoint_config is an object (may be returned as a JSON string)
+          let endpoint = s.endpoint_config;
+          if (endpoint && typeof endpoint === 'string') {
+            try {
+              endpoint = JSON.parse(endpoint);
+            } catch (e) {
+              console.warn('Failed to parse endpoint_config JSON', e);
+              endpoint = {};
+            }
+          }
+          const tags = endpoint && endpoint.tags ? endpoint.tags : [];
+          const description = endpoint && endpoint.description ? endpoint.description : '';
+          return {
+            ...s,
+            endpoint_config: endpoint,
+            tags,
+            description,
+          };
+        });
       }
     });
   }
@@ -152,7 +171,6 @@ export class SkillsRegistryComponent implements OnInit {
     this.inputSchemaStr = '{}';
     this.outputSchemaStr = '{}';
     this.implementationStr = '{}';
-    this.router.navigate(['/skills-registry'], { queryParams: { edit: 'true' } });
   }
 
   enableEdit(): void {
@@ -347,10 +365,12 @@ export class SkillsRegistryComponent implements OnInit {
     const m = this.allMcpServers.find(x => x.id === id);
     return m ? m.server_name : id;
   }
-
   getMcpDescription(id: string): string {
     const m = this.allMcpServers.find(x => x.id === id);
     if (m) {
+      if (m.description && m.description.trim().length > 0) {
+        return m.description;
+      }
       if (m.endpoint_config && m.endpoint_config.description) {
         return m.endpoint_config.description;
       }
@@ -362,4 +382,5 @@ export class SkillsRegistryComponent implements OnInit {
     }
     return 'No details available';
   }
+
 }
