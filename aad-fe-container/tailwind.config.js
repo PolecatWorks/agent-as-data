@@ -10,7 +10,8 @@ module.exports = {
     require('@tailwindcss/forms')({
       strategy: 'class', // avoid resetting Angular Material input / textarea borders
     }),
-    require('@tailwindcss/container-queries')
+    require('@tailwindcss/container-queries'),
+    require('@tailwindcss/typography')
   ],
 }
 
