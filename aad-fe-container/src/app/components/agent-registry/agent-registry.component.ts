@@ -286,7 +286,7 @@ export class AgentRegistryComponent implements OnInit {
     }
   }
 
-  selectAgent(agent: Agent): void {
+  selectAgent(agent: Agent, keepEdit = false): void {
     this.apiService.getAgent(agent.id!).subscribe({
       next: (fullAgent) => {
         this.selectedAgent = fullAgent;
@@ -315,11 +315,10 @@ export class AgentRegistryComponent implements OnInit {
             }
           }
         };
-        const isEdit = this.route.snapshot.queryParams['edit'] === 'true';
-        this.isEditing = isEdit;
+        this.isEditing = keepEdit;
         this.showDeleteConfirm = false;
         this.router.navigate(['/agent-registry', fullAgent.id], {
-          queryParams: isEdit ? { edit: 'true' } : {}
+          queryParams: keepEdit ? { edit: 'true' } : {}
         });
       },
       error: () => {
@@ -331,11 +330,10 @@ export class AgentRegistryComponent implements OnInit {
             output_guardrails: { active_guardrails: [] }
           }
         };
-        const isEdit = this.route.snapshot.queryParams['edit'] === 'true';
-        this.isEditing = isEdit;
+        this.isEditing = keepEdit;
         this.showDeleteConfirm = false;
         this.router.navigate(['/agent-registry', agent.id], {
-          queryParams: isEdit ? { edit: 'true' } : {}
+          queryParams: keepEdit ? { edit: 'true' } : {}
         });
       }
     });
@@ -380,7 +378,7 @@ export class AgentRegistryComponent implements OnInit {
 
   cancelEdit(): void {
     if (this.selectedAgent) {
-      this.selectAgent(this.selectedAgent);
+      this.selectAgent(this.selectedAgent, false);
     } else {
       this.isEditing = false;
       this.router.navigate(['/agent-registry'], { queryParams: {} });
