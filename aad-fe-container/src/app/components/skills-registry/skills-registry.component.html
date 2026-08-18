@@ -145,7 +145,7 @@
               @if (isEditing) {
                 <div class="flex gap-2 mb-2">
                   <input type="text" placeholder="Add tag..." [(ngModel)]="newTagInput" (keyup.enter)="addTag()"
-                         class="px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all" />
+                         class="flex-1 px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all" />
                   <button mat-stroked-button class="!rounded-xl !text-xs" (click)="addTag()">Add</button>
                 </div>
               }

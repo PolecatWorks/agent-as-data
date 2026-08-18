@@ -73,6 +73,10 @@ export class SkillsRegistryComponent implements OnInit {
     this.apiService.getSkills().subscribe({
       next: (skills) => {
         this.skills = skills;
+        const routeId = this.route.snapshot.params['id'];
+        if (!routeId && this.skills.length > 0) {
+          this.selectSkill(this.skills[0]);
+        }
       },
       error: (err) => {
         this.snackBar.open(`Error loading skills: ${err.message || err}`, 'Close', { duration: 3000 });

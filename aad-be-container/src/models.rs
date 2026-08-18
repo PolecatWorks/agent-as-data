@@ -212,6 +212,15 @@ pub struct RegisterMcpServerResponse {
     pub cached_tools_count: usize,
 }
 
+#[derive(sqlx::FromRow, Deserialize, Serialize, Debug, Clone)]
+pub struct McpServer {
+    pub id: Uuid,
+    pub server_name: String,
+    pub transport_type: String,
+    pub endpoint_config: serde_json::Value,
+    pub cached_capabilities: serde_json::Value,
+}
+
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct ExecuteAgentRequest {
     pub prompt: String,

@@ -60,78 +60,112 @@
 
     <!-- Right Column: Agent Definition Editor Form -->
     <div class="lg:col-span-2">
-      <mat-card class="!rounded-2xl border border-slate-200/80 shadow-sm">
-        <mat-card-header class="p-5 border-b border-slate-100 flex justify-between items-center">
-          <mat-card-title class="text-lg font-bold text-slate-900 m-0 flex items-center gap-2">
-            <mat-icon color="accent">edit_note</mat-icon>
-            {{ selectedAgent ? 'Edit Agent: ' + selectedAgent.name : 'Create New Declarative Agent' }}
-          </mat-card-title>
-          <div class="flex gap-2">
-            <button mat-stroked-button class="!px-4 !py-2.5 !rounded-xl !font-bold !text-indigo-600 !border-indigo-200 hover:!bg-indigo-50" *ngIf="selectedAgent" (click)="demoteToSkill()">
-              <mat-icon>subdirectory_arrow_right</mat-icon> Demote to Skill
-            </button>
-            <button mat-raised-button color="warn" class="!px-4 !py-2.5 !rounded-xl !font-bold" *ngIf="selectedAgent" (click)="deleteAgent()">
-              <mat-icon>delete</mat-icon> Delete
-            </button>
-            <button mat-raised-button color="accent" class="!px-6 !py-2.5 !rounded-xl !font-bold" (click)="saveAgent()">
-              <mat-icon>save</mat-icon> Save Agent Specification
-            </button>
+      <mat-card class="!rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+        <div class="p-6 bg-slate-50/80 border-b border-slate-200/60 flex justify-between items-center">
+          <div>
+            <h2 class="text-base font-black text-slate-800 m-0">
+              {{ isEditing ? (selectedAgent ? 'Edit Agent Profile' : 'Create New Declarative Agent') : 'Agent Specification Blueprint' }}
+            </h2>
+            @if (selectedAgent) {
+              <p class="text-xs text-slate-400 m-0 mt-0.5">ID: {{ selectedAgent.id }}</p>
+            }
           </div>
-        </mat-card-header>
+          <div class="flex gap-2">
+            @if (!isEditing && selectedAgent) {
+              <button mat-stroked-button color="warn" class="!rounded-xl !font-semibold" (click)="confirmDeleteState()">
+                <mat-icon>delete</mat-icon> Delete
+              </button>
+              <button mat-stroked-button class="!rounded-xl !font-semibold !text-indigo-600 !border-indigo-200 hover:!bg-indigo-50" (click)="demoteToSkill()">
+                <mat-icon>subdirectory_arrow_right</mat-icon> Demote to Skill
+              </button>
+              <button mat-stroked-button class="!rounded-xl !font-semibold" (click)="enableEdit()">
+                <mat-icon>edit</mat-icon> Edit
+              </button>
+            }
+            @if (isEditing) {
+              <button mat-stroked-button class="!rounded-xl !font-bold" (click)="cancelEdit()">
+                Cancel
+              </button>
+              <button mat-flat-button color="primary" class="!rounded-xl !font-bold" (click)="saveAgent()">
+                <mat-icon>save</mat-icon> Save Agent Specification
+              </button>
+            }
+          </div>
+        </div>
+
+        @if (showDeleteConfirm) {
+          <div class="p-3 bg-red-50 border-b border-red-200 text-red-900 text-xs font-semibold flex items-center justify-between px-6">
+            <span class="flex items-center gap-1.5">
+              <mat-icon class="!w-4 !h-4 !text-base text-red-600">warning</mat-icon>
+              Warning: Deleting this agent will permanently remove its persona prompts and configurations. Confirm deletion?
+            </span>
+            <div class="flex gap-2">
+              <button mat-button color="warn" class="!text-xs !font-bold" (click)="deleteAgent()">Confirm Delete</button>
+              <button mat-button class="!text-xs" (click)="cancelDelete()">Cancel</button>
+            </div>
+          </div>
+        }
 
         <mat-card-content class="p-6 space-y-6">
 
           <!-- Name, Model, Version & Judge Threshold -->
           <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
-            <mat-form-field appearance="outline" class="w-full" matTooltip="Unique identifier name for this declarative agent spec">
-              <mat-label>Agent Name</mat-label>
-              <input matInput [(ngModel)]="agentForm.name" placeholder="e.g. SecurityAuditor">
-            </mat-form-field>
+            <div class="space-y-1 text-left">
+              <label class="text-xs font-bold text-slate-500">Agent Name</label>
+              <input type="text" [(ngModel)]="agentForm.name" placeholder="e.g. SecurityAuditor" [disabled]="!isEditing"
+                     class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 disabled:bg-slate-50 disabled:text-slate-500 transition-all" />
+            </div>
 
-            <mat-form-field appearance="outline" class="w-full" matTooltip="Select target LLM foundational model architecture">
-              <mat-label>LLM Model & Version</mat-label>
-              <mat-select [(ngModel)]="agentForm.model">
+            <div class="space-y-1 text-left">
+              <label class="text-xs font-bold text-slate-500 block">LLM Model & Version</label>
+              <mat-select [(ngModel)]="agentForm.model" [disabled]="!isEditing"
+                          class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 disabled:bg-slate-50 disabled:text-slate-500 transition-all">
                 @for (m of availableModels; track m.id) {
                   <mat-option [value]="m.id">
                     {{ m.name }} ({{ m.version }}) — {{ m.provider }}
                   </mat-option>
                 }
               </mat-select>
-            </mat-form-field>
+            </div>
 
-            <mat-form-field appearance="outline" class="w-full" matTooltip="Specification version">
-              <mat-label>Version</mat-label>
-              <input matInput type="number" [(ngModel)]="agentForm.current_version" readonly>
-            </mat-form-field>
+            <div class="space-y-1 text-left">
+              <label class="text-xs font-bold text-slate-500">Version</label>
+              <input type="number" [(ngModel)]="agentForm.current_version" readonly
+                     class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-500 transition-all" />
+            </div>
 
-            <mat-form-field appearance="outline" class="w-full" matTooltip="Minimum required Judge quality score (0.0 to 1.0)">
-              <mat-label>Judge Threshold</mat-label>
-              <input matInput type="number" step="0.05" [(ngModel)]="agentForm.judge_threshold">
-            </mat-form-field>
+            <div class="space-y-1 text-left">
+              <label class="text-xs font-bold text-slate-500">Judge Threshold</label>
+              <input type="number" step="0.05" [(ngModel)]="agentForm.judge_threshold" [disabled]="!isEditing"
+                     class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 disabled:bg-slate-50 disabled:text-slate-500 transition-all" />
+            </div>
           </div>
 
           <!-- Description -->
-          <mat-form-field appearance="outline" class="w-full" matTooltip="Summary of agent responsibilities and routing intent">
-            <mat-label>Operational Description</mat-label>
-            <textarea matInput rows="2" [(ngModel)]="agentForm.description" placeholder="Describe what this agent represents..."></textarea>
-          </mat-form-field>
+          <div class="space-y-1 text-left">
+            <label class="text-xs font-bold text-slate-500">Operational Description</label>
+            <textarea rows="2" [(ngModel)]="agentForm.description" placeholder="Describe what this agent represents..." [disabled]="!isEditing"
+                      class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 disabled:bg-slate-50 disabled:text-slate-500 transition-all"></textarea>
+          </div>
 
           <!-- Metadata Tags -->
-          <div class="p-4 bg-slate-50 rounded-xl border border-slate-200/80 space-y-3">
-            <label class="text-xs font-bold text-slate-700 uppercase tracking-wider">Agent Metadata Tags</label>
-            <div class="flex gap-3">
-              <mat-form-field appearance="outline" class="flex-1">
-                <mat-label>Add Tag</mat-label>
-                <input matInput [(ngModel)]="newTag" placeholder="e.g. security" (keyup.enter)="addTag()">
-              </mat-form-field>
-              <button mat-flat-button color="primary" class="!h-14 !px-5 !rounded-xl" (click)="addTag()">Add Tag</button>
-            </div>
-            <div class="flex flex-wrap gap-2">
+          <div class="space-y-2 text-left">
+            <label class="text-xs font-bold text-slate-500 block">Agent Metadata Tags</label>
+            @if (isEditing) {
+              <div class="flex gap-2 mb-2">
+                <input type="text" placeholder="Add tag..." [(ngModel)]="newTag" (keyup.enter)="addTag()"
+                       class="flex-1 px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all" />
+                <button mat-stroked-button class="!rounded-xl !text-xs" (click)="addTag()">Add</button>
+              </div>
+            }
+            <div class="flex flex-wrap gap-1.5">
               @for (tag of agentForm.tags || []; track tag) {
-                <span class="px-3 py-1 bg-indigo-100 text-indigo-800 font-bold text-xs rounded-xl flex items-center gap-2 border border-indigo-200">
-                  #{{ tag }}
-                  <button class="text-indigo-600 hover:text-red-600 font-bold border-none bg-transparent cursor-pointer text-sm" (click)="removeTag(tag)">×</button>
-                </span>
+                <mat-chip-row [removable]="isEditing" (removed)="removeTag(tag)" class="!bg-indigo-50 !text-indigo-700 !text-xs !font-bold">
+                  {{ tag }}
+                  @if (isEditing) {
+                    <button matChipRemove class="!text-indigo-400 hover:!text-indigo-600"><mat-icon>cancel</mat-icon></button>
+                  }
+                </mat-chip-row>
               }
             </div>
           </div>
@@ -146,9 +180,10 @@
                   <label class="text-xs font-bold text-slate-700 uppercase tracking-wider">Agent Definition System Prompt (Persona)</label>
                   <span class="text-[11px] text-slate-400 font-mono">Monospace Monokai</span>
                 </div>
-                <mat-form-field appearance="outline" class="w-full" matTooltip="Core system prompt defining persona rules and role identity">
-                  <textarea matInput rows="12" class="font-mono text-sm leading-relaxed text-slate-800" [(ngModel)]="agentForm.agent_definition" placeholder="You are an autonomous AI agent..."></textarea>
-                </mat-form-field>
+                <div class="space-y-1 text-left">
+                  <textarea rows="12" [(ngModel)]="agentForm.agent_definition" placeholder="You are an autonomous AI agent..." [disabled]="!isEditing"
+                            class="font-mono text-sm leading-relaxed text-slate-800 w-full px-3 py-2 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 disabled:bg-slate-50 disabled:text-slate-500 transition-all"></textarea>
+                </div>
               </div>
             </mat-tab>
 

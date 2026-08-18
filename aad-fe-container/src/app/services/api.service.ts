@@ -215,6 +215,14 @@ export class ApiService {
     });
   }
 
+  getMcpServers(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/agents/mcp`);
+  }
+
+  deleteMcpServer(serverName: string): Observable<any> {
+    return this.http.delete(`${this.baseUrl}/agents/mcp/${serverName}`);
+  }
+
   // Refactoring APIs
   analyzeRefactor(): Observable<any> {
     return this.http.post(`${this.baseUrl}/agents/refactor/analyze`, {});
