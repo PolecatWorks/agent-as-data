@@ -133,6 +133,8 @@ export interface Skill {
   definition: string;
   tags: string[];
   current_version: number;
+  attached_skills?: string[];
+  attached_mcp_servers?: string[];
   owner_id: string;
   input_schema?: any;
   output_schema?: any;

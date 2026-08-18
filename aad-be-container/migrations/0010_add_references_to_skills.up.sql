@@ -1,0 +1,3 @@
+ALTER TABLE skills 
+ADD COLUMN IF NOT EXISTS attached_skills UUID[] NOT NULL DEFAULT '{}',
+ADD COLUMN IF NOT EXISTS attached_mcp_servers UUID[] NOT NULL DEFAULT '{}';

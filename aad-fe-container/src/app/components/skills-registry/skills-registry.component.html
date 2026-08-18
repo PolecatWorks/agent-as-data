@@ -189,6 +189,79 @@
               </div>
             </div>
 
+            <!-- Referred Skills & MCP Tools -->
+            <div class="border-t border-slate-100 pt-6 space-y-6">
+              
+              <!-- Section 1: Referred Skills -->
+              <div class="p-5 bg-indigo-50/30 rounded-xl border border-indigo-200/50 space-y-3">
+                <h4 class="text-sm font-bold text-indigo-950 m-0 flex items-center gap-2">⚡ Referred Skills</h4>
+                <p class="text-xs text-indigo-700 m-0">Associate other modular skills required by this blueprint</p>
+                
+                @if (isEditing) {
+                  <div class="flex gap-3">
+                    <mat-select [(ngModel)]="selectedSkillToAdd" placeholder="Select Skill to Attach..."
+                                class="flex-1 px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all">
+                      @for (s of getAvailableSkillsToAttach(); track s.id) {
+                        <mat-option [value]="s.id">
+                          <span class="font-semibold text-slate-800">{{ s.name }}</span>
+                          <span class="text-[10px] text-slate-400"> (v{{ s.current_version }})</span>
+                        </mat-option>
+                      }
+                    </mat-select>
+                    <button mat-flat-button color="primary" class="!rounded-xl" [disabled]="!selectedSkillToAdd" (click)="attachSkill(selectedSkillToAdd)">Attach Skill</button>
+                  </div>
+                }
+
+                <div class="flex flex-wrap gap-2 pt-1">
+                  @for (skillId of skillForm.attached_skills || []; track skillId) {
+                    <span class="px-3 py-1 bg-indigo-50 text-indigo-800 font-bold text-xs rounded-xl flex items-center gap-2 border border-indigo-200">
+                      ⚡ {{ getSkillName(skillId) }}
+                      @if (isEditing) {
+                        <button class="text-indigo-400 hover:text-red-600 font-bold border-none bg-transparent cursor-pointer text-sm" (click)="detachSkill(skillId)">×</button>
+                      }
+                    </span>
+                  } @empty {
+                    <span class="text-xs text-slate-400 italic">No skills attached.</span>
+                  }
+                </div>
+              </div>
+
+              <!-- Section 2: Referred MCP Tools -->
+              <div class="p-5 bg-blue-50/30 rounded-xl border border-blue-200/50 space-y-3">
+                <h4 class="text-sm font-bold text-blue-950 m-0 flex items-center gap-2">🛠️ Referred MCP Tools</h4>
+                <p class="text-xs text-blue-700 m-0">Associate registered MCP server tools to expose during skill execution</p>
+                
+                @if (isEditing) {
+                  <div class="flex gap-3">
+                    <mat-select [(ngModel)]="selectedMcpToAdd" placeholder="Select MCP Server to Attach..."
+                                class="flex-1 px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all">
+                      @for (m of getAvailableMcpToAttach(); track m.id) {
+                        <mat-option [value]="m.id">
+                          <span class="font-semibold text-slate-800">{{ m.server_name }}</span>
+                          <span class="text-[10px] text-slate-400"> (v1.0.0)</span>
+                        </mat-option>
+                      }
+                    </mat-select>
+                    <button mat-flat-button color="primary" class="!rounded-xl" [disabled]="!selectedMcpToAdd" (click)="attachMcp(selectedMcpToAdd)">Attach Tool</button>
+                  </div>
+                }
+
+                <div class="flex flex-wrap gap-2 pt-1">
+                  @for (mcpId of skillForm.attached_mcp_servers || []; track mcpId) {
+                    <span class="px-3 py-1 bg-blue-50 text-blue-800 font-bold text-xs rounded-xl flex items-center gap-2 border border-blue-200">
+                      🛠️ {{ getMcpName(mcpId) }}
+                      @if (isEditing) {
+                        <button class="text-blue-400 hover:text-red-600 font-bold border-none bg-transparent cursor-pointer text-sm" (click)="detachMcp(mcpId)">×</button>
+                      }
+                    </span>
+                  } @empty {
+                    <span class="text-xs text-slate-400 italic">No tools attached.</span>
+                  }
+                </div>
+              </div>
+
+            </div>
+
             <div class="border-t border-slate-100 pt-6 space-y-6">
               <!-- JSON Input Schema -->
               <div class="space-y-1 text-left">
