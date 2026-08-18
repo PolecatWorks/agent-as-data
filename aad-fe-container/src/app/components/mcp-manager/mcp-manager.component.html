@@ -75,7 +75,7 @@
             <div class="flex gap-2">
               @if (!isEditing && selectedServer) {
                 <button mat-stroked-button color="warn" class="!rounded-xl !font-semibold" (click)="confirmDeleteState()">
-                  <mat-icon>delete</mat-icon> Remove Server
+                  <mat-icon>delete</mat-icon> Delete
                 </button>
                 <button mat-stroked-button class="!rounded-xl !font-semibold" (click)="enableEdit()">
                   <mat-icon>edit</mat-icon> Edit
@@ -96,7 +96,7 @@
             <div class="p-3 bg-red-50 border-b border-red-200 text-red-900 text-xs font-semibold flex items-center justify-between px-6">
               <span class="flex items-center gap-1.5">
                 <mat-icon class="!w-4 !h-4 !text-base text-red-600">warning</mat-icon>
-                Warning: Deleting this server will remove all its tools from the registry cache. Confirm removal?
+                Warning: Deleting this server will remove all its tools from the registry cache. Confirm deletion?
               </span>
               <div class="flex gap-2">
                 <button mat-button color="warn" class="!text-xs !font-bold" (click)="deleteServer()">Confirm Delete</button>
