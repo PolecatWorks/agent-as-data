@@ -347,4 +347,16 @@ export class SkillsRegistryComponent implements OnInit {
     const m = this.allMcpServers.find(x => x.id === id);
     return m ? m.server_name : id;
   }
+
+  getMcpDescription(id: string): string {
+    const m = this.allMcpServers.find(x => x.id === id);
+    if (m) {
+      let desc = `Transport: ${m.transport_type}`;
+      if (m.endpoint_config && m.endpoint_config.url) {
+        desc += ` — URL: ${m.endpoint_config.url}`;
+      }
+      return desc;
+    }
+    return 'No details available';
+  }
 }
