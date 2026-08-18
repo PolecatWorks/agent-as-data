@@ -63,10 +63,10 @@ use axum::extract::Path;
 
 pub async fn delete_mcp_server(
     State(pool): State<PgPool>,
-    Path(server_name): Path<String>,
+    Path(id): Path<Uuid>,
 ) -> Result<StatusCode, (StatusCode, String)> {
-    sqlx::query("DELETE FROM mcp_servers WHERE server_name = $1")
-        .bind(&server_name)
+    sqlx::query("DELETE FROM mcp_servers WHERE id = $1")
+        .bind(id)
         .execute(&pool)
         .await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to delete MCP server: {}", e)))?;

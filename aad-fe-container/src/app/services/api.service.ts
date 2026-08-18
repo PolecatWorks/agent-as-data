@@ -219,8 +219,8 @@ export class ApiService {
     return this.http.get<any[]>(`${this.baseUrl}/agents/mcp`);
   }
 
-  deleteMcpServer(serverName: string): Observable<any> {
-    return this.http.delete(`${this.baseUrl}/agents/mcp/${serverName}`);
+  deleteMcpServer(id: string): Observable<any> {
+    return this.http.delete(`${this.baseUrl}/agents/mcp/${id}`);
   }
 
   // Refactoring APIs

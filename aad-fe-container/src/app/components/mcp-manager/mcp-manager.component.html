@@ -31,11 +31,11 @@
 
           <!-- Server Cards List -->
           <div class="space-y-2 max-h-[750px] overflow-y-auto pr-1">
-            @for (s of getFilteredServers(); track s.server_name) {
+            @for (s of getFilteredServers(); track s.id) {
               <div class="p-4 rounded-xl border transition-all cursor-pointer bg-white hover:border-slate-300"
-                   [class.border-indigo-500]="selectedServer?.server_name === s.server_name"
-                   [class.shadow-md]="selectedServer?.server_name === s.server_name"
-                   [class.border-slate-200]="selectedServer?.server_name !== s.server_name"
+                   [class.border-indigo-500]="selectedServer?.id === s.id"
+                   [class.shadow-md]="selectedServer?.id === s.id"
+                   [class.border-slate-200]="selectedServer?.id !== s.id"
                    (click)="selectServer(s)">
                 <div class="flex justify-between items-center">
                   <h5 class="text-sm font-bold text-slate-900 m-0">🖧 {{ s.server_name }}</h5>
