@@ -130,6 +130,7 @@ export interface Skill {
   id?: string;
   name: string;
   description: string;
+  definition: string;
   tags: string[];
   current_version: number;
   owner_id: string;

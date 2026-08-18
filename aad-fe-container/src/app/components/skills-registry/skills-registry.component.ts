@@ -115,6 +115,7 @@ export class SkillsRegistryComponent implements OnInit {
     this.skillForm = {
       name: '',
       description: '',
+      definition: '',
       tags: [],
       current_version: 1,
       owner_id: '00000000-0000-0000-0000-000000000000',
