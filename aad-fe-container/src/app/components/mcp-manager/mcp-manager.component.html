@@ -78,23 +78,29 @@
               }
             </div>
 
-            <!-- Header Action buttons -->
-            <div class="flex gap-2">
-              @if (!isEditing && selectedServer) {
-                <button mat-stroked-button color="warn" class="!rounded-xl !font-semibold" (click)="confirmDeleteState()">
-                  <mat-icon>delete</mat-icon> Delete
-                </button>
-                <button mat-stroked-button class="!rounded-xl !font-semibold" (click)="enableEdit()">
-                  <mat-icon>edit</mat-icon> Edit
-                </button>
-              }
-              @if (isEditing) {
-                <button mat-stroked-button class="!rounded-xl !font-bold" (click)="cancelEdit()">
-                  Cancel
-                </button>
-                <button mat-flat-button color="primary" class="!rounded-xl !font-bold" [disabled]="isRegistering" (click)="registerServer()">
-                  <mat-icon>save</mat-icon> Save
-                </button>
+            <div class="flex flex-col items-end gap-1">
+              <div class="flex gap-2">
+                @if (!isEditing && selectedServer) {
+                  <button mat-stroked-button color="warn" class="!rounded-xl !font-semibold" (click)="confirmDeleteState()">
+                    <mat-icon>delete</mat-icon> Delete
+                  </button>
+                  <button mat-stroked-button class="!rounded-xl !font-semibold" (click)="enableEdit()">
+                    <mat-icon>edit</mat-icon> Edit
+                  </button>
+                }
+                @if (isEditing) {
+                  <button mat-stroked-button class="!rounded-xl !font-bold" (click)="cancelEdit()">
+                    Cancel
+                  </button>
+                  <button mat-flat-button color="primary" class="!rounded-xl !font-bold" [disabled]="isRegistering" (click)="registerServer()">
+                    <mat-icon>save</mat-icon> Save
+                  </button>
+                }
+              </div>
+              @if (selectedServer) {
+                <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+                  Version: 1.0.0
+                </span>
               }
             </div>
           </div>

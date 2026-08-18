@@ -67,22 +67,29 @@
               <p class="text-xs text-slate-400 m-0 mt-0.5">ID: {{ selectedTraitContract.id }}</p>
             }
           </div>
-          <div class="flex gap-2">
-            @if (!isEditing && selectedTraitContract) {
-              <button mat-stroked-button color="warn" class="!rounded-xl !font-semibold" (click)="confirmDeleteState()">
-                <mat-icon>delete</mat-icon> Delete
-              </button>
-              <button mat-stroked-button class="!rounded-xl !font-semibold" (click)="enableEdit()">
-                <mat-icon>edit</mat-icon> Edit
-              </button>
-            }
-            @if (isEditing) {
-              <button mat-stroked-button class="!rounded-xl !font-bold" (click)="cancelEdit()">
-                Cancel
-              </button>
-              <button mat-flat-button color="primary" class="!rounded-xl !font-bold" (click)="saveTraitContract()">
-                <mat-icon>save</mat-icon> Save
-              </button>
+          <div class="flex flex-col items-end gap-1">
+            <div class="flex gap-2">
+              @if (!isEditing && selectedTraitContract) {
+                <button mat-stroked-button color="warn" class="!rounded-xl !font-semibold" (click)="confirmDeleteState()">
+                  <mat-icon>delete</mat-icon> Delete
+                </button>
+                <button mat-stroked-button class="!rounded-xl !font-semibold" (click)="enableEdit()">
+                  <mat-icon>edit</mat-icon> Edit
+                </button>
+              }
+              @if (isEditing) {
+                <button mat-stroked-button class="!rounded-xl !font-bold" (click)="cancelEdit()">
+                  Cancel
+                </button>
+                <button mat-flat-button color="primary" class="!rounded-xl !font-bold" (click)="saveTraitContract()">
+                  <mat-icon>save</mat-icon> Save
+                </button>
+              }
+            </div>
+            @if (selectedTraitContract || traitForm.version) {
+              <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+                Version: {{ selectedTraitContract?.version || traitForm.version }}
+              </span>
             }
           </div>
         </div>
