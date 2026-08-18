@@ -35,9 +35,11 @@ export class McpManagerComponent implements OnInit {
   serverForm = {
     server_name: '',
     transport_type: 'sse',
-    url: ''
+    url: '',
+    tags: [] as string[]
   };
 
+  newTag: string = '';
   isRegistering: boolean = false;
 
   registeredServers: any[] = [
@@ -47,7 +49,8 @@ export class McpManagerComponent implements OnInit {
       transport_type: 'sse',
       url: 'http://localhost:3000/sse',
       tools_count: 8,
-      last_synced: '2 mins ago'
+      last_synced: '2 mins ago',
+      tags: ['github', 'vcs']
     },
     {
       id: '00000000-0000-0000-0000-000000000002',
@@ -55,7 +58,8 @@ export class McpManagerComponent implements OnInit {
       transport_type: 'stdio',
       url: 'npx -y @modelcontextprotocol/server-postgres postgresql://localhost/db',
       tools_count: 5,
-      last_synced: '1 hour ago'
+      last_synced: '1 hour ago',
+      tags: ['database', 'sql']
     }
   ];
 
@@ -87,13 +91,18 @@ export class McpManagerComponent implements OnInit {
           if (s.cached_capabilities && s.cached_capabilities.tools) {
             count = s.cached_capabilities.tools.length;
           }
+          let tags = [] as string[];
+          if (s.endpoint_config && s.endpoint_config.tags) {
+            tags = s.endpoint_config.tags;
+          }
           return {
             id: s.id,
             server_name: s.server_name,
             transport_type: s.transport_type,
             url: s.endpoint_config ? s.endpoint_config.url : '',
             tools_count: count,
-            last_synced: 'Just now'
+            last_synced: 'Just now',
+            tags: tags
           };
         });
         const routeId = this.route.snapshot.paramMap.get('id');
@@ -124,7 +133,8 @@ export class McpManagerComponent implements OnInit {
     const q = this.searchQuery.toLowerCase().trim();
     return this.registeredServers.filter(s => 
       s.server_name.toLowerCase().includes(q) ||
-      s.transport_type.toLowerCase().includes(q)
+      s.transport_type.toLowerCase().includes(q) ||
+      (s.tags && s.tags.some((t: string) => t.toLowerCase().includes(q)))
     );
   }
 
@@ -143,7 +153,8 @@ export class McpManagerComponent implements OnInit {
     this.serverForm = {
       server_name: server.server_name,
       transport_type: server.transport_type,
-      url: server.url || ''
+      url: server.url || '',
+      tags: server.tags ? [...server.tags] : []
     };
     this.router.navigate(['/mcp-manager', server.id], {
       queryParams: keepEdit ? { edit: 'true' } : {}
@@ -157,7 +168,8 @@ export class McpManagerComponent implements OnInit {
     this.serverForm = {
       server_name: '',
       transport_type: 'sse',
-      url: ''
+      url: '',
+      tags: []
     };
     this.router.navigate(['/mcp-manager'], { queryParams: { edit: 'true' } });
   }
@@ -188,6 +200,18 @@ export class McpManagerComponent implements OnInit {
     this.showDeleteConfirm = false;
   }
 
+  addTag(): void {
+    const t = this.newTag.trim().toLowerCase();
+    if (t && !this.serverForm.tags.includes(t)) {
+      this.serverForm.tags.push(t);
+    }
+    this.newTag = '';
+  }
+
+  removeTag(tag: string): void {
+    this.serverForm.tags = this.serverForm.tags.filter(t => t !== tag);
+  }
+
   registerServer(): void {
     if (!this.serverForm.server_name.trim()) return;
     this.isRegistering = true;
@@ -195,7 +219,10 @@ export class McpManagerComponent implements OnInit {
     this.apiService.registerMcpServer(
       this.serverForm.server_name,
       this.serverForm.transport_type,
-      { url: this.serverForm.url }
+      {
+        url: this.serverForm.url,
+        tags: this.serverForm.tags
+      }
     ).subscribe({
       next: (res) => {
         this.isRegistering = false;
@@ -205,7 +232,8 @@ export class McpManagerComponent implements OnInit {
           transport_type: res.transport_type,
           url: this.serverForm.url,
           tools_count: res.cached_tools_count,
-          last_synced: 'Just now'
+          last_synced: 'Just now',
+          tags: [...this.serverForm.tags]
         };
 
         const idx = this.registeredServers.findIndex(s => s.server_name === res.server_name);
@@ -225,7 +253,8 @@ export class McpManagerComponent implements OnInit {
           transport_type: this.serverForm.transport_type,
           url: this.serverForm.url,
           tools_count: 6,
-          last_synced: 'Just now'
+          last_synced: 'Just now',
+          tags: [...this.serverForm.tags]
         };
 
         const idx = this.registeredServers.findIndex(s => s.server_name === this.serverForm.server_name);
