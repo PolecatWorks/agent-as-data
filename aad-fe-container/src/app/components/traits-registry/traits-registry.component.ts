@@ -338,7 +338,7 @@ export class TraitsRegistryComponent implements OnInit {
         output_guardrails: { active_guardrails: [] }
       }
     };
-    this.router.navigate(['/traits-registry'], { queryParams: { edit: 'true' } });
+    // Removed navigation to avoid flickering when already on the same route.
   }
 
   enableEdit(): void {
