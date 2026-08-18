@@ -180,6 +180,10 @@ pub struct Skill {
     pub owner_id: Uuid,
     #[serde(default)]
     pub current_version: i32,
+    #[serde(default)]
+    pub attached_skills: Vec<Uuid>,
+    #[serde(default)]
+    pub attached_mcp_servers: Vec<Uuid>,
     pub input_schema: Option<serde_json::Value>,
     pub output_schema: Option<serde_json::Value>,
     pub implementation: Option<serde_json::Value>,

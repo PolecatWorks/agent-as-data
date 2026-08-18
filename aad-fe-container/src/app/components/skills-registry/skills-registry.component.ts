@@ -9,6 +9,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatSelectModule } from '@angular/material/select';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { ApiService, Skill } from '../../services/api.service';
 import { marked } from 'marked';
@@ -25,7 +26,8 @@ import { marked } from 'marked';
     MatIconModule,
     MatChipsModule,
     MatTooltipModule,
-    MatSnackBarModule
+    MatSnackBarModule,
+    MatSelectModule
   ],
   templateUrl: './skills-registry.component.html',
   styleUrl: './skills-registry.component.scss'
@@ -41,7 +43,10 @@ export class SkillsRegistryComponent implements OnInit {
   skillForm: Partial<Skill> = {
     name: '',
     description: '',
+    definition: '',
     tags: [],
+    attached_skills: [],
+    attached_mcp_servers: [],
     input_schema: {},
     output_schema: {},
     implementation: {}
@@ -51,6 +56,9 @@ export class SkillsRegistryComponent implements OnInit {
   implementationStr: string = '{}';
 
   newTagInput: string = '';
+  allMcpServers: any[] = [];
+  selectedSkillToAdd: string = '';
+  selectedMcpToAdd: string = '';
 
   constructor(
     private apiService: ApiService,
@@ -62,6 +70,7 @@ export class SkillsRegistryComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadSkills();
+    this.loadMcpServers();
     this.route.params.subscribe(params => {
       if (params['id']) {
         this.loadSkill(params['id']);
@@ -69,6 +78,14 @@ export class SkillsRegistryComponent implements OnInit {
     });
     this.route.queryParams.subscribe(queryParams => {
       this.isEditing = queryParams['edit'] === 'true';
+    });
+  }
+
+  loadMcpServers(): void {
+    this.apiService.getMcpServers().subscribe({
+      next: (servers) => {
+        this.allMcpServers = servers || [];
+      }
     });
   }
 
@@ -103,7 +120,11 @@ export class SkillsRegistryComponent implements OnInit {
     this.selectedSkill = skill;
     this.isEditing = keepEdit;
     this.showDeleteConfirm = false;
-    this.skillForm = { ...skill };
+    this.skillForm = {
+      ...skill,
+      attached_skills: skill.attached_skills ? [...skill.attached_skills] : [],
+      attached_mcp_servers: skill.attached_mcp_servers ? [...skill.attached_mcp_servers] : []
+    };
     this.inputSchemaStr = JSON.stringify(skill.input_schema || {}, null, 2);
     this.outputSchemaStr = JSON.stringify(skill.output_schema || {}, null, 2);
     this.implementationStr = JSON.stringify(skill.implementation || {}, null, 2);
@@ -121,6 +142,8 @@ export class SkillsRegistryComponent implements OnInit {
       definition: '',
       tags: [],
       current_version: 1,
+      attached_skills: [],
+      attached_mcp_servers: [],
       owner_id: '00000000-0000-0000-0000-000000000000',
       input_schema: {},
       output_schema: {},
@@ -259,5 +282,55 @@ export class SkillsRegistryComponent implements OnInit {
     } catch (e) {
       return text;
     }
+  }
+
+  getAvailableSkillsToAttach(): Skill[] {
+    return this.skills.filter(s => s.id !== this.selectedSkill?.id && !(this.skillForm.attached_skills || []).includes(s.id || ''));
+  }
+
+  getAvailableMcpToAttach(): any[] {
+    return this.allMcpServers.filter(m => !(this.skillForm.attached_mcp_servers || []).includes(m.id));
+  }
+
+  attachSkill(id: string): void {
+    if (!this.skillForm.attached_skills) {
+      this.skillForm.attached_skills = [];
+    }
+    if (id && !this.skillForm.attached_skills.includes(id)) {
+      this.skillForm.attached_skills.push(id);
+      this.selectedSkillToAdd = '';
+    }
+  }
+
+  detachSkill(id: string): void {
+    if (this.skillForm.attached_skills) {
+      this.skillForm.attached_skills = this.skillForm.attached_skills.filter(i => i !== id);
+    }
+  }
+
+  attachMcp(id: string): void {
+    if (!this.skillForm.attached_mcp_servers) {
+      this.skillForm.attached_mcp_servers = [];
+    }
+    if (id && !this.skillForm.attached_mcp_servers.includes(id)) {
+      this.skillForm.attached_mcp_servers.push(id);
+      this.selectedMcpToAdd = '';
+    }
+  }
+
+  detachMcp(id: string): void {
+    if (this.skillForm.attached_mcp_servers) {
+      this.skillForm.attached_mcp_servers = this.skillForm.attached_mcp_servers.filter(i => i !== id);
+    }
+  }
+
+  getSkillName(id: string): string {
+    const s = this.skills.find(x => x.id === id);
+    return s ? s.name : id;
+  }
+
+  getMcpName(id: string): string {
+    const m = this.allMcpServers.find(x => x.id === id);
+    return m ? m.server_name : id;
   }
 }
