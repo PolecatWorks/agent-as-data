@@ -57,8 +57,8 @@ export class SkillsRegistryComponent implements OnInit {
 
   newTagInput: string = '';
   allMcpServers: any[] = [];
-  selectedSkillToAdd: string = '';
-  selectedMcpToAdd: string = '';
+  skillSearchQuery: string = '';
+  mcpSearchQuery: string = '';
 
   constructor(
     private apiService: ApiService,
@@ -292,13 +292,27 @@ export class SkillsRegistryComponent implements OnInit {
     return this.allMcpServers.filter(m => !(this.skillForm.attached_mcp_servers || []).includes(m.id));
   }
 
+  getFilteredAvailableSkills(): Skill[] {
+    const q = this.skillSearchQuery.toLowerCase().trim();
+    const available = this.getAvailableSkillsToAttach();
+    if (!q) return available;
+    return available.filter(s => s.name.toLowerCase().includes(q) || (s.description && s.description.toLowerCase().includes(q)));
+  }
+
+  getFilteredAvailableMcp(): any[] {
+    const q = this.mcpSearchQuery.toLowerCase().trim();
+    const available = this.getAvailableMcpToAttach();
+    if (!q) return available;
+    return available.filter(m => m.server_name.toLowerCase().includes(q));
+  }
+
   attachSkill(id: string): void {
     if (!this.skillForm.attached_skills) {
       this.skillForm.attached_skills = [];
     }
     if (id && !this.skillForm.attached_skills.includes(id)) {
       this.skillForm.attached_skills.push(id);
-      this.selectedSkillToAdd = '';
+      this.skillSearchQuery = '';
     }
   }
 
@@ -314,7 +328,7 @@ export class SkillsRegistryComponent implements OnInit {
     }
     if (id && !this.skillForm.attached_mcp_servers.includes(id)) {
       this.skillForm.attached_mcp_servers.push(id);
-      this.selectedMcpToAdd = '';
+      this.mcpSearchQuery = '';
     }
   }
 
