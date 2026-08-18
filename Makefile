@@ -98,6 +98,9 @@ aad-fe-dev:
 	-@lsof -t -i :$(aad-fe_PORT) | xargs kill -9 2>/dev/null || true
 	cd aad-fe-container && npm start
 
+aad-fe-test:
+	cd aad-fe-container && npm test
+
 aad-fe-docker:
 	docker build -t agent-as-data-fe:latest aad-fe-container
 

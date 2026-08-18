@@ -1,7 +1,11 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { provideHttpClient } from '@angular/common/http';
+import { ActivatedRoute } from '@angular/router';
+import { of } from 'rxjs';
+import { ApiService } from '../../services/api.service';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
+import { NO_ERRORS_SCHEMA } from '@angular/core';
 import { provideRouter } from '@angular/router';
 import { AgentRegistryComponent } from './agent-registry.component';
 
@@ -12,7 +16,8 @@ describe('AgentRegistryComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [AgentRegistryComponent],
-      providers: [provideHttpClient(), provideAnimationsAsync(), provideRouter([])]
+      providers: [provideHttpClient(), provideAnimationsAsync(), provideRouter([]), { provide: ActivatedRoute, useValue: { queryParams: of({}), snapshot: { paramMap: { get: () => null } } } }, { provide: ApiService, useValue: { getAgents: () => of([]), getTraits: () => of({ids: []}), getTrait: () => of(null) } }],
+      schemas: [NO_ERRORS_SCHEMA]
     })
     .compileComponents();
 
