@@ -67,7 +67,7 @@
                 {{ isEditing ? (selectedServer ? 'Edit MCP Configuration' : 'Register New MCP Server') : 'MCP Server Connection Details' }}
               </h2>
               @if (selectedServer) {
-                <p class="text-xs text-slate-400 m-0 mt-0.5">Name: {{ selectedServer.server_name }}</p>
+                <p class="text-xs text-slate-400 m-0 mt-0.5">ID: {{ selectedServer.id }}</p>
               }
             </div>
 
