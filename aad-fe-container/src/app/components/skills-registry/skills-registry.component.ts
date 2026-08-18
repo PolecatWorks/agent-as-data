@@ -9,7 +9,9 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { ApiService, Skill } from '../../services/api.service';
+import { marked } from 'marked';
 
 @Component({
   selector: 'app-skills-registry',
@@ -54,7 +56,8 @@ export class SkillsRegistryComponent implements OnInit {
     private apiService: ApiService,
     private route: ActivatedRoute,
     private router: Router,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
+    private sanitizer: DomSanitizer
   ) {}
 
   ngOnInit(): void {
@@ -246,5 +249,15 @@ export class SkillsRegistryComponent implements OnInit {
       s.description.toLowerCase().includes(query) ||
       s.tags.some(t => t.toLowerCase().includes(query))
     );
+  }
+
+  getRenderedMarkdown(text: string): SafeHtml {
+    if (!text) return '';
+    try {
+      const rawHtml = marked.parse(text) as string;
+      return this.sanitizer.bypassSecurityTrustHtml(rawHtml);
+    } catch (e) {
+      return text;
+    }
   }
 }
