@@ -46,7 +46,7 @@ export class TraitsRegistryComponent implements OnInit {
       id: 'trait-sec-1',
       name: 'SecurityAuditor',
       description: 'Trait for automated OWASP vulnerability scanning and memory safety auditing.',
-      version: 2,
+      version: '2.0.0',
       capability_requirements: [
         'Read access to workspace source code repository and AST parser',
         'Tool access: Clippy static analyzer and OWASP dependency scanner',
@@ -110,7 +110,7 @@ export class TraitsRegistryComponent implements OnInit {
       id: 'trait-cr-1',
       name: 'CodeReviewer',
       description: 'Trait for automated PR diff inspection and code style verification.',
-      version: 1,
+      version: '1.0.0',
       capability_requirements: [
         'Tool access: Git Diff Inspector and syntax tree parser',
         'Read access to PR patch file and target branch baseline'
@@ -156,7 +156,7 @@ export class TraitsRegistryComponent implements OnInit {
       id: 'trait-comp-1',
       name: 'Compiler',
       description: 'Trait for validating DAG topologies and sub-agent trait compatibility.',
-      version: 1,
+      version: '1.0.0',
       capability_requirements: [
         'State access: Sub-agent topology graph and trait catalog registry',
         'Tool access: Cycle detection graph traverser'
@@ -192,7 +192,7 @@ export class TraitsRegistryComponent implements OnInit {
   traitForm: Partial<TraitContract> = {
     name: '',
     description: '',
-    version: 1,
+    version: '1.0.0',
     capability_requirements: [],
     behavioral_invariants: [],
     evaluation_criteria: [],
@@ -255,7 +255,7 @@ export class TraitsRegistryComponent implements OnInit {
           });
         } else {
           this.traitContracts = [];
-          this.createNewTraitContract();
+          this.selectedTraitContract = null;
         }
       },
       error: () => {
@@ -330,7 +330,7 @@ export class TraitsRegistryComponent implements OnInit {
     this.traitForm = {
       name: '',
       description: '',
-      version: 1,
+      version: '1.0.0',
       capability_requirements: [],
       behavioral_invariants: [],
       evaluation_criteria: [],
@@ -417,7 +417,8 @@ export class TraitsRegistryComponent implements OnInit {
       if (this.traitContracts.length > 0) {
         this.selectTraitContract(this.traitContracts[0]);
       } else {
-        this.createNewTraitContract();
+        this.selectedTraitContract = null;
+        this.router.navigate(['/traits-registry'], { queryParams: {} });
       }
       this.snackBar.open('Removed temporary trait definition', 'Close', { duration: 3000 });
       return;
@@ -431,7 +432,8 @@ export class TraitsRegistryComponent implements OnInit {
         if (this.traitContracts.length > 0) {
           this.selectTraitContract(this.traitContracts[0]);
         } else {
-          this.createNewTraitContract();
+          this.selectedTraitContract = null;
+          this.router.navigate(['/traits-registry'], { queryParams: {} });
         }
         this.snackBar.open('Trait contract deleted successfully', 'Close', { duration: 3000 });
       },

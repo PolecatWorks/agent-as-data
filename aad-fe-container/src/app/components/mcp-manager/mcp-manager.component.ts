@@ -115,7 +115,7 @@ export class McpManagerComponent implements OnInit {
         } else if (this.registeredServers.length > 0) {
           this.selectServer(this.registeredServers[0]);
         } else {
-          this.startNewServer();
+          this.selectedServer = null;
         }
       },
       error: () => {
@@ -289,7 +289,8 @@ export class McpManagerComponent implements OnInit {
         if (this.registeredServers.length > 0) {
           this.selectServer(this.registeredServers[0]);
         } else {
-          this.startNewServer();
+          this.selectedServer = null;
+          this.router.navigate(['/mcp-manager'], { queryParams: {} });
         }
       },
       error: (err: any) => {

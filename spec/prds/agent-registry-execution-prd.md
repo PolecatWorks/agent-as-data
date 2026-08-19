@@ -6,7 +6,7 @@ The **Agent Registry & Execution Engine** in **Agent-As-Data (AAD)** treats AI a
 ## Core Capabilities
 
 ### 1. Declarative Agent Storage, Versioning & Access Control
-- **Agent Specification**: Stores `name`, `description`, `tags`, `agent_definition` (system prompt/persona), `model` config, `tools`, `available_skills`, `available_agents`, `incoming_guardrails`, and `outgoing_guardrails`.
+- **Agent Specification**: Stores `name`, `description`, `tags`, `agent_definition` (system prompt/persona), `model` config, `attached_mcp_servers`, `attached_skills`, `attached_agents`, `incoming_guardrails`, and `outgoing_guardrails`.
 - **Ownership & Group-Based Access Control (RBAC)**:
   - `owner_id` (UUID): Primary user or service account owner.
   - `read_groups` (TEXT[]): Array of group names / IDs granted read & discovery access.
@@ -54,7 +54,7 @@ The **Agent Registry & Execution Engine** in **Agent-As-Data (AAD)** treats AI a
 - **Automated Versioning**: Applied changes create new version records in `agent_revisions`, preserving historical lineage.
 
 ### 5. Agent Network & Relationship Visualization Engine
-- **Delegation & Skill Graph Generation**: Endpoint `GET /api/v1/agents/visualize` (or `GET /api/v1/agents/:id/visualize`) traverses the `available_agents` sub-agent hierarchy and `available_skills` bindings.
+- **Delegation & Skill Graph Generation**: Endpoint `GET /api/v1/agents/visualize` (or `GET /api/v1/agents/:id/visualize`) traverses the `attached_agents` sub-agent hierarchy and `attached_skills` bindings.
 - **Dual Representation Output**: Returns the relationship graph in both formats in a single API response payload:
   - **`mermaid` (String)**: Renderable Mermaid flowchart diagram (e.g. `graph TD; AgentA -->|delegates| AgentB`).
   - **`graph_json` (JSON Object)**: Structured nodes and edges representation (`{ "nodes": [...], "edges": [...] }`) for programmatically rendering custom UI network graphs.
@@ -78,7 +78,7 @@ The **Agent Registry & Execution Engine** in **Agent-As-Data (AAD)** treats AI a
 - **Audit & Analytics APIs**: Endpoints `GET /api/v1/agents/:id/logs` and `GET /api/v1/analytics/usage` for querying tool invocation frequencies, token consumption trends, error rates, and caller activity.
 
 ### 8. Managed Skills Registry, Builder & Lifecycle Engine
-- **Dedicated Skills Registry (`skills` Table)**: Managed database repository for deterministic, single-purpose skills (`name`, `description`, `input_schema`, `output_schema`, `implementation`). Agents bind to skills via `available_skills`.
+- **Dedicated Skills Registry (`skills` Table)**: Managed database repository for deterministic, single-purpose skills (`name`, `description`, `input_schema`, `output_schema`, `implementation`). Agents bind to skills via `attached_skills`.
 - **Skill vs. Agent Distinction**:
   - *Skills*: Direct, single-purpose execution routines without autonomous reasoning loops or sub-agent delegation.
   - *Agents*: Autonomous reasoners with system prompts, guardrails, dynamic tool choice, and sub-agent delegation.

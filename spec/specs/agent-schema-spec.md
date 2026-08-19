@@ -25,9 +25,12 @@ CREATE TABLE IF NOT EXISTS agents (
     outgoing_guardrails JSONB NOT NULL DEFAULT '{}'::jsonb,
     agent_definition JSONB NOT NULL DEFAULT '{}'::jsonb,
     model JSONB NOT NULL DEFAULT '{}'::jsonb,
-    tools JSONB NOT NULL DEFAULT '[]'::jsonb,
-    available_skills JSONB NOT NULL DEFAULT '[]'::jsonb,
-    available_agents JSONB NOT NULL DEFAULT '[]'::jsonb,
+    tools JSONB, -- Deprecated, use attached_mcp_servers instead
+    available_skills JSONB, -- Deprecated, use attached_skills instead
+    available_agents JSONB, -- Deprecated, use attached_agents instead
+    attached_skills UUID[] NOT NULL DEFAULT '{}',
+    attached_mcp_servers UUID[] NOT NULL DEFAULT '{}',
+    attached_agents UUID[] NOT NULL DEFAULT '{}',
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

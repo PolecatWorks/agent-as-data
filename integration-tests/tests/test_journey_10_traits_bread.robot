@@ -35,8 +35,8 @@ Test Traits BREAD Flow
     ${name}=    Get From Dictionary    ${trait}    name
     Should Be Equal    ${name}    RobotSecurityTrait
     ${version}=    Get From Dictionary    ${trait}    version
-    Should Be Equal As Integers    ${version}    1
-
+    Should Be Equal As Strings    ${version}    1.0.0
+ 
     # Verify initial features are saved correctly
     ${fetched}=    Get Trait    ${trait_id}
     ${fetched_reqs}=    Get From Dictionary    ${fetched}    capability_requirements
@@ -52,7 +52,7 @@ Test Traits BREAD Flow
     ${fetched_tags}=    Get From Dictionary    ${fetched}    tags
     List Should Contain Value    ${fetched_tags}    security
     List Should Contain Value    ${fetched_tags}    audit
-
+ 
     # 2. Iterate and Update features (adding new ones, removing/changing old ones)
     ${updated_reqs}=    Create List    Read access to source code    AST parsing access
     ${updated_invariants}=    Create List    MUST NEVER leak API credentials    MUST NOT use insecure libraries
@@ -68,7 +68,7 @@ Test Traits BREAD Flow
     ${updated_description}=    Get From Dictionary    ${updated}    description
     Should Be Equal    ${updated_description}    Security trait defined by robot integration test - updated
     ${updated_version}=    Get From Dictionary    ${updated}    version
-    Should Be Equal As Integers    ${updated_version}    2
+    Should Be Equal As Strings    ${updated_version}    1.1.0
 
     # Verify updated features on backend
     ${fetched2}=    Get Trait    ${trait_id}

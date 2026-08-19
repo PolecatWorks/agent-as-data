@@ -83,19 +83,8 @@ export class AgentRegistryComponent implements OnInit {
     'BasicAgent'
   ];
 
-  registeredToolsCatalog = [
-    { id: 'tool-git-diff', name: 'Git Diff Inspector', category: 'DevTools' },
-    { id: 'tool-sqlite-query', name: 'Knowledge Graph SQL Query', category: 'Database' },
-    { id: 'tool-mcp-client', name: 'Remote MCP Client Bridge', category: 'MCP' },
-    { id: 'tool-static-analyzer', name: 'Clippy / Static Analysis', category: 'Security' },
-    { id: 'tool-ast-parser', name: 'Tree-Sitter AST Parser', category: 'Compiler' }
-  ];
-
-  registeredSkillsCatalog = [
-    { id: 'skill-security-audit', name: 'OWASP Security Audit Skill', description: 'Ruleset for memory safety and timing attack detection' },
-    { id: 'skill-dag-validator', name: 'DAG Topology Validator', description: 'Rules for validating circular dependency avoidance' },
-    { id: 'skill-rag-retrieval', name: 'RAG Hybrid Knowledge Retrieval', description: 'Combines vector search with SPO graph traversal' }
-  ];
+  allMcpServers: any[] = [];
+  allSkills: any[] = [];
 
   // Trait Contracts Editor State
   traitContracts: TraitContract[] = [
@@ -103,7 +92,7 @@ export class AgentRegistryComponent implements OnInit {
       id: 'trait-sec-1',
       name: 'SecurityAuditor',
       description: 'Trait for automated OWASP vulnerability scanning and memory safety auditing.',
-      version: 2,
+      version: '2.0.0',
       capability_requirements: [
         'Read access to workspace source code repository and AST parser',
         'Tool access: Clippy static analyzer and OWASP dependency scanner'
@@ -122,7 +111,7 @@ export class AgentRegistryComponent implements OnInit {
       id: 'trait-cr-1',
       name: 'CodeReviewer',
       description: 'Trait for automated PR diff inspection and code style verification.',
-      version: 1,
+      version: '1.0.0',
       capability_requirements: ['Tool access: Git Diff Inspector'],
       behavioral_invariants: ['MUST NEVER approve code containing syntax errors'],
       evaluation_criteria: ['Comment relevance score evaluated by senior developer rubric'],
@@ -132,7 +121,7 @@ export class AgentRegistryComponent implements OnInit {
       id: 'trait-comp-1',
       name: 'Compiler',
       description: 'Trait for validating DAG topologies and sub-agent trait compatibility.',
-      version: 1,
+      version: '1.0.0',
       capability_requirements: ['State access: Sub-agent topology graph'],
       behavioral_invariants: ['MUST NEVER allow circular dependencies between sub-agent execution nodes'],
       evaluation_criteria: ['Correct classification of valid DAG topologies vs cyclic graphs'],
@@ -144,7 +133,7 @@ export class AgentRegistryComponent implements OnInit {
   traitForm: Partial<TraitContract> = {
     name: '',
     description: '',
-    version: 1,
+    version: '1.0.0',
     capability_requirements: [],
     behavioral_invariants: [],
     evaluation_criteria: [],
@@ -157,6 +146,9 @@ export class AgentRegistryComponent implements OnInit {
   selectedToolToAdd: string = '';
   selectedSubAgentToAdd: string = '';
   selectedSkillToAdd: string = '';
+  skillSearchQuery: string = '';
+  mcpSearchQuery: string = '';
+  agentSearchQuery: string = '';
 
 
   // Form Model
@@ -165,7 +157,7 @@ export class AgentRegistryComponent implements OnInit {
     description: '',
     tags: [],
     implements_traits: [],
-    attached_tools: [],
+    attached_mcp_servers: [],
     attached_agents: [],
     attached_skills: [],
     agent_definition: '',
@@ -181,11 +173,13 @@ export class AgentRegistryComponent implements OnInit {
   newTrait: string = '';
 
   get filteredTraitsCatalog(): string[] {
+    const attached = this.agentForm.implements_traits || [];
+    const available = this.registeredTraitsCatalog.filter(t => !attached.includes(t));
     if (!this.traitSearchQuery.trim()) {
-      return this.registeredTraitsCatalog;
+      return available;
     }
     const q = this.traitSearchQuery.toLowerCase().trim();
-    return this.registeredTraitsCatalog.filter(t => t.toLowerCase().includes(q));
+    return available.filter(t => t.toLowerCase().includes(q));
   }
 
   getTraitDescription(traitName: string): string {
@@ -206,9 +200,51 @@ export class AgentRegistryComponent implements OnInit {
   ngOnInit(): void {
     this.loadAgents();
     this.loadTraits();
+    this.loadMcpServers();
+    this.loadSkills();
     this.route.queryParams.subscribe(queryParams => {
       this.isEditing = queryParams['edit'] === 'true';
     });
+  }
+
+  loadMcpServers(): void {
+    this.apiService.getMcpServers().subscribe({
+      next: (servers) => {
+        this.allMcpServers = servers || [];
+      }
+    });
+  }
+
+  loadSkills(): void {
+    this.apiService.getSkills().subscribe({
+      next: (skills) => {
+        this.allSkills = skills || [];
+      }
+    });
+  }
+
+  getSkillName(id: string): string {
+    const s = this.allSkills.find(x => x.id === id);
+    return s ? s.name : id;
+  }
+
+  getMcpName(id: string): string {
+    const m = this.allMcpServers.find(x => x.id === id);
+    return m ? m.server_name : id;
+  }
+
+  getMcpDescription(id: string): string {
+    const m = this.allMcpServers.find(x => x.id === id);
+    if (m) {
+      if (m.description && m.description.trim().length > 0) {
+        return m.description;
+      }
+      if (m.endpoint_config && m.endpoint_config.description) {
+        return m.endpoint_config.description;
+      }
+      return `Transport: ${m.transport_type}`;
+    }
+    return 'No details available';
   }
 
   loadTraits(): void {
@@ -251,7 +287,7 @@ export class AgentRegistryComponent implements OnInit {
             description: 'Automated static analysis and security vulnerability inspector.',
             tags: ['security', 'audit', 'rust'],
             implements_traits: ['SecurityAuditor', 'CodeReviewer'],
-            current_version: 3,
+            current_version: '3.0.0',
             owner_id: 'owner-sec-team',
             judge_threshold: 0.9,
             model: 'claude-3-5-sonnet-v2',
@@ -263,7 +299,7 @@ export class AgentRegistryComponent implements OnInit {
             description: 'Scans agent networks to detect circular dependencies and overlap clusters.',
             tags: ['compiler', 'refactoring', 'dag'],
             implements_traits: ['Compiler', 'NetworkOptimizer'],
-            current_version: 1,
+            current_version: '1.0.0',
             owner_id: 'owner-core-team',
             judge_threshold: 0.85,
             model: 'llama-3.3-70b-instruct',
@@ -349,10 +385,10 @@ export class AgentRegistryComponent implements OnInit {
       description: '',
       tags: [],
       implements_traits: [],
-      attached_tools: [],
+      attached_mcp_servers: [],
       attached_agents: [],
       attached_skills: [],
-      current_version: 1,
+      current_version: '1.0.0',
       owner_id: '00000000-0000-0000-0000-000000000000',
       judge_threshold: 0.8,
       model: 'claude-3-5-sonnet-v2',
@@ -406,10 +442,10 @@ export class AgentRegistryComponent implements OnInit {
       description: this.agentForm.description || '',
       tags: this.agentForm.tags || [],
       implements_traits: this.agentForm.implements_traits || [],
-      attached_tools: this.agentForm.attached_tools || [],
+      attached_mcp_servers: this.agentForm.attached_mcp_servers || [],
       attached_agents: this.agentForm.attached_agents || [],
       attached_skills: this.agentForm.attached_skills || [],
-      current_version: this.agentForm.current_version || 1,
+      current_version: this.agentForm.current_version || '1.0.0',
       owner_id: this.agentForm.owner_id || '00000000-0000-0000-0000-000000000000',
       judge_threshold: this.agentForm.judge_threshold || 0.8,
       model: this.agentForm.model || 'claude-3-5-sonnet-v2',
@@ -457,7 +493,7 @@ export class AgentRegistryComponent implements OnInit {
           const newAgent: Agent = {
             ...payload,
             id: fallbackId,
-            current_version: 1
+            current_version: '1.0.0'
           } as Agent;
           this.agents.push(newAgent);
           this.selectAgent(newAgent);
@@ -529,18 +565,104 @@ export class AgentRegistryComponent implements OnInit {
 
   addTool(): void {
     if (this.selectedToolToAdd && this.agentForm) {
-      if (!this.agentForm.attached_tools) this.agentForm.attached_tools = [];
-      if (!this.agentForm.attached_tools.includes(this.selectedToolToAdd)) {
-        this.agentForm.attached_tools.push(this.selectedToolToAdd);
+      if (!this.agentForm.attached_mcp_servers) this.agentForm.attached_mcp_servers = [];
+      if (!this.agentForm.attached_mcp_servers.includes(this.selectedToolToAdd)) {
+        this.agentForm.attached_mcp_servers.push(this.selectedToolToAdd);
       }
       this.selectedToolToAdd = '';
     }
   }
 
   removeTool(toolId: string): void {
-    if (this.agentForm?.attached_tools) {
-      this.agentForm.attached_tools = this.agentForm.attached_tools.filter((t: string) => t !== toolId);
+    if (this.agentForm?.attached_mcp_servers) {
+      this.agentForm.attached_mcp_servers = this.agentForm.attached_mcp_servers.filter((t: string) => t !== toolId);
     }
+  }
+
+  getAvailableSkillsToAttach(): any[] {
+    return this.allSkills.filter(s => !(this.agentForm.attached_skills || []).includes(s.id || ''));
+  }
+
+  getAvailableMcpToAttach(): any[] {
+    return this.allMcpServers.filter(m => !(this.agentForm.attached_mcp_servers || []).includes(m.id));
+  }
+
+  getFilteredAvailableSkills(): any[] {
+    const q = this.skillSearchQuery.toLowerCase().trim();
+    const available = this.getAvailableSkillsToAttach();
+    if (!q) return available;
+    return available.filter(s => s.name.toLowerCase().includes(q) || (s.description && s.description.toLowerCase().includes(q)));
+  }
+
+  getFilteredAvailableMcp(): any[] {
+    const q = this.mcpSearchQuery.toLowerCase().trim();
+    const available = this.getAvailableMcpToAttach();
+    if (!q) return available;
+    return available.filter(m => m.server_name.toLowerCase().includes(q));
+  }
+
+  attachSkill(id: string): void {
+    if (!this.agentForm.attached_skills) {
+      this.agentForm.attached_skills = [];
+    }
+    if (id && !this.agentForm.attached_skills.includes(id)) {
+      this.agentForm.attached_skills.push(id);
+      this.skillSearchQuery = '';
+    }
+  }
+
+  detachSkill(id: string): void {
+    if (this.agentForm.attached_skills) {
+      this.agentForm.attached_skills = this.agentForm.attached_skills.filter((i: string) => i !== id);
+    }
+  }
+
+  attachMcp(id: string): void {
+    if (!this.agentForm.attached_mcp_servers) {
+      this.agentForm.attached_mcp_servers = [];
+    }
+    if (id && !this.agentForm.attached_mcp_servers.includes(id)) {
+      this.agentForm.attached_mcp_servers.push(id);
+      this.mcpSearchQuery = '';
+    }
+  }
+
+  detachMcp(id: string): void {
+    if (this.agentForm.attached_mcp_servers) {
+      this.agentForm.attached_mcp_servers = this.agentForm.attached_mcp_servers.filter((i: string) => i !== id);
+    }
+  }
+
+  getAvailableAgentsToAttach(): any[] {
+    return this.agents.filter(a => a.id !== this.agentForm.id && !(this.agentForm.attached_agents || []).includes(a.id || ''));
+  }
+
+  getFilteredAvailableAgents(): any[] {
+    const q = this.agentSearchQuery.toLowerCase().trim();
+    const available = this.getAvailableAgentsToAttach();
+    if (!q) return available;
+    return available.filter(a => a.name.toLowerCase().includes(q) || (a.description && a.description.toLowerCase().includes(q)));
+  }
+
+  attachAgent(id: string): void {
+    if (!this.agentForm.attached_agents) {
+      this.agentForm.attached_agents = [];
+    }
+    if (id && !this.agentForm.attached_agents.includes(id)) {
+      this.agentForm.attached_agents.push(id);
+      this.agentSearchQuery = '';
+    }
+  }
+
+  detachAgent(id: string): void {
+    if (this.agentForm.attached_agents) {
+      this.agentForm.attached_agents = this.agentForm.attached_agents.filter((i: string) => i !== id);
+    }
+  }
+
+  getAgentName(id: string): string {
+    const a = this.agents.find(x => x.id === id);
+    return a ? a.name : id;
   }
 
   addSubAgent(): void {
@@ -580,6 +702,7 @@ export class AgentRegistryComponent implements OnInit {
       if (!this.agentForm.implements_traits) this.agentForm.implements_traits = [];
       if (!this.agentForm.implements_traits.includes(trait)) {
         this.agentForm.implements_traits.push(trait);
+        this.traitSearchQuery = '';
       }
     }
   }
@@ -608,7 +731,7 @@ export class AgentRegistryComponent implements OnInit {
     this.traitForm = {
       name: 'NewTraitDefinition',
       description: 'Describe the purpose and domain expectations of this agent trait...',
-      version: 1,
+      version: '1.0.0',
       capability_requirements: [],
       behavioral_invariants: [],
       evaluation_criteria: [],
@@ -619,12 +742,15 @@ export class AgentRegistryComponent implements OnInit {
   saveTraitContract(): void {
     if (!this.traitForm.name) return;
     const existingIdx = this.traitContracts.findIndex(t => t.id === this.selectedTraitContract?.id || t.name === this.traitForm.name);
-    
     if (existingIdx >= 0) {
+      const v = this.traitContracts[existingIdx].version || '1.0.0';
+      const parts = v.split('.');
+      const minor = parts.length >= 2 ? parseInt(parts[1], 10) + 1 : 1;
+      const bumpedVersion = `${parts[0] || '1'}.${minor}.0`;
       this.traitContracts[existingIdx] = {
         ...this.traitContracts[existingIdx],
         ...this.traitForm,
-        version: (this.traitContracts[existingIdx].version || 1) + 1
+        version: bumpedVersion
       } as TraitContract;
       this.selectedTraitContract = this.traitContracts[existingIdx];
       this.snackBar.open(`Updated trait ${this.traitForm.name} (v${this.traitContracts[existingIdx].version})`, 'Close', { duration: 3000 });
@@ -633,7 +759,7 @@ export class AgentRegistryComponent implements OnInit {
         id: 'trait-' + Date.now(),
         name: this.traitForm.name,
         description: this.traitForm.description || '',
-        version: 1,
+        version: '1.0.0',
         capability_requirements: this.traitForm.capability_requirements || [],
         behavioral_invariants: this.traitForm.behavioral_invariants || [],
         evaluation_criteria: this.traitForm.evaluation_criteria || [],
@@ -653,6 +779,17 @@ export class AgentRegistryComponent implements OnInit {
     if (this.agentForm?.implements_traits) {
       this.agentForm.implements_traits = this.agentForm.implements_traits.filter((t: string) => t !== trait);
     }
+  }
+
+  getFilteredAgents(): Agent[] {
+    const query = this.searchQuery.toLowerCase().trim();
+    if (!query) return this.agents;
+    return this.agents.filter(a =>
+      a.name.toLowerCase().includes(query) ||
+      (a.description && a.description.toLowerCase().includes(query)) ||
+      (a.tags && a.tags.some(t => t.toLowerCase().includes(query))) ||
+      (a.implements_traits && a.implements_traits.some(t => t.toLowerCase().includes(query)))
+    );
   }
 
   getRenderedMarkdown(text: string): SafeHtml {

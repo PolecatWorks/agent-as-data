@@ -156,7 +156,7 @@ Agent-As-Data (AAD) is an enterprise-grade declarative platform and specificatio
 
 ### Agent Entity
 - `id` (UUID): Unique agent identifier.
-- `name` (String), `description` (String), `tags` (TEXT[]), `version` (Integer).
+- `name` (String), `description` (String), `tags` (TEXT[]), `version` (String - SemVer e.g., '1.0.0', updated minor component on save).
 - **Traits & Abstraction**:
   - `implements_traits` (TEXT[]): List of abstract trait interfaces this agent satisfies (e.g., `["SecurityAuditor", "CodeReviewer"]`).
 - **Access Control & Ownership**:
@@ -175,16 +175,16 @@ Agent-As-Data (AAD) is an enterprise-grade declarative platform and specificatio
 - `id` (UUID), `agent_id` (UUID), `name` (String), `test_cases` (JSONB - Array of input payloads, deterministic assertions, and natural language Judge rubrics), `created_at` (Timestamp).
 
 ### Agent Test Run Entity (`agent_test_runs`)
-- `id` (UUID), `agent_id` (UUID), `agent_version` (Integer), `suite_id` (UUID), `status` (Enum: `passed`, `failed`), `deterministic_results` (JSONB), `judge_evaluation` (JSONB - Judge scores, reasoning, rubric compliance), `created_at` (Timestamp).
+- `id` (UUID), `agent_id` (UUID), `agent_version` (String - SemVer), `suite_id` (UUID), `status` (Enum: `passed`, `failed`), `deterministic_results` (JSONB), `judge_evaluation` (JSONB - Judge scores, reasoning, rubric compliance), `created_at` (Timestamp).
 
 ### Agent Usage Log Entity (`agent_usage_logs`)
-- `id` (UUID), `agent_id` (UUID), `agent_version` (Integer), `caller_identity` (String), `tool_calls` (JSONB - Array of tool calls with name, args, duration_ms, and status), `token_metrics` (JSONB - prompt_tokens, completion_tokens, total_tokens, estimated_cost), `guardrail_events` (JSONB), `created_at` (Timestamp).
+- `id` (UUID), `agent_id` (UUID), `agent_version` (String - SemVer), `caller_identity` (String), `tool_calls` (JSONB - Array of tool calls with name, args, duration_ms, and status), `token_metrics` (JSONB - prompt_tokens, completion_tokens, total_tokens, estimated_cost), `guardrail_events` (JSONB), `created_at` (Timestamp).
 
 ### Execution Entity (`executions`)
-- `id` (UUID), `agent_id` (UUID), `agent_version` (Integer), `execution_version` (Integer - OCC version counter), `status` (Enum: `pending`, `running`, `completed`, `failed`), `working_memory` (JSONB - Persistent working memory snapshot), `request_payload` (JSONB), `response_payload` (JSONB), `error_message` (Text), `started_at` & `completed_at` (Timestamps).
+- `id` (UUID), `agent_id` (UUID), `agent_version` (String - SemVer), `execution_version` (Integer - OCC version counter), `status` (Enum: `pending`, `running`, `completed`, `failed`), `working_memory` (JSONB - Persistent working memory snapshot), `request_payload` (JSONB), `response_payload` (JSONB), `error_message` (Text), `started_at` & `completed_at` (Timestamps).
 
 ### Skill Entity (`skills`)
-- `id` (UUID), `name` (String), `description` (String), `tags` (TEXT[]), `version` (Integer), `owner_id` (UUID), `read_groups` (TEXT[]), `write_groups` (TEXT[]), `input_schema` (JSONB), `output_schema` (JSONB), `implementation` (JSONB), `created_at` & `updated_at` (Timestamps).
+- `id` (UUID), `name` (String), `description` (String), `tags` (TEXT[]), `version` (String - SemVer, updated minor component on save), `owner_id` (UUID), `read_groups` (TEXT[]), `write_groups` (TEXT[]), `input_schema` (JSONB), `output_schema` (JSONB), `implementation` (JSONB), `created_at` & `updated_at` (Timestamps).
 
 
 

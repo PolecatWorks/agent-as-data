@@ -84,8 +84,8 @@ pub enum OutputGuardrailType {
     StructuralFormattingRules,
 }
 
-fn default_version() -> i32 {
-    1
+fn default_version() -> String {
+    "1.0.0".to_string()
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
@@ -99,13 +99,13 @@ pub struct Agent {
     #[serde(default)]
     pub implements_traits: Vec<String>,
     #[serde(default)]
-    pub attached_tools: Vec<String>,
+    pub attached_mcp_servers: Vec<Uuid>,
     #[serde(default)]
     pub attached_agents: Vec<Uuid>,
     #[serde(default)]
-    pub attached_skills: Vec<String>,
+    pub attached_skills: Vec<Uuid>,
     #[serde(default = "default_version")]
-    pub current_version: i32,
+    pub current_version: String,
     pub owner_id: Uuid,
     #[serde(default)]
     pub judge_threshold: f64,
@@ -149,7 +149,7 @@ pub struct TestAgentResponse {
     pub status: String,
     pub average_score: f64,
     pub version_bumped: bool,
-    pub new_version: i32,
+    pub new_version: String,
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
@@ -163,7 +163,7 @@ pub struct AgentSearchResult {
     pub agent_id: Uuid,
     pub name: String,
     pub description: Option<String>,
-    pub current_version: i32,
+    pub current_version: String,
     pub implements_traits: Vec<String>,
     pub tags: Vec<String>,
     pub score: f64,
@@ -178,8 +178,8 @@ pub struct Skill {
     pub definition: String,
     pub tags: Vec<String>,
     pub owner_id: Uuid,
-    #[serde(default)]
-    pub current_version: i32,
+    #[serde(default = "default_version")]
+    pub current_version: String,
     #[serde(default)]
     pub attached_skills: Vec<Uuid>,
     #[serde(default)]
@@ -284,8 +284,8 @@ pub struct TraitContract {
     pub id: Option<Uuid>,
     pub name: String,
     pub description: String,
-    #[serde(default)]
-    pub version: i32,
+    #[serde(default = "default_version")]
+    pub version: String,
     pub capability_requirements: Vec<String>,
     pub behavioral_invariants: Vec<String>,
     pub evaluation_criteria: Vec<String>,
@@ -325,5 +325,22 @@ impl PageOptions {
 pub struct ListPages {
     pub ids: Vec<Uuid>,
     pub pagination: PageOptions,
+}
+
+pub fn bump_minor_version(version: &str) -> String {
+    let parts: Vec<&str> = version.split('.').collect();
+    if parts.len() >= 2 {
+        if let Ok(major) = parts[0].parse::<i32>() {
+            if let Ok(minor) = parts[1].parse::<i32>() {
+                return format!("{}.{}.0", major, minor + 1);
+            }
+        }
+    }
+    // Fallback if not valid SemVer
+    let clean = version.trim_matches(|c: char| !c.is_numeric());
+    if let Ok(num) = clean.parse::<i32>() {
+        return format!("{}.0.0", num + 1);
+    }
+    "1.1.0".to_string()
 }
 

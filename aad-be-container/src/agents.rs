@@ -19,17 +19,15 @@ pub async fn create_agent(
     Json(payload): Json<Agent>,
 ) -> Result<(StatusCode, Json<Agent>), (StatusCode, String)> {
     let agent_id = payload.id.unwrap_or_else(Uuid::new_v4);
+    let current_version = if payload.current_version.is_empty() || payload.current_version == "0" || payload.current_version == "1" { "1.0.0".to_string() } else { payload.current_version.clone() };
     
-    let tools_json = serde_json::to_value(&payload.attached_tools).unwrap_or_else(|_| serde_json::json!([]));
-    let skills_json = serde_json::to_value(&payload.attached_skills).unwrap_or_else(|_| serde_json::json!([]));
-    let agents_json = serde_json::to_value(&payload.attached_agents).unwrap_or_else(|_| serde_json::json!([]));
     let incoming_json = serde_json::to_value(&payload.input_guardrails).unwrap_or_else(|_| serde_json::json!([]));
     let outgoing_json = serde_json::to_value(&payload.output_guardrails).unwrap_or_else(|_| serde_json::json!([]));
 
     // 1. Insert Agent
     sqlx::query(
         r#"
-        INSERT INTO agents (id, name, description, tags, implements_traits, current_version, owner_id, read_groups, write_groups, execute_groups, agent_definition, model, judge_threshold, tools, available_skills, available_agents, incoming_guardrails, outgoing_guardrails)
+        INSERT INTO agents (id, name, description, tags, implements_traits, current_version, owner_id, read_groups, write_groups, execute_groups, agent_definition, model, judge_threshold, attached_skills, attached_mcp_servers, attached_agents, incoming_guardrails, outgoing_guardrails)
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
         "#,
     )
@@ -38,7 +36,7 @@ pub async fn create_agent(
     .bind(&payload.description)
     .bind(&payload.tags)
     .bind(&payload.implements_traits)
-    .bind(payload.current_version)
+    .bind(&current_version)
     .bind(payload.owner_id)
     .bind(&payload.read_groups)
     .bind(&payload.write_groups)
@@ -46,9 +44,9 @@ pub async fn create_agent(
     .bind(&payload.agent_definition)
     .bind(&payload.model)
     .bind(payload.judge_threshold)
-    .bind(&tools_json)
-    .bind(&skills_json)
-    .bind(&agents_json)
+    .bind(&payload.attached_skills)
+    .bind(&payload.attached_mcp_servers)
+    .bind(&payload.attached_agents)
     .bind(&incoming_json)
     .bind(&outgoing_json)
     .execute(&pool)
@@ -60,7 +58,7 @@ pub async fn create_agent(
         "id": agent_id,
         "name": payload.name,
         "agent_definition": payload.agent_definition,
-        "version": payload.current_version
+        "version": current_version
     });
 
     sqlx::query(
@@ -71,7 +69,7 @@ pub async fn create_agent(
     )
     .bind(Uuid::new_v4())
     .bind(agent_id)
-    .bind(payload.current_version)
+    .bind(&current_version)
     .bind(snapshot)
     .execute(&pool)
     .await
@@ -79,6 +77,7 @@ pub async fn create_agent(
 
     let mut response_agent = payload.clone();
     response_agent.id = Some(agent_id);
+    response_agent.current_version = current_version;
 
     Ok((
         StatusCode::CREATED,
@@ -98,9 +97,6 @@ pub async fn update_agent(
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Fetch Error: {}", e)))?;
 
     if row.is_some() {
-        let tools_json = serde_json::to_value(&payload.attached_tools).unwrap_or_else(|_| serde_json::json!([]));
-        let skills_json = serde_json::to_value(&payload.attached_skills).unwrap_or_else(|_| serde_json::json!([]));
-        let agents_json = serde_json::to_value(&payload.attached_agents).unwrap_or_else(|_| serde_json::json!([]));
         let incoming_json = serde_json::to_value(&payload.input_guardrails).unwrap_or_else(|_| serde_json::json!([]));
         let outgoing_json = serde_json::to_value(&payload.output_guardrails).unwrap_or_else(|_| serde_json::json!([]));
 
@@ -109,7 +105,7 @@ pub async fn update_agent(
             UPDATE agents
             SET name = $1, description = $2, tags = $3, implements_traits = $4, read_groups = $5,
                 write_groups = $6, execute_groups = $7, agent_definition = $8, model = $9, judge_threshold = $10,
-                tools = $11, available_skills = $12, available_agents = $13, incoming_guardrails = $14, outgoing_guardrails = $15,
+                attached_skills = $11, attached_mcp_servers = $12, attached_agents = $13, incoming_guardrails = $14, outgoing_guardrails = $15,
                 current_version = $16, owner_id = $17, guardrail_config = $18, updated_at = NOW()
             WHERE id = $19
             "#,
@@ -124,12 +120,12 @@ pub async fn update_agent(
         .bind(&payload.agent_definition)
         .bind(&payload.model)
         .bind(payload.judge_threshold)
-        .bind(&tools_json)
-        .bind(&skills_json)
-        .bind(&agents_json)
+        .bind(&payload.attached_skills)
+        .bind(&payload.attached_mcp_servers)
+        .bind(&payload.attached_agents)
         .bind(&incoming_json)
         .bind(&outgoing_json)
-        .bind(payload.current_version)
+        .bind(&payload.current_version)
         .bind(payload.owner_id)
         .bind(&payload.guardrail_config)
         .bind(id)
@@ -151,7 +147,7 @@ pub async fn get_agent(
 ) -> Result<Json<Agent>, (StatusCode, String)> {
     let row = sqlx::query(
         r#"
-        SELECT id, name, description, tags, implements_traits, current_version, owner_id, read_groups, write_groups, execute_groups, agent_definition, model, judge_threshold, tools, available_skills, available_agents, incoming_guardrails, outgoing_guardrails, guardrail_config, archived_at
+        SELECT id, name, description, tags, implements_traits, current_version, owner_id, read_groups, write_groups, execute_groups, agent_definition, model, judge_threshold, attached_skills, attached_mcp_servers, attached_agents, incoming_guardrails, outgoing_guardrails, guardrail_config, archived_at
         FROM agents
         WHERE id = $1
         "#
@@ -170,20 +166,18 @@ pub async fn get_agent(
         let agent_definition: serde_json::Value = r.get("agent_definition");
         let model: serde_json::Value = r.get("model");
         let owner_id: Uuid = r.get("owner_id");
-        let current_version: i32 = r.get("current_version");
+        let current_version: String = r.get("current_version");
         let judge_threshold: f64 = r.get("judge_threshold");
         let guardrail_config: Option<serde_json::Value> = r.get("guardrail_config");
         let archived_at: Option<chrono::DateTime<chrono::Utc>> = r.get("archived_at");
 
-        let tools_val: serde_json::Value = r.get("tools");
-        let skills_val: serde_json::Value = r.get("available_skills");
-        let agents_val: serde_json::Value = r.get("available_agents");
+        let attached_skills: Vec<Uuid> = r.get("attached_skills");
+        let attached_mcp_servers: Vec<Uuid> = r.get("attached_mcp_servers");
+        let attached_agents: Vec<Uuid> = r.get("attached_agents");
+
         let incoming_val: serde_json::Value = r.get("incoming_guardrails");
         let outgoing_val: serde_json::Value = r.get("outgoing_guardrails");
 
-        let attached_tools: Vec<String> = serde_json::from_value(tools_val).unwrap_or_default();
-        let attached_skills: Vec<String> = serde_json::from_value(skills_val).unwrap_or_default();
-        let attached_agents: Vec<Uuid> = serde_json::from_value(agents_val).unwrap_or_default();
         let input_guardrails: Vec<InputGuardrailType> = serde_json::from_value(incoming_val).unwrap_or_default();
         let output_guardrails: Vec<OutputGuardrailType> = serde_json::from_value(outgoing_val).unwrap_or_default();
 
@@ -193,7 +187,7 @@ pub async fn get_agent(
             description: r.get("description"),
             tags,
             implements_traits,
-            attached_tools,
+            attached_mcp_servers,
             attached_agents,
             attached_skills,
             current_version,
@@ -256,7 +250,7 @@ pub async fn test_agent(
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Fetch Error: {}", e)))?;
 
     if let Some(r) = row {
-        let current_version: i32 = r.get("current_version");
+        let current_version: String = r.get("current_version");
         let judge_threshold: f64 = r.get("judge_threshold");
         let name: String = r.get("name");
         let agent_definition: serde_json::Value = r.get("agent_definition");
@@ -264,20 +258,20 @@ pub async fn test_agent(
         // Use mock score of 0.9 for independent Judge Agent eval
         let mock_score = 0.9;
 
-        let mut status = "failed";
+        let status;
         let mut version_bumped = false;
-        let mut new_version = current_version;
+        let mut new_version = current_version.clone();
 
         if mock_score >= judge_threshold {
             status = "passed";
             version_bumped = true;
-            new_version = current_version + 1;
+            new_version = crate::models::bump_minor_version(&current_version);
 
             // Bump version and create a new immutable revision snapshot
             sqlx::query(
                 "UPDATE agents SET current_version = $1, updated_at = NOW() WHERE id = $2"
             )
-            .bind(new_version)
+            .bind(&new_version)
             .bind(id)
             .execute(&pool)
             .await
@@ -298,7 +292,7 @@ pub async fn test_agent(
             )
             .bind(Uuid::new_v4())
             .bind(id)
-            .bind(new_version)
+            .bind(&new_version)
             .bind(snapshot)
             .execute(&pool)
             .await
@@ -390,7 +384,7 @@ pub async fn create_skill(
     let output_schema = payload.output_schema.clone().unwrap_or_else(|| serde_json::json!({}));
     let implementation = payload.implementation.clone().unwrap_or_else(|| serde_json::json!({}));
 
-    let current_version = if payload.current_version == 0 { 1 } else { payload.current_version };
+    let current_version = if payload.current_version.is_empty() || payload.current_version == "0" || payload.current_version == "1" { "1.0.0".to_string() } else { payload.current_version.clone() };
 
     sqlx::query(
         r#"
@@ -403,7 +397,7 @@ pub async fn create_skill(
     .bind(&payload.description)
     .bind(&payload.definition)
     .bind(&payload.tags)
-    .bind(current_version)
+    .bind(&current_version)
     .bind(payload.owner_id)
     .bind(&payload.attached_skills)
     .bind(&payload.attached_mcp_servers)
@@ -448,7 +442,7 @@ pub async fn promote_skill(
     sqlx::query(
         r#"
         INSERT INTO agents (id, name, description, current_version, owner_id, agent_definition)
-        VALUES ($1, $2, $3, 1, $4, $5)
+        VALUES ($1, $2, $3, '1.0.0', $4, $5)
         "#,
     )
     .bind(agent_id)
@@ -468,10 +462,10 @@ pub async fn promote_skill(
             description,
             tags: vec![],
             implements_traits: vec![],
-            attached_tools: vec![],
+            attached_mcp_servers: vec![],
             attached_agents: vec![],
             attached_skills: vec![],
-            current_version: 1,
+            current_version: "1.0.0".to_string(),
             owner_id,
             judge_threshold: 0.8,
             input_guardrails: vec![],
@@ -534,7 +528,7 @@ pub async fn demote_skill(
     sqlx::query(
         r#"
         INSERT INTO agents (id, name, description, current_version, owner_id)
-        VALUES ($1, $2, $3, 1, $4)
+        VALUES ($1, $2, $3, '1.0.0', $4)
         "#,
     )
     .bind(agent_id)
@@ -645,7 +639,7 @@ pub async fn update_skill(
     let input_schema = payload.input_schema.clone().unwrap_or_else(|| serde_json::json!({}));
     let output_schema = payload.output_schema.clone().unwrap_or_else(|| serde_json::json!({}));
     let implementation = payload.implementation.clone().unwrap_or_else(|| serde_json::json!({}));
-    let current_version = payload.current_version + 1;
+    let current_version = crate::models::bump_minor_version(&payload.current_version);
 
     sqlx::query(
         r#"
@@ -658,7 +652,7 @@ pub async fn update_skill(
     .bind(&payload.description)
     .bind(&payload.definition)
     .bind(&payload.tags)
-    .bind(current_version)
+    .bind(&current_version)
     .bind(&payload.attached_skills)
     .bind(&payload.attached_mcp_servers)
     .bind(input_schema)

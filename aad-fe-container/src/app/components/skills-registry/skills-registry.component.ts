@@ -10,6 +10,7 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatSelectModule } from '@angular/material/select';
+import { MatTabsModule } from '@angular/material/tabs';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { ApiService, Skill } from '../../services/api.service';
 import { marked } from 'marked';
@@ -27,7 +28,8 @@ import { marked } from 'marked';
     MatChipsModule,
     MatTooltipModule,
     MatSnackBarModule,
-    MatSelectModule
+    MatSelectModule,
+    MatTabsModule
   ],
   templateUrl: './skills-registry.component.html',
   styleUrl: './skills-registry.component.scss'
@@ -160,7 +162,7 @@ export class SkillsRegistryComponent implements OnInit {
       description: '',
       definition: '',
       tags: [],
-      current_version: 1,
+      current_version: '1.0.0',
       attached_skills: [],
       attached_mcp_servers: [],
       owner_id: '00000000-0000-0000-0000-000000000000',
