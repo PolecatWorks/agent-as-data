@@ -6,7 +6,7 @@ use axum::{
 use sqlx::{PgPool, Row};
 use uuid::Uuid;
 
-use crate::models::{TraitContract, PageOptions, ListPages};
+use crate::models::{TraitContract, PageOptions, ListPages, bump_minor_version};
 
 pub async fn list_traits(
     State(pool): State<PgPool>,
@@ -52,7 +52,7 @@ pub async fn create_trait(
     Json(payload): Json<TraitContract>,
 ) -> Result<(StatusCode, Json<TraitContract>), (StatusCode, String)> {
     let id = payload.id.unwrap_or_else(Uuid::new_v4);
-    let version = if payload.version == 0 { 1 } else { payload.version };
+    let version = if payload.version.is_empty() || payload.version == "0" || payload.version == "1" { "1.0.0".to_string() } else { payload.version };
 
     let new_trait = sqlx::query_as::<_, TraitContract>(
         r#"
@@ -95,7 +95,7 @@ pub async fn update_trait(
         None => return Err((StatusCode::NOT_FOUND, "Trait contract not found".to_string())),
     };
 
-    let new_version = existing.version + 1;
+    let new_version = bump_minor_version(&existing.version);
 
     let updated = sqlx::query_as::<_, TraitContract>(
         r#"

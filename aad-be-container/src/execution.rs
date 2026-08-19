@@ -25,7 +25,7 @@ pub async fn execute_agent(
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Fetch Error: {}", e)))?
         .ok_or((StatusCode::NOT_FOUND, "Agent not found".to_string()))?;
 
-    let agent_version: i32 = agent_row.get("current_version");
+    let agent_version: String = agent_row.get("current_version");
 
     // 2. Incoming Guardrail Interceptor Validation
     if payload.prompt.contains("<script>") || payload.prompt.contains("DROP TABLE") {

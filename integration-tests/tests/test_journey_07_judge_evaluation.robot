@@ -27,7 +27,7 @@ Test LLM-as-a-Judge Evaluation Engine & Regression Blocker
     ${agent}=    Create Agent    ${payload}
     ${agent_id}=    Get From Dictionary    ${agent}    id
     ${initial_version}=    Get From Dictionary    ${agent}    current_version
-    Should Be Equal As Integers    ${initial_version}    1
+    Should Be Equal As Strings    ${initial_version}    1.0.0
 
     # 2. Test agent -> Should fail threshold (0.9 < 0.95), version should not bump
     ${input}=    Create Dictionary    prompt=hello
@@ -56,7 +56,7 @@ Test LLM-as-a-Judge Evaluation Engine & Regression Blocker
 
     Should Be Equal    ${status2}    passed
     Should Be Equal As Strings    ${version_bumped2}    True
-    Should Be Equal As Integers    ${new_version}    2
+    Should Be Equal As Strings    ${new_version}    1.1.0
 
     # 5. Execute agent to create a referencing record in executions table
     ${exec_payload}=    Create Dictionary    prompt=run diagnostic checks

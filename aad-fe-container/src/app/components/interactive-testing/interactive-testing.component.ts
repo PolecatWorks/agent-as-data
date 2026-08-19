@@ -55,7 +55,7 @@ export class InteractiveTestingComponent implements OnInit {
             description: 'Automated security vulnerability inspector',
             tags: ['security'],
             implements_traits: ['SecurityAuditor'],
-            current_version: 1,
+            current_version: '1.0.0',
             owner_id: 'owner-sec',
             judge_threshold: 0.8
           }

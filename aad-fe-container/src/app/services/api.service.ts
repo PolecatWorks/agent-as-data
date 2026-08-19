@@ -88,10 +88,10 @@ export interface Agent {
   description: string;
   tags: string[];
   implements_traits: string[];
-  attached_tools?: string[];
+  attached_mcp_servers?: string[];
   attached_agents?: string[];
   attached_skills?: string[];
-  current_version: number;
+  current_version: string;
   owner_id: string;
   judge_threshold: number;
   read_groups?: string[];
@@ -114,7 +114,7 @@ export interface TraitContract {
   id: string;
   name: string;
   description: string;
-  version: number;
+  version: string;
   capability_requirements: string[];
   behavioral_invariants: string[];
   evaluation_criteria: string[];
@@ -132,7 +132,7 @@ export interface Skill {
   description: string;
   definition: string;
   tags: string[];
-  current_version: number;
+  current_version: string;
   attached_skills?: string[];
   attached_mcp_servers?: string[];
   owner_id: string;
