@@ -25,8 +25,8 @@ export class AppComponent {
   title = 'Agent-As-Data Studio';
 
   menuItems = [
-    { path: '/traits-registry', icon: 'verified', label: 'Trait Contracts Registry' },
-    { path: '/mcp-manager', icon: 'dns', label: 'Remote MCP Server Manager' },
+    { path: '/traits-registry', icon: 'verified', label: 'Trait Contracts' },
+    { path: '/mcp-manager', icon: 'dns', label: 'MCP Servers' },
     { path: '/skills-registry', icon: 'extension', label: 'Skills' },
     { path: '/agent-registry', icon: 'app_registration', label: 'Agents' },
     { path: '/interactive-testing', icon: 'bug_report', label: 'Interactive Testing Studio' },
