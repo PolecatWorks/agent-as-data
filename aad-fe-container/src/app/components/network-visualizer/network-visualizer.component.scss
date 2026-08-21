@@ -1,0 +1,49 @@
+/* Trace depth slider — cross-browser polish */
+input[type='range'] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  border-radius: 9999px;
+  outline: none;
+  background: #e2e8f0;
+  cursor: pointer;
+
+  &::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #10b981;
+    border: 2px solid #ffffff;
+    box-shadow: 0 1px 4px rgba(16, 185, 129, 0.4);
+    cursor: grab;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+
+    &:active {
+      cursor: grabbing;
+      transform: scale(1.25);
+      box-shadow: 0 2px 8px rgba(16, 185, 129, 0.6);
+    }
+  }
+
+  &::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #10b981;
+    border: 2px solid #ffffff;
+    box-shadow: 0 1px 4px rgba(16, 185, 129, 0.4);
+    cursor: grab;
+
+    &:active {
+      cursor: grabbing;
+      transform: scale(1.25);
+    }
+  }
+
+  &:focus-visible {
+    outline: 2px solid #10b981;
+    outline-offset: 2px;
+  }
+}
