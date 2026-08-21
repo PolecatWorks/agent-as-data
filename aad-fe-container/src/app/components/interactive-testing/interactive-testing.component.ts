@@ -5,9 +5,21 @@ import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatInputModule } from '@angular/material/input';
 import { MatIconModule } from '@angular/material/icon';
-import { MatSelectModule } from '@angular/material/select';
-import { MatSlideToggleModule } from '@angular/material/slide-toggle';
-import { ApiService, Agent } from '../../services/api.service';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
+import { ApiService, Agent, Skill } from '../../services/api.service';
+
+export type TestEntityType = 'agent' | 'skill';
+
+export interface TestEntity {
+  id: string;
+  name: string;
+  type: TestEntityType;
+  description?: string;
+  tags?: string[];
+  version?: string;
+}
 
 @Component({
   selector: 'app-interactive-testing',
@@ -19,83 +31,109 @@ import { ApiService, Agent } from '../../services/api.service';
     MatButtonModule,
     MatInputModule,
     MatIconModule,
-    MatSelectModule,
-    MatSlideToggleModule
+    MatProgressSpinnerModule,
   ],
   templateUrl: './interactive-testing.component.html',
   styleUrl: './interactive-testing.component.scss'
 })
 export class InteractiveTestingComponent implements OnInit {
+  // Data
   agents: Agent[] = [];
-  selectedAgentId: string = '';
+  skills: Skill[] = [];
+
+  // Entity selector (mirrors network visualizer pattern)
+  allEntities: TestEntity[] = [];
+  searchQuery: string = '';
+  selectedEntity: TestEntity | null = null;
+
+  // Execution
   promptInput: string = 'Run a diagnostic code review for memory safety vulnerabilities.';
   webhookUrl: string = '';
   isExecuting: boolean = false;
   executionOutput: string = '';
-  executionStatus: string = 'idle';
-  traitVerificationStatus: string = 'not_tested';
-  traitVerificationValid: boolean = false;
-  testTraitName: string = 'SecurityAuditor';
+
+  // State
+  isLoading: boolean = false;
 
   constructor(private apiService: ApiService) {}
 
   ngOnInit(): void {
-    this.apiService.getAgents().subscribe({
-      next: (agents) => {
-        this.agents = agents;
-        if (agents.length > 0) {
-          this.selectedAgentId = agents[0].id;
+    this.isLoading = true;
+    forkJoin({
+      agents: this.apiService.getAgents().pipe(catchError(() => of([] as Agent[]))),
+      skills: this.apiService.getSkills().pipe(catchError(() => of([] as Skill[])))
+    }).subscribe({
+      next: ({ agents, skills }) => {
+        this.agents = agents as Agent[];
+        this.skills = skills as Skill[];
+        this.buildEntityList();
+        if (this.allEntities.length > 0) {
+          this.selectedEntity = this.allEntities[0];
         }
+        this.isLoading = false;
       },
-      error: () => {
-        this.agents = [
-          {
-            id: '11111111-1111-1111-1111-111111111111',
-            name: 'SecurityAuditorAgent',
-            description: 'Automated security vulnerability inspector',
-            tags: ['security'],
-            implements_traits: ['SecurityAuditor'],
-            current_version: '1.0.0',
-            owner_id: 'owner-sec',
-            judge_threshold: 0.8
-          }
-
-        ];
-        this.selectedAgentId = this.agents[0].id;
-      }
+      error: () => { this.isLoading = false; }
     });
   }
 
+  buildEntityList(): void {
+    this.allEntities = [
+      ...this.agents.map(a => ({
+        id: a.id,
+        name: a.name,
+        type: 'agent' as TestEntityType,
+        description: a.description,
+        tags: a.tags,
+        version: a.current_version
+      })),
+      ...this.skills.map(s => ({
+        id: s.id!,
+        name: s.name,
+        type: 'skill' as TestEntityType,
+        description: s.description,
+        tags: s.tags,
+        version: s.current_version
+      }))
+    ];
+  }
+
+  getFilteredEntities(): TestEntity[] {
+    const q = this.searchQuery.toLowerCase().trim();
+    if (!q) return this.allEntities;
+    return this.allEntities.filter(e =>
+      e.name.toLowerCase().includes(q) ||
+      (e.description && e.description.toLowerCase().includes(q)) ||
+      (e.tags && e.tags.some(t => t.toLowerCase().includes(q))) ||
+      e.type.toLowerCase().includes(q)
+    );
+  }
+
+  selectEntity(entity: TestEntity): void {
+    this.selectedEntity = entity;
+  }
+
+  getEntityIcon(type: TestEntityType): string {
+    return type === 'agent' ? '🤖' : '⚡';
+  }
+
   runExecution(): void {
-    if (!this.promptInput.trim()) return;
+    if (!this.promptInput.trim() || !this.selectedEntity) return;
     this.isExecuting = true;
-    this.executionStatus = 'running';
     this.executionOutput = 'Initializing execution runtime...\nEvaluating incoming guardrails...\nDispatching prompt to agent execution context...\n';
 
-    this.apiService.executeAgent(this.selectedAgentId, this.promptInput, this.webhookUrl || undefined).subscribe({
+    // Only agents can be directly executed; skills are executed via their parent agent
+    const agentId = this.selectedEntity.type === 'agent'
+      ? this.selectedEntity.id
+      : this.agents.find(a => (a.attached_skills || []).includes(this.selectedEntity!.id))?.id || '';
+
+    this.apiService.executeAgent(agentId, this.promptInput, this.webhookUrl || undefined).subscribe({
       next: (res) => {
         this.isExecuting = false;
-        this.executionStatus = res.status || 'completed';
         this.executionOutput += `\n[Status: ${res.status.toUpperCase()}]\n` + res.output;
       },
       error: (err) => {
         this.isExecuting = false;
-        this.executionStatus = 'error';
         this.executionOutput += `\n[EXECUTION FAILED]: ${err.error || 'Server error or guardrail rejection'}`;
-      }
-    });
-  }
-
-  runContractVerification(): void {
-    if (!this.selectedAgentId || !this.testTraitName) return;
-    this.apiService.verifyContract(this.selectedAgentId, this.testTraitName).subscribe({
-      next: (res) => {
-        this.traitVerificationStatus = res.status;
-        this.traitVerificationValid = res.contract_valid;
-      },
-      error: () => {
-        this.traitVerificationStatus = 'verified';
-        this.traitVerificationValid = true;
       }
     });
   }
