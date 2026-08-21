@@ -181,6 +181,8 @@ pub struct Skill {
     #[serde(default = "default_version")]
     pub current_version: String,
     #[serde(default)]
+    pub implements_traits: Vec<String>,
+    #[serde(default)]
     pub attached_skills: Vec<Uuid>,
     #[serde(default)]
     pub attached_mcp_servers: Vec<Uuid>,

@@ -132,6 +132,7 @@ export interface Skill {
   description: string;
   definition: string;
   tags: string[];
+  implements_traits?: string[];
   current_version: string;
   attached_skills?: string[];
   attached_mcp_servers?: string[];

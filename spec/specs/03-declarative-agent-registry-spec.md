@@ -42,6 +42,7 @@ CREATE TABLE IF NOT EXISTS skills (
     name VARCHAR(255) UNIQUE NOT NULL,
     description TEXT NOT NULL,
     tags TEXT[] NOT NULL DEFAULT '{}',
+    implements_traits TEXT[] NOT NULL DEFAULT '{}',
     current_version INT NOT NULL DEFAULT 1,
     owner_id UUID NOT NULL,
     read_groups TEXT[] NOT NULL DEFAULT '{}',
@@ -54,6 +55,7 @@ CREATE TABLE IF NOT EXISTS skills (
 );
 
 CREATE INDEX IF NOT EXISTS idx_skills_name ON skills(name);
+CREATE INDEX IF NOT EXISTS idx_skills_traits ON skills USING GIN(implements_traits);
 ```
 
 ---
