@@ -16,7 +16,7 @@ describe('AgentRegistryComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [AgentRegistryComponent],
-      providers: [provideHttpClient(), provideAnimationsAsync(), provideRouter([]), { provide: ActivatedRoute, useValue: { queryParams: of({}), snapshot: { paramMap: { get: () => null } } } }, { provide: ApiService, useValue: { getAgents: () => of([]), getTraits: () => of({ids: []}), getTrait: () => of(null) } }],
+      providers: [provideHttpClient(), provideAnimationsAsync(), provideRouter([]), { provide: ActivatedRoute, useValue: { queryParams: of({}), snapshot: { paramMap: { get: () => null } } } }, { provide: ApiService, useValue: { getAgents: () => of([]), getTraits: () => of({ids: []}), getTrait: () => of(null), getMcpServers: () => of([]), getSkills: () => of([]) } }],
       schemas: [NO_ERRORS_SCHEMA]
     })
     .compileComponents();
@@ -50,7 +50,7 @@ describe('AgentRegistryComponent', () => {
         id: '1',
         name: 'SecurityAuditor',
         description: 'Vulnerability scanner.',
-        version: 1,
+        version: '1',
         capability_requirements: [],
         behavioral_invariants: [],
         evaluation_criteria: [],

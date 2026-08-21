@@ -12,7 +12,8 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatSelectModule } from '@angular/material/select';
 import { MatTabsModule } from '@angular/material/tabs';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
-import { ApiService, Skill } from '../../services/api.service';
+import { ApiService, Skill, TraitContract } from '../../services/api.service';
+import { forkJoin } from 'rxjs';
 import { marked } from 'marked';
 
 @Component({
@@ -41,12 +42,17 @@ export class SkillsRegistryComponent implements OnInit {
   isEditing: boolean = false;
   showDeleteConfirm: boolean = false;
 
+  traitContracts: TraitContract[] = [];
+  registeredTraitsCatalog: string[] = [];
+  traitSearchQuery: string = '';
+
   // Editor fields
   skillForm: Partial<Skill> = {
     name: '',
     description: '',
     definition: '',
     tags: [],
+    implements_traits: [],
     attached_skills: [],
     attached_mcp_servers: [],
     input_schema: {},
@@ -73,6 +79,7 @@ export class SkillsRegistryComponent implements OnInit {
   ngOnInit(): void {
     this.loadSkills();
     this.loadMcpServers();
+    this.loadTraits();
     this.route.params.subscribe(params => {
       if (params['id']) {
         this.loadSkill(params['id']);
@@ -144,7 +151,8 @@ export class SkillsRegistryComponent implements OnInit {
     this.skillForm = {
       ...skill,
       attached_skills: skill.attached_skills ? [...skill.attached_skills] : [],
-      attached_mcp_servers: skill.attached_mcp_servers ? [...skill.attached_mcp_servers] : []
+      attached_mcp_servers: skill.attached_mcp_servers ? [...skill.attached_mcp_servers] : [],
+      implements_traits: skill.implements_traits ? [...skill.implements_traits] : []
     };
     this.inputSchemaStr = JSON.stringify(skill.input_schema || {}, null, 2);
     this.outputSchemaStr = JSON.stringify(skill.output_schema || {}, null, 2);
@@ -162,6 +170,7 @@ export class SkillsRegistryComponent implements OnInit {
       description: '',
       definition: '',
       tags: [],
+      implements_traits: [],
       current_version: '1.0.0',
       attached_skills: [],
       attached_mcp_servers: [],
@@ -383,6 +392,59 @@ export class SkillsRegistryComponent implements OnInit {
       return desc;
     }
     return 'No details available';
+  }
+
+  loadTraits(): void {
+    this.apiService.getTraits().subscribe({
+      next: (listPages: any) => {
+        const ids = listPages.ids || [];
+        if (ids.length > 0) {
+          const obs = ids.map((id: string) => this.apiService.getTrait(id));
+          (forkJoin(obs) as any).subscribe({
+            next: (fullTraits: TraitContract[]) => {
+              if (fullTraits && fullTraits.length > 0) {
+                this.traitContracts = fullTraits;
+                this.registeredTraitsCatalog = fullTraits.map(t => t.name);
+              }
+            },
+            error: () => {
+              console.error("Failed to load details for traits.");
+            }
+          });
+        }
+      },
+      error: () => {
+        console.error("Failed to load traits from backend.");
+      }
+    });
+  }
+
+  get filteredTraitsCatalog(): string[] {
+    const attached = this.skillForm.implements_traits || [];
+    const available = this.registeredTraitsCatalog.filter(t => !attached.includes(t));
+    if (!this.traitSearchQuery.trim()) {
+      return available;
+    }
+    const q = this.traitSearchQuery.toLowerCase().trim();
+    return available.filter(t => t.toLowerCase().includes(q));
+  }
+
+  getTraitDescription(traitName: string): string {
+    const trait = this.traitContracts.find(t => t.name === traitName);
+    return trait && trait.description ? trait.description : 'No description available';
+  }
+
+  attachTraitFromCatalog(trait: string): void {
+    if (!this.skillForm.implements_traits) this.skillForm.implements_traits = [];
+    if (!this.skillForm.implements_traits.includes(trait)) {
+      this.skillForm.implements_traits.push(trait);
+    }
+  }
+
+  removeTrait(trait: string): void {
+    if (this.skillForm.implements_traits) {
+      this.skillForm.implements_traits = this.skillForm.implements_traits.filter((t: string) => t !== trait);
+    }
   }
 
 }

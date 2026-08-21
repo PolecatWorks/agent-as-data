@@ -388,8 +388,8 @@ pub async fn create_skill(
 
     sqlx::query(
         r#"
-        INSERT INTO skills (id, name, description, definition, tags, current_version, owner_id, attached_skills, attached_mcp_servers, input_schema, output_schema, implementation)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+        INSERT INTO skills (id, name, description, definition, tags, current_version, owner_id, attached_skills, attached_mcp_servers, input_schema, output_schema, implementation, implements_traits)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
         "#,
     )
     .bind(skill_id)
@@ -404,6 +404,7 @@ pub async fn create_skill(
     .bind(input_schema)
     .bind(output_schema)
     .bind(implementation)
+    .bind(&payload.implements_traits)
     .execute(&pool)
     .await
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Skill DB Error: {}", e)))?;
@@ -422,7 +423,7 @@ pub async fn promote_skill(
     State(pool): State<PgPool>,
     Path(id): Path<Uuid>,
 ) -> Result<(StatusCode, Json<Agent>), (StatusCode, String)> {
-    let skill_row = sqlx::query("SELECT name, description, owner_id FROM skills WHERE id = $1")
+    let skill_row = sqlx::query("SELECT name, description, owner_id, implements_traits FROM skills WHERE id = $1")
         .bind(id)
         .fetch_optional(&pool)
         .await
@@ -432,6 +433,7 @@ pub async fn promote_skill(
     let name: String = skill_row.get("name");
     let description: String = skill_row.get("description");
     let owner_id: Uuid = skill_row.get("owner_id");
+    let implements_traits: Vec<String> = skill_row.get("implements_traits");
 
     let agent_id = Uuid::new_v4();
     let agent_definition = serde_json::json!({
@@ -441,8 +443,8 @@ pub async fn promote_skill(
 
     sqlx::query(
         r#"
-        INSERT INTO agents (id, name, description, current_version, owner_id, agent_definition)
-        VALUES ($1, $2, $3, '1.0.0', $4, $5)
+        INSERT INTO agents (id, name, description, current_version, owner_id, agent_definition, implements_traits)
+        VALUES ($1, $2, $3, '1.0.0', $4, $5, $6)
         "#,
     )
     .bind(agent_id)
@@ -450,6 +452,7 @@ pub async fn promote_skill(
     .bind(&description)
     .bind(owner_id)
     .bind(&agent_definition)
+    .bind(&implements_traits)
     .execute(&pool)
     .await
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Promote Error: {}", e)))?;
@@ -461,7 +464,7 @@ pub async fn promote_skill(
             name,
             description,
             tags: vec![],
-            implements_traits: vec![],
+            implements_traits,
             attached_mcp_servers: vec![],
             attached_agents: vec![],
             attached_skills: vec![],
@@ -608,7 +611,7 @@ pub async fn list_skills(
     State(pool): State<PgPool>,
 ) -> Result<Json<Vec<Skill>>, (StatusCode, String)> {
     let skills = sqlx::query_as::<_, Skill>(
-        "SELECT id, name, description, definition, tags, current_version, owner_id, attached_skills, attached_mcp_servers, input_schema, output_schema, implementation FROM skills ORDER BY created_at DESC"
+        "SELECT id, name, description, definition, tags, current_version, owner_id, attached_skills, attached_mcp_servers, input_schema, output_schema, implementation, implements_traits FROM skills ORDER BY created_at DESC"
     )
     .fetch_all(&pool)
     .await
@@ -621,7 +624,7 @@ pub async fn get_skill(
     Path(id): Path<Uuid>,
 ) -> Result<Json<Skill>, (StatusCode, String)> {
     let skill = sqlx::query_as::<_, Skill>(
-        "SELECT id, name, description, definition, tags, current_version, owner_id, attached_skills, attached_mcp_servers, input_schema, output_schema, implementation FROM skills WHERE id = $1"
+        "SELECT id, name, description, definition, tags, current_version, owner_id, attached_skills, attached_mcp_servers, input_schema, output_schema, implementation, implements_traits FROM skills WHERE id = $1"
     )
     .bind(id)
     .fetch_optional(&pool)
@@ -644,8 +647,8 @@ pub async fn update_skill(
     sqlx::query(
         r#"
         UPDATE skills
-        SET name = $1, description = $2, definition = $3, tags = $4, current_version = $5, attached_skills = $6, attached_mcp_servers = $7, input_schema = $8, output_schema = $9, implementation = $10, updated_at = NOW()
-        WHERE id = $11
+        SET name = $1, description = $2, definition = $3, tags = $4, current_version = $5, attached_skills = $6, attached_mcp_servers = $7, input_schema = $8, output_schema = $9, implementation = $10, implements_traits = $11, updated_at = NOW()
+        WHERE id = $12
         "#,
     )
     .bind(&payload.name)
@@ -658,6 +661,7 @@ pub async fn update_skill(
     .bind(input_schema)
     .bind(output_schema)
     .bind(implementation)
+    .bind(&payload.implements_traits)
     .bind(id)
     .execute(&pool)
     .await

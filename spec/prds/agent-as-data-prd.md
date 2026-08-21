@@ -101,6 +101,7 @@ Agent-As-Data (AAD) is an enterprise-grade declarative platform and specificatio
 
 ### 13. Managed Skills & Promotion/Demotion Engine
 - **Skills Registry (`skills`)**: Dedicated repository for single-purpose, direct execution routines without autonomous reasoning loops or sub-agent delegation.
+- **Trait Selection / Representation**: Skills can represent/implement trait contracts. The skills table contains `implements_traits` to specify which traits are satisfied/implemented by a given skill, allowing trait selection when editing a skill, consistent with the agent registry interface.
 - **Skill vs. Agent Differentiation & Guidance**: API `GET /api/v1/skills/guidance` providing guidance on when to create a Skill vs. an Agent.
 - **Promotion & Demotion Lifecycle**:
   - `POST /api/v1/skills/:id/promote`: Converts a growing skill into an Agent definition with guardrail defaults.
