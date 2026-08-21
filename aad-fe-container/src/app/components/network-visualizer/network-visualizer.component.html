@@ -1,41 +1,165 @@
-<div class="p-6 max-w-7xl mx-auto space-y-6">
-  <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex justify-between items-center">
-    <div class="flex items-center space-x-3">
-      <mat-icon class="text-emerald-600">account_tree</mat-icon>
-      <div>
-        <h1 class="text-xl font-bold text-slate-800 m-0">Agent Network & Delegation Graph Visualizer</h1>
-        <p class="text-sm text-slate-500 m-0">Interactive Mermaid diagram renderer displaying sub-agent delegation topologies and skill bindings</p>
-      </div>
+<div class="container mx-auto p-6 space-y-6">
+
+  <!-- Top Banner -->
+  <div class="flex justify-between items-center bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+    <div class="space-y-1">
+      <h1 class="text-2xl font-black text-slate-900 m-0 flex items-center gap-2">
+        <mat-icon class="!w-8 !h-8 !text-3xl text-emerald-600 font-bold">account_tree</mat-icon>
+        Network Visualizer
+      </h1>
+      <p class="text-sm text-slate-500 m-0">
+        Select an agent, skill, or trait to explore its delegation graph and connections.
+      </p>
     </div>
-    <button mat-flat-button color="primary" (click)="renderDiagram()">
-      <mat-icon>refresh</mat-icon> Re-Render Graph
+    <button mat-flat-button color="primary" class="!rounded-xl !px-6 !font-bold" (click)="loadAllData()">
+      <mat-icon>refresh</mat-icon> Reload Data
     </button>
   </div>
 
-  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-    <div class="lg:col-span-2">
-      <mat-card class="rounded-xl border border-slate-200">
-        <mat-card-header class="border-b border-slate-100 pb-3">
-          <mat-card-title class="text-base font-bold text-slate-800">Visual Delegation Diagram</mat-card-title>
-        </mat-card-header>
-        <mat-card-content class="p-6 flex justify-center items-center min-h-[400px] bg-slate-50 rounded-b-xl">
-          <div #mermaidContainer class="w-full overflow-x-auto"></div>
+  <!-- Main Split-Pane -->
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+    <!-- Left Sidebar: Entity Selector -->
+    <div class="lg:col-span-4 space-y-4">
+      <mat-card class="!rounded-2xl border border-slate-200/80 shadow-sm">
+        <mat-card-content class="p-4 space-y-4">
+
+          <!-- Search -->
+          <div class="relative">
+            <mat-icon class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">search</mat-icon>
+            <input type="text" placeholder="Search agents, skills, traits..."
+                   class="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+                   [(ngModel)]="searchQuery" />
+          </div>
+
+          <!-- Loading -->
+          @if (isLoading) {
+            <div class="flex justify-center items-center py-10 text-slate-400 gap-3">
+              <mat-spinner diameter="24"></mat-spinner>
+              <span class="text-xs">Loading registry data...</span>
+            </div>
+          }
+
+          <!-- Entity List -->
+          @if (!isLoading) {
+            <div class="space-y-2 max-h-[600px] overflow-y-auto">
+              @if (getFilteredEntities().length === 0) {
+                <div class="text-center py-8 text-slate-400 text-xs">
+                  No matching entities found.
+                </div>
+              }
+              @for (entity of getFilteredEntities(); track entity.id) {
+                <div class="p-4 rounded-xl border transition-all cursor-pointer bg-white hover:border-slate-300"
+                     [class.border-emerald-500]="selectedEntity?.id === entity.id && selectedEntity?.type === entity.type"
+                     [class.shadow-md]="selectedEntity?.id === entity.id && selectedEntity?.type === entity.type"
+                     [class.border-slate-200]="!(selectedEntity?.id === entity.id && selectedEntity?.type === entity.type)"
+                     (click)="selectEntity(entity)">
+                  <div class="flex justify-between items-center">
+                    <h5 class="text-sm font-bold text-slate-900 m-0">
+                      {{ getEntityIcon(entity.type) }} {{ entity.name }}
+                    </h5>
+                    <span class="px-2.5 py-0.5 text-[10px] font-bold rounded-md"
+                          [class.bg-indigo-100]="entity.type === 'agent'"
+                          [class.text-indigo-800]="entity.type === 'agent'"
+                          [class.bg-purple-100]="entity.type === 'skill'"
+                          [class.text-purple-800]="entity.type === 'skill'"
+                          [class.bg-emerald-100]="entity.type === 'trait'"
+                          [class.text-emerald-800]="entity.type === 'trait'"
+                          [class.bg-orange-100]="entity.type === 'mcp'"
+                          [class.text-orange-800]="entity.type === 'mcp'">
+                      {{ getEntityTypeLabel(entity.type) }}
+                    </span>
+                  </div>
+                  @if (entity.description) {
+                    <p class="text-xs text-slate-500 m-0 mt-1 line-clamp-2 leading-relaxed">
+                      {{ entity.description }}
+                    </p>
+                  }
+                  @if (entity.tags && entity.tags.length > 0) {
+                    <div class="flex flex-wrap gap-1 pt-2">
+                      @for (tag of entity.tags; track tag) {
+                        <span class="px-2 py-0.5 bg-slate-100 text-slate-600 text-[10px] font-mono rounded">
+                          #{{ tag }}
+                        </span>
+                      }
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+          }
+
         </mat-card-content>
       </mat-card>
     </div>
 
-    <div>
-      <mat-card class="rounded-xl border border-slate-200">
-        <mat-card-header class="border-b border-slate-100 pb-3">
-          <mat-card-title class="text-base font-bold text-slate-800">Mermaid Definition DSL</mat-card-title>
-        </mat-card-header>
-        <mat-card-content class="p-4 space-y-4">
-          <mat-form-field appearance="outline" class="w-full">
-            <mat-label>Mermaid Flowchart Code</mat-label>
-            <textarea matInput rows="14" class="font-mono text-xs" [(ngModel)]="mermaidCode" (ngModelChange)="renderDiagram()"></textarea>
-          </mat-form-field>
-        </mat-card-content>
-      </mat-card>
+    <!-- Right Panel: Diagram Viewer -->
+    <div class="lg:col-span-8">
+      @if (selectedEntity) {
+        <mat-card class="!rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+          <div class="p-6 bg-slate-50/80 border-b border-slate-200/60 flex justify-between items-center gap-4 flex-wrap">
+            <div>
+              <h2 class="text-base font-black text-slate-800 m-0">
+                {{ getEntityIcon(selectedEntity.type) }} {{ selectedEntity.name }}
+              </h2>
+              <p class="text-xs text-slate-400 m-0 mt-0.5">
+                {{ getEntityTypeLabel(selectedEntity.type) }} &mdash; ID: {{ selectedEntity.id }}
+              </p>
+            </div>
+
+            <!-- Trace Depth Slider -->
+            <div class="flex items-center gap-3 bg-white border border-slate-200 rounded-xl px-4 py-2 shadow-sm flex-1 min-w-[200px] max-w-xs">
+              <mat-icon class="text-emerald-600 !text-lg shrink-0">device_hub</mat-icon>
+              <div class="flex flex-col gap-1 w-full">
+                <div class="flex justify-between items-center">
+                  <span class="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Trace Depth</span>
+                  <span class="text-xs font-black text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-md px-1.5 py-0.5 min-w-[24px] text-center tabular-nums">{{ traceDepth }}</span>
+                </div>
+                <input
+                  type="range"
+                  min="1"
+                  max="10"
+                  step="1"
+                  [(ngModel)]="traceDepth"
+                  (input)="onDepthChange()"
+                  class="w-full h-1.5 rounded-full appearance-none cursor-pointer accent-emerald-500 bg-slate-200"
+                  style="background: linear-gradient(to right, #10b981 0%, #10b981 calc((var(--v, {{ traceDepth }}) - 1) / 9 * 100%), #e2e8f0 calc((var(--v, {{ traceDepth }}) - 1) / 9 * 100%), #e2e8f0 100%)"
+                />
+                <div class="flex justify-between text-[9px] text-slate-400 font-mono">
+                  <span>1</span>
+                  <span>5</span>
+                  <span>10</span>
+                </div>
+              </div>
+            </div>
+
+            <button mat-stroked-button class="!rounded-xl !font-semibold !text-emerald-600 !border-emerald-200 hover:!bg-emerald-50 shrink-0" (click)="buildAndRenderDiagram()">
+              <mat-icon>refresh</mat-icon> Re-render
+            </button>
+          </div>
+
+          <mat-card-content class="p-6 min-h-[500px] bg-white flex justify-center items-center">
+            @if (renderError) {
+              <div class="text-center text-red-500 text-xs font-mono bg-red-50 border border-red-200 rounded-xl p-4 w-full">
+                <mat-icon class="text-red-400 mb-2">error_outline</mat-icon>
+                <p class="m-0">{{ renderError }}</p>
+              </div>
+            } @else {
+              <div #mermaidContainer class="w-full overflow-x-auto"></div>
+            }
+          </mat-card-content>
+        </mat-card>
+      } @else {
+        <div class="flex flex-col items-center justify-center py-24 bg-white rounded-2xl border border-slate-200 shadow-sm text-slate-400">
+          <mat-icon class="!w-16 !h-16 !text-6xl text-slate-200 mb-4">account_tree</mat-icon>
+          <h3 class="text-sm font-bold text-slate-700 m-0">No Entity Selected</h3>
+          <p class="text-xs text-slate-400 max-w-xs text-center mt-1">
+            Choose an agent, skill, or trait from the list to visualize its network connections and delegation graph.
+          </p>
+        </div>
+      }
     </div>
+
   </div>
+
 </div>
