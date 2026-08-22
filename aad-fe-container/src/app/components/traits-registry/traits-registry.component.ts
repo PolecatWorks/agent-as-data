@@ -43,6 +43,7 @@ export class TraitsRegistryComponent implements OnInit {
 
   traitContracts: TraitContract[] = [
     {
+      owner_id: '00000000-0000-0000-0000-000000000000',
       id: 'trait-sec-1',
       name: 'SecurityAuditor',
       description: 'Trait for automated OWASP vulnerability scanning and memory safety auditing.',
@@ -107,6 +108,7 @@ export class TraitsRegistryComponent implements OnInit {
       }
     },
     {
+      owner_id: '00000000-0000-0000-0000-000000000000',
       id: 'trait-cr-1',
       name: 'CodeReviewer',
       description: 'Trait for automated PR diff inspection and code style verification.',
@@ -153,6 +155,7 @@ export class TraitsRegistryComponent implements OnInit {
       }
     },
     {
+      owner_id: '00000000-0000-0000-0000-000000000000',
       id: 'trait-comp-1',
       name: 'Compiler',
       description: 'Trait for validating DAG topologies and sub-agent trait compatibility.',
@@ -329,6 +332,7 @@ export class TraitsRegistryComponent implements OnInit {
     this.isEditing = true;
     this.traitForm = {
       name: '',
+      owner_id: '00000000-0000-0000-0000-000000000000',
       description: '',
       version: '1.0.0',
       capability_requirements: [],

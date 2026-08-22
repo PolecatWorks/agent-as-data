@@ -34,7 +34,7 @@ pub async fn get_trait(
     Path(id): Path<Uuid>,
 ) -> Result<Json<TraitContract>, (StatusCode, String)> {
     let trait_opt = sqlx::query_as::<_, TraitContract>(
-        "SELECT id, name, description, version, capability_requirements, behavioral_invariants, evaluation_criteria, tags, guardrails, created_at, updated_at FROM trait_contracts WHERE id = $1"
+        "SELECT id, name, description, version, capability_requirements, behavioral_invariants, evaluation_criteria, tags, guardrails, owner_id, created_at, updated_at FROM trait_contracts WHERE id = $1"
     )
     .bind(id)
     .fetch_optional(&pool)
@@ -56,9 +56,9 @@ pub async fn create_trait(
 
     let new_trait = sqlx::query_as::<_, TraitContract>(
         r#"
-        INSERT INTO trait_contracts (id, name, description, version, capability_requirements, behavioral_invariants, evaluation_criteria, tags, guardrails)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-        RETURNING id, name, description, version, capability_requirements, behavioral_invariants, evaluation_criteria, tags, guardrails, created_at, updated_at
+        INSERT INTO trait_contracts (id, name, description, version, capability_requirements, behavioral_invariants, evaluation_criteria, tags, guardrails, owner_id)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+        RETURNING id, name, description, version, capability_requirements, behavioral_invariants, evaluation_criteria, tags, guardrails, owner_id, created_at, updated_at
         "#
     )
     .bind(id)
@@ -70,6 +70,7 @@ pub async fn create_trait(
     .bind(&payload.evaluation_criteria)
     .bind(&payload.tags)
     .bind(&payload.guardrails)
+    .bind(&payload.owner_id)
     .fetch_one(&pool)
     .await
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Creation Error: {}", e)))?;
@@ -83,7 +84,7 @@ pub async fn update_trait(
     Json(payload): Json<TraitContract>,
 ) -> Result<Json<TraitContract>, (StatusCode, String)> {
     let existing = sqlx::query_as::<_, TraitContract>(
-        "SELECT id, name, description, version, capability_requirements, behavioral_invariants, evaluation_criteria, tags, guardrails, created_at, updated_at FROM trait_contracts WHERE id = $1"
+        "SELECT id, name, description, version, capability_requirements, behavioral_invariants, evaluation_criteria, tags, guardrails, owner_id, created_at, updated_at FROM trait_contracts WHERE id = $1"
     )
     .bind(id)
     .fetch_optional(&pool)
@@ -100,9 +101,9 @@ pub async fn update_trait(
     let updated = sqlx::query_as::<_, TraitContract>(
         r#"
         UPDATE trait_contracts
-        SET name = $1, description = $2, version = $3, capability_requirements = $4, behavioral_invariants = $5, evaluation_criteria = $6, tags = $7, guardrails = $8, updated_at = NOW()
-        WHERE id = $9
-        RETURNING id, name, description, version, capability_requirements, behavioral_invariants, evaluation_criteria, tags, guardrails, created_at, updated_at
+        SET name = $1, description = $2, version = $3, capability_requirements = $4, behavioral_invariants = $5, evaluation_criteria = $6, tags = $7, guardrails = $8, owner_id = $9, updated_at = NOW()
+        WHERE id = $10
+        RETURNING id, name, description, version, capability_requirements, behavioral_invariants, evaluation_criteria, tags, guardrails, owner_id, created_at, updated_at
         "#
     )
     .bind(&payload.name)
@@ -113,6 +114,7 @@ pub async fn update_trait(
     .bind(&payload.evaluation_criteria)
     .bind(&payload.tags)
     .bind(&payload.guardrails)
+    .bind(&payload.owner_id)
     .bind(id)
     .fetch_one(&pool)
     .await

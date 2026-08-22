@@ -27,7 +27,7 @@ Test Traits BREAD Flow
     ${input_g}=    Create Dictionary    active_guardrails=${EMPTY}
     ${output_g}=    Create Dictionary    active_guardrails=${EMPTY}
     ${guardrails}=    Create Dictionary    input_guardrails=${input_g}    output_guardrails=${output_g}
-    ${payload}=    Create Dictionary    name=RobotSecurityTrait    description=Security trait defined by robot integration test    capability_requirements=${reqs}    behavioral_invariants=${invariants}    evaluation_criteria=${criteria}    tags=${tags}    guardrails=${guardrails}
+    ${payload}=    Create Dictionary    name=RobotSecurityTrait    owner_id=00000000-0000-0000-0000-000000000000    description=Security trait defined by robot integration test    capability_requirements=${reqs}    behavioral_invariants=${invariants}    evaluation_criteria=${criteria}    tags=${tags}    guardrails=${guardrails}
 
     ${trait}=    Create Trait    ${payload}
     ${trait_id}=    Get From Dictionary    ${trait}    id
@@ -62,7 +62,7 @@ Test Traits BREAD Flow
     ${new_output_g}=    Create Dictionary    active_guardrails=${EMPTY}
     ${updated_guardrails}=    Create Dictionary    input_guardrails=${new_input_g}    output_guardrails=${new_output_g}
     
-    ${update_payload}=    Create Dictionary    name=RobotSecurityTrait    description=Security trait defined by robot integration test - updated    capability_requirements=${updated_reqs}    behavioral_invariants=${updated_invariants}    evaluation_criteria=${updated_criteria}    tags=${updated_tags}    guardrails=${updated_guardrails}
+    ${update_payload}=    Create Dictionary    name=RobotSecurityTrait    owner_id=00000000-0000-0000-0000-000000000000    description=Security trait defined by robot integration test - updated    capability_requirements=${updated_reqs}    behavioral_invariants=${updated_invariants}    evaluation_criteria=${updated_criteria}    tags=${updated_tags}    guardrails=${updated_guardrails}
     
     ${updated}=    Update Trait    ${trait_id}    ${update_payload}
     ${updated_description}=    Get From Dictionary    ${updated}    description
