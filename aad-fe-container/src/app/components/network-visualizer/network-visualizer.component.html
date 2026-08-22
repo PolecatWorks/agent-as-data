@@ -107,35 +107,37 @@
               </p>
             </div>
 
-            <!-- Trace Depth Slider -->
-            <div class="flex items-center gap-3 bg-white border border-slate-200 rounded-xl px-4 py-2 shadow-sm flex-1 min-w-[200px] max-w-xs">
-              <mat-icon class="text-emerald-600 !text-lg shrink-0">device_hub</mat-icon>
-              <div class="flex flex-col gap-1 w-full">
-                <div class="flex justify-between items-center">
-                  <span class="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Trace Depth</span>
-                  <span class="text-xs font-black text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-md px-1.5 py-0.5 min-w-[24px] text-center tabular-nums">{{ traceDepth }}</span>
-                </div>
-                <input
-                  type="range"
-                  min="1"
-                  max="10"
-                  step="1"
-                  [(ngModel)]="traceDepth"
-                  (input)="onDepthChange()"
-                  class="w-full h-1.5 rounded-full appearance-none cursor-pointer accent-emerald-500 bg-slate-200"
-                  style="background: linear-gradient(to right, #10b981 0%, #10b981 calc((var(--v, {{ traceDepth }}) - 1) / 9 * 100%), #e2e8f0 calc((var(--v, {{ traceDepth }}) - 1) / 9 * 100%), #e2e8f0 100%)"
-                />
-                <div class="flex justify-between text-[9px] text-slate-400 font-mono">
-                  <span>1</span>
-                  <span>5</span>
-                  <span>10</span>
+            <div class="flex items-center gap-4 flex-wrap sm:flex-nowrap ml-auto">
+              <!-- Trace Depth Slider -->
+              <div class="flex items-center gap-3 bg-white border border-slate-200 rounded-xl px-4 py-2 shadow-sm min-w-[200px] max-w-xs">
+                <mat-icon class="text-emerald-600 !text-lg shrink-0">device_hub</mat-icon>
+                <div class="flex flex-col gap-1 w-full">
+                  <div class="flex justify-between items-center">
+                    <span class="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Trace Depth</span>
+                    <span class="text-xs font-black text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-md px-1.5 py-0.5 min-w-[24px] text-center tabular-nums">{{ traceDepth }}</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="1"
+                    max="10"
+                    step="1"
+                    [(ngModel)]="traceDepth"
+                    (input)="onDepthChange()"
+                    class="w-full h-1.5 rounded-full appearance-none cursor-pointer accent-emerald-500 bg-slate-200"
+                    style="background: linear-gradient(to right, #10b981 0%, #10b981 calc((var(--v, {{ traceDepth }}) - 1) / 9 * 100%), #e2e8f0 calc((var(--v, {{ traceDepth }}) - 1) / 9 * 100%), #e2e8f0 100%)"
+                  />
+                  <div class="flex justify-between text-[9px] text-slate-400 font-mono">
+                    <span>1</span>
+                    <span>5</span>
+                    <span>10</span>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <button mat-stroked-button class="!rounded-xl !font-semibold !text-emerald-600 !border-emerald-200 hover:!bg-emerald-50 shrink-0" (click)="buildAndRenderDiagram()">
-              <mat-icon>refresh</mat-icon> Re-render
-            </button>
+              <button mat-stroked-button class="!rounded-xl !font-semibold !text-emerald-600 !border-emerald-200 hover:!bg-emerald-50 shrink-0" (click)="buildAndRenderDiagram()">
+                <mat-icon>refresh</mat-icon> Re-render
+              </button>
+            </div>
           </div>
 
           <mat-card-content class="p-6 min-h-[500px] bg-white flex justify-center items-center">
