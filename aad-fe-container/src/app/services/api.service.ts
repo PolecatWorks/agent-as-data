@@ -113,6 +113,7 @@ export interface Agent {
 export interface TraitContract {
   id: string;
   name: string;
+  owner_id: string;
   description: string;
   version: string;
   capability_requirements: string[];

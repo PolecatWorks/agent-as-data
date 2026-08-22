@@ -26,6 +26,7 @@ Verify Trait Editor UI Sync with Backend
     ${trait_desc}=    Set Variable    Trait definition created by UI integration test ${random_str}
     
     Fill Text    id=trait-name-input    ${trait_name}
+    Fill Text    id=trait-owner-input    00000000-0000-0000-0000-000000000000
     Fill Text    id=trait-description-input    ${trait_desc}
 
     # 4. Save Trait Definition

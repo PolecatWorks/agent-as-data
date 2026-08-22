@@ -210,6 +210,7 @@ pub struct RegisterMcpServerRequest {
     pub server_name: String,
     pub transport_type: String,
     pub endpoint_config: serde_json::Value,
+    pub owner_id: Uuid,
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
@@ -227,6 +228,7 @@ pub struct McpServer {
     pub transport_type: String,
     pub endpoint_config: serde_json::Value,
     pub cached_capabilities: serde_json::Value,
+    pub owner_id: Uuid,
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
@@ -293,6 +295,7 @@ pub struct TraitContract {
     pub evaluation_criteria: Vec<String>,
     pub tags: Vec<String>,
     pub guardrails: serde_json::Value,
+    pub owner_id: Uuid,
     #[sqlx(default)]
     pub created_at: Option<chrono::DateTime<chrono::Utc>>,
     #[sqlx(default)]

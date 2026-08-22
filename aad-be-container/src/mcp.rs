@@ -23,11 +23,12 @@ pub async fn register_mcp_server(
     use sqlx::Row;
     let row = sqlx::query(
         r#"
-        INSERT INTO mcp_servers (id, server_name, transport_type, endpoint_config, cached_capabilities)
-        VALUES ($1, $2, $3, $4, $5)
+        INSERT INTO mcp_servers (id, server_name, transport_type, endpoint_config, cached_capabilities, owner_id)
+        VALUES ($1, $2, $3, $4, $5, $6)
         ON CONFLICT (server_name) DO UPDATE 
         SET transport_type = EXCLUDED.transport_type, 
             endpoint_config = EXCLUDED.endpoint_config,
+            owner_id = EXCLUDED.owner_id,
             last_synced_at = NOW()
         RETURNING id
         "#,
@@ -37,6 +38,7 @@ pub async fn register_mcp_server(
     .bind(&payload.transport_type)
     .bind(&payload.endpoint_config)
     .bind(&cached_capabilities)
+    .bind(&payload.owner_id)
     .fetch_one(&pool)
     .await
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("MCP Register Error: {}", e)))?;
@@ -58,7 +60,7 @@ pub async fn list_mcp_servers(
     State(pool): State<PgPool>,
 ) -> Result<(StatusCode, Json<Vec<crate::models::McpServer>>), (StatusCode, String)> {
     let servers = sqlx::query_as::<_, crate::models::McpServer>(
-        "SELECT id, server_name, transport_type, endpoint_config, cached_capabilities FROM mcp_servers"
+        "SELECT id, server_name, transport_type, endpoint_config, cached_capabilities, owner_id FROM mcp_servers"
     )
     .fetch_all(&pool)
     .await
