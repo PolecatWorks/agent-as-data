@@ -205,11 +205,7 @@ export class NetworkVisualizerComponent implements OnInit, AfterViewInit {
   }
 
   selectEntity(entity: SelectableEntity): void {
-    let idToUse = entity.id;
-    if (entity.type === 'trait') {
-      idToUse = entity.name;
-    }
-    this.router.navigate(['/network-visualizer', entity.type, idToUse]);
+    this.router.navigate(['/network-visualizer', entity.type, entity.id]);
   }
 
   onDepthChange(): void {
@@ -305,7 +301,9 @@ export class NetworkVisualizerComponent implements OnInit, AfterViewInit {
         id = key.slice('skill:'.length);
       } else if (key.startsWith('trait:')) {
         type = 'trait';
-        id = key.slice('trait:'.length);
+        const traitName = key.slice('trait:'.length);
+        const matchedTrait = this.traits.find(t => t.name === traitName);
+        id = matchedTrait ? matchedTrait.id : traitName;
       } else if (key.startsWith('mcp:')) {
         type = 'mcp';
         id = key.slice('mcp:'.length);
