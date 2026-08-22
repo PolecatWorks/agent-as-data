@@ -71,7 +71,7 @@
                     </span>
                   </div>
                   @if (entity.description) {
-                    <p class="text-xs text-slate-500 m-0 mt-1 line-clamp-2 leading-relaxed">
+                    <p class="text-xs text-slate-500 m-0 mt-1 line-clamp-2 leading-relaxed" [matTooltip]="entity.description">
                       {{ entity.description }}
                     </p>
                   }
@@ -145,7 +145,7 @@
                 <p class="m-0">{{ renderError }}</p>
               </div>
             } @else {
-              <div #mermaidContainer class="w-full overflow-x-auto"></div>
+              <div #mermaidContainer class="w-full overflow-x-auto" (click)="onMermaidClick($event)"></div>
             }
           </mat-card-content>
         </mat-card>

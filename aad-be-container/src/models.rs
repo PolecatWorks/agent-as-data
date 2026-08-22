@@ -331,13 +331,11 @@ pub struct ListPages {
 
 pub fn bump_minor_version(version: &str) -> String {
     let parts: Vec<&str> = version.split('.').collect();
-    if parts.len() >= 2 {
-        if let Ok(major) = parts[0].parse::<i32>() {
-            if let Ok(minor) = parts[1].parse::<i32>() {
+    if parts.len() >= 2
+        && let Ok(major) = parts[0].parse::<i32>()
+            && let Ok(minor) = parts[1].parse::<i32>() {
                 return format!("{}.{}.0", major, minor + 1);
             }
-        }
-    }
     // Fallback if not valid SemVer
     let clean = version.trim_matches(|c: char| !c.is_numeric());
     if let Ok(num) = clean.parse::<i32>() {

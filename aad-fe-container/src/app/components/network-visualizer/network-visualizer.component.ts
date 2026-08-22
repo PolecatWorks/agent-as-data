@@ -1,6 +1,7 @@
 import { Component, ElementRef, OnInit, ViewChild, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatInputModule } from '@angular/material/input';
@@ -70,7 +71,7 @@ export class NetworkVisualizerComponent implements OnInit, AfterViewInit {
   private mermaidReady: boolean = false;
   private diagramCounter = 0;
 
-  constructor(private apiService: ApiService) {}
+  constructor(private apiService: ApiService, private route: ActivatedRoute, private router: Router) {}
 
   ngOnInit(): void {
     mermaid.initialize({
@@ -127,11 +128,13 @@ export class NetworkVisualizerComponent implements OnInit, AfterViewInit {
             this.traits = (fullTraits as any[]).filter(Boolean) as TraitContract[];
             this.buildEntityList();
             this.isLoading = false;
+            this.handleRouteParams();
           },
           error: () => {
             this.agents = sparseAgents;
             this.buildEntityList();
             this.isLoading = false;
+            this.handleRouteParams();
           }
         });
       },
@@ -141,6 +144,21 @@ export class NetworkVisualizerComponent implements OnInit, AfterViewInit {
     });
   }
 
+  handleRouteParams(): void {
+    this.route.paramMap.subscribe(params => {
+      const type = params.get('type') as EntityType;
+      const id = params.get('id');
+
+      if (type && id) {
+        let entityToSelect = this.allEntities.find(e => e.type === type && (e.id === id || e.name === id));
+        if (entityToSelect) {
+          this.selectedEntity = entityToSelect;
+          this.renderError = null;
+          setTimeout(() => this.buildAndRenderDiagram(), 50);
+        }
+      }
+    });
+  }
 
   buildEntityList(): void {
     this.allEntities = [
@@ -187,9 +205,11 @@ export class NetworkVisualizerComponent implements OnInit, AfterViewInit {
   }
 
   selectEntity(entity: SelectableEntity): void {
-    this.selectedEntity = entity;
-    this.renderError = null;
-    setTimeout(() => this.buildAndRenderDiagram(), 50);
+    let idToUse = entity.id;
+    if (entity.type === 'trait') {
+      idToUse = entity.name;
+    }
+    this.router.navigate(['/network-visualizer', entity.type, idToUse]);
   }
 
   onDepthChange(): void {
@@ -265,7 +285,7 @@ export class NetworkVisualizerComponent implements OnInit, AfterViewInit {
     const nodeLines: string[] = [];
     const edgeLines: string[] = [];
 
-    const emitNode = (key: string, label: string, style: string, isRoot: boolean) => {
+    const emitNode = (key: string, label: string, style: string, isRoot: boolean, description: string = '') => {
       if (visitedNodes.has(key)) return;
       visitedNodes.add(key);
       const nid = this.nodeIdFor(key);
@@ -273,6 +293,28 @@ export class NetworkVisualizerComponent implements OnInit, AfterViewInit {
       const styleWithRoot = isRoot ? style.replace('stroke-width:1.5px', `stroke-width:${strokeWidth}`) : style;
       nodeLines.push(`    ${nid}["${label}"]`);
       nodeLines.push(`    style ${nid} ${styleWithRoot}`);
+
+      // Add click support for mermaid graph tooltip and link route
+      let type = '';
+      let id = '';
+      if (key.startsWith('agent:')) {
+        type = 'agent';
+        id = key.slice('agent:'.length);
+      } else if (key.startsWith('skill:')) {
+        type = 'skill';
+        id = key.slice('skill:'.length);
+      } else if (key.startsWith('trait:')) {
+        type = 'trait';
+        id = key.slice('trait:'.length);
+      } else if (key.startsWith('mcp:')) {
+        type = 'mcp';
+        id = key.slice('mcp:'.length);
+      }
+
+      const linkUrl = `/network-visualizer/${type}/${id}`;
+      // Clean up description for the mermaid tooltip syntax (remove quotes, newlines, etc.)
+      const cleanDesc = description.replace(/"/g, "'").replace(/\n/g, ' ').substring(0, 100);
+      nodeLines.push(`    click ${nid} href "${linkUrl}" "${cleanDesc}"`);
     };
 
     const emitEdge = (fromKey: string, toKey: string, label: string) => {
@@ -313,7 +355,7 @@ export class NetworkVisualizerComponent implements OnInit, AfterViewInit {
           isRoot
             ? 'fill:#e0e7ff,stroke:#6366f1,stroke-width:3px,color:#1e1b4b'
             : 'fill:#e0e7ff,stroke:#6366f1,stroke-width:1.5px,color:#1e1b4b',
-          isRoot);
+          isRoot, agent?.description || '');
 
         if (depth < this.traceDepth && agent) {
           // Forward: attached sub-agents
@@ -360,7 +402,7 @@ export class NetworkVisualizerComponent implements OnInit, AfterViewInit {
           isRoot
             ? 'fill:#fdf4ff,stroke:#a855f7,stroke-width:3px,color:#4c1d95'
             : 'fill:#fdf4ff,stroke:#a855f7,stroke-width:1.5px,color:#4c1d95',
-          isRoot);
+          isRoot, skill?.description || '');
 
         if (depth < this.traceDepth && skill) {
           // Forward: sub-skills
@@ -409,7 +451,7 @@ export class NetworkVisualizerComponent implements OnInit, AfterViewInit {
           isRoot
             ? 'fill:#ecfdf5,stroke:#10b981,stroke-width:3px,color:#065f46'
             : 'fill:#ecfdf5,stroke:#10b981,stroke-width:1.5px,color:#065f46',
-          isRoot);
+          isRoot, trait?.description || '');
 
         if (depth < this.traceDepth) {
           // Reverse: agents implementing this trait
@@ -440,7 +482,7 @@ export class NetworkVisualizerComponent implements OnInit, AfterViewInit {
           isRoot
             ? 'fill:#fff7ed,stroke:#f97316,stroke-width:3px,color:#7c2d12'
             : 'fill:#fff7ed,stroke:#f97316,stroke-width:1.5px,color:#7c2d12',
-          isRoot);
+          isRoot, mcp?.description || '');
 
         if (depth < this.traceDepth) {
           // Reverse: agents using this MCP server
@@ -486,6 +528,21 @@ export class NetworkVisualizerComponent implements OnInit, AfterViewInit {
       this.renderError = e?.message || 'Failed to render diagram.';
       if (this.mermaidContainer) {
         this.mermaidContainer.nativeElement.innerHTML = '';
+      }
+    }
+  }
+
+  onMermaidClick(event: MouseEvent): void {
+    // Intercept clicks on links inside the mermaid diagram to use Angular router
+    const target = event.target as HTMLElement;
+    const anchor = target.closest('a');
+
+    if (anchor && anchor.href) {
+      const url = new URL(anchor.href);
+      // Check if it's an internal link intended for routing
+      if (url.origin === window.location.origin && url.pathname.startsWith('/network-visualizer/')) {
+        event.preventDefault(); // Prevent full page reload
+        this.router.navigateByUrl(url.pathname);
       }
     }
   }
