@@ -63,3 +63,16 @@ flowchart TD
 3. **Strict TDD Execution**: Build out code using a strict TDD approach (Write failing integration/unit test -> Implement code -> Verify test passes -> Refactor).
 4. **Per-Spec Verification Gate**: After completing implementation of a spec file, run **all unit tests** and **Robot Framework integration tests** (`/integration-tests/run-tests-local.sh`). Confirm clean pass before transitioning spec status to `complete` and progressing to the next spec file.
 5. **Pull Request Validation Checks**: Every PR must pass all required validation status checks (Backend Build & Test, Frontend Build & Test, Helm Chart Lint). These validation checks run in parallel and are conditionally run based on the files changed in the PR to ensure efficiency and safety. Any skipped checks are treated as passing by GitHub branch protection settings.
+
+---
+
+## Dev Server Behaviour
+
+Both dev servers have **watch/hot-reload enabled** — do **NOT** manually kill or restart them after making code changes.
+
+| Server | Make Target | Watch Mechanism |
+|---|---|---|
+| Backend (Rust) | `make aad-be-watch` | `cargo watch` — recompiles & restarts on file save |
+| Frontend (Angular) | `make aad-fe-dev` | `ng serve` with HMR — hot-reloads on file save |
+
+> **Rule**: After editing source files, simply save and let the watch process handle recompilation. Never run `kill`, `lsof`, or restart commands against the dev servers unless explicitly instructed by the user.
