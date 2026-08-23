@@ -15,7 +15,7 @@ export const routes: Routes = [
   { path: 'network-visualizer/:type/:id', loadComponent: () => import('./components/network-visualizer/network-visualizer.component').then(m => m.NetworkVisualizerComponent) },
   { path: 'refactoring-lab', loadComponent: () => import('./components/refactoring-lab/refactoring-lab.component').then(m => m.RefactoringLabComponent) },
   { path: 'knowledge-inspector', loadComponent: () => import('./components/knowledge-inspector/knowledge-inspector.component').then(m => m.KnowledgeInspectorComponent) },
-  { path: 'mcp-manager', loadComponent: () => import('./components/mcp-manager/mcp-manager.component').then(m => m.McpManagerComponent) },
-  { path: 'mcp-manager/:id', loadComponent: () => import('./components/mcp-manager/mcp-manager.component').then(m => m.McpManagerComponent) },
+  { path: 'mcp-servers', loadComponent: () => import('./components/mcp-manager/mcp-manager.component').then(m => m.McpManagerComponent) },
+  { path: 'mcp-servers/:id', loadComponent: () => import('./components/mcp-manager/mcp-manager.component').then(m => m.McpManagerComponent) },
 ];
 
