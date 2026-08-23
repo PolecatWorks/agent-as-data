@@ -215,12 +215,12 @@ export class ApiService {
   // TODO: replace ANONYMOUS_OWNER_ID with the authenticated user's UUID once auth is implemented
   private readonly ANONYMOUS_OWNER_ID = '00000000-0000-0000-0000-000000000000';
 
-  registerMcpServer(serverName: string, transportType: string, endpointConfig: any): Observable<any> {
+  registerMcpServer(serverName: string, transportType: string, endpointConfig: any, ownerId?: string): Observable<any> {
     return this.http.post(`${this.baseUrl}/agents/mcp/register`, {
       server_name: serverName,
       transport_type: transportType,
       endpoint_config: endpointConfig,
-      owner_id: this.ANONYMOUS_OWNER_ID
+      owner_id: ownerId || this.ANONYMOUS_OWNER_ID
     });
   }
 

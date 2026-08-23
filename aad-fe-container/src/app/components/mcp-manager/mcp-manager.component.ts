@@ -34,6 +34,7 @@ export class McpManagerComponent implements OnInit {
 
   serverForm: any = {
     server_name: '',
+    owner_id: '00000000-0000-0000-0000-000000000000',
     transport_type: 'sse',
     url: '',
     description: '',
@@ -106,7 +107,8 @@ export class McpManagerComponent implements OnInit {
             tools_count: count,
             last_synced: 'Just now',
             tags: tags,
-            description: description
+            description: description,
+            owner_id: s.owner_id || '00000000-0000-0000-0000-000000000000'
           };
         });
         const routeId = this.route.snapshot.paramMap.get('id');
@@ -156,6 +158,7 @@ export class McpManagerComponent implements OnInit {
     this.showDeleteConfirm = false;
     this.serverForm = {
       server_name: server.server_name,
+      owner_id: server.owner_id || '00000000-0000-0000-0000-000000000000',
       transport_type: server.transport_type,
       url: server.url || '',
       description: server.description || '',
@@ -172,6 +175,7 @@ export class McpManagerComponent implements OnInit {
     this.showDeleteConfirm = false;
     this.serverForm = {
       server_name: '',
+      owner_id: '00000000-0000-0000-0000-000000000000',
       transport_type: 'sse',
       url: '',
       description: '',
@@ -229,7 +233,8 @@ export class McpManagerComponent implements OnInit {
         url: this.serverForm.url,
         tags: this.serverForm.tags,
         description: this.serverForm.description
-      }
+      },
+      this.serverForm.owner_id
     ).subscribe({
       next: (res) => {
         this.isRegistering = false;
@@ -241,7 +246,8 @@ export class McpManagerComponent implements OnInit {
           tools_count: res.cached_tools_count,
           last_synced: 'Just now',
           tags: [...this.serverForm.tags],
-          description: this.serverForm.description
+          description: this.serverForm.description,
+          owner_id: this.serverForm.owner_id
         };
 
         const idx = this.registeredServers.findIndex(s => s.server_name === res.server_name);
@@ -262,7 +268,8 @@ export class McpManagerComponent implements OnInit {
           url: this.serverForm.url,
           tools_count: 6,
           last_synced: 'Just now',
-          tags: [...this.serverForm.tags]
+          tags: [...this.serverForm.tags],
+          owner_id: this.serverForm.owner_id
         };
 
         const idx = this.registeredServers.findIndex(s => s.server_name === this.serverForm.server_name);
