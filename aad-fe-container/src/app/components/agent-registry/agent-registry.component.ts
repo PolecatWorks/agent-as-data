@@ -83,7 +83,7 @@ export class AgentRegistryComponent implements OnInit {
     'BasicAgent'
   ];
 
-  allMcpServers: any[] = [];
+  allTools: any[] = [];
   allSkills: any[] = [];
 
   // Trait Contracts Editor State
@@ -150,7 +150,7 @@ export class AgentRegistryComponent implements OnInit {
   selectedSubAgentToAdd: string = '';
   selectedSkillToAdd: string = '';
   skillSearchQuery: string = '';
-  mcpSearchQuery: string = '';
+  toolSearchQuery: string = '';
   agentSearchQuery: string = '';
 
 
@@ -160,7 +160,7 @@ export class AgentRegistryComponent implements OnInit {
     description: '',
     tags: [],
     implements_traits: [],
-    attached_mcp_servers: [],
+    attached_tools: [],
     attached_agents: [],
     attached_skills: [],
     agent_definition: '',
@@ -203,17 +203,17 @@ export class AgentRegistryComponent implements OnInit {
   ngOnInit(): void {
     this.loadAgents();
     this.loadTraits();
-    this.loadMcpServers();
+    this.loadTools();
     this.loadSkills();
     this.route.queryParams.subscribe(queryParams => {
       this.isEditing = queryParams['edit'] === 'true';
     });
   }
 
-  loadMcpServers(): void {
-    this.apiService.getMcpServers().subscribe({
+  loadTools(): void {
+    this.apiService.getTools().subscribe({
       next: (servers) => {
-        this.allMcpServers = servers || [];
+        this.allTools = servers || [];
       }
     });
   }
@@ -231,13 +231,13 @@ export class AgentRegistryComponent implements OnInit {
     return s ? s.name : id;
   }
 
-  getMcpName(id: string): string {
-    const m = this.allMcpServers.find(x => x.id === id);
+  getToolName(id: string): string {
+    const m = this.allTools.find(x => x.id === id);
     return m ? m.server_name : id;
   }
 
-  getMcpDescription(id: string): string {
-    const m = this.allMcpServers.find(x => x.id === id);
+  getToolDescription(id: string): string {
+    const m = this.allTools.find(x => x.id === id);
     if (m) {
       if (m.description && m.description.trim().length > 0) {
         return m.description;
@@ -388,7 +388,7 @@ export class AgentRegistryComponent implements OnInit {
       description: '',
       tags: [],
       implements_traits: [],
-      attached_mcp_servers: [],
+      attached_tools: [],
       attached_agents: [],
       attached_skills: [],
       current_version: '1.0.0',
@@ -445,7 +445,7 @@ export class AgentRegistryComponent implements OnInit {
       description: this.agentForm.description || '',
       tags: this.agentForm.tags || [],
       implements_traits: this.agentForm.implements_traits || [],
-      attached_mcp_servers: this.agentForm.attached_mcp_servers || [],
+      attached_tools: this.agentForm.attached_tools || [],
       attached_agents: this.agentForm.attached_agents || [],
       attached_skills: this.agentForm.attached_skills || [],
       current_version: this.agentForm.current_version || '1.0.0',
@@ -568,17 +568,17 @@ export class AgentRegistryComponent implements OnInit {
 
   addTool(): void {
     if (this.selectedToolToAdd && this.agentForm) {
-      if (!this.agentForm.attached_mcp_servers) this.agentForm.attached_mcp_servers = [];
-      if (!this.agentForm.attached_mcp_servers.includes(this.selectedToolToAdd)) {
-        this.agentForm.attached_mcp_servers.push(this.selectedToolToAdd);
+      if (!this.agentForm.attached_tools) this.agentForm.attached_tools = [];
+      if (!this.agentForm.attached_tools.includes(this.selectedToolToAdd)) {
+        this.agentForm.attached_tools.push(this.selectedToolToAdd);
       }
       this.selectedToolToAdd = '';
     }
   }
 
   removeTool(toolId: string): void {
-    if (this.agentForm?.attached_mcp_servers) {
-      this.agentForm.attached_mcp_servers = this.agentForm.attached_mcp_servers.filter((t: string) => t !== toolId);
+    if (this.agentForm?.attached_tools) {
+      this.agentForm.attached_tools = this.agentForm.attached_tools.filter((t: string) => t !== toolId);
     }
   }
 
@@ -586,8 +586,8 @@ export class AgentRegistryComponent implements OnInit {
     return this.allSkills.filter(s => !(this.agentForm.attached_skills || []).includes(s.id || ''));
   }
 
-  getAvailableMcpToAttach(): any[] {
-    return this.allMcpServers.filter(m => !(this.agentForm.attached_mcp_servers || []).includes(m.id));
+  getAvailableToolsToAttach(): any[] {
+    return this.allTools.filter(m => !(this.agentForm.attached_tools || []).includes(m.id));
   }
 
   getFilteredAvailableSkills(): any[] {
@@ -597,9 +597,9 @@ export class AgentRegistryComponent implements OnInit {
     return available.filter(s => s.name.toLowerCase().includes(q) || (s.description && s.description.toLowerCase().includes(q)));
   }
 
-  getFilteredAvailableMcp(): any[] {
-    const q = this.mcpSearchQuery.toLowerCase().trim();
-    const available = this.getAvailableMcpToAttach();
+  getFilteredAvailableTools(): any[] {
+    const q = this.toolSearchQuery.toLowerCase().trim();
+    const available = this.getAvailableToolsToAttach();
     if (!q) return available;
     return available.filter(m => m.server_name.toLowerCase().includes(q));
   }
@@ -620,19 +620,19 @@ export class AgentRegistryComponent implements OnInit {
     }
   }
 
-  attachMcp(id: string): void {
-    if (!this.agentForm.attached_mcp_servers) {
-      this.agentForm.attached_mcp_servers = [];
+  attachTool(id: string): void {
+    if (!this.agentForm.attached_tools) {
+      this.agentForm.attached_tools = [];
     }
-    if (id && !this.agentForm.attached_mcp_servers.includes(id)) {
-      this.agentForm.attached_mcp_servers.push(id);
-      this.mcpSearchQuery = '';
+    if (id && !this.agentForm.attached_tools.includes(id)) {
+      this.agentForm.attached_tools.push(id);
+      this.toolSearchQuery = '';
     }
   }
 
-  detachMcp(id: string): void {
-    if (this.agentForm.attached_mcp_servers) {
-      this.agentForm.attached_mcp_servers = this.agentForm.attached_mcp_servers.filter((i: string) => i !== id);
+  detachTool(id: string): void {
+    if (this.agentForm.attached_tools) {
+      this.agentForm.attached_tools = this.agentForm.attached_tools.filter((i: string) => i !== id);
     }
   }
 

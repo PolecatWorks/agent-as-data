@@ -44,7 +44,8 @@ stop-other-db:
 	docker stop sward-postgres 2>/dev/null || true
 
 compose-db-up:
-	docker compose -f docker-compose/postgres.yaml up -d
+	docker compose -f docker-compose/postgres.yaml up -d --wait
+	@docker exec -i aad-postgres psql -U postgres -d aaddb -c "CREATE EXTENSION IF NOT EXISTS vector;"
 
 compose-db-down:
 	docker compose -f docker-compose/postgres.yaml down
@@ -55,7 +56,7 @@ ensure-pgvector:
 compose-db-clean:
 	docker compose -f docker-compose/postgres.yaml down -v
 
-db-up: compose-db-up ensure-pgvector
+db-up: compose-db-up
 
 db-down: compose-db-down
 

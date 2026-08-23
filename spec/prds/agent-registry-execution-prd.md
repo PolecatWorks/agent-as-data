@@ -6,7 +6,7 @@ The **Agent Registry & Execution Engine** in **Agent-As-Data (AAD)** treats AI a
 ## Core Capabilities
 
 ### 1. Declarative Agent Storage, Versioning & Access Control
-- **Agent Specification**: Stores `name`, `description`, `tags`, `agent_definition` (system prompt/persona), `model` config, `attached_mcp_servers`, `attached_skills`, `attached_agents`, `incoming_guardrails`, and `outgoing_guardrails`.
+- **Agent Specification**: Stores `name`, `description`, `tags`, `agent_definition` (system prompt/persona), `model` config, `attached_tools`, `attached_skills`, `attached_agents`, `incoming_guardrails`, and `outgoing_guardrails`.
 - **Ownership & Group-Based Access Control (RBAC)**:
   - `owner_id` (UUID): Primary user or service account owner.
   - `read_groups` (TEXT[]): Array of group names / IDs granted read & discovery access.
@@ -27,13 +27,12 @@ The **Agent Registry & Execution Engine** in **Agent-As-Data (AAD)** treats AI a
 - **Dynamic Contract Negotiation & Fallback Resolution**: Trait resolution uses Depth-First Search (DFS) topological cycle detection (`ERR_CIRCULAR_DELEGATION`). If a user's custom `trait_mappings` fail contract verification, AAD attempts fallback negotiation to default trait agents or rejects with `422 Unprocessable Entity` in strict mode.
 
 
-### 3. Remote MCP Server Agent Registration & Tool Schema Caching
-- **External MCP Server Ingestion**: Endpoint `POST /api/v1/agents/mcp/register` registers external MCP servers (Stdio command or SSE URL transport).
-- **Capability & Tool Schema Parsing**:
-  - Automatically queries `tools/list`, `resources/list`, and `prompts/list` from the remote MCP server upon registration.
-  - Caches tool definitions, input/output JSON schemas, type information, and description metadata into `mcp_server_cache` and `tools` JSONB.
-- **RAG Discovery Integration**: Generates vector embeddings (`pgvector`) for parsed MCP tools and prompts, enabling dynamic RAG discovery (`POST /api/v1/agents/search`) of remote MCP tools alongside native declarative agents.
-- **Background Sync Cache**: Periodic background refreshes re-query remote MCP capabilities to ensure tool type definitions remain up to date.
+### 3. Remote Tool Agent Registration & Schema Caching
+- **External Tool Ingestion**: Endpoint `POST /api/v1/agents/tools/register` registers external tools (Stdio command or SSE URL transport).
+  - Automatically queries `tools/list`, `resources/list`, and `prompts/list` from the remote server upon registration.
+  - Caches tool definitions, input/output JSON schemas, type information, and description metadata into the database's `tools` table JSONB.
+- **RAG Discovery Integration**: Generates vector embeddings (`pgvector`) for parsed tools and prompts, enabling dynamic RAG discovery (`POST /api/v1/agents/search`) of remote tools alongside native declarative agents.
+- **Background Sync Cache**: Periodic background refreshes re-query remote tool capabilities to ensure definitions remain up to date.
 
 
 
@@ -117,7 +116,7 @@ The **Agent Registry & Execution Engine** in **Agent-As-Data (AAD)** treats AI a
 - **Decoupled Job Queue**: Asynchronous background agent runs are isolate-tracked in the `executions` table, preventing long-running agent tasks from blocking vector discovery endpoints.
 - **Deterministic Version Snapshots**: All executions bind to explicit `version` snapshots in `agent_revisions`, guaranteeing that agent behavior remains immutable even if an agent prompt is edited mid-task.
 - **Guardrail Interceptors**: Strict pre-submission (`incoming_guardrails`) and post-execution (`outgoing_guardrails`) validation steps block malformed JSON or prompt injection attacks.
-- **Reversible Schema Rollback**: All agent and execution schema migrations (`agents`, `agent_revisions`, `executions`, `skills`, `mcp_servers`) require paired forward (`.up.sql`) and reverse (`.down.sql`) scripts to guarantee safe rollbacks.
+- **Reversible Schema Rollback**: All agent and execution schema migrations (`agents`, `agent_revisions`, `executions`, `skills`, `tools`) require paired forward (`.up.sql`) and reverse (`.down.sql`) scripts to guarantee safe rollbacks.
 
 
 
@@ -157,5 +156,5 @@ sequenceDiagram
 
 ## UI Behavior Updates
 
-- The **Register New** buttons for **Agents**, **MCP Servers**, and **Traits** now initialize a fresh form without performing a router navigation. This eliminates the brief screen flicker previously observed when creating new items.
+- The **Register New** buttons for **Agents**, **Tools**, and **Traits** now initialize a fresh form without performing a router navigation. This eliminates the brief screen flicker previously observed when creating new items.
 - Existing UI flows remain unchanged; the form state is reset and ready for input, improving user experience and stability.

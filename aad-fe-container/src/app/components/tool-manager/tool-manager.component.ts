@@ -11,7 +11,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { ApiService } from '../../services/api.service';
 
 @Component({
-  selector: 'app-mcp-manager',
+  selector: 'app-tool-manager',
   standalone: true,
   imports: [
     CommonModule,
@@ -23,10 +23,10 @@ import { ApiService } from '../../services/api.service';
     MatSelectModule,
     MatSnackBarModule
   ],
-  templateUrl: './mcp-manager.component.html',
-  styleUrl: './mcp-manager.component.scss'
+  templateUrl: './tool-manager.component.html',
+  styleUrl: './tool-manager.component.scss'
 })
-export class McpManagerComponent implements OnInit {
+export class ToolManagerComponent implements OnInit {
   searchQuery: string = '';
   isEditing: boolean = false;
   showDeleteConfirm: boolean = false;
@@ -86,7 +86,7 @@ export class McpManagerComponent implements OnInit {
   }
 
   loadServers(): void {
-    this.apiService.getMcpServers().subscribe({
+    this.apiService.getTools().subscribe({
       next: (servers) => {
         this.registeredServers = servers.map(s => {
           let count = 0;
@@ -226,7 +226,7 @@ export class McpManagerComponent implements OnInit {
     if (!this.serverForm.server_name.trim()) return;
     this.isRegistering = true;
 
-    this.apiService.registerMcpServer(
+    this.apiService.registerTool(
       this.serverForm.server_name,
       this.serverForm.transport_type,
       {
@@ -287,7 +287,7 @@ export class McpManagerComponent implements OnInit {
   deleteServer(): void {
     if (!this.selectedServer) return;
     const id = this.selectedServer.id;
-    this.apiService.deleteMcpServer(id).subscribe({
+    this.apiService.deleteTool(id).subscribe({
       next: () => {
         this.registeredServers = this.registeredServers.filter(s => s.id !== id);
         this.showDeleteConfirm = false;

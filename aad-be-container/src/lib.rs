@@ -4,7 +4,7 @@ pub mod db;
 pub mod execution;
 pub mod hams_tools;
 pub mod knowledge;
-pub mod mcp;
+pub mod tools;
 pub mod models;
 pub mod traits;
 pub mod tokio_tools;

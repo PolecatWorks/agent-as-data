@@ -193,12 +193,12 @@
                     
                     @if (isEditing) {
                       <div class="space-y-2">
-                        <input type="text" [(ngModel)]="mcpSearchQuery" placeholder="Filter registered tools by name..."
+                        <input type="text" [(ngModel)]="toolSearchQuery" placeholder="Filter registered tools by name..."
                                class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all" />
 
                         <div class="flex flex-wrap gap-2 p-3 bg-white rounded-xl border border-slate-200 max-h-36 overflow-y-auto">
-                          @for (m of getFilteredAvailableMcp(); track m.id) {
-                            <button mat-stroked-button color="primary" class="!rounded-lg !text-xs !font-bold" [matTooltip]="getMcpDescription(m.id)" (click)="attachMcp(m.id)">
+                          @for (m of getFilteredAvailableTools(); track m.id) {
+                            <button mat-stroked-button color="primary" class="!rounded-lg !text-xs !font-bold" [matTooltip]="getToolDescription(m.id)" (click)="attachTool(m.id)">
                               + {{ m.server_name }}
                             </button>
                           } @empty {
@@ -210,11 +210,11 @@
 
                     <div class="space-y-1.5 pt-2">
                       <div class="flex flex-wrap gap-2">
-                        @for (mcpId of skillForm.attached_mcp_servers || []; track mcpId) {
-                          <span class="px-3 py-1 bg-blue-100 text-blue-900 font-bold text-xs rounded-xl flex items-center gap-2 border border-blue-200" [matTooltip]="getMcpDescription(mcpId)">
-                            🛠️ {{ getMcpName(mcpId) }}
+                        @for (mcpId of skillForm.attached_tools || []; track mcpId) {
+                          <span class="px-3 py-1 bg-blue-100 text-blue-900 font-bold text-xs rounded-xl flex items-center gap-2 border border-blue-200" [matTooltip]="getToolDescription(mcpId)">
+                            🛠️ {{ getToolName(mcpId) }}
                             @if (isEditing) {
-                              <button class="text-blue-700 hover:text-red-600 font-bold border-none bg-transparent cursor-pointer text-sm" (click)="detachMcp(mcpId)">×</button>
+                              <button class="text-blue-700 hover:text-red-600 font-bold border-none bg-transparent cursor-pointer text-sm" (click)="detachTool(mcpId)">×</button>
                             }
                           </span>
                         } @empty {

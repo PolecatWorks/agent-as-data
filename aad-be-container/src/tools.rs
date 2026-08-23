@@ -2,12 +2,12 @@ use axum::{Json, extract::State, http::StatusCode};
 use sqlx::PgPool;
 use uuid::Uuid;
 
-use crate::models::{RegisterMcpServerRequest, RegisterMcpServerResponse};
+use crate::models::{RegisterToolRequest, RegisterToolResponse};
 
-pub async fn register_mcp_server(
+pub async fn register_tool(
     State(pool): State<PgPool>,
-    Json(payload): Json<RegisterMcpServerRequest>,
-) -> Result<(StatusCode, Json<RegisterMcpServerResponse>), (StatusCode, String)> {
+    Json(payload): Json<RegisterToolRequest>,
+) -> Result<(StatusCode, Json<RegisterToolResponse>), (StatusCode, String)> {
     let server_id = payload.id.unwrap_or_else(Uuid::new_v4);
 
     // Mock cached tools capability discovery
@@ -23,7 +23,7 @@ pub async fn register_mcp_server(
     use sqlx::Row;
     let row = sqlx::query(
         r#"
-        INSERT INTO mcp_servers (id, server_name, transport_type, endpoint_config, cached_capabilities, owner_id)
+        INSERT INTO tools (id, server_name, transport_type, endpoint_config, cached_capabilities, owner_id)
         VALUES ($1, $2, $3, $4, $5, $6)
         ON CONFLICT (server_name) DO UPDATE 
         SET transport_type = EXCLUDED.transport_type, 
@@ -47,7 +47,7 @@ pub async fn register_mcp_server(
 
     Ok((
         StatusCode::CREATED,
-        Json(RegisterMcpServerResponse {
+        Json(RegisterToolResponse {
             id: final_id,
             server_name: payload.server_name,
             transport_type: payload.transport_type,
@@ -56,11 +56,11 @@ pub async fn register_mcp_server(
     ))
 }
 
-pub async fn list_mcp_servers(
+pub async fn list_tools(
     State(pool): State<PgPool>,
-) -> Result<(StatusCode, Json<Vec<crate::models::McpServer>>), (StatusCode, String)> {
-    let servers = sqlx::query_as::<_, crate::models::McpServer>(
-        "SELECT id, server_name, transport_type, endpoint_config, cached_capabilities, owner_id FROM mcp_servers"
+) -> Result<(StatusCode, Json<Vec<crate::models::Tool>>), (StatusCode, String)> {
+    let servers = sqlx::query_as::<_, crate::models::Tool>(
+        "SELECT id, server_name, transport_type, endpoint_config, cached_capabilities, owner_id FROM tools"
     )
     .fetch_all(&pool)
     .await
@@ -71,11 +71,11 @@ pub async fn list_mcp_servers(
 
 use axum::extract::Path;
 
-pub async fn delete_mcp_server(
+pub async fn delete_tool(
     State(pool): State<PgPool>,
     Path(id): Path<Uuid>,
 ) -> Result<StatusCode, (StatusCode, String)> {
-    sqlx::query("DELETE FROM mcp_servers WHERE id = $1")
+    sqlx::query("DELETE FROM tools WHERE id = $1")
         .bind(id)
         .execute(&pool)
         .await
