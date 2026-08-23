@@ -26,7 +26,7 @@ export class AppComponent {
 
   menuItems = [
     { path: '/traits-registry', icon: 'verified', label: 'Trait Contracts' },
-    { path: '/tools', icon: 'dns', label: 'MCP Servers' },
+    { path: '/tools', icon: 'dns', label: 'Tools' },
     { path: '/skills-registry', icon: 'extension', label: 'Skills' },
     { path: '/agent-registry', icon: 'app_registration', label: 'Agents' },
     { path: '/interactive-testing', icon: 'bug_report', label: 'Interactive Testing Studio' },

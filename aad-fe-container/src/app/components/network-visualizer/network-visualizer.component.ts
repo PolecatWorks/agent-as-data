@@ -233,7 +233,7 @@ export class NetworkVisualizerComponent implements OnInit, AfterViewInit {
       case 'agent': return 'Agent';
       case 'skill': return 'Skill';
       case 'trait': return 'Trait';
-      case 'mcp': return 'MCP Server';
+      case 'mcp': return 'Tool';
     }
   }
 
@@ -488,7 +488,7 @@ export class NetworkVisualizerComponent implements OnInit, AfterViewInit {
           isRoot, mcp?.description || '');
 
         if (depth < this.traceDepth) {
-          // Reverse: agents using this MCP server
+          // Reverse: agents using this tool
           this.agents
             .filter(a => (a.attached_mcp_servers || []).includes(mcpId))
             .forEach(a => {
@@ -496,7 +496,7 @@ export class NetworkVisualizerComponent implements OnInit, AfterViewInit {
               emitEdge(k, currentKey, 'uses MCP');
               if (!queued.has(k)) { queued.add(k); queue.push([k, depth + 1]); }
             });
-          // Reverse: skills using this MCP server
+          // Reverse: skills using this tool
           this.skills
             .filter(s => (s.attached_mcp_servers || []).includes(mcpId))
             .forEach(s => {
