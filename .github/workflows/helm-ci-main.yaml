@@ -3,8 +3,6 @@ name: Helm CI (main)
 on:
   push:
     branches: [ "main" ]
-  merge_group:
-    branches: [ "main" ]
 
 env:
   REGISTRY: ghcr.io
