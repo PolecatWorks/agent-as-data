@@ -210,7 +210,7 @@ pub struct RegisterMcpServerRequest {
     pub server_name: String,
     pub transport_type: String,
     pub endpoint_config: serde_json::Value,
-    pub owner_id: Uuid,
+    pub owner_id: Option<Uuid>,
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
@@ -228,7 +228,7 @@ pub struct McpServer {
     pub transport_type: String,
     pub endpoint_config: serde_json::Value,
     pub cached_capabilities: serde_json::Value,
-    pub owner_id: Uuid,
+    pub owner_id: Option<Uuid>,
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
