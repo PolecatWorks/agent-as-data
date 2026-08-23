@@ -8,7 +8,7 @@ pub async fn register_mcp_server(
     State(pool): State<PgPool>,
     Json(payload): Json<RegisterMcpServerRequest>,
 ) -> Result<(StatusCode, Json<RegisterMcpServerResponse>), (StatusCode, String)> {
-    let server_id = Uuid::new_v4();
+    let server_id = payload.id.unwrap_or_else(Uuid::new_v4);
 
     // Mock cached tools capability discovery
     let cached_capabilities = serde_json::json!({
