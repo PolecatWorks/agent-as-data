@@ -2,12 +2,12 @@ version: '3.8'
 
 services:
   postgres:
-    image: postgres:16-alpine
+    image: pgvector/pgvector:pg16
     container_name: aad-postgres
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: agent_as_data
+      POSTGRES_PASSWORD: mysecretpassword
+      POSTGRES_DB: aaddb
     ports:
       - "5432:5432"
     volumes:

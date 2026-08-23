@@ -76,3 +76,8 @@ Both dev servers have **watch/hot-reload enabled** — do **NOT** manually kill 
 | Frontend (Angular) | `make aad-fe-dev` | `ng serve` with HMR — hot-reloads on file save |
 
 > **Rule**: After editing source files, simply save and let the watch process handle recompilation. Never run `kill`, `lsof`, or restart commands against the dev servers unless explicitly instructed by the user.
+
+## Database Migrations & Watch Loops
+
+- **Manual Intervention Danger**: Never manually alter database schemas (e.g. `ALTER TABLE` via `psql`) if there is an active `sqlx` migration (`.up.sql`) pending. This permanently desyncs the `_sqlx_migrations` table and causes the `make aad-be-watch` process to enter an unrecoverable crash loop. Always let the backend startup automatically execute `.up.sql` migrations sequentially.
+- **Strict Entity Dependencies**: Be extremely cautious when enforcing strict non-null database properties (e.g., changing `owner_id` from `Option<Uuid>` to `Uuid`). If the database contains existing rows with `NULL` values, the backend API will successfully return a 500 parsing error, silently breaking frontend components (e.g. Angular dropdowns/filters going empty). Always backfill existing rows before enforcing strict schemas on production tables.

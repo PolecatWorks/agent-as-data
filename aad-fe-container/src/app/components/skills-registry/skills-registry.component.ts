@@ -54,7 +54,7 @@ export class SkillsRegistryComponent implements OnInit {
     tags: [],
     implements_traits: [],
     attached_skills: [],
-    attached_mcp_servers: [],
+    attached_tools: [],
     input_schema: {},
     output_schema: {},
     implementation: {}
@@ -64,9 +64,9 @@ export class SkillsRegistryComponent implements OnInit {
   implementationStr: string = '{}';
 
   newTagInput: string = '';
-  allMcpServers: any[] = [];
+  allTools: any[] = [];
   skillSearchQuery: string = '';
-  mcpSearchQuery: string = '';
+  toolSearchQuery: string = '';
 
   constructor(
     private apiService: ApiService,
@@ -78,7 +78,7 @@ export class SkillsRegistryComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadSkills();
-    this.loadMcpServers();
+    this.loadTools();
     this.loadTraits();
     this.route.params.subscribe(params => {
       if (params['id']) {
@@ -90,10 +90,10 @@ export class SkillsRegistryComponent implements OnInit {
     });
   }
 
-  loadMcpServers(): void {
-    this.apiService.getMcpServers().subscribe({
+  loadTools(): void {
+    this.apiService.getTools().subscribe({
       next: (servers) => {
-        this.allMcpServers = (servers || []).map(s => {
+        this.allTools = (servers || []).map(s => {
           // Ensure endpoint_config is an object (may be returned as a JSON string)
           let endpoint = s.endpoint_config;
           if (endpoint && typeof endpoint === 'string') {
@@ -151,7 +151,7 @@ export class SkillsRegistryComponent implements OnInit {
     this.skillForm = {
       ...skill,
       attached_skills: skill.attached_skills ? [...skill.attached_skills] : [],
-      attached_mcp_servers: skill.attached_mcp_servers ? [...skill.attached_mcp_servers] : [],
+      attached_tools: skill.attached_tools ? [...skill.attached_tools] : [],
       implements_traits: skill.implements_traits ? [...skill.implements_traits] : []
     };
     this.inputSchemaStr = JSON.stringify(skill.input_schema || {}, null, 2);
@@ -173,7 +173,7 @@ export class SkillsRegistryComponent implements OnInit {
       implements_traits: [],
       current_version: '1.0.0',
       attached_skills: [],
-      attached_mcp_servers: [],
+      attached_tools: [],
       owner_id: '00000000-0000-0000-0000-000000000000',
       input_schema: {},
       output_schema: {},
@@ -317,8 +317,8 @@ export class SkillsRegistryComponent implements OnInit {
     return this.skills.filter(s => s.id !== this.selectedSkill?.id && !(this.skillForm.attached_skills || []).includes(s.id || ''));
   }
 
-  getAvailableMcpToAttach(): any[] {
-    return this.allMcpServers.filter(m => !(this.skillForm.attached_mcp_servers || []).includes(m.id));
+  getAvailableToolsToAttach(): any[] {
+    return this.allTools.filter(m => !(this.skillForm.attached_tools || []).includes(m.id));
   }
 
   getFilteredAvailableSkills(): Skill[] {
@@ -328,9 +328,9 @@ export class SkillsRegistryComponent implements OnInit {
     return available.filter(s => s.name.toLowerCase().includes(q) || (s.description && s.description.toLowerCase().includes(q)));
   }
 
-  getFilteredAvailableMcp(): any[] {
-    const q = this.mcpSearchQuery.toLowerCase().trim();
-    const available = this.getAvailableMcpToAttach();
+  getFilteredAvailableTools(): any[] {
+    const q = this.toolSearchQuery.toLowerCase().trim();
+    const available = this.getAvailableToolsToAttach();
     if (!q) return available;
     return available.filter(m => m.server_name.toLowerCase().includes(q));
   }
@@ -351,19 +351,19 @@ export class SkillsRegistryComponent implements OnInit {
     }
   }
 
-  attachMcp(id: string): void {
-    if (!this.skillForm.attached_mcp_servers) {
-      this.skillForm.attached_mcp_servers = [];
+  attachTool(id: string): void {
+    if (!this.skillForm.attached_tools) {
+      this.skillForm.attached_tools = [];
     }
-    if (id && !this.skillForm.attached_mcp_servers.includes(id)) {
-      this.skillForm.attached_mcp_servers.push(id);
-      this.mcpSearchQuery = '';
+    if (id && !this.skillForm.attached_tools.includes(id)) {
+      this.skillForm.attached_tools.push(id);
+      this.toolSearchQuery = '';
     }
   }
 
-  detachMcp(id: string): void {
-    if (this.skillForm.attached_mcp_servers) {
-      this.skillForm.attached_mcp_servers = this.skillForm.attached_mcp_servers.filter(i => i !== id);
+  detachTool(id: string): void {
+    if (this.skillForm.attached_tools) {
+      this.skillForm.attached_tools = this.skillForm.attached_tools.filter(i => i !== id);
     }
   }
 
@@ -372,12 +372,12 @@ export class SkillsRegistryComponent implements OnInit {
     return s ? s.name : id;
   }
 
-  getMcpName(id: string): string {
-    const m = this.allMcpServers.find(x => x.id === id);
+  getToolName(id: string): string {
+    const m = this.allTools.find(x => x.id === id);
     return m ? m.server_name : id;
   }
-  getMcpDescription(id: string): string {
-    const m = this.allMcpServers.find(x => x.id === id);
+  getToolDescription(id: string): string {
+    const m = this.allTools.find(x => x.id === id);
     if (m) {
       if (m.description && m.description.trim().length > 0) {
         return m.description;

@@ -27,7 +27,7 @@ pub async fn create_agent(
     // 1. Insert Agent
     sqlx::query(
         r#"
-        INSERT INTO agents (id, name, description, tags, implements_traits, current_version, owner_id, read_groups, write_groups, execute_groups, agent_definition, model, judge_threshold, attached_skills, attached_mcp_servers, attached_agents, incoming_guardrails, outgoing_guardrails)
+        INSERT INTO agents (id, name, description, tags, implements_traits, current_version, owner_id, read_groups, write_groups, execute_groups, agent_definition, model, judge_threshold, attached_skills, attached_tools, attached_agents, incoming_guardrails, outgoing_guardrails)
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
         "#,
     )
@@ -45,7 +45,7 @@ pub async fn create_agent(
     .bind(&payload.model)
     .bind(payload.judge_threshold)
     .bind(&payload.attached_skills)
-    .bind(&payload.attached_mcp_servers)
+    .bind(&payload.attached_tools)
     .bind(&payload.attached_agents)
     .bind(&incoming_json)
     .bind(&outgoing_json)
@@ -105,7 +105,7 @@ pub async fn update_agent(
             UPDATE agents
             SET name = $1, description = $2, tags = $3, implements_traits = $4, read_groups = $5,
                 write_groups = $6, execute_groups = $7, agent_definition = $8, model = $9, judge_threshold = $10,
-                attached_skills = $11, attached_mcp_servers = $12, attached_agents = $13, incoming_guardrails = $14, outgoing_guardrails = $15,
+                attached_skills = $11, attached_tools = $12, attached_agents = $13, incoming_guardrails = $14, outgoing_guardrails = $15,
                 current_version = $16, owner_id = $17, guardrail_config = $18, updated_at = NOW()
             WHERE id = $19
             "#,
@@ -121,7 +121,7 @@ pub async fn update_agent(
         .bind(&payload.model)
         .bind(payload.judge_threshold)
         .bind(&payload.attached_skills)
-        .bind(&payload.attached_mcp_servers)
+        .bind(&payload.attached_tools)
         .bind(&payload.attached_agents)
         .bind(&incoming_json)
         .bind(&outgoing_json)
@@ -147,7 +147,7 @@ pub async fn get_agent(
 ) -> Result<Json<Agent>, (StatusCode, String)> {
     let row = sqlx::query(
         r#"
-        SELECT id, name, description, tags, implements_traits, current_version, owner_id, read_groups, write_groups, execute_groups, agent_definition, model, judge_threshold, attached_skills, attached_mcp_servers, attached_agents, incoming_guardrails, outgoing_guardrails, guardrail_config, archived_at
+        SELECT id, name, description, tags, implements_traits, current_version, owner_id, read_groups, write_groups, execute_groups, agent_definition, model, judge_threshold, attached_skills, attached_tools, attached_agents, incoming_guardrails, outgoing_guardrails, guardrail_config, archived_at
         FROM agents
         WHERE id = $1
         "#
@@ -172,7 +172,7 @@ pub async fn get_agent(
         let archived_at: Option<chrono::DateTime<chrono::Utc>> = r.get("archived_at");
 
         let attached_skills: Vec<Uuid> = r.get("attached_skills");
-        let attached_mcp_servers: Vec<Uuid> = r.get("attached_mcp_servers");
+        let attached_tools: Vec<Uuid> = r.get("attached_tools");
         let attached_agents: Vec<Uuid> = r.get("attached_agents");
 
         let incoming_val: serde_json::Value = r.get("incoming_guardrails");
@@ -187,7 +187,7 @@ pub async fn get_agent(
             description: r.get("description"),
             tags,
             implements_traits,
-            attached_mcp_servers,
+            attached_tools,
             attached_agents,
             attached_skills,
             current_version,
@@ -388,7 +388,7 @@ pub async fn create_skill(
 
     sqlx::query(
         r#"
-        INSERT INTO skills (id, name, description, definition, tags, current_version, owner_id, attached_skills, attached_mcp_servers, input_schema, output_schema, implementation, implements_traits)
+        INSERT INTO skills (id, name, description, definition, tags, current_version, owner_id, attached_skills, attached_tools, input_schema, output_schema, implementation, implements_traits)
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
         "#,
     )
@@ -400,7 +400,7 @@ pub async fn create_skill(
     .bind(&current_version)
     .bind(payload.owner_id)
     .bind(&payload.attached_skills)
-    .bind(&payload.attached_mcp_servers)
+    .bind(&payload.attached_tools)
     .bind(input_schema)
     .bind(output_schema)
     .bind(implementation)
@@ -465,7 +465,7 @@ pub async fn promote_skill(
             description,
             tags: vec![],
             implements_traits,
-            attached_mcp_servers: vec![],
+            attached_tools: vec![],
             attached_agents: vec![],
             attached_skills: vec![],
             current_version: "1.0.0".to_string(),
@@ -611,7 +611,7 @@ pub async fn list_skills(
     State(pool): State<PgPool>,
 ) -> Result<Json<Vec<Skill>>, (StatusCode, String)> {
     let skills = sqlx::query_as::<_, Skill>(
-        "SELECT id, name, description, definition, tags, current_version, owner_id, attached_skills, attached_mcp_servers, input_schema, output_schema, implementation, implements_traits FROM skills ORDER BY created_at DESC"
+        "SELECT id, name, description, definition, tags, current_version, owner_id, attached_skills, attached_tools, input_schema, output_schema, implementation, implements_traits FROM skills ORDER BY created_at DESC"
     )
     .fetch_all(&pool)
     .await
@@ -624,7 +624,7 @@ pub async fn get_skill(
     Path(id): Path<Uuid>,
 ) -> Result<Json<Skill>, (StatusCode, String)> {
     let skill = sqlx::query_as::<_, Skill>(
-        "SELECT id, name, description, definition, tags, current_version, owner_id, attached_skills, attached_mcp_servers, input_schema, output_schema, implementation, implements_traits FROM skills WHERE id = $1"
+        "SELECT id, name, description, definition, tags, current_version, owner_id, attached_skills, attached_tools, input_schema, output_schema, implementation, implements_traits FROM skills WHERE id = $1"
     )
     .bind(id)
     .fetch_optional(&pool)
@@ -647,7 +647,7 @@ pub async fn update_skill(
     sqlx::query(
         r#"
         UPDATE skills
-        SET name = $1, description = $2, definition = $3, tags = $4, current_version = $5, attached_skills = $6, attached_mcp_servers = $7, input_schema = $8, output_schema = $9, implementation = $10, implements_traits = $11, updated_at = NOW()
+        SET name = $1, description = $2, definition = $3, tags = $4, current_version = $5, attached_skills = $6, attached_tools = $7, input_schema = $8, output_schema = $9, implementation = $10, implements_traits = $11, updated_at = NOW()
         WHERE id = $12
         "#,
     )
@@ -657,7 +657,7 @@ pub async fn update_skill(
     .bind(&payload.tags)
     .bind(&current_version)
     .bind(&payload.attached_skills)
-    .bind(&payload.attached_mcp_servers)
+    .bind(&payload.attached_tools)
     .bind(input_schema)
     .bind(output_schema)
     .bind(implementation)

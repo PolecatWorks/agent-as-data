@@ -99,7 +99,7 @@ pub struct Agent {
     #[serde(default)]
     pub implements_traits: Vec<String>,
     #[serde(default)]
-    pub attached_mcp_servers: Vec<Uuid>,
+    pub attached_tools: Vec<Uuid>,
     #[serde(default)]
     pub attached_agents: Vec<Uuid>,
     #[serde(default)]
@@ -185,7 +185,7 @@ pub struct Skill {
     #[serde(default)]
     pub attached_skills: Vec<Uuid>,
     #[serde(default)]
-    pub attached_mcp_servers: Vec<Uuid>,
+    pub attached_tools: Vec<Uuid>,
     pub input_schema: Option<serde_json::Value>,
     pub output_schema: Option<serde_json::Value>,
     pub implementation: Option<serde_json::Value>,
@@ -206,7 +206,7 @@ pub struct VerifyContractResponse {
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
-pub struct RegisterMcpServerRequest {
+pub struct RegisterToolRequest {
     pub id: Option<Uuid>,
     pub server_name: String,
     pub transport_type: String,
@@ -215,7 +215,7 @@ pub struct RegisterMcpServerRequest {
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
-pub struct RegisterMcpServerResponse {
+pub struct RegisterToolResponse {
     pub id: Uuid,
     pub server_name: String,
     pub transport_type: String,
@@ -223,7 +223,7 @@ pub struct RegisterMcpServerResponse {
 }
 
 #[derive(sqlx::FromRow, Deserialize, Serialize, Debug, Clone)]
-pub struct McpServer {
+pub struct Tool {
     pub id: Uuid,
     pub server_name: String,
     pub transport_type: String,

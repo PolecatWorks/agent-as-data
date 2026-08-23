@@ -32,7 +32,9 @@ Agent-As-Data (AAD) is an enterprise-grade declarative platform and specificatio
 - **Knowledge Capture**: Capture topic notes, documents, and structured facts.
 - **Vector Chunking & RAG**: Split text into semantic chunks, generating vector embeddings in `pgvector` for similarity matching (`POST /api/v1/knowledge/search`).
 - **Graph Triples**: Express semantic entity relationships as tuples (`subject`, `predicate`, `object`, metadata).
-- **Graph Traversal API**: Traverse knowledge graphs (`POST /api/v1/knowledge/graph/traverse`) to discover connected entities and multi-hop relationships.
+- **Graph Traversal**: Traverse knowledge graphs (`POST /api/v1/knowledge/graph/traverse`) to discover connected entities and multi-hop relationships.
+* **ID**: UUID.
+* **Owner ID**: UUID (Strictly enforced non-optional identifier).
 
 ### 4. Native Model Context Protocol (MCP) Server
 - Natively implement the MCP protocol (`mcp-server-rs`) supporting Stdio and SSE transports.
@@ -77,16 +79,17 @@ Agent-As-Data (AAD) is an enterprise-grade declarative platform and specificatio
 
 
 
-### 9. Remote MCP Server Registration & Tool Schema Caching Engine
-- **Remote Server Ingestion (`POST /api/v1/agents/mcp/register`)**: Register external MCP servers (Stdio & SSE).
-- **Tool & Schema Parsing**: Automatically queries `tools/list`, `resources/list`, and `prompts/list` upon registration, caching tool definitions, argument types, and JSON schemas.
-- **RAG Discovery Integration**: Generates `pgvector` embeddings for remote MCP tools, allowing seamless discovery alongside native declarative agents.
+### 9. Remote Tool Registration & Schema Caching Engine
+- **Remote Tool Ingestion (`POST /api/v1/agents/tools/register`)**: Register external MCP servers (Stdio & SSE) as reusable Tools.
+- **Dynamic Schema Storage**: Extracted tools, arguments, and prompts from remote servers are cached locally.
+- **RAG Discovery Integration**: Generates `pgvector` embeddings for remote tools, allowing seamless discovery alongside native declarative agents.
+- **Background Tool Sync**: Agents can periodically re-ping remote servers to refresh types and schemas if upstream tools change.
 
 ### 10. Agent Development UI & Testing Kit Container (`aad-fe-container`)
 - **Interactive Development Studio**: Web dashboard container built with Angular 18+ (Standalone Components, Angular Material, RxJS, and TailwindCSS) following the `sward-warden/sw-fe-container` architecture.
 - **Top-Level Trait Definition Registry (`/traits-registry`)**: Dedicated workspace to inspect, define, and edit Trait specifications across Capability Requirements, Behavioral Invariants, Evaluation Criteria, and Mandatory Execution Guardrails.
 - **Testing Kit & SSE Workbench**: Interactive testing playground for running synchronous agents, streaming real-time SSE token events, and testing dynamic trait mapping overrides.
-- **Visual Diagnostics**: Embedded Mermaid network diagram visualizer, Refactoring & Compression lab, Knowledge SPO tuple inspector, and Remote MCP Server manager.
+- **Visual Diagnostics**: Embedded Mermaid network diagram visualizer, Refactoring & Compression lab, Knowledge SPO tuple inspector, and Remote Tool manager.
 
 
 ### 11. Probabilistic Agent Unit Testing & LLM-as-a-Judge Evaluation Engine
@@ -128,8 +131,9 @@ Agent-As-Data (AAD) is an enterprise-grade declarative platform and specificatio
 ### 18. Execution Webhook Subscriptions & Push Notifications
 - **Completion Webhooks (`POST /api/v1/executions`)**: Optional `webhook_url` parameter on async execution requests. AAD dispatches a signed HTTP POST event payload upon job completion or guardrail failure.
 
-### 19. Remote MCP Server Authentication & Secret Management
-- **Encrypted Secret Credentials**: Remote MCP server configurations in `mcp_servers.endpoint_config` support encrypted bearer tokens and API keys stored in environment secrets (`auth_secret_name`).
+### 19. Remote Tool Authentication & Secret Management
+- **Encrypted Secret Credentials**: Remote tool configurations in `tools.endpoint_config` support encrypted bearer tokens and API keys stored in environment secrets (`auth_secret_name`).
+- **Secret-Aware Subagents**: When an agent spawns a sub-agent with a delegated remote tool, required auth credentials are automatically injected into the child process without exposing them to the parent LLM.
 
 ### 20. Database Migration Runner, Reversible Migrations & Seed Engine
 - **Automated Migration Runner**: Container startup executes `sqlx` database migrations from `/migrations`, populating base traits (`SecurityAuditor`, `CodeReviewer`) and default guardrail templates.
@@ -169,8 +173,15 @@ Agent-As-Data (AAD) is an enterprise-grade declarative platform and specificatio
 - `agent_definition` (JSONB), `model` (JSONB), `tools` (JSONB), `available_skills` (JSONB), `available_agents` (JSONB).
 - `created_at` & `updated_at` (Timestamps).
 
-### Remote MCP Server Cache Entity (`mcp_servers`)
-- `id` (UUID), `server_name` (String), `transport_type` (Enum: `stdio`, `sse`), `endpoint_config` (JSONB), `cached_capabilities` (JSONB), `last_synced_at` (Timestamp).
+### Remote Tool Cache Entity (`tools`)
+The database persists connections to remote tools and caches their exported capabilities.
+
+* **ID**: UUID.
+* **Owner ID**: UUID (Strictly enforced non-optional identifier for multi-tenant isolation).
+* **Server Name**: String identifier.
+* **Transport Type**: `stdio` or `sse`.
+* **Endpoint Config**: JSONB connection details (command, args, URLs, encrypted secrets).
+* **Cached Capabilities**: JSONB snapshot of `tools`, `resources`, and `prompts` exported by the server.
 
 ### Agent Test Suite Entity (`agent_test_suites`)
 - `id` (UUID), `agent_id` (UUID), `name` (String), `test_cases` (JSONB - Array of input payloads, deterministic assertions, and natural language Judge rubrics), `created_at` (Timestamp).

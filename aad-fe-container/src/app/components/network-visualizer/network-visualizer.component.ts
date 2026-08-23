@@ -15,7 +15,7 @@ import { ApiService, Agent, Skill, TraitContract } from '../../services/api.serv
 
 export type EntityType = 'agent' | 'skill' | 'trait' | 'mcp';
 
-export interface McpServer {
+export interface Tool {
   id: string;
   server_name: string;
   transport_type: string;
@@ -56,7 +56,7 @@ export class NetworkVisualizerComponent implements OnInit, AfterViewInit {
   agents: Agent[] = [];
   skills: Skill[] = [];
   traits: TraitContract[] = [];
-  mcpServers: McpServer[] = [];
+  toolsList: Tool[] = [];
 
   // Selection
   allEntities: SelectableEntity[] = [];
@@ -93,20 +93,20 @@ export class NetworkVisualizerComponent implements OnInit, AfterViewInit {
       agents: this.apiService.getAgents().pipe(catchError(() => of([]))),
       skills: this.apiService.getSkills().pipe(catchError(() => of([]))),
       traits: this.apiService.getTraits().pipe(catchError(() => of({ ids: [] } as any))),
-      mcpServers: this.apiService.getMcpServers().pipe(catchError(() => of([])))
+      toolsList: this.apiService.getTools().pipe(catchError(() => of([])))
     }).subscribe({
-      next: ({ agents, skills, traits, mcpServers }) => {
+      next: ({ agents, skills, traits, toolsList }) => {
         // The search endpoint returns sparse agent objects — hydrate each to its full record
         const sparseAgents = agents as Agent[];
         this.skills = skills as Skill[];
-        this.mcpServers = (mcpServers as any[]).map(s => ({
+        this.toolsList = (toolsList as any[]).map(s => ({
           id: s.id,
           server_name: s.server_name,
           transport_type: s.transport_type,
           description: s.endpoint_config?.description || '',
           tags: s.endpoint_config?.tags || [],
           tools_count: s.cached_capabilities?.tools?.length || 0
-        })) as McpServer[];
+        })) as Tool[];
         const traitIds: string[] = (traits as any).ids || [];
 
         // Hydrate agents in parallel (full detail includes attached_skills, attached_agents, etc.)
@@ -187,7 +187,7 @@ export class NetworkVisualizerComponent implements OnInit, AfterViewInit {
         description: t.description,
         tags: t.tags
       })),
-      ...this.mcpServers.map(m => ({
+      ...this.toolsList.map(m => ({
         id: m.id,
         name: m.server_name,
         type: 'mcp' as EntityType,
@@ -352,13 +352,14 @@ export class NetworkVisualizerComponent implements OnInit, AfterViewInit {
         const agentId = currentKey.slice('agent:'.length);
         const agent = this.agents.find(a => a.id === agentId);
         const label = agent
-          ? `🤖 ${this.sanitizeLabel(agent.name)}${isRoot ? ` v${agent.current_version}` : ''}`
+          ? `🤖 ${this.sanitizeLabel(agent.name)}`
           : `🤖 ${this.sanitizeLabel(agentId)}`;
+        const agentDesc = agent ? `v${agent.current_version} - ${agent.description || ''}` : '';
         emitNode(currentKey, label,
           isRoot
             ? 'fill:#e0e7ff,stroke:#6366f1,stroke-width:3px,color:#1e1b4b'
             : 'fill:#e0e7ff,stroke:#6366f1,stroke-width:1.5px,color:#1e1b4b',
-          isRoot, agent?.description || '');
+          isRoot, agentDesc);
 
         if (depth < this.traceDepth && agent) {
           // Forward: attached sub-agents
@@ -380,7 +381,7 @@ export class NetworkVisualizerComponent implements OnInit, AfterViewInit {
             if (!queued.has(k)) { queued.add(k); queue.push([k, depth + 1]); }
           });
           // Forward: attached MCP servers
-          (agent.attached_mcp_servers || []).forEach(mcpId => {
+          (agent.attached_tools || []).forEach(mcpId => {
             const k = this.mcpEntityKey(mcpId);
             emitEdge(currentKey, k, 'uses MCP');
             if (!queued.has(k)) { queued.add(k); queue.push([k, depth + 1]); }
@@ -399,13 +400,14 @@ export class NetworkVisualizerComponent implements OnInit, AfterViewInit {
         const skillId = currentKey.slice('skill:'.length);
         const skill = this.skills.find(s => s.id === skillId);
         const label = skill
-          ? `⚡ ${this.sanitizeLabel(skill.name)}${isRoot ? ` v${skill.current_version}` : ''}`
+          ? `⚡ ${this.sanitizeLabel(skill.name)}`
           : `⚡ ${this.sanitizeLabel(skillId)}`;
+        const skillDesc = skill ? `v${skill.current_version} - ${skill.description || ''}` : '';
         emitNode(currentKey, label,
           isRoot
             ? 'fill:#fdf4ff,stroke:#a855f7,stroke-width:3px,color:#4c1d95'
             : 'fill:#fdf4ff,stroke:#a855f7,stroke-width:1.5px,color:#4c1d95',
-          isRoot, skill?.description || '');
+          isRoot, skillDesc);
 
         if (depth < this.traceDepth && skill) {
           // Forward: sub-skills
@@ -421,7 +423,7 @@ export class NetworkVisualizerComponent implements OnInit, AfterViewInit {
             if (!queued.has(k)) { queued.add(k); queue.push([k, depth + 1]); }
           });
           // Forward: attached MCP servers
-          (skill.attached_mcp_servers || []).forEach(mcpId => {
+          (skill.attached_tools || []).forEach(mcpId => {
             const k = this.mcpEntityKey(mcpId);
             emitEdge(currentKey, k, 'uses MCP');
             if (!queued.has(k)) { queued.add(k); queue.push([k, depth + 1]); }
@@ -448,13 +450,14 @@ export class NetworkVisualizerComponent implements OnInit, AfterViewInit {
         const traitName = currentKey.slice('trait:'.length);
         const trait = this.traits.find(t => t.name === traitName);
         const label = trait
-          ? `🛡️ ${this.sanitizeLabel(traitName)}${isRoot ? ` v${trait.version}` : ''}`
+          ? `🛡️ ${this.sanitizeLabel(traitName)}`
           : `🛡️ ${this.sanitizeLabel(traitName)}`;
+        const traitDesc = trait ? `v${trait.version} - ${trait.description || ''}` : '';
         emitNode(currentKey, label,
           isRoot
             ? 'fill:#ecfdf5,stroke:#10b981,stroke-width:3px,color:#065f46'
             : 'fill:#ecfdf5,stroke:#10b981,stroke-width:1.5px,color:#065f46',
-          isRoot, trait?.description || '');
+          isRoot, traitDesc);
 
         if (depth < this.traceDepth) {
           // Reverse: agents implementing this trait
@@ -476,21 +479,22 @@ export class NetworkVisualizerComponent implements OnInit, AfterViewInit {
         }
       } else if (currentKey.startsWith('mcp:')) {
         const mcpId = currentKey.slice('mcp:'.length);
-        const mcp = this.mcpServers.find(m => m.id === mcpId);
-        const toolsLabel = mcp?.tools_count ? ` (${mcp.tools_count} tools)` : '';
+        const mcp = this.toolsList.find(m => m.id === mcpId);
+        const toolsLabel = mcp?.tools_count ? `(${mcp.tools_count} tools)` : '';
         const label = mcp
-          ? `🔌 ${this.sanitizeLabel(mcp.server_name)}${isRoot ? toolsLabel : ''}`
+          ? `🔌 ${this.sanitizeLabel(mcp.server_name)}`
           : `🔌 ${this.sanitizeLabel(mcpId)}`;
+        const mcpDesc = mcp ? `${toolsLabel ? toolsLabel + ' - ' : ''}${mcp.description || ''}` : '';
         emitNode(currentKey, label,
           isRoot
             ? 'fill:#fff7ed,stroke:#f97316,stroke-width:3px,color:#7c2d12'
             : 'fill:#fff7ed,stroke:#f97316,stroke-width:1.5px,color:#7c2d12',
-          isRoot, mcp?.description || '');
+          isRoot, mcpDesc);
 
         if (depth < this.traceDepth) {
           // Reverse: agents using this tool
           this.agents
-            .filter(a => (a.attached_mcp_servers || []).includes(mcpId))
+            .filter(a => (a.attached_tools || []).includes(mcpId))
             .forEach(a => {
               const k = this.agentEntityKey(a.id);
               emitEdge(k, currentKey, 'uses MCP');
@@ -498,7 +502,7 @@ export class NetworkVisualizerComponent implements OnInit, AfterViewInit {
             });
           // Reverse: skills using this tool
           this.skills
-            .filter(s => (s.attached_mcp_servers || []).includes(mcpId))
+            .filter(s => (s.attached_tools || []).includes(mcpId))
             .forEach(s => {
               const k = this.skillEntityKey(s.id!);
               emitEdge(k, currentKey, 'uses MCP');

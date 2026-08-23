@@ -88,7 +88,7 @@ export interface Agent {
   description: string;
   tags: string[];
   implements_traits: string[];
-  attached_mcp_servers?: string[];
+  attached_tools?: string[];
   attached_agents?: string[];
   attached_skills?: string[];
   current_version: string;
@@ -136,7 +136,7 @@ export interface Skill {
   implements_traits?: string[];
   current_version: string;
   attached_skills?: string[];
-  attached_mcp_servers?: string[];
+  attached_tools?: string[];
   owner_id: string;
   input_schema?: any;
   output_schema?: any;
@@ -215,8 +215,8 @@ export class ApiService {
   // TODO: replace ANONYMOUS_OWNER_ID with the authenticated user's UUID once auth is implemented
   private readonly ANONYMOUS_OWNER_ID = '00000000-0000-0000-0000-000000000000';
 
-  registerMcpServer(serverName: string, transportType: string, endpointConfig: any, ownerId?: string): Observable<any> {
-    return this.http.post(`${this.baseUrl}/agents/mcp/register`, {
+  registerTool(serverName: string, transportType: string, endpointConfig: any, ownerId?: string): Observable<any> {
+    return this.http.post(`${this.baseUrl}/agents/tools/register`, {
       server_name: serverName,
       transport_type: transportType,
       endpoint_config: endpointConfig,
@@ -224,12 +224,12 @@ export class ApiService {
     });
   }
 
-  getMcpServers(): Observable<any[]> {
-    return this.http.get<any[]>(`${this.baseUrl}/agents/mcp`);
+  getTools(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/agents/tools`);
   }
 
-  deleteMcpServer(id: string): Observable<any> {
-    return this.http.delete(`${this.baseUrl}/agents/mcp/${id}`);
+  deleteTool(id: string): Observable<any> {
+    return this.http.delete(`${this.baseUrl}/agents/tools/${id}`);
   }
 
   // Refactoring APIs

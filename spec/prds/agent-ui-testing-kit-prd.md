@@ -18,8 +18,9 @@ graph TD
         TestingKit["2. Interactive Agent Testing Studio"]
         NetworkGraph["3. Mermaid Delegation Graph Visualizer"]
         RefactorStudio["4. Agent Refactoring & Compression Lab"]
-        KnowledgeBrowser["5. Knowledge & SPO Tuple Inspector"]
-        MCPManager["6. Remote MCP Server Manager"]
+        KnowledgeLab["5. Knowledge Base Lab & SPO Triples"]
+        ToolManager["6. Remote Tool Manager"]
+        Visualizer["7. Interactive Graph Visualizer"]
     end
 
     subgraph Backend ["aad-be-container (Rust Microservice)"]
@@ -30,9 +31,9 @@ graph TD
     RegistryView --> REST
     TestingKit <-->|SSE Token Stream| SSE
     NetworkGraph --> REST
-    RefactorStudio --> REST
-    KnowledgeBrowser --> REST
-    MCPManager --> REST
+    TestingStudio --> REST
+    ToolManager --> REST
+    Visualizer --> REST
 ```
 
 ---
@@ -64,11 +65,15 @@ graph TD
 - **Hybrid Knowledge Search**: RAG vector query input (`POST /api/v1/knowledge/search`) displaying semantic chunk similarity scores alongside Subject-Predicate-Object relation tuples (`knowledge_tuples`).
 - **Graph Traversal Tree**: Interactive multi-hop entity graph visualizer.
 
-### 6. Remote MCP Server Manager
-- **MCP Server Ingestion**: Register external MCP servers Stdio commands or SSE transport URLs (`POST /api/v1/agents/mcp/register`).
-- **Cached Tool & Schema Browser**: Inspect cached tool argument schemas, descriptions, and type signatures retrieved from remote MCP servers.
+### 6. Remote Tool Manager
+- **Tool Ingestion**: Register external MCP servers Stdio commands or SSE transport URLs (`POST /api/v1/agents/tools/register`).
+- **Cached Tool & Schema Browser**: Inspect cached tool argument schemas, descriptions, and type signatures retrieved from remote servers.
 
-### 7. Robot Framework Integration Testing Suite (Ref: `sward-warden/integration-tests`)
+### 7. Interactive Graph Visualizer
+- **Mermaid D3 Network Architecture**: An interactive map rendering live declarative agent architectures, sub-agent delegation (`agent:`), utilized remote tools (`mcp:`), and deterministic skill executions (`skill:`).
+- **Clean Labeling & Hover States**: Version numbers, tool counts, and item descriptions are natively injected into node hover tooltips to avoid cluttering visual text labels.
+
+### 8. Robot Framework Integration Testing Suite (Ref: `sward-warden/integration-tests`)
 - **Declarative User Journey Robot Tests**: `/integration-tests/tests/*.robot` test cases mapping 1-to-1 to all 9 user journeys in `user-journeys-spec.md`.
 - **Python Integration Libraries**: Custom Python helper modules (`AADRequests.py`, `TestSeed.py`) extending Robot Framework for authenticated REST/SSE requests, database seeding, and OCC state reset.
 - **Local Dev & Garden Test Runners**: `run-tests-local.sh` local pre-flight runner verifying backend (`http://localhost:8080`) and frontend (`http://localhost:4200`) before running `robot` suites, integrated into Kubernetes via `garden.yml` (`kind: Test`).
