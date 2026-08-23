@@ -86,4 +86,14 @@ class AADRequests:
         resp.raise_for_status()
         return resp.json()
 
+    def create_skill(self, payload):
+        resp = requests.post(f"{self.base_url}/api/v1/skills", json=payload, timeout=2)
+        resp.raise_for_status()
+        return resp.json()
+
+    def register_tool(self, payload):
+        resp = requests.post(f"{self.base_url}/api/v1/agents/tools/register", json=payload, timeout=2)
+        resp.raise_for_status()
+        return resp.json()
+
 

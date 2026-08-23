@@ -39,6 +39,7 @@ help:
 	@echo "  build-docker       - Alias for build-be"
 	@echo "  garden-up          - Deploy dev environment via Garden"
 	@echo "  robot-test         - Execute Robot Framework integration test runner"
+	@echo "  seed-data          - Seed the database with exemplar data (Traits, Tools, Skills, Agents)"
 
 stop-other-db:
 	docker stop sward-postgres 2>/dev/null || true
@@ -124,3 +125,6 @@ garden-up:
 
 robot-test:
 	./integration-tests/run-tests-local.sh
+
+seed-data:
+	./integration-tests/run-tests-local.sh tests/test_seed_exemplar_data.robot
