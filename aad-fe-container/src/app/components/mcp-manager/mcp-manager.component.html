@@ -124,7 +124,8 @@
           }
 
           <mat-card-content class="p-6 space-y-6">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <!-- Name & Owner ID -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <!-- Name -->
               <div class="space-y-1 text-left">
                 <label class="text-xs font-bold text-slate-500">Server Identifier</label>
@@ -133,6 +134,16 @@
                        class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 disabled:bg-slate-50 disabled:text-slate-500 transition-all" />
               </div>
 
+              <!-- Owner ID -->
+              <div class="space-y-1 text-left">
+                <label class="text-xs font-bold text-slate-500">Owner ID (UUID)</label>
+                <input type="text" [(ngModel)]="serverForm.owner_id" [disabled]="!isEditing"
+                       class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 disabled:bg-slate-50 disabled:text-slate-500 transition-all" />
+              </div>
+            </div>
+
+            <!-- Version and Transport Protocol -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <!-- Version -->
               <div class="space-y-1 text-left">
                 <label class="text-xs font-bold text-slate-500">Version</label>
