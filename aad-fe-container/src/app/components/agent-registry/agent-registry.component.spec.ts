@@ -16,7 +16,7 @@ describe('AgentRegistryComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [AgentRegistryComponent],
-      providers: [provideHttpClient(), provideAnimationsAsync(), provideRouter([]), { provide: ActivatedRoute, useValue: { queryParams: of({}), snapshot: { paramMap: { get: () => null } } } }, { provide: ApiService, useValue: { getAgents: () => of([]), getTraits: () => of({ids: []}), getTrait: () => of(null), getMcpServers: () => of([]), getSkills: () => of([]) } }],
+      providers: [provideHttpClient(), provideAnimationsAsync(), provideRouter([]), { provide: ActivatedRoute, useValue: { queryParams: of({}), snapshot: { paramMap: { get: () => null } } } }, { provide: ApiService, useValue: { getAgents: () => of([]), getTraits: () => of({ids: []}), getTrait: () => of(null), getTools: () => of([]), getSkills: () => of([]) } }],
       schemas: [NO_ERRORS_SCHEMA]
     })
     .compileComponents();
