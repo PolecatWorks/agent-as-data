@@ -43,10 +43,9 @@
                    [class.border-slate-200]="selectedServer?.id !== s.id"
                    (click)="selectServer(s)">
                 <div class="flex justify-between items-center">
-                  <h5 class="text-sm font-bold text-slate-900 m-0">🖧 {{ s.server_name }} <span class="text-[10px] text-slate-400 font-normal ml-1">v1.0.0</span></h5>
-                  <span class="px-2.5 py-0.5 text-[10px] font-bold rounded-md uppercase"
-                        [ngClass]="s.transport_type === 'sse' ? 'bg-indigo-100 text-indigo-800' : 'bg-amber-100 text-amber-800'">
-                    {{ s.transport_type }}
+                  <h5 class="text-sm font-bold text-slate-900 m-0">🖧 {{ s.server_name }}</h5>
+                  <span class="px-2.5 py-0.5 bg-indigo-100 text-indigo-800 text-[10px] font-bold rounded-md">
+                    v1.0.0
                   </span>
                 </div>
                 <p class="text-xs text-slate-500 m-0 mt-1 line-clamp-2 leading-relaxed">
