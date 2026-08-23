@@ -51,6 +51,7 @@ describe('AgentRegistryComponent', () => {
         name: 'SecurityAuditor',
         description: 'Vulnerability scanner.',
         version: '1',
+        owner_id: 'test_owner',
         capability_requirements: [],
         behavioral_invariants: [],
         evaluation_criteria: [],
