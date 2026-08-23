@@ -58,16 +58,8 @@
                     <h5 class="text-sm font-bold text-slate-900 m-0">
                       {{ getEntityIcon(entity.type) }} {{ entity.name }}
                     </h5>
-                    <span class="px-2.5 py-0.5 text-[10px] font-bold rounded-md"
-                          [class.bg-indigo-100]="entity.type === 'agent'"
-                          [class.text-indigo-800]="entity.type === 'agent'"
-                          [class.bg-purple-100]="entity.type === 'skill'"
-                          [class.text-purple-800]="entity.type === 'skill'"
-                          [class.bg-emerald-100]="entity.type === 'trait'"
-                          [class.text-emerald-800]="entity.type === 'trait'"
-                          [class.bg-orange-100]="entity.type === 'mcp'"
-                          [class.text-orange-800]="entity.type === 'mcp'">
-                      {{ getEntityTypeLabel(entity.type) }}
+                    <span class="px-2.5 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded-md">
+                      v{{ entity.version || '1.0.0' }}
                     </span>
                   </div>
                   @if (entity.description) {
