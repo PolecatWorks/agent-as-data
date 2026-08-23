@@ -207,6 +207,7 @@ pub struct VerifyContractResponse {
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct RegisterMcpServerRequest {
+    pub id: Option<Uuid>,
     pub server_name: String,
     pub transport_type: String,
     pub endpoint_config: serde_json::Value,
