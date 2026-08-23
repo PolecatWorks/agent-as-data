@@ -121,7 +121,7 @@ export class McpManagerComponent implements OnInit {
         }
       },
       error: () => {
-        this.snackBar.open("Failed to load registered MCP servers from backend, using stubs.", "Close", { duration: 3000 });
+        this.snackBar.open("Failed to load registered tools from backend, using stubs.", "Close", { duration: 3000 });
         const routeId = this.route.snapshot.paramMap.get('id');
         if (routeId) {
           this.selectServerById(routeId);
@@ -256,7 +256,7 @@ export class McpManagerComponent implements OnInit {
         } else {
           this.registeredServers.push(newServer);
         }
-        this.snackBar.open(`Successfully registered MCP server: ${res.server_name}`, 'Close', { duration: 3000 });
+        this.snackBar.open(`Successfully registered tool: ${res.server_name}`, 'Close', { duration: 3000 });
         this.selectServer(newServer);
       },
       error: () => {
@@ -278,7 +278,7 @@ export class McpManagerComponent implements OnInit {
         } else {
           this.registeredServers.push(fallbackServer);
         }
-        this.snackBar.open(`Registered MCP server: ${this.serverForm.server_name} (using stubs)`, 'Close', { duration: 3000 });
+        this.snackBar.open(`Registered tool: ${this.serverForm.server_name} (using stubs)`, 'Close', { duration: 3000 });
         this.selectServer(fallbackServer);
       }
     });
@@ -292,7 +292,7 @@ export class McpManagerComponent implements OnInit {
         this.registeredServers = this.registeredServers.filter(s => s.id !== id);
         this.showDeleteConfirm = false;
         this.isEditing = false;
-        this.snackBar.open(`Removed MCP server`, 'Close', { duration: 3000 });
+        this.snackBar.open(`Removed tool`, 'Close', { duration: 3000 });
         if (this.registeredServers.length > 0) {
           this.selectServer(this.registeredServers[0]);
         } else {
@@ -301,7 +301,7 @@ export class McpManagerComponent implements OnInit {
         }
       },
       error: (err: any) => {
-        this.snackBar.open(`Failed to remove MCP server: ${err.message || err}`, 'Close', { duration: 3000 });
+        this.snackBar.open(`Failed to remove tool: ${err.message || err}`, 'Close', { duration: 3000 });
       }
     });
   }
