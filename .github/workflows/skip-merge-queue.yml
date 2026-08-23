@@ -1,0 +1,29 @@
+name: Skip Tests (Merge Queue)
+
+on:
+  merge_group:
+
+jobs:
+  backend-test:
+    name: Build & Test Backend
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Skipping backend tests in merge queue because they already ran on the PR."
+
+  frontend-test:
+    name: Build & Test Frontend
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Skipping frontend tests in merge queue because they already ran on the PR."
+
+  helm-lint:
+    name: Helm Chart Lint
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Skipping helm lint in merge queue because they already ran on the PR."
+
+  helm-ci-success:
+    name: Helm CI Success
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Skipping helm CI in merge queue because they already ran on the PR."
