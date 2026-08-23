@@ -28,6 +28,7 @@ export interface SelectableEntity {
   id: string;
   name: string;
   type: EntityType;
+  version?: string;
   description?: string;
   tags?: string[];
 }
@@ -166,6 +167,7 @@ export class NetworkVisualizerComponent implements OnInit, AfterViewInit {
         id: a.id,
         name: a.name,
         type: 'agent' as EntityType,
+        version: a.current_version,
         description: a.description,
         tags: a.tags
       })),
@@ -173,6 +175,7 @@ export class NetworkVisualizerComponent implements OnInit, AfterViewInit {
         id: s.id!,
         name: s.name,
         type: 'skill' as EntityType,
+        version: s.current_version,
         description: s.description,
         tags: s.tags
       })),
@@ -180,6 +183,7 @@ export class NetworkVisualizerComponent implements OnInit, AfterViewInit {
         id: t.id,
         name: t.name,
         type: 'trait' as EntityType,
+        version: t.version,
         description: t.description,
         tags: t.tags
       })),
@@ -187,6 +191,7 @@ export class NetworkVisualizerComponent implements OnInit, AfterViewInit {
         id: m.id,
         name: m.server_name,
         type: 'mcp' as EntityType,
+        version: '1.0.0',
         description: m.description,
         tags: m.tags
       }))
