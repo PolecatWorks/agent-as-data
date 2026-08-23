@@ -161,7 +161,7 @@ export class McpManagerComponent implements OnInit {
       description: server.description || '',
       tags: server.tags ? [...server.tags] : []
     };
-    this.router.navigate(['/mcp-servers', server.id], {
+    this.router.navigate(['/tools', server.id], {
       queryParams: keepEdit ? { edit: 'true' } : {}
     });
   }
@@ -183,9 +183,9 @@ export class McpManagerComponent implements OnInit {
   enableEdit(): void {
     this.isEditing = true;
     if (this.selectedServer) {
-      this.router.navigate(['/mcp-servers', this.selectedServer.id], { queryParams: { edit: 'true' } });
+      this.router.navigate(['/tools', this.selectedServer.id], { queryParams: { edit: 'true' } });
     } else {
-      this.router.navigate(['/mcp-servers'], { queryParams: { edit: 'true' } });
+      this.router.navigate(['/tools'], { queryParams: { edit: 'true' } });
     }
   }
 
@@ -194,7 +194,7 @@ export class McpManagerComponent implements OnInit {
       this.selectServer(this.selectedServer, false);
     } else {
       this.isEditing = false;
-      this.router.navigate(['/mcp-servers'], { queryParams: {} });
+      this.router.navigate(['/tools'], { queryParams: {} });
     }
   }
 
@@ -290,7 +290,7 @@ export class McpManagerComponent implements OnInit {
           this.selectServer(this.registeredServers[0]);
         } else {
           this.selectedServer = null;
-          this.router.navigate(['/mcp-servers'], { queryParams: {} });
+          this.router.navigate(['/tools'], { queryParams: {} });
         }
       },
       error: (err: any) => {
