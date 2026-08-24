@@ -119,21 +119,28 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <!-- Name -->
               <div class="space-y-1 text-left">
-                <label class="text-xs font-bold text-slate-500">Trait Name</label>
+                <label class="text-xs font-bold text-slate-500">Name</label>
                 <input id="trait-name-input" type="text" [(ngModel)]="traitForm.name" placeholder="e.g. SecurityAuditor" [disabled]="!isEditing"
                        class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 disabled:bg-slate-50 disabled:text-slate-500 transition-all" />
               </div>
               <!-- Owner ID -->
               <div class="space-y-1 text-left">
-                <label class="text-xs font-bold text-slate-500">Owner ID (UUID)</label>
+                <label class="text-xs font-bold text-slate-500">Owner</label>
                 <input id="trait-owner-input" type="text" [(ngModel)]="traitForm.owner_id" placeholder="Owner UUID..." [disabled]="!isEditing"
                        class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 disabled:bg-slate-50 disabled:text-slate-500 transition-all" />
               </div>
             </div>
 
-            <!-- Metadata Tags -->
+            <!-- Description -->
+            <div class="space-y-1 text-left">
+              <label class="text-xs font-bold text-slate-500">Description</label>
+              <textarea id="trait-description-input" rows="2" [(ngModel)]="traitForm.description" placeholder="Describe what this trait represents..." [disabled]="!isEditing"
+                        class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 disabled:bg-slate-50 disabled:text-slate-500 transition-all"></textarea>
+            </div>
+
+            <!-- Tags -->
             <div class="space-y-2 text-left">
-              <label class="text-xs font-bold text-slate-500 block">Trait Metadata Tags</label>
+              <label class="text-xs font-bold text-slate-500 block">Tags</label>
               @if (isEditing) {
                 <div class="flex gap-2 mb-2">
                   <input type="text" placeholder="Add tag..." [(ngModel)]="newTag" (keyup.enter)="addTag()"
@@ -151,13 +158,6 @@
                   </mat-chip-row>
                 }
               </div>
-            </div>
-
-            <!-- Description -->
-            <div class="space-y-1 text-left">
-              <label class="text-xs font-bold text-slate-500">Description</label>
-              <textarea id="trait-description-input" rows="2" [(ngModel)]="traitForm.description" placeholder="Describe what this trait represents..." [disabled]="!isEditing"
-                        class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 disabled:bg-slate-50 disabled:text-slate-500 transition-all"></textarea>
             </div>
 
             <!-- DEDICATED TABS: Core Specification Elements vs Execution Guardrails -->
