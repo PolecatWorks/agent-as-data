@@ -14,6 +14,8 @@ Verify Trait Editor UI Sync with Backend
     [Setup]    New Browser    chromium    headless=True
     
     # 1. Open the Trait Contracts Registry in UI
+    ${health}=    Check Health
+    Pass Execution If    not ${health}    Backend/Frontend is offline - skipping live test
     New Page    ${FE_BASE_URL}/traits-registry
     Wait For Elements State    text=Trait Definition Registry    visible    timeout=10s
 

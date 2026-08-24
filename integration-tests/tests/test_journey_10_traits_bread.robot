@@ -2,22 +2,25 @@
 Documentation    Integration test for Journey 10: Traits Specification BREAD/CRUD APIs
 Library          ../lib/AADRequests.py
 Library          Collections
+Library          String
 
 *** Variables ***
 ${BE_BASE_URL}    http://localhost:8080
+${TRAIT_ID}       ${EMPTY}
 
 *** Test Cases ***
 Journey 10 Preflight Verification
     [Documentation]    Verify Robot Framework integration harness is functional for Journey 10.
     Log    Testing Journey 10 Traits BREAD framework readiness.
     Should Not Be Empty    ${BE_BASE_URL}
-    ${health}=    Check Health
-    Log    Health check result: ${health}
 
 Test Traits BREAD Flow
     [Documentation]    Test that we can create, read, update, list, and delete a Trait Contract, iterating through all of its core features.
     ${health}=    Check Health
     Pass Execution If    not ${health}    Backend is offline - skipping live test
+
+    ${rand}=    Generate Random String    8    [LETTERS]
+    ${trait_name}=    Set Variable    RobotSecurityTrait_${rand}
 
     # 1. Create Trait with initial features
     ${reqs}=    Create List    Read access to source code    Static analysis execution permission
@@ -27,13 +30,14 @@ Test Traits BREAD Flow
     ${input_g}=    Create Dictionary    active_guardrails=${EMPTY}
     ${output_g}=    Create Dictionary    active_guardrails=${EMPTY}
     ${guardrails}=    Create Dictionary    input_guardrails=${input_g}    output_guardrails=${output_g}
-    ${payload}=    Create Dictionary    name=RobotSecurityTrait    owner_id=00000000-0000-0000-0000-000000000000    description=Security trait defined by robot integration test    capability_requirements=${reqs}    behavioral_invariants=${invariants}    evaluation_criteria=${criteria}    tags=${tags}    guardrails=${guardrails}
+    ${payload}=    Create Dictionary    name=${trait_name}    owner_id=00000000-0000-0000-0000-000000000000    description=Security trait defined by robot integration test    capability_requirements=${reqs}    behavioral_invariants=${invariants}    evaluation_criteria=${criteria}    tags=${tags}    guardrails=${guardrails}
 
     ${trait}=    Create Trait    ${payload}
     ${trait_id}=    Get From Dictionary    ${trait}    id
+    Set Global Variable    ${TRAIT_ID}    ${trait_id}
     Should Not Be Empty    ${trait_id}
     ${name}=    Get From Dictionary    ${trait}    name
-    Should Be Equal    ${name}    RobotSecurityTrait
+    Should Be Equal    ${name}    ${trait_name}
     ${version}=    Get From Dictionary    ${trait}    version
     Should Be Equal As Strings    ${version}    1.0.0
  
@@ -62,7 +66,7 @@ Test Traits BREAD Flow
     ${new_output_g}=    Create Dictionary    active_guardrails=${EMPTY}
     ${updated_guardrails}=    Create Dictionary    input_guardrails=${new_input_g}    output_guardrails=${new_output_g}
     
-    ${update_payload}=    Create Dictionary    name=RobotSecurityTrait    owner_id=00000000-0000-0000-0000-000000000000    description=Security trait defined by robot integration test - updated    capability_requirements=${updated_reqs}    behavioral_invariants=${updated_invariants}    evaluation_criteria=${updated_criteria}    tags=${updated_tags}    guardrails=${updated_guardrails}
+    ${update_payload}=    Create Dictionary    name=${trait_name}    owner_id=00000000-0000-0000-0000-000000000000    description=Security trait defined by robot integration test - updated    capability_requirements=${updated_reqs}    behavioral_invariants=${updated_invariants}    evaluation_criteria=${updated_criteria}    tags=${updated_tags}    guardrails=${updated_guardrails}
     
     ${updated}=    Update Trait    ${trait_id}    ${update_payload}
     ${updated_description}=    Get From Dictionary    ${updated}    description
@@ -103,7 +107,17 @@ Test Traits BREAD Flow
     # 4. Delete Trait
     ${deleted_trait}=    Delete Trait    ${trait_id}
     ${deleted_name}=    Get From Dictionary    ${deleted_trait}    name
-    Should Be Equal    ${deleted_name}    RobotSecurityTrait
+    Should Be Equal    ${deleted_name}    ${trait_name}
+
+    # We successfully deleted it, clear the global variable so teardown doesn't fail
+    Set Global Variable    ${TRAIT_ID}    ${EMPTY}
 
     # 5. Verify Deleted Trait is missing (404)
     Run Keyword And Expect Error    *    Get Trait    ${trait_id}
+
+    [Teardown]    Teardown Journey 10
+
+*** Keywords ***
+Teardown Journey 10
+    [Documentation]    Clean up trait
+    Run Keyword If    '${TRAIT_ID}' != '${EMPTY}'    Run Keyword And Ignore Error    Delete Trait    ${TRAIT_ID}
