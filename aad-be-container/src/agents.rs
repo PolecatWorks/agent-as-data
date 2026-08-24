@@ -255,8 +255,50 @@ pub async fn test_agent(
         let name: String = r.get("name");
         let agent_definition: serde_json::Value = r.get("agent_definition");
 
-        // Use mock score of 0.9 for independent Judge Agent eval
-        let mock_score = 0.9;
+        // Calculate score for each test case via rig-core LLM, fallback to 0.9 if fails
+        let mut total_score = 0.0;
+        let mut num_evaluated = 0;
+
+        let ollama_url = std::env::var("OLLAMA_URL").unwrap_or_else(|_| "http://localhost:11434".to_string());
+        let builder = rig_core::providers::ollama::Client::builder()
+            .base_url(&ollama_url)
+            .api_key(rig_core::client::Nothing);
+
+        let ollama_client = builder.build().unwrap_or_else(|_| rig_core::providers::ollama::Client::new(rig_core::client::Nothing).unwrap());
+
+        use rig_core::client::CompletionClient;
+        use rig_core::completion::CompletionModel;
+        let model = ollama_client.completion_model("llama3.2");
+
+        for test_case in &payload.test_cases {
+            let prompt = format!(
+                "You are an AI judge evaluating a test case. \nInput:\n{}\n\nRubric:\n{}\n\nRate the response from 0.0 to 1.0 based on how well it meets the rubric. Output ONLY the float number.",
+                serde_json::to_string_pretty(&test_case.input).unwrap_or_default(),
+                test_case.rubric
+            );
+
+            let req = model.completion_request(&prompt).build();
+            let score = match model.completion(req).await {
+                Ok(response) => {
+                    // Try to parse the response as an f64. If it fails, fallback to 0.9.
+                    if let rig_core::completion::message::AssistantContent::Text(text) = &response.choice[0] {
+                        let cleaned = text.text.trim();
+                        cleaned.parse::<f64>().unwrap_or(0.9)
+                    } else {
+                        0.9
+                    }
+                },
+                Err(_) => 0.9,
+            };
+            total_score += score;
+            num_evaluated += 1;
+        }
+
+        let mock_score = if num_evaluated > 0 {
+            total_score / (num_evaluated as f64)
+        } else {
+            0.9
+        };
 
         let status;
         let mut version_bumped = false;
