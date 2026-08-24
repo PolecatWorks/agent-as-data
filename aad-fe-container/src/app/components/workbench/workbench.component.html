@@ -58,12 +58,6 @@
                 <span class="px-2.5 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded-md">
                   {{ (thread.updated_at || thread.created_at) | date:'shortDate' }}
                 </span>
-                
-                <!-- Delete Button -->
-                <button class="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity bg-transparent border-none cursor-pointer focus:outline-none p-0.5 -mr-1"
-                        (click)="deleteThread(thread.id, $event)" title="Delete Thread">
-                  <mat-icon class="!w-4 !h-4 !text-base">close</mat-icon>
-                </button>
               </div>
             </div>
 
@@ -107,8 +101,12 @@
 
       <!-- Right side of top bar (Actions) -->
       <div class="flex items-center gap-2">
-        <button mat-flat-button color="primary" class="!rounded-lg !px-4 !font-bold h-9 mr-2" (click)="createNewThread()">
-          <mat-icon class="mr-1">add</mat-icon> New Thread
+        <button *ngIf="activeThread" mat-icon-button class="text-red-500 hover:text-red-700 transition-colors mr-2" (click)="deleteThread(activeThread.id, $event)" title="Delete Thread">
+          <mat-icon>delete</mat-icon>
+        </button>
+
+        <button class="bg-indigo-600 hover:bg-indigo-700 text-white transition-colors mr-2 w-9 h-9 flex items-center justify-center rounded-lg shadow-sm border-none cursor-pointer p-0" matTooltip="New Thread" (click)="createNewThread()">
+          <mat-icon class="!m-0 !p-0 flex items-center justify-center leading-none">add</mat-icon>
         </button>
 
         <!-- Hamburger Menu for App Navigation -->
@@ -229,15 +227,15 @@
         <div class="flex-1 p-4 overflow-auto bg-[#fafafa]">
           
           <div class="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden mb-4">
-             <div class="bg-indigo-50/50 border-b border-slate-200 px-4 py-2 flex justify-between items-center">
+             <div class="bg-indigo-50/50 border-b border-slate-200 px-4 py-2 flex justify-between items-center min-h-[36px]">
                <div class="flex items-center gap-2">
-                 <span class="w-5 h-5 rounded bg-indigo-100 text-indigo-700 flex items-center justify-center text-[10px] font-bold">A</span>
-                 <span class="text-xs font-bold text-slate-700 font-mono">aad-be-container/src/fs_tools.rs</span>
-                 <span class="text-[10px] font-bold text-emerald-600 bg-emerald-100 px-1.5 py-0.5 rounded">+247</span>
+                 <span class="w-5 h-5 rounded bg-indigo-100 text-indigo-700 flex items-center justify-center text-[10px] font-bold leading-none shrink-0">A</span>
+                 <span class="text-xs font-bold text-slate-700 font-mono leading-none flex items-center h-5">aad-be-container/src/fs_tools.rs</span>
+                 <span class="text-[10px] font-bold text-emerald-600 bg-emerald-100 px-1.5 py-0.5 rounded leading-none shrink-0">+247</span>
                </div>
-               <div class="flex gap-1 text-slate-400">
-                 <mat-icon class="!w-4 !h-4 !text-base cursor-pointer hover:text-slate-700" title="Download zip">download</mat-icon>
-                 <mat-icon class="!w-4 !h-4 !text-base cursor-pointer hover:text-slate-700" title="Copy">content_copy</mat-icon>
+               <div class="flex items-center gap-1 text-slate-400">
+                 <mat-icon class="!w-4 !h-4 !text-[16px] !leading-4 !m-0 cursor-pointer hover:text-slate-700 flex items-center justify-center" title="Download zip">download</mat-icon>
+                 <mat-icon class="!w-4 !h-4 !text-[16px] !leading-4 !m-0 cursor-pointer hover:text-slate-700 flex items-center justify-center" title="Copy">content_copy</mat-icon>
                </div>
              </div>
              <div class="p-4 bg-[#e6ffed] text-[#22863a] font-mono text-xs overflow-x-auto whitespace-pre" ngNonBindable>
