@@ -1,11 +1,5 @@
-.sidenav-container {
-  height: 100vh;
-}
-
-.sidenav {
-  width: 290px;
-  background-color: #ffffff;
-  border-right: 1px solid #e2e8f0;
+.spacer {
+  flex: 1 1 auto;
 }
 
 .main-content {
@@ -19,7 +13,6 @@
   background-color: #e0e7ff !important;
   color: #4338ca !important;
   font-weight: 600 !important;
-  border-radius: 0.75rem !important;
 }
 
 .active-link mat-icon {
