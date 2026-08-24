@@ -10,7 +10,9 @@
 
 .main-content {
   background-color: #f8fafc;
-  min-height: calc(100vh - 64px);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .active-link {

@@ -1,12 +1,15 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { MatCardModule } from '@angular/material/card';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
 import { ApiService, Thread, Message } from '../../services/api.service';
 
 @Component({
   selector: 'app-workbench',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, MatCardModule, MatButtonModule, MatIconModule],
   templateUrl: './workbench.component.html',
   styleUrl: './workbench.component.scss'
 })
@@ -15,11 +18,18 @@ export class WorkbenchComponent implements OnInit {
   activeThread: Thread | null = null;
   activeThreadMessages: Message[] = [];
   newMessageContent = '';
+  searchQuery: string = '';
 
   constructor(private apiService: ApiService) {}
 
   ngOnInit(): void {
     this.loadThreads();
+  }
+
+  getFilteredThreads(): Thread[] {
+    const query = this.searchQuery.toLowerCase().trim();
+    if (!query) return this.threads;
+    return this.threads.filter(t => t.title.toLowerCase().includes(query));
   }
 
   loadThreads(): void {
