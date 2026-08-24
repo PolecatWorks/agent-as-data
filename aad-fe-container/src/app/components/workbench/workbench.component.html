@@ -4,14 +4,14 @@
   <div [ngClass]="isSidebarCollapsed ? 'w-16' : 'w-72'" class="h-full bg-white border-r border-slate-200 shadow-sm flex flex-col transition-all duration-300 z-10 shrink-0 overflow-hidden">
     
     <!-- Sidebar Header -->
-    <div class="p-4 border-b border-slate-100 flex items-center justify-between shrink-0 h-14">
+    <div class="p-4 border-b border-slate-100 flex items-center shrink-0 h-14" [ngClass]="isSidebarCollapsed ? 'justify-center px-0' : 'justify-between'">
       <div class="flex items-center gap-2 overflow-hidden" *ngIf="!isSidebarCollapsed">
         <div class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white font-bold shrink-0">
           <mat-icon class="!w-5 !h-5 !text-xl">build</mat-icon>
         </div>
         <span class="font-black text-slate-800 text-lg whitespace-nowrap">AAD</span>
       </div>
-      <button mat-icon-button (click)="toggleSidebar()" class="text-slate-400 hover:text-slate-700 mx-auto" [title]="isSidebarCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'">
+      <button mat-icon-button (click)="toggleSidebar()" class="text-slate-400 hover:text-slate-700" [title]="isSidebarCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'">
         <mat-icon>{{ isSidebarCollapsed ? 'chevron_right' : 'chevron_left' }}</mat-icon>
       </button>
     </div>
@@ -37,31 +37,47 @@
              class="group p-3 rounded-xl border transition-all cursor-pointer bg-white"
              [ngClass]="thread.id === activeThread?.id ? 'border-indigo-500 shadow-sm ring-1 ring-indigo-500/20' : 'border-slate-200 hover:border-slate-300'"
              (click)="selectThread(thread)"
-             [title]="isSidebarCollapsed ? thread.title : ''">
+             [matTooltip]="thread.title"
+             matTooltipPosition="right"
+             [matTooltipDisabled]="!isSidebarCollapsed">
           
           <!-- Expanded View -->
-          <div class="flex justify-between items-start" *ngIf="!isSidebarCollapsed">
-            <div class="flex items-start gap-3 overflow-hidden flex-1">
-              <mat-icon class="shrink-0 text-slate-400 mt-0.5"
-                        [ngClass]="{'text-indigo-600': thread.id === activeThread?.id}">
-                chat_bubble_outline
-              </mat-icon>
-              <div class="flex-1 min-w-0">
-                <h5 class="text-sm font-bold text-slate-900 m-0 truncate leading-tight">{{ thread.title }}</h5>
-                <p *ngIf="thread.updated_at" class="text-[10px] text-slate-400 m-0 mt-1 uppercase tracking-wider font-bold">
-                  {{ thread.updated_at | date:'MMM d, h:mm a' }}
-                </p>
-                <p *ngIf="!thread.updated_at && thread.created_at" class="text-[10px] text-slate-400 m-0 mt-1 uppercase tracking-wider font-bold">
-                  {{ thread.created_at | date:'MMM d, h:mm a' }}
-                </p>
+          <div class="flex flex-col w-full" *ngIf="!isSidebarCollapsed">
+            <div class="flex justify-between items-start">
+              <div class="flex items-start gap-3 overflow-hidden flex-1">
+                <mat-icon class="shrink-0 text-slate-400 mt-0.5"
+                          [ngClass]="{'text-indigo-600': thread.id === activeThread?.id}">
+                  chat_bubble_outline
+                </mat-icon>
+                <div class="flex-1 min-w-0">
+                  <h5 class="text-sm font-bold text-slate-900 m-0 truncate leading-tight mt-0.5">{{ thread.title }}</h5>
+                </div>
+              </div>
+              
+              <div class="flex items-center gap-1 ml-2 shrink-0">
+                <span class="px-2.5 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded-md">
+                  {{ (thread.updated_at || thread.created_at) | date:'shortDate' }}
+                </span>
+                
+                <!-- Delete Button -->
+                <button class="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity bg-transparent border-none cursor-pointer focus:outline-none p-0.5 -mr-1"
+                        (click)="deleteThread(thread.id, $event)" title="Delete Thread">
+                  <mat-icon class="!w-4 !h-4 !text-base">close</mat-icon>
+                </button>
               </div>
             </div>
-            
-            <!-- Delete Button -->
-            <button class="shrink-0 text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity bg-transparent border-none cursor-pointer focus:outline-none p-0.5 -mt-0.5 -mr-1"
-                    (click)="deleteThread(thread.id, $event)" title="Delete Thread">
-              <mat-icon class="!w-4 !h-4 !text-base">close</mat-icon>
-            </button>
+
+            <!-- Description -->
+            <p *ngIf="thread.description" class="text-xs text-slate-500 m-0 mt-2 line-clamp-2 leading-relaxed">
+              {{ thread.description }}
+            </p>
+
+            <!-- Tags -->
+            <div *ngIf="thread.tags && thread.tags.length > 0" class="flex flex-wrap gap-1 pt-2">
+              <span *ngFor="let tag of thread.tags" class="px-2 py-0.5 bg-slate-100 text-slate-600 text-[10px] font-mono rounded">
+                #{{ tag }}
+              </span>
+            </div>
           </div>
 
           <!-- Collapsed View -->

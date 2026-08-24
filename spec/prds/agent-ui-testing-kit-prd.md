@@ -77,7 +77,7 @@ graph TD
 
 ### 8. Workbench (Multiuser Conversational Threads)
 - **2-Column Layout**:
-  - **Left Sidebar**: Collapsible threads list showing historical conversations (filtered by current active `userid`) with a global search filter.
+  - **Left Sidebar**: Collapsible threads list showing historical conversations (filtered by current active `userid`) with a global search filter. Each thread is rendered as a rich card displaying the thread title, short-form date badge, description (if any), and string tags.
   - **Right Workspace**: A resizable split-pane area containing the conversation and editor views, topped by a global action bar.
     - **Top Bar**: Contains the global application navigation menu, context badges, a solid blue "New Thread" button, layout view toggles, and a user profile button.
     - **Conversation Pane (Left)**: Conversational chat interface for the active thread. Features a click-to-edit thread title header and a message input area. Supports direct URL routing via `/workbench/:threadId`.

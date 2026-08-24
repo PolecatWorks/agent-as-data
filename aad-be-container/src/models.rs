@@ -344,6 +344,8 @@ pub struct Thread {
     pub id: Uuid,
     pub owner_id: Uuid,
     pub title: String,
+    pub description: Option<String>,
+    pub tags: Option<sqlx::types::Json<Vec<String>>>,
     pub created_at: Option<chrono::DateTime<chrono::Utc>>,
     pub updated_at: Option<chrono::DateTime<chrono::Utc>>,
 }
@@ -352,11 +354,15 @@ pub struct Thread {
 pub struct CreateThreadRequest {
     pub title: String,
     pub owner_id: Uuid,
+    pub description: Option<String>,
+    pub tags: Option<Vec<String>>,
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct UpdateThreadRequest {
     pub title: String,
+    pub description: Option<String>,
+    pub tags: Option<Vec<String>>,
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone, sqlx::FromRow)]

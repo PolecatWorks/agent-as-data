@@ -5,13 +5,14 @@ import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { ApiService, Thread, Message } from '../../services/api.service';
 
 @Component({
   selector: 'app-workbench',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatCardModule, MatButtonModule, MatIconModule, MatMenuModule, RouterModule],
+  imports: [CommonModule, FormsModule, MatCardModule, MatButtonModule, MatIconModule, MatMenuModule, MatTooltipModule, RouterModule],
   templateUrl: './workbench.component.html',
   styleUrl: './workbench.component.scss'
 })
