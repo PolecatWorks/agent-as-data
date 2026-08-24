@@ -40,6 +40,8 @@ graph TD
 
 ## Key UI Modules & Features
 
+**UI Consistency Requirement:** For Traits, Tools, Skills, and Agents edit views, the fields `Name`, `Owner`, `Description`, and `Tags` must be presented as the top lines on the view with consistent labels (`Name`, `Owner`, `Description`, `Tags`).
+
 ### 1. Declarative Agent Registry & Builder Module
 - **Visual Agent Editor**: Form fields for `name`, `description`, `tags`, `implements_traits`, `model`, `agent_definition` (system prompt), `tools`, `available_skills`, and `available_agents`.
   - **Active Trait Filtering & Hover Descriptions**: Search filter for active implemented traits (`implements_traits`) and tooltips displaying contract descriptions on hover.

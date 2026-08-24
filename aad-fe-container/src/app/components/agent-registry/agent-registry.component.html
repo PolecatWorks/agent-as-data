@@ -124,21 +124,28 @@
             <!-- Name & Owner ID -->
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div class="space-y-1 text-left">
-                <label class="text-xs font-bold text-slate-500">Agent Name</label>
+                <label class="text-xs font-bold text-slate-500">Name</label>
                 <input type="text" [(ngModel)]="agentForm.name" placeholder="e.g. SecurityAuditor" [disabled]="!isEditing"
                        class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 disabled:bg-slate-50 disabled:text-slate-500 transition-all" />
               </div>
 
               <div class="space-y-1 text-left">
-                <label class="text-xs font-bold text-slate-500">Owner ID</label>
+                <label class="text-xs font-bold text-slate-500">Owner</label>
                 <input type="text" [(ngModel)]="agentForm.owner_id" placeholder="Owner UUID..." [disabled]="!isEditing"
                        class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 disabled:bg-slate-50 disabled:text-slate-500 transition-all" />
               </div>
             </div>
 
-            <!-- Metadata Tags -->
+            <!-- Description -->
+            <div class="space-y-1 text-left">
+              <label class="text-xs font-bold text-slate-500">Description</label>
+              <textarea rows="2" [(ngModel)]="agentForm.description" placeholder="Describe what this agent represents..." [disabled]="!isEditing"
+                        class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 disabled:bg-slate-50 disabled:text-slate-500 transition-all"></textarea>
+            </div>
+
+            <!-- Tags -->
             <div class="space-y-2 text-left">
-              <label class="text-xs font-bold text-slate-500 block">Agent Metadata Tags</label>
+              <label class="text-xs font-bold text-slate-500 block">Tags</label>
               @if (isEditing) {
                 <div class="flex gap-2 mb-2">
                   <input type="text" placeholder="Add tag..." [(ngModel)]="newTag" (keyup.enter)="addTag()"
@@ -156,13 +163,6 @@
                   </mat-chip-row>
                 }
               </div>
-            </div>
-
-            <!-- Description -->
-            <div class="space-y-1 text-left">
-              <label class="text-xs font-bold text-slate-500">Description</label>
-              <textarea rows="2" [(ngModel)]="agentForm.description" placeholder="Describe what this agent represents..." [disabled]="!isEditing"
-                        class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 disabled:bg-slate-50 disabled:text-slate-500 transition-all"></textarea>
             </div>
 
             <!-- Model & Judge Threshold configuration -->

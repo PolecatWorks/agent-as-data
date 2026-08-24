@@ -7,6 +7,7 @@ The **Agent Registry & Execution Engine** in **Agent-As-Data (AAD)** treats AI a
 
 ### 1. Declarative Agent Storage, Versioning & Access Control
 - **Agent Specification**: Stores `name`, `description`, `tags`, `agent_definition` (system prompt/persona), `model` config, `attached_tools`, `attached_skills`, `attached_agents`, `incoming_guardrails`, and `outgoing_guardrails`.
+- **UI Consistency**: The Edit views for Traits, Tools, Skills, and Agents must display Name, Owner, Description, and Tags as the top three lines on the view, maintaining consistent labels across all 4.
 - **Ownership & Group-Based Access Control (RBAC)**:
   - `owner_id` (UUID): Primary user or service account owner.
   - `read_groups` (TEXT[]): Array of group names / IDs granted read & discovery access.
