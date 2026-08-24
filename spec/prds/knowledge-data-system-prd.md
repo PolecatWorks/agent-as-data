@@ -14,6 +14,7 @@ The Knowledge & Data System in **Agent-As-Data (AAD)** serves as a persistent **
 ### 2. Knowledge Retrieval & Graph Traversal
 - **Semantic Vector Search**: Nearest-neighbor retrieval over chunked text context given a user or agent prompt.
 - **Multi-Hop Graph Queries**: Traversal endpoint (`POST /api/v1/knowledge/graph/traverse`) to discover connected entities and conceptual dependencies.
+- **AI / LLM Integration**: Integration with AI via the `rig-core` crate and connection to an Ollama instance to process natural language queries over vector data (RAG).
 
 ### 4. Quality & Performance Safeguards
 - **Entity Canonicalization & Synonym Resolution**: Vector similarity scans on subject/object names (`subject_canonical`, `object_canonical`) detect synonymous entities (e.g. `PostgreSQL` vs `Postgres`) to prevent graph fragmentation.

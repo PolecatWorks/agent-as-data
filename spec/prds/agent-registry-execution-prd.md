@@ -45,6 +45,7 @@ The **Agent Registry & Execution Engine** in **Agent-As-Data (AAD)** treats AI a
 ### 3. Execution Engine & Guardrails
 - **Synchronous / Streaming**: Immediate execution (`POST /api/v1/agents/:id/execute` and `POST /api/v1/agents/search-and-execute`) streaming output tokens and tool calls via SSE.
 - **Asynchronous Execution Jobs**: Job queue creation (`POST /api/v1/executions`) and status tracking (`GET /api/v1/executions/:id`) for long-running agent workflows.
+- **AI Execution via Rig**: The backend integrates `rig-core` to facilitate interaction with LLM endpoints (e.g. Ollama) allowing natural language inference and task execution capabilities.
 ### 4. Agent Refactoring & Compression Engine
 - **Overlap & Duplication Detection**: Vector similarity scans across `agent_embeddings` identify candidate clusters of overlapping, duplicate, or conflicting agents (`POST /api/v1/agents/refactor/analyze`).
 - **Conflict Resolution & Harmonization**: Analyzes candidate agent definitions to identify:
