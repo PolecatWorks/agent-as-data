@@ -123,6 +123,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     .route("/api/v1/threads", axum::routing::post(aad_be_container::threads::list_threads))
                     .route("/api/v1/threads/create", axum::routing::post(aad_be_container::threads::create_thread))
                     .route("/api/v1/threads/{id}", axum::routing::get(aad_be_container::threads::get_thread))
+                    .route("/api/v1/threads/{id}", axum::routing::put(aad_be_container::threads::update_thread))
                     .route("/api/v1/threads/{id}/messages", axum::routing::get(aad_be_container::threads::list_messages))
                     .route("/api/v1/threads/{id}/messages", axum::routing::post(aad_be_container::threads::create_message))
                     .with_state(pool);

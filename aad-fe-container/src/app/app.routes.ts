@@ -18,5 +18,6 @@ export const routes: Routes = [
   { path: 'tools', loadComponent: () => import('./components/tool-manager/tool-manager.component').then(m => m.ToolManagerComponent) },
   { path: 'tools/:id', loadComponent: () => import('./components/tool-manager/tool-manager.component').then(m => m.ToolManagerComponent) },
   { path: 'workbench', loadComponent: () => import('./components/workbench/workbench.component').then(m => m.WorkbenchComponent) },
+  { path: 'workbench/:id', loadComponent: () => import('./components/workbench/workbench.component').then(m => m.WorkbenchComponent) },
 ];
 

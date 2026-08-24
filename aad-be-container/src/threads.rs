@@ -5,7 +5,7 @@ use axum::{
 };
 use sqlx::PgPool;
 use uuid::Uuid;
-use crate::models::{Thread, CreateThreadRequest, Message, CreateMessageRequest, ListThreadsRequest, PageOptions};
+use crate::models::{Thread, CreateThreadRequest, UpdateThreadRequest, Message, CreateMessageRequest, ListThreadsRequest, PageOptions};
 
 pub async fn list_threads(
     State(pool): State<PgPool>,
@@ -55,6 +55,27 @@ pub async fn get_thread(
         .fetch_optional(&pool)
         .await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to get thread: {}", e)))?;
+
+    if let Some(thread) = thread {
+        Ok(Json(thread))
+    } else {
+        Err((StatusCode::NOT_FOUND, "Thread not found".to_string()))
+    }
+}
+
+pub async fn update_thread(
+    State(pool): State<PgPool>,
+    Path(id): Path<Uuid>,
+    Json(payload): Json<UpdateThreadRequest>,
+) -> Result<Json<Thread>, (StatusCode, String)> {
+    let thread = sqlx::query_as::<_, Thread>(
+        "UPDATE threads SET title = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING *"
+    )
+    .bind(&payload.title)
+    .bind(id)
+    .fetch_optional(&pool)
+    .await
+    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to update thread: {}", e)))?;
 
     if let Some(thread) = thread {
         Ok(Json(thread))

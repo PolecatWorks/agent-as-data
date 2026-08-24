@@ -1,141 +1,243 @@
-<div class="container mx-auto p-6 flex-1 flex flex-col space-y-6 min-h-0">
+<div class="h-full w-full flex flex-row bg-slate-50 overflow-hidden">
 
-  <!-- Top Banner -->
-  <div class="flex justify-between items-center bg-white p-6 rounded-2xl border border-slate-200 shadow-sm shrink-0">
-    <div class="space-y-1">
-      <h1 class="text-2xl font-black text-slate-900 m-0 flex items-center gap-2">
-        <mat-icon class="!w-8 !h-8 !text-3xl text-indigo-600 font-bold">build</mat-icon> Workbench
-      </h1>
-      <p class="text-sm text-slate-500 m-0">
-        Interact with agents, test threads, and edit files in real-time.
-      </p>
+  <!-- Left Sidebar -->
+  <div [ngClass]="isSidebarCollapsed ? 'w-16' : 'w-72'" class="h-full bg-white border-r border-slate-200 shadow-sm flex flex-col transition-all duration-300 z-10 shrink-0 overflow-hidden">
+    
+    <!-- Sidebar Header -->
+    <div class="p-4 border-b border-slate-100 flex items-center justify-between shrink-0 h-14">
+      <div class="flex items-center gap-2 overflow-hidden" *ngIf="!isSidebarCollapsed">
+        <div class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white font-bold shrink-0">
+          <mat-icon class="!w-5 !h-5 !text-xl">build</mat-icon>
+        </div>
+        <span class="font-black text-slate-800 text-lg whitespace-nowrap">AAD</span>
+      </div>
+      <button mat-icon-button (click)="toggleSidebar()" class="text-slate-400 hover:text-slate-700 mx-auto" [title]="isSidebarCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'">
+        <mat-icon>{{ isSidebarCollapsed ? 'chevron_right' : 'chevron_left' }}</mat-icon>
+      </button>
     </div>
-    <button mat-flat-button color="primary" class="!rounded-xl !px-6 !font-bold" (click)="createNewThread()">
-      <mat-icon>add</mat-icon> New Thread
-    </button>
-  </div>
 
-  <!-- Main Workspace -->
-  <div class="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-0">
+    <!-- Search -->
+    <div class="p-3 border-b border-slate-100 shrink-0" *ngIf="!isSidebarCollapsed">
+      <div class="relative">
+        <mat-icon class="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 !w-4 !h-4 !text-base">search</mat-icon>
+        <input type="text" placeholder="Search threads..."
+               class="w-full pl-9 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+               [(ngModel)]="searchQuery" />
+      </div>
+    </div>
 
-    <!-- Left Pane: Threads -->
-    <div class="lg:col-span-3 space-y-4 flex flex-col h-full min-h-0">
-      <mat-card class="!rounded-2xl border border-slate-200/80 shadow-sm flex-1 flex flex-col min-h-0">
-        <mat-card-content class="p-4 flex-1 !flex !flex-col overflow-hidden">
-          <div class="flex justify-between items-center mb-4">
-            <h2 class="text-base font-black text-slate-800 m-0">Threads</h2>
-          </div>
+    <!-- Thread List -->
+    <div class="flex-1 overflow-y-auto py-2">
+      <div *ngIf="getFilteredThreads().length === 0 && !isSidebarCollapsed" class="text-center py-8 text-slate-400 text-xs">
+        No threads found.
+      </div>
+      
+      <div class="space-y-2 px-2 pb-2">
+        <div *ngFor="let thread of getFilteredThreads()"
+             class="group p-3 rounded-xl border transition-all cursor-pointer bg-white"
+             [ngClass]="thread.id === activeThread?.id ? 'border-indigo-500 shadow-sm ring-1 ring-indigo-500/20' : 'border-slate-200 hover:border-slate-300'"
+             (click)="selectThread(thread)"
+             [title]="isSidebarCollapsed ? thread.title : ''">
           
-          <div class="relative mb-4">
-            <mat-icon class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">search</mat-icon>
-            <input type="text" placeholder="Search threads by title..."
-                   class="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
-                   [(ngModel)]="searchQuery" />
-          </div>
-          
-          <!-- Thread List -->
-          <div class="flex-1 overflow-y-auto space-y-2 pr-1">
-            <div *ngIf="getFilteredThreads().length === 0" class="text-center py-8 text-slate-400 text-xs">
-              No threads found.
+          <!-- Expanded View -->
+          <div class="flex justify-between items-start" *ngIf="!isSidebarCollapsed">
+            <div class="flex items-start gap-3 overflow-hidden flex-1">
+              <mat-icon class="shrink-0 text-slate-400 mt-0.5"
+                        [ngClass]="{'text-indigo-600': thread.id === activeThread?.id}">
+                chat_bubble_outline
+              </mat-icon>
+              <div class="flex-1 min-w-0">
+                <h5 class="text-sm font-bold text-slate-900 m-0 truncate leading-tight">{{ thread.title }}</h5>
+                <p *ngIf="thread.updated_at" class="text-[10px] text-slate-400 m-0 mt-1 uppercase tracking-wider font-bold">
+                  {{ thread.updated_at | date:'MMM d, h:mm a' }}
+                </p>
+                <p *ngIf="!thread.updated_at && thread.created_at" class="text-[10px] text-slate-400 m-0 mt-1 uppercase tracking-wider font-bold">
+                  {{ thread.created_at | date:'MMM d, h:mm a' }}
+                </p>
+              </div>
             </div>
             
-            <div *ngFor="let thread of getFilteredThreads()"
-                 class="p-4 rounded-xl border transition-all cursor-pointer bg-white hover:border-slate-300 relative group"
-                 [class.border-indigo-500]="thread.id === activeThread?.id"
-                 [class.shadow-md]="thread.id === activeThread?.id"
-                 [class.border-slate-200]="thread.id !== activeThread?.id"
-                 (click)="selectThread(thread)">
-              <h5 class="text-sm font-bold text-slate-900 m-0 line-clamp-1">{{ thread.title }}</h5>
-              <p class="text-xs text-slate-500 m-0 mt-1">Last updated: {{ thread.updated_at | date:'short' }}</p>
-              
-              <!-- Delete Button -->
-              <button class="absolute top-2 right-2 text-slate-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity bg-transparent border-none cursor-pointer focus:outline-none"
-                      (click)="deleteThread(thread.id, $event)" title="Delete Thread">
-                <mat-icon class="!w-4 !h-4 !text-base">delete</mat-icon>
-              </button>
-            </div>
+            <!-- Delete Button -->
+            <button class="shrink-0 text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity bg-transparent border-none cursor-pointer focus:outline-none p-0.5 -mt-0.5 -mr-1"
+                    (click)="deleteThread(thread.id, $event)" title="Delete Thread">
+              <mat-icon class="!w-4 !h-4 !text-base">close</mat-icon>
+            </button>
           </div>
-        </mat-card-content>
-      </mat-card>
+
+          <!-- Collapsed View -->
+          <div class="flex justify-center items-center" *ngIf="isSidebarCollapsed">
+             <mat-icon class="text-slate-400 transition-colors"
+                      [ngClass]="{'text-indigo-600': thread.id === activeThread?.id}">
+              chat_bubble_outline
+            </mat-icon>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Area (Workspace) -->
+  <div class="flex-1 flex flex-col min-w-0 overflow-hidden bg-slate-50 relative">
+    
+    <!-- Top Bar -->
+    <div class="h-14 bg-white border-b border-slate-200 flex items-center justify-between px-4 shrink-0 shadow-sm z-10">
+      
+      <!-- Left side of top bar (Context/Badges) -->
+      <div class="flex items-center gap-3">
+        <span class="bg-indigo-100 text-indigo-800 text-xs font-bold px-2.5 py-1 rounded-full flex items-center gap-1">
+          <mat-icon class="!w-3.5 !h-3.5 !text-sm">verified</mat-icon> Plan approved 🎉
+        </span>
+      </div>
+
+      <!-- Right side of top bar (Actions) -->
+      <div class="flex items-center gap-2">
+        <button mat-flat-button color="primary" class="!rounded-lg !px-4 !font-bold h-9 mr-2" (click)="createNewThread()">
+          <mat-icon class="mr-1">add</mat-icon> New Thread
+        </button>
+
+        <!-- Hamburger Menu for App Navigation -->
+        <button mat-icon-button [matMenuTriggerFor]="appMenu" aria-label="Menu" class="text-slate-500 hover:text-slate-800">
+          <mat-icon>menu</mat-icon>
+        </button>
+        
+        <mat-menu #appMenu="matMenu">
+          @for (item of menuItems; track item.path) {
+            <a mat-menu-item [routerLink]="item.path" routerLinkActive="active-link">
+              <mat-icon>{{ item.icon }}</mat-icon>
+              <span>{{ item.label }}</span>
+            </a>
+          }
+        </mat-menu>
+        
+        <div class="w-px h-6 bg-slate-200 mx-1"></div> <!-- Divider -->
+        
+        <!-- View Toggle Icon (Mock) -->
+        <button mat-icon-button class="text-slate-500 hover:text-slate-800" title="Change View">
+          <mat-icon>view_column</mat-icon>
+        </button>
+        
+        <!-- User Profile (Mock) -->
+        <button mat-icon-button class="ml-1">
+          <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-amber-400 to-orange-500 border-2 border-white shadow-sm flex items-center justify-center text-white font-bold text-sm">
+            BG
+          </div>
+        </button>
+      </div>
     </div>
 
-    <!-- Middle Pane: Chat -->
-    <div class="lg:col-span-6 flex flex-col h-full min-h-0">
-      <mat-card class="!rounded-2xl border border-slate-200/80 shadow-sm flex-1 flex flex-col min-h-0 overflow-hidden">
-        <!-- Header -->
-        <div class="p-6 bg-slate-50/80 border-b border-slate-200/60 flex flex-col shrink-0">
-          <h2 class="text-base font-black text-slate-800 m-0">
-            {{ activeThread ? activeThread.title : 'No active thread' }}
-          </h2>
-          <p *ngIf="activeThread" class="text-xs text-slate-400 m-0 mt-0.5">Thread ID: {{ activeThread.id }}</p>
-        </div>
+    <!-- Split Content Area -->
+    <div class="flex-1 flex flex-row overflow-hidden relative">
+      
+      <!-- Conversation Pane -->
+      <div class="flex flex-col h-full bg-white shadow-sm" [style.width.%]="chatPanePercentage">
         
+        <!-- Conversation Header -->
+        <div class="p-4 border-b border-slate-100 shrink-0 bg-slate-50/50 flex justify-between items-center h-12">
+           <div class="flex-1 min-w-0 pr-4">
+             <h2 *ngIf="!isEditingTitle" class="text-sm font-bold text-slate-800 m-0 truncate cursor-pointer hover:bg-slate-200/50 px-2 py-1 -ml-2 rounded" (click)="startEditingTitle()" title="Click to edit thread title">
+               {{ activeThread ? activeThread.title : 'No active thread' }}
+             </h2>
+             <input *ngIf="isEditingTitle" type="text"
+                    class="w-full text-sm font-bold text-slate-800 bg-white border border-indigo-300 rounded px-2 py-1 -ml-2 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                    [(ngModel)]="editingTitleContent"
+                    (blur)="saveThreadTitle()"
+                    (keydown.enter)="saveThreadTitle()"
+                    (keydown.escape)="cancelEditingTitle()"
+                    autofocus />
+           </div>
+        </div>
+
         <!-- Messages -->
-        <mat-card-content class="p-0 flex-1 !flex !flex-col overflow-hidden">
-          <div class="flex-1 overflow-y-auto p-6 space-y-4 bg-white">
-            <ng-container *ngIf="activeThreadMessages.length > 0">
-              <div *ngFor="let msg of activeThreadMessages"
-                   class="flex"
-                   [ngClass]="{'justify-end': msg.role === 'user', 'justify-start': msg.role !== 'user'}">
-                <div class="p-3 rounded-2xl max-w-[80%] text-sm"
-                     [ngClass]="{
-                       'bg-indigo-600 text-white rounded-br-none': msg.role === 'user',
-                       'bg-slate-100 text-slate-800 rounded-bl-none': msg.role !== 'user'
-                     }">
-                  {{ msg.content }}
-                </div>
+        <div class="flex-1 overflow-y-auto p-4 space-y-4">
+          <ng-container *ngIf="activeThreadMessages.length > 0">
+            <div *ngFor="let msg of activeThreadMessages"
+                 class="flex"
+                 [ngClass]="{'justify-end': msg.role === 'user', 'justify-start': msg.role !== 'user'}">
+              <div class="p-3 rounded-2xl max-w-[85%] text-sm shadow-sm"
+                   [ngClass]="{
+                     'bg-indigo-600 text-white rounded-br-sm': msg.role === 'user',
+                     'bg-slate-100 text-slate-800 rounded-bl-sm border border-slate-200': msg.role !== 'user'
+                   }">
+                {{ msg.content }}
               </div>
-            </ng-container>
-
-            <div *ngIf="activeThread && activeThreadMessages.length === 0" class="flex flex-col items-center justify-center h-full text-slate-400">
-              <mat-icon class="!w-12 !h-12 !text-5xl text-slate-200 mb-2">forum</mat-icon>
-              <h3 class="text-sm font-bold text-slate-700 m-0">Beginning of Conversation</h3>
-              <p class="text-xs mt-1">Start chatting in this thread.</p>
             </div>
-          </div>
-          
-          <!-- Input -->
-          <div class="p-4 border-t border-slate-200/60 bg-white shrink-0">
-            <div class="flex gap-2">
-              <textarea class="flex-1 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all resize-none"
-                        rows="2" placeholder="Type a message..."
-                        [(ngModel)]="newMessageContent"
-                        [disabled]="!activeThread"
-                        (keydown.enter)="$event.preventDefault(); sendMessage()">
-              </textarea>
-              <button mat-flat-button color="primary" class="!rounded-xl !font-bold shrink-0 self-end h-[46px]"
-                      [disabled]="!activeThread || !newMessageContent.trim()"
-                      (click)="sendMessage()">
-                <mat-icon>send</mat-icon>
-              </button>
-            </div>
-          </div>
-        </mat-card-content>
-      </mat-card>
-    </div>
+          </ng-container>
 
-    <!-- Right Pane: Editor -->
-    <div class="lg:col-span-3 flex flex-col h-full min-h-0">
-      <mat-card class="!rounded-2xl border border-slate-200/80 shadow-sm flex-1 flex flex-col min-h-0 overflow-hidden">
-        <div class="p-4 bg-slate-50/80 border-b border-slate-200/60 flex justify-between items-center shrink-0 h-[73px]">
-          <h2 class="text-base font-black text-slate-800 m-0">Editor</h2>
-          <span class="px-2 py-0.5 bg-slate-200 text-slate-600 text-[10px] font-mono rounded font-bold">schema.sql</span>
+          <div *ngIf="activeThread && activeThreadMessages.length === 0" class="flex flex-col items-center justify-center h-full text-slate-400">
+            <div class="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mb-3">
+              <mat-icon class="text-slate-300">chat</mat-icon>
+            </div>
+            <h3 class="text-sm font-medium text-slate-600 m-0">Start the conversation</h3>
+            <p class="text-xs mt-1 text-center max-w-[200px]">Send a message to begin collaborating with the agent.</p>
+          </div>
         </div>
         
-        <mat-card-content class="p-0 flex-1 !flex !flex-col overflow-hidden">
-          <textarea class="flex-1 w-full p-4 font-mono text-xs bg-slate-900 text-emerald-400 border-none focus:outline-none focus:ring-0 resize-none" placeholder="Directly edit files or content here...">CREATE TABLE IF NOT EXISTS agents (
-    id UUID PRIMARY KEY,
-    name TEXT NOT NULL
-);
-          </textarea>
-          
-          <div class="p-4 border-t border-slate-200/60 bg-white flex justify-end gap-2 shrink-0">
-             <button mat-stroked-button class="!rounded-xl !font-bold text-slate-600">Discard</button>
-             <button mat-flat-button color="primary" class="!rounded-xl !font-bold">Save</button>
+        <!-- Input Area -->
+        <div class="p-4 border-t border-slate-100 bg-white shrink-0">
+          <div class="relative flex items-end shadow-sm border border-slate-200 rounded-xl bg-slate-50 focus-within:ring-2 focus-within:ring-indigo-500/20 focus-within:border-indigo-500 focus-within:bg-white transition-all">
+            <textarea class="flex-1 px-4 py-3 bg-transparent border-none text-sm focus:outline-none focus:ring-0 resize-none min-h-[44px]"
+                      rows="1" placeholder="Type a message..."
+                      [(ngModel)]="newMessageContent"
+                      [disabled]="!activeThread"
+                      (keydown.enter)="$event.preventDefault(); sendMessage()">
+            </textarea>
+            <button mat-icon-button color="primary" class="m-1 shrink-0"
+                    [disabled]="!activeThread || !newMessageContent.trim()"
+                    (click)="sendMessage()">
+              <mat-icon>send</mat-icon>
+            </button>
           </div>
-        </mat-card-content>
-      </mat-card>
-    </div>
+        </div>
+      </div>
 
+      <!-- Resizer Handle -->
+      <div class="w-1 cursor-col-resize bg-slate-200 hover:bg-indigo-400 active:bg-indigo-600 transition-colors z-20 flex-shrink-0"
+           (mousedown)="startResizing($event)">
+      </div>
+
+      <!-- Editor Pane -->
+      <div class="flex-1 flex flex-col h-full bg-white shadow-sm border-l border-slate-200/50">
+        
+        <!-- Editor Header -->
+        <div class="px-4 py-2 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center shrink-0 h-12">
+          <div class="flex items-center gap-2">
+            <h2 class="text-sm font-bold text-slate-800 m-0">Review</h2>
+          </div>
+          <div class="flex gap-2">
+            <button mat-button class="!text-xs !py-0 !px-2 !min-w-0 h-6 bg-white border border-slate-200 rounded text-slate-600 font-medium">Collapse all</button>
+            <button mat-button class="!text-xs !py-0 !px-2 !min-w-0 h-6 bg-white border border-slate-200 rounded text-slate-600 font-medium flex items-center gap-1">Stacked <mat-icon class="!w-3 !h-3 !text-[12px] leading-3">expand_more</mat-icon></button>
+          </div>
+        </div>
+        
+        <!-- Editor Content (Mock diff view similar to Jules screenshot) -->
+        <div class="flex-1 p-4 overflow-auto bg-[#fafafa]">
+          
+          <div class="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden mb-4">
+             <div class="bg-indigo-50/50 border-b border-slate-200 px-4 py-2 flex justify-between items-center">
+               <div class="flex items-center gap-2">
+                 <span class="w-5 h-5 rounded bg-indigo-100 text-indigo-700 flex items-center justify-center text-[10px] font-bold">A</span>
+                 <span class="text-xs font-bold text-slate-700 font-mono">aad-be-container/src/fs_tools.rs</span>
+                 <span class="text-[10px] font-bold text-emerald-600 bg-emerald-100 px-1.5 py-0.5 rounded">+247</span>
+               </div>
+               <div class="flex gap-1 text-slate-400">
+                 <mat-icon class="!w-4 !h-4 !text-base cursor-pointer hover:text-slate-700" title="Download zip">download</mat-icon>
+                 <mat-icon class="!w-4 !h-4 !text-base cursor-pointer hover:text-slate-700" title="Copy">content_copy</mat-icon>
+               </div>
+             </div>
+             <div class="p-4 bg-[#e6ffed] text-[#22863a] font-mono text-xs overflow-x-auto whitespace-pre" ngNonBindable>
+1 + use axum::{{
+2 +   extract::Path,
+3 +   http::StatusCode,
+4 +   Json,
+5 + }};
+6 + use serde::{{Deserialize, Serialize}};
+7 + use std::path::Path as StdPath;
+             </div>
+          </div>
+          
+        </div>
+      </div>
+      
+    </div>
   </div>
 </div>

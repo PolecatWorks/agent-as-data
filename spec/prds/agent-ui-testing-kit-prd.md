@@ -76,10 +76,12 @@ graph TD
 - **Clean Labeling & Hover States**: Version numbers, tool counts, and item descriptions are natively injected into node hover tooltips to avoid cluttering visual text labels.
 
 ### 8. Workbench (Multiuser Conversational Threads)
-- **3-Pane View**:
-  - **Left Pane**: Threads list showing historical conversations (filtered by current active `userid`).
-  - **Middle Pane**: Conversational chat interface for the active thread.
-  - **Right Pane**: Direct content editing (files or context modified through conversation).
+- **2-Column Layout**:
+  - **Left Sidebar**: Collapsible threads list showing historical conversations (filtered by current active `userid`) with a global search filter.
+  - **Right Workspace**: A resizable split-pane area containing the conversation and editor views, topped by a global action bar.
+    - **Top Bar**: Contains the global application navigation menu, context badges, a solid blue "New Thread" button, layout view toggles, and a user profile button.
+    - **Conversation Pane (Left)**: Conversational chat interface for the active thread. Features a click-to-edit thread title header and a message input area. Supports direct URL routing via `/workbench/:threadId`.
+    - **Editor Pane (Right)**: Direct content editing and review area (e.g., code diffs, files, or context modified through conversation).
 
 ### 9. Robot Framework Integration Testing Suite (Ref: `sward-warden/integration-tests`)
 - **Declarative User Journey Robot Tests**: `/integration-tests/tests/*.robot` test cases mapping 1-to-1 to all 9 user journeys in `user-journeys-spec.md`.

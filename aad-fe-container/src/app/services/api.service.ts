@@ -267,6 +267,12 @@ export class ApiService {
     });
   }
 
+  updateThread(id: string, title: string): Observable<Thread> {
+    return this.http.put<Thread>(`${this.baseUrl}/threads/${id}`, {
+      title
+    });
+  }
+
   deleteThread(id: string): Observable<any> {
     return this.http.delete(`${this.baseUrl}/threads/${id}`);
   }
