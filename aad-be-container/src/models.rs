@@ -354,6 +354,11 @@ pub struct CreateThreadRequest {
     pub owner_id: Uuid,
 }
 
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct UpdateThreadRequest {
+    pub title: String,
+}
+
 #[derive(Deserialize, Serialize, Debug, Clone, sqlx::FromRow)]
 pub struct Message {
     pub id: Uuid,
