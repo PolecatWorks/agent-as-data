@@ -1,91 +1,141 @@
-<div class="flex h-full w-full">
-  <!-- Left Pane: Threads -->
-  <div class="w-1/4 border-r border-gray-300 p-4 flex flex-col bg-gray-50">
-    <h2 class="text-xl font-bold mb-4">Threads</h2>
-    <div class="flex-1 overflow-y-auto space-y-2">
-      <!-- Thread List -->
-      <div *ngFor="let thread of threads"
-           class="p-3 bg-white border border-gray-200 rounded shadow-sm cursor-pointer hover:bg-gray-100 group relative"
-           [ngClass]="{'bg-blue-50 border-blue-200': thread.id === activeThread?.id}"
-           (click)="selectThread(thread)">
-        <h3 class="font-semibold text-sm">{{ thread.title }}</h3>
-        <p class="text-xs text-gray-500">Last updated: {{ thread.updated_at | date:'short' }}</p>
-        <!-- Delete Button -->
-        <button class="absolute top-2 right-2 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity focus:outline-none"
-                (click)="deleteThread(thread.id, $event)" title="Delete Thread">
-          <span class="material-symbols-outlined text-sm">delete</span>
-        </button>
-      </div>
-      <div *ngIf="threads.length === 0" class="text-sm text-gray-500 text-center py-4">
-        No threads found.
-      </div>
+<div class="container mx-auto p-6 flex-1 flex flex-col space-y-6 min-h-0">
+
+  <!-- Top Banner -->
+  <div class="flex justify-between items-center bg-white p-6 rounded-2xl border border-slate-200 shadow-sm shrink-0">
+    <div class="space-y-1">
+      <h1 class="text-2xl font-black text-slate-900 m-0 flex items-center gap-2">
+        <mat-icon class="!w-8 !h-8 !text-3xl text-indigo-600 font-bold">build</mat-icon> Workbench
+      </h1>
+      <p class="text-sm text-slate-500 m-0">
+        Interact with agents, test threads, and edit files in real-time.
+      </p>
     </div>
-    <button class="mt-4 p-2 bg-blue-600 text-white rounded hover:bg-blue-700 w-full" (click)="createNewThread()">+ New Thread</button>
+    <button mat-flat-button color="primary" class="!rounded-xl !px-6 !font-bold" (click)="createNewThread()">
+      <mat-icon>add</mat-icon> New Thread
+    </button>
   </div>
 
-  <!-- Middle Pane: Conversational Chat -->
-  <div class="w-2/4 border-r border-gray-300 flex flex-col bg-white">
-    <div *ngIf="activeThread" class="p-4 border-b border-gray-200 bg-gray-50 flex flex-col">
-      <h2 class="text-xl font-bold">{{ activeThread.title }}</h2>
-      <p class="text-xs text-gray-500">Thread ID: {{ activeThread.id }}</p>
-    </div>
-    <div *ngIf="!activeThread" class="p-4 border-b border-gray-200 bg-gray-50">
-      <h2 class="text-xl font-bold text-gray-400">No active thread</h2>
-    </div>
+  <!-- Main Workspace -->
+  <div class="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-0">
 
-    <div class="flex-1 overflow-y-auto p-4 space-y-4">
-      <!-- Messages -->
-      <ng-container *ngIf="activeThreadMessages.length > 0">
-        <div *ngFor="let msg of activeThreadMessages"
-             class="flex"
-             [ngClass]="{'justify-end': msg.role === 'user', 'justify-start': msg.role === 'assistant' || msg.role === 'system'}">
-          <div class="p-3 rounded-lg max-w-[80%]"
-               [ngClass]="{'bg-blue-100': msg.role === 'user', 'bg-gray-100': msg.role === 'assistant' || msg.role === 'system'}">
-            <p class="text-sm">{{ msg.content }}</p>
+    <!-- Left Pane: Threads -->
+    <div class="lg:col-span-3 space-y-4 flex flex-col h-full min-h-0">
+      <mat-card class="!rounded-2xl border border-slate-200/80 shadow-sm flex-1 flex flex-col min-h-0">
+        <mat-card-content class="p-4 flex-1 !flex !flex-col overflow-hidden">
+          <div class="flex justify-between items-center mb-4">
+            <h2 class="text-base font-black text-slate-800 m-0">Threads</h2>
           </div>
+          
+          <div class="relative mb-4">
+            <mat-icon class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">search</mat-icon>
+            <input type="text" placeholder="Search threads by title..."
+                   class="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                   [(ngModel)]="searchQuery" />
+          </div>
+          
+          <!-- Thread List -->
+          <div class="flex-1 overflow-y-auto space-y-2 pr-1">
+            <div *ngIf="getFilteredThreads().length === 0" class="text-center py-8 text-slate-400 text-xs">
+              No threads found.
+            </div>
+            
+            <div *ngFor="let thread of getFilteredThreads()"
+                 class="p-4 rounded-xl border transition-all cursor-pointer bg-white hover:border-slate-300 relative group"
+                 [class.border-indigo-500]="thread.id === activeThread?.id"
+                 [class.shadow-md]="thread.id === activeThread?.id"
+                 [class.border-slate-200]="thread.id !== activeThread?.id"
+                 (click)="selectThread(thread)">
+              <h5 class="text-sm font-bold text-slate-900 m-0 line-clamp-1">{{ thread.title }}</h5>
+              <p class="text-xs text-slate-500 m-0 mt-1">Last updated: {{ thread.updated_at | date:'short' }}</p>
+              
+              <!-- Delete Button -->
+              <button class="absolute top-2 right-2 text-slate-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity bg-transparent border-none cursor-pointer focus:outline-none"
+                      (click)="deleteThread(thread.id, $event)" title="Delete Thread">
+                <mat-icon class="!w-4 !h-4 !text-base">delete</mat-icon>
+              </button>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- Middle Pane: Chat -->
+    <div class="lg:col-span-6 flex flex-col h-full min-h-0">
+      <mat-card class="!rounded-2xl border border-slate-200/80 shadow-sm flex-1 flex flex-col min-h-0 overflow-hidden">
+        <!-- Header -->
+        <div class="p-6 bg-slate-50/80 border-b border-slate-200/60 flex flex-col shrink-0">
+          <h2 class="text-base font-black text-slate-800 m-0">
+            {{ activeThread ? activeThread.title : 'No active thread' }}
+          </h2>
+          <p *ngIf="activeThread" class="text-xs text-slate-400 m-0 mt-0.5">Thread ID: {{ activeThread.id }}</p>
         </div>
-      </ng-container>
+        
+        <!-- Messages -->
+        <mat-card-content class="p-0 flex-1 !flex !flex-col overflow-hidden">
+          <div class="flex-1 overflow-y-auto p-6 space-y-4 bg-white">
+            <ng-container *ngIf="activeThreadMessages.length > 0">
+              <div *ngFor="let msg of activeThreadMessages"
+                   class="flex"
+                   [ngClass]="{'justify-end': msg.role === 'user', 'justify-start': msg.role !== 'user'}">
+                <div class="p-3 rounded-2xl max-w-[80%] text-sm"
+                     [ngClass]="{
+                       'bg-indigo-600 text-white rounded-br-none': msg.role === 'user',
+                       'bg-slate-100 text-slate-800 rounded-bl-none': msg.role !== 'user'
+                     }">
+                  {{ msg.content }}
+                </div>
+              </div>
+            </ng-container>
 
-      <div *ngIf="activeThread && activeThreadMessages.length === 0" class="text-center text-sm text-gray-500 mt-10">
-        This is the beginning of the conversation.
-      </div>
+            <div *ngIf="activeThread && activeThreadMessages.length === 0" class="flex flex-col items-center justify-center h-full text-slate-400">
+              <mat-icon class="!w-12 !h-12 !text-5xl text-slate-200 mb-2">forum</mat-icon>
+              <h3 class="text-sm font-bold text-slate-700 m-0">Beginning of Conversation</h3>
+              <p class="text-xs mt-1">Start chatting in this thread.</p>
+            </div>
+          </div>
+          
+          <!-- Input -->
+          <div class="p-4 border-t border-slate-200/60 bg-white shrink-0">
+            <div class="flex gap-2">
+              <textarea class="flex-1 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all resize-none"
+                        rows="2" placeholder="Type a message..."
+                        [(ngModel)]="newMessageContent"
+                        [disabled]="!activeThread"
+                        (keydown.enter)="$event.preventDefault(); sendMessage()">
+              </textarea>
+              <button mat-flat-button color="primary" class="!rounded-xl !font-bold shrink-0 self-end h-[46px]"
+                      [disabled]="!activeThread || !newMessageContent.trim()"
+                      (click)="sendMessage()">
+                <mat-icon>send</mat-icon>
+              </button>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
     </div>
 
-    <!-- Message Input -->
-    <div class="p-4 border-t border-gray-200 bg-white">
-      <div class="flex space-x-2">
-        <textarea class="flex-1 border border-gray-300 rounded p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  rows="2" placeholder="Type a message..."
-                  [(ngModel)]="newMessageContent"
-                  [disabled]="!activeThread"
-                  (keydown.enter)="$event.preventDefault(); sendMessage()">
-        </textarea>
-        <button class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
-                [disabled]="!activeThread || !newMessageContent.trim()"
-                (click)="sendMessage()">
-          Send
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Right Pane: Content Editor -->
-  <div class="w-1/4 p-4 flex flex-col bg-gray-50">
-    <div class="flex justify-between items-center mb-4">
-      <h2 class="text-xl font-bold">Content Editor</h2>
-      <span class="text-xs font-mono bg-gray-200 px-2 py-1 rounded">schema.sql</span>
-    </div>
-
-    <div class="flex-1 flex flex-col">
-      <textarea class="flex-1 w-full p-3 font-mono text-sm border border-gray-300 rounded shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Directly edit files or content here...">CREATE TABLE IF NOT EXISTS agents (
+    <!-- Right Pane: Editor -->
+    <div class="lg:col-span-3 flex flex-col h-full min-h-0">
+      <mat-card class="!rounded-2xl border border-slate-200/80 shadow-sm flex-1 flex flex-col min-h-0 overflow-hidden">
+        <div class="p-4 bg-slate-50/80 border-b border-slate-200/60 flex justify-between items-center shrink-0 h-[73px]">
+          <h2 class="text-base font-black text-slate-800 m-0">Editor</h2>
+          <span class="px-2 py-0.5 bg-slate-200 text-slate-600 text-[10px] font-mono rounded font-bold">schema.sql</span>
+        </div>
+        
+        <mat-card-content class="p-0 flex-1 !flex !flex-col overflow-hidden">
+          <textarea class="flex-1 w-full p-4 font-mono text-xs bg-slate-900 text-emerald-400 border-none focus:outline-none focus:ring-0 resize-none" placeholder="Directly edit files or content here...">CREATE TABLE IF NOT EXISTS agents (
     id UUID PRIMARY KEY,
     name TEXT NOT NULL
 );
-      </textarea>
-      <div class="mt-4 flex justify-end space-x-2">
-         <button class="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300">Discard</button>
-         <button class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Save</button>
-      </div>
+          </textarea>
+          
+          <div class="p-4 border-t border-slate-200/60 bg-white flex justify-end gap-2 shrink-0">
+             <button mat-stroked-button class="!rounded-xl !font-bold text-slate-600">Discard</button>
+             <button mat-flat-button color="primary" class="!rounded-xl !font-bold">Save</button>
+          </div>
+        </mat-card-content>
+      </mat-card>
     </div>
+
   </div>
 </div>
