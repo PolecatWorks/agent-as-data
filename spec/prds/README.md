@@ -10,6 +10,7 @@ This directory contains the long-term, persistent Product Requirements Documents
 | [knowledge-data-system-prd.md](./knowledge-data-system-prd.md) | **Knowledge System PRD**: Long-term Project Memory, RAG vector chunks (`pgvector`), Graph Tuples (SPO), and native MCP tools. |
 | [agent-registry-execution-prd.md](./agent-registry-execution-prd.md) | **Agent Registry PRD**: Declarative agent storage, versioning (`agent_revisions`), top `n` RAG search, and execution engine (sync/async & guardrails). |
 | [agent-ui-testing-kit-prd.md](./agent-ui-testing-kit-prd.md) | **Agent UI PRD**: Developer UI container (`aad-fe-container`) built with Angular 18+, TailwindCSS, and Angular Material for agent development, live testing, SSE token streaming, Mermaid network graph visualization, and MCP server management. |
+| [workspace-filesystem-tools-prd.md](./workspace-filesystem-tools-prd.md) | **Workspace Filesystem PRD**: Secure, thread-isolated ephemeral workspace directories (`/tmp/workspace/<thread_id>`) and restricted filesystem operations (`read_file`, `write_file`, etc.). |
 
 
 ## Governance & Lifecycle Rules

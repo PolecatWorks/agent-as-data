@@ -126,6 +126,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     .route("/api/v1/threads/{id}", axum::routing::put(aad_be_container::threads::update_thread))
                     .route("/api/v1/threads/{id}/messages", axum::routing::get(aad_be_container::threads::list_messages))
                     .route("/api/v1/threads/{id}/messages", axum::routing::post(aad_be_container::threads::create_message))
+                    .route("/api/v1/threads/{id}/fs/write", axum::routing::post(aad_be_container::fs_tools::write_file))
+                    .route("/api/v1/threads/{id}/fs/read/{*filepath}", axum::routing::get(aad_be_container::fs_tools::read_file))
+                    .route("/api/v1/threads/{id}/fs/list", axum::routing::post(aad_be_container::fs_tools::list_files))
+                    .route("/api/v1/threads/{id}/fs/delete", axum::routing::post(aad_be_container::fs_tools::delete_file))
                     .with_state(pool);
 
 

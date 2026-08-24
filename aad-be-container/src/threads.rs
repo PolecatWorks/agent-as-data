@@ -47,6 +47,15 @@ pub async fn create_thread(
     .await
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to create thread: {}", e)))?;
 
+    // Create the isolated workspace directory for this thread
+    let workspace_path = format!("/tmp/workspace/{}", thread.id);
+    if let Err(e) = std::fs::create_dir_all(&workspace_path) {
+        return Err((
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("Failed to create workspace directory: {}", e),
+        ));
+    }
+
     Ok((StatusCode::CREATED, Json(thread)))
 }
 
