@@ -3,49 +3,68 @@
   <div class="w-1/4 border-r border-gray-300 p-4 flex flex-col bg-gray-50">
     <h2 class="text-xl font-bold mb-4">Threads</h2>
     <div class="flex-1 overflow-y-auto space-y-2">
-      <!-- Placeholder Threads -->
-      <div class="p-3 bg-white border border-gray-200 rounded shadow-sm cursor-pointer hover:bg-gray-100">
-        <h3 class="font-semibold text-sm">Design DB Schema</h3>
-        <p class="text-xs text-gray-500">Last updated: 10 mins ago</p>
+      <!-- Thread List -->
+      <div *ngFor="let thread of threads"
+           class="p-3 bg-white border border-gray-200 rounded shadow-sm cursor-pointer hover:bg-gray-100 group relative"
+           [ngClass]="{'bg-blue-50 border-blue-200': thread.id === activeThread?.id}"
+           (click)="selectThread(thread)">
+        <h3 class="font-semibold text-sm">{{ thread.title }}</h3>
+        <p class="text-xs text-gray-500">Last updated: {{ thread.updated_at | date:'short' }}</p>
+        <!-- Delete Button -->
+        <button class="absolute top-2 right-2 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity focus:outline-none"
+                (click)="deleteThread(thread.id, $event)" title="Delete Thread">
+          <span class="material-symbols-outlined text-sm">delete</span>
+        </button>
       </div>
-      <div class="p-3 bg-white border border-gray-200 rounded shadow-sm cursor-pointer hover:bg-gray-100">
-        <h3 class="font-semibold text-sm">Debug Auth Issue</h3>
-        <p class="text-xs text-gray-500">Last updated: 1 hr ago</p>
-      </div>
-      <div class="p-3 bg-white border border-gray-200 rounded shadow-sm cursor-pointer hover:bg-gray-100">
-        <h3 class="font-semibold text-sm">Refactor Agent Registry</h3>
-        <p class="text-xs text-gray-500">Last updated: Yesterday</p>
+      <div *ngIf="threads.length === 0" class="text-sm text-gray-500 text-center py-4">
+        No threads found.
       </div>
     </div>
-    <button class="mt-4 p-2 bg-blue-600 text-white rounded hover:bg-blue-700 w-full">+ New Thread</button>
+    <button class="mt-4 p-2 bg-blue-600 text-white rounded hover:bg-blue-700 w-full" (click)="createNewThread()">+ New Thread</button>
   </div>
 
   <!-- Middle Pane: Conversational Chat -->
   <div class="w-2/4 border-r border-gray-300 flex flex-col bg-white">
-    <div class="p-4 border-b border-gray-200 bg-gray-50">
-      <h2 class="text-xl font-bold">Design DB Schema</h2>
-      <p class="text-xs text-gray-500">Active UserID: default_user_123</p>
+    <div *ngIf="activeThread" class="p-4 border-b border-gray-200 bg-gray-50 flex flex-col">
+      <h2 class="text-xl font-bold">{{ activeThread.title }}</h2>
+      <p class="text-xs text-gray-500">Thread ID: {{ activeThread.id }}</p>
+    </div>
+    <div *ngIf="!activeThread" class="p-4 border-b border-gray-200 bg-gray-50">
+      <h2 class="text-xl font-bold text-gray-400">No active thread</h2>
     </div>
 
     <div class="flex-1 overflow-y-auto p-4 space-y-4">
-      <!-- Placeholder Messages -->
-      <div class="flex justify-end">
-        <div class="bg-blue-100 p-3 rounded-lg max-w-[80%]">
-          <p class="text-sm">Can you help me design the database schema for the new module?</p>
+      <!-- Messages -->
+      <ng-container *ngIf="activeThreadMessages.length > 0">
+        <div *ngFor="let msg of activeThreadMessages"
+             class="flex"
+             [ngClass]="{'justify-end': msg.role === 'user', 'justify-start': msg.role === 'assistant' || msg.role === 'system'}">
+          <div class="p-3 rounded-lg max-w-[80%]"
+               [ngClass]="{'bg-blue-100': msg.role === 'user', 'bg-gray-100': msg.role === 'assistant' || msg.role === 'system'}">
+            <p class="text-sm">{{ msg.content }}</p>
+          </div>
         </div>
-      </div>
-      <div class="flex justify-start">
-        <div class="bg-gray-100 p-3 rounded-lg max-w-[80%]">
-          <p class="text-sm">Sure, I'd be happy to help. Let's start by identifying the core entities. Have you looked at the current PRDs?</p>
-        </div>
+      </ng-container>
+
+      <div *ngIf="activeThread && activeThreadMessages.length === 0" class="text-center text-sm text-gray-500 mt-10">
+        This is the beginning of the conversation.
       </div>
     </div>
 
     <!-- Message Input -->
     <div class="p-4 border-t border-gray-200 bg-white">
       <div class="flex space-x-2">
-        <textarea class="flex-1 border border-gray-300 rounded p-2 focus:outline-none focus:ring-2 focus:ring-blue-500" rows="2" placeholder="Type a message..."></textarea>
-        <button class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">Send</button>
+        <textarea class="flex-1 border border-gray-300 rounded p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  rows="2" placeholder="Type a message..."
+                  [(ngModel)]="newMessageContent"
+                  [disabled]="!activeThread"
+                  (keydown.enter)="$event.preventDefault(); sendMessage()">
+        </textarea>
+        <button class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
+                [disabled]="!activeThread || !newMessageContent.trim()"
+                (click)="sendMessage()">
+          Send
+        </button>
       </div>
     </div>
   </div>

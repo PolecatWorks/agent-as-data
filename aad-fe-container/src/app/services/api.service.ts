@@ -80,6 +80,21 @@ export interface GuardrailConfig {
   output_guardrails: OutputGuardrails;
 }
 
+export interface Thread {
+  id: string;
+  owner_id: string;
+  title: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Message {
+  id: string;
+  thread_id: string;
+  role: string;
+  content: string;
+  created_at: string;
+}
 
 
 export interface Agent {
@@ -236,6 +251,37 @@ export class ApiService {
   analyzeRefactor(): Observable<any> {
     return this.http.post(`${this.baseUrl}/agents/refactor/analyze`, {});
   }
+
+  // Workbench Threads APIs
+  getThreads(ownerId?: string): Observable<Thread[]> {
+    return this.http.post<Thread[]>(`${this.baseUrl}/threads`, {
+      owner_id: ownerId || this.ANONYMOUS_OWNER_ID,
+      pagination: { page: 0, size: 50 }
+    });
+  }
+
+  createThread(title: string, ownerId?: string): Observable<Thread> {
+    return this.http.post<Thread>(`${this.baseUrl}/threads/create`, {
+      title,
+      owner_id: ownerId || this.ANONYMOUS_OWNER_ID
+    });
+  }
+
+  deleteThread(id: string): Observable<any> {
+    return this.http.delete(`${this.baseUrl}/threads/${id}`);
+  }
+
+  getMessages(threadId: string): Observable<Message[]> {
+    return this.http.get<Message[]>(`${this.baseUrl}/threads/${threadId}/messages`);
+  }
+
+  createMessage(threadId: string, role: string, content: string): Observable<Message> {
+    return this.http.post<Message>(`${this.baseUrl}/threads/${threadId}/messages`, {
+      role,
+      content
+    });
+  }
+
   // Trait Contract APIs
   getTraits(): Observable<ListPages> {
     return this.http.get<ListPages>(`${this.baseUrl}/traits`);
