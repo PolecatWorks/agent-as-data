@@ -90,6 +90,7 @@ Agent-As-Data (AAD) is an enterprise-grade declarative platform and specificatio
 - **Top-Level Trait Definition Registry (`/traits-registry`)**: Dedicated workspace to inspect, define, and edit Trait specifications across Capability Requirements, Behavioral Invariants, Evaluation Criteria, and Mandatory Execution Guardrails.
 - **Testing Kit & SSE Workbench**: Interactive testing playground for running synchronous agents, streaming real-time SSE token events, and testing dynamic trait mapping overrides.
 - **Visual Diagnostics**: Embedded Mermaid network diagram visualizer, Refactoring & Compression lab, Knowledge SPO tuple inspector, and Remote Tool manager.
+- **Conversational Workbench**: Multiuser capabilities allowing users to maintain independent, isolated conversation threads driven by an active `userid`.
 
 
 ### 11. Probabilistic Agent Unit Testing & LLM-as-a-Judge Evaluation Engine

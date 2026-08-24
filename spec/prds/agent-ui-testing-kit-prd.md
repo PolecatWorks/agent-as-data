@@ -73,7 +73,13 @@ graph TD
 - **Mermaid D3 Network Architecture**: An interactive map rendering live declarative agent architectures, sub-agent delegation (`agent:`), utilized remote tools (`mcp:`), and deterministic skill executions (`skill:`).
 - **Clean Labeling & Hover States**: Version numbers, tool counts, and item descriptions are natively injected into node hover tooltips to avoid cluttering visual text labels.
 
-### 8. Robot Framework Integration Testing Suite (Ref: `sward-warden/integration-tests`)
+### 8. Workbench (Multiuser Conversational Threads)
+- **3-Pane View**:
+  - **Left Pane**: Threads list showing historical conversations (filtered by current active `userid`).
+  - **Middle Pane**: Conversational chat interface for the active thread.
+  - **Right Pane**: Direct content editing (files or context modified through conversation).
+
+### 9. Robot Framework Integration Testing Suite (Ref: `sward-warden/integration-tests`)
 - **Declarative User Journey Robot Tests**: `/integration-tests/tests/*.robot` test cases mapping 1-to-1 to all 9 user journeys in `user-journeys-spec.md`.
 - **Python Integration Libraries**: Custom Python helper modules (`AADRequests.py`, `TestSeed.py`) extending Robot Framework for authenticated REST/SSE requests, database seeding, and OCC state reset.
 - **Local Dev & Garden Test Runners**: `run-tests-local.sh` local pre-flight runner verifying backend (`http://localhost:8080`) and frontend (`http://localhost:4200`) before running `robot` suites, integrated into Kubernetes via `garden.yml` (`kind: Test`).

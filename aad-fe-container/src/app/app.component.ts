@@ -32,7 +32,8 @@ export class AppComponent {
     { path: '/interactive-testing', icon: 'bug_report', label: 'Interactive Testing Studio' },
     { path: '/network-visualizer', icon: 'account_tree', label: 'Network Graph Visualizer' },
     { path: '/refactoring-lab', icon: 'build_circle', label: 'Refactoring & Compression Lab' },
-    { path: '/knowledge-inspector', icon: 'library_books', label: 'Knowledge & SPO Tuple Inspector' }
+    { path: '/knowledge-inspector', icon: 'library_books', label: 'Knowledge & SPO Tuple Inspector' },
+    { path: '/workbench', icon: 'work', label: 'Workbench' }
   ];
 
 }

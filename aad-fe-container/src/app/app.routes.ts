@@ -17,5 +17,6 @@ export const routes: Routes = [
   { path: 'knowledge-inspector', loadComponent: () => import('./components/knowledge-inspector/knowledge-inspector.component').then(m => m.KnowledgeInspectorComponent) },
   { path: 'tools', loadComponent: () => import('./components/tool-manager/tool-manager.component').then(m => m.ToolManagerComponent) },
   { path: 'tools/:id', loadComponent: () => import('./components/tool-manager/tool-manager.component').then(m => m.ToolManagerComponent) },
+  { path: 'workbench', loadComponent: () => import('./components/workbench/workbench.component').then(m => m.WorkbenchComponent) },
 ];
 
