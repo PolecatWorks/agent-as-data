@@ -13,6 +13,7 @@ use crate::tokio_tools::ThreadRuntime;
 pub struct AppConfig {
     pub database: DatabaseConfig,
     pub webservice: WebServiceConfig,
+    pub llm: LlmConfig,
     #[serde(serialize_with = "serialize_hams")]
     pub hams: HamsConfig,
     #[serde(default)]
@@ -26,6 +27,12 @@ where
     S: serde::Serializer,
 {
     s.serialize_str(&format!("{:?}", hams))
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct LlmConfig {
+    pub ollama_url: String,
+    pub model: String,
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
@@ -62,7 +69,14 @@ impl AppConfig {
         if self.webservice.address.trim().is_empty() {
             return Err("Webservice address cannot be empty".to_string());
         }
+        if self.llm.ollama_url.trim().is_empty() {
+            return Err("LLM Ollama URL cannot be empty".to_string());
+        }
+        if self.llm.model.trim().is_empty() {
+            return Err("LLM Model cannot be empty".to_string());
+        }
         Url::parse(&self.database.url).map_err(|e| format!("Invalid Database URL format: {}", e))?;
+        Url::parse(&self.llm.ollama_url).map_err(|e| format!("Invalid LLM Ollama URL format: {}", e))?;
         Ok(())
     }
 }
@@ -80,6 +94,10 @@ mod tests {
             },
             webservice: WebServiceConfig {
                 address: "0.0.0.0:8080".to_string(),
+            },
+            llm: LlmConfig {
+                ollama_url: "http://localhost:11434".to_string(),
+                model: "llama3".to_string(),
             },
             hams: ::hams::hams::config::HamsConfig::default(),
             runtime: ThreadRuntime::default(),
@@ -101,6 +119,35 @@ mod tests {
             },
             webservice: WebServiceConfig {
                 address: "0.0.0.0:8080".to_string(),
+            },
+            llm: LlmConfig {
+                ollama_url: "http://localhost:11434".to_string(),
+                model: "llama3".to_string(),
+            },
+            hams: ::hams::hams::config::HamsConfig::default(),
+            runtime: ThreadRuntime::default(),
+            debugging: DebuggingConfig {
+                environment: "development".to_string(),
+                log_level: "info".to_string(),
+            },
+        };
+
+        assert!(config.validate().is_err());
+    }
+
+    #[test]
+    fn test_config_validation_empty_llm_url() {
+        let config = AppConfig {
+            database: DatabaseConfig {
+                url: "postgres://postgres:mysecretpassword@localhost:5432/aaddb".to_string(),
+                max_connections: 5,
+            },
+            webservice: WebServiceConfig {
+                address: "0.0.0.0:8080".to_string(),
+            },
+            llm: LlmConfig {
+                ollama_url: "".to_string(),
+                model: "llama3".to_string(),
             },
             hams: ::hams::hams::config::HamsConfig::default(),
             runtime: ThreadRuntime::default(),

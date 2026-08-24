@@ -5,6 +5,10 @@ database:
 webservice:
   address: "0.0.0.0:8080"
 
+llm:
+  ollama_url: "http://localhost:11434"
+  model: "llama3"
+
 hams:
   name: "aad-be"
   version: "0.1.0"
