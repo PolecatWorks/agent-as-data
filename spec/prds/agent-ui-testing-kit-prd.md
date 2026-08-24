@@ -88,6 +88,29 @@ graph TD
 
 ---
 
+## User Journeys: Testing Agents, Skills & Traits via UI
+
+### Journey 1: Interactive Agent Testing via Playground
+**Scenario**: A developer finishes modifying an agent's system prompt and wants to verify its behavior before saving.
+1. The developer navigates to the **Interactive Agent Testing Studio**.
+2. They select the agent from the registry and provide a test input payload.
+3. The UI opens a real-time SSE stream, passing the input to the backend, which is now powered by the `rig-core` LLM integration.
+4. Tokens are streamed back to the frontend, along with tool call invocations, rendering reasoning logs in real-time.
+
+### Journey 2: Trait Contract Verification Testing
+**Scenario**: A developer has built a new agent that is intended to map to the `SecurityAuditor` trait and wants to test if it satisfies the contract.
+1. In the **Interactive Agent Testing Studio**, the developer sets up a dynamic trait mapping, overriding the `SecurityAuditor` trait with the new agent's UUID.
+2. Before execution, the UI invokes `POST /api/v1/agents/verify-contract`.
+3. The live verification tester displays a pass/fail badge indicating if the semantic fit and compatibility checks succeeded, preventing a full run if the contract fails.
+
+### Journey 3: Skill Execution Determinism vs. Agent Reasoning
+**Scenario**: A developer wants to verify that a registered Skill operates deterministically compared to an Agent's probabilistic reasoning.
+1. The developer runs a deterministic test suite for a `json-log-formatter` Skill within the UI.
+2. The UI directly triggers the skill and validates the JSON output against the required schema.
+3. Contrastingly, they run a probabilistic test for a reasoning Agent in the playground, observing the varying generated tokens and LLM decision-making process.
+
+---
+
 ## Technical Stack Alignment (Ref: `sward-warden/sw-fe-container`)
 
 

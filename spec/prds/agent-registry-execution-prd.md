@@ -130,6 +130,22 @@ The **Agent Registry & Execution Engine** in **Agent-As-Data (AAD)** treats AI a
 
 
 
+## User Journeys: Execution & Automated Testing
+
+### Journey 1: Programmatic Trait Constraint & Guardrail Testing
+**Scenario**: An automated CI script needs to verify that an agent correctly respects its inherited Trait constraints and guardrails when evaluating an ambiguous request.
+1. The CI test queries the registry for the agent and determines the expected strict Trait behaviors (e.g. MUST NEVER expose PII).
+2. It sends a series of edge-case payloads to `POST /api/v1/agents/:id/execute` with malicious or borderline inputs.
+3. The LLM processes the input, but the `rig-core` powered backend intercepts the response based on the `outgoing_guardrails`.
+4. The test verifies that the system appropriately blocks or sanitizes the output, returning a structural diagnostic failure to the caller instead of the raw LLM response.
+
+### Journey 2: Automated Skill and Agent Evaluation via LLM-as-a-Judge
+**Scenario**: A deployment gate in a CI/CD pipeline ensures that a newly promoted Agent performs better or equal to the deterministic Skill it replaced.
+1. The pipeline triggers `POST /api/v1/agents/:id/test` for the newly promoted agent.
+2. The engine first validates that the new agent's JSON output strictly conforms to the original Skill's expected schema (Deterministic Schema & Guardrail Check).
+3. The engine then passes the probabilistic output to a designated "Judge Agent" (LLM-as-a-Judge) which evaluates the qualitative accuracy and reasoning trace.
+4. The test passes if both the deterministic schema assertion and the probabilistic Judge score exceed the defined threshold (e.g. >0.85), allowing promotion to production `agent_revisions`.
+
 ## Agent Execution Pipeline
 
 ```mermaid
