@@ -34,11 +34,15 @@ pub async fn create_thread(
     State(pool): State<PgPool>,
     Json(payload): Json<CreateThreadRequest>,
 ) -> Result<(StatusCode, Json<Thread>), (StatusCode, String)> {
+    let tags_json = payload.tags.map(|t| sqlx::types::Json(t));
+
     let thread = sqlx::query_as::<_, Thread>(
-        "INSERT INTO threads (owner_id, title) VALUES ($1, $2) RETURNING *"
+        "INSERT INTO threads (owner_id, title, description, tags) VALUES ($1, $2, $3, $4) RETURNING *"
     )
     .bind(payload.owner_id)
     .bind(&payload.title)
+    .bind(&payload.description)
+    .bind(tags_json)
     .fetch_one(&pool)
     .await
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to create thread: {}", e)))?;
@@ -68,10 +72,14 @@ pub async fn update_thread(
     Path(id): Path<Uuid>,
     Json(payload): Json<UpdateThreadRequest>,
 ) -> Result<Json<Thread>, (StatusCode, String)> {
+    let tags_json = payload.tags.map(|t| sqlx::types::Json(t));
+
     let thread = sqlx::query_as::<_, Thread>(
-        "UPDATE threads SET title = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING *"
+        "UPDATE threads SET title = $1, description = $2, tags = $3, updated_at = CURRENT_TIMESTAMP WHERE id = $4 RETURNING *"
     )
     .bind(&payload.title)
+    .bind(&payload.description)
+    .bind(tags_json)
     .bind(id)
     .fetch_optional(&pool)
     .await

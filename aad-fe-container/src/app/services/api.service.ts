@@ -82,10 +82,12 @@ export interface GuardrailConfig {
 
 export interface Thread {
   id: string;
-  owner_id: string;
   title: string;
-  created_at: string;
-  updated_at: string;
+  owner_id: string;
+  description?: string;
+  tags?: string[];
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface Message {
@@ -260,16 +262,20 @@ export class ApiService {
     });
   }
 
-  createThread(title: string, ownerId?: string): Observable<Thread> {
+  createThread(title: string, ownerId?: string, description?: string, tags?: string[]): Observable<Thread> {
     return this.http.post<Thread>(`${this.baseUrl}/threads/create`, {
       title,
-      owner_id: ownerId || this.ANONYMOUS_OWNER_ID
+      owner_id: ownerId || this.ANONYMOUS_OWNER_ID,
+      description,
+      tags
     });
   }
 
-  updateThread(id: string, title: string): Observable<Thread> {
+  updateThread(id: string, title: string, description?: string, tags?: string[]): Observable<Thread> {
     return this.http.put<Thread>(`${this.baseUrl}/threads/${id}`, {
-      title
+      title,
+      description,
+      tags
     });
   }
 
