@@ -97,3 +97,53 @@ class AADRequests:
         return resp.json()
 
 
+
+    def ingest_knowledge(self, payload):
+        resp = requests.post(f"{self.base_url}/api/v1/knowledge", json=payload, timeout=2)
+        resp.raise_for_status()
+        return resp.json()
+
+    def search_knowledge(self, payload):
+        resp = requests.post(f"{self.base_url}/api/v1/knowledge/search", json=payload, timeout=2)
+        resp.raise_for_status()
+        return resp.json()
+
+    def traverse_graph(self, payload):
+        resp = requests.post(f"{self.base_url}/api/v1/knowledge/graph/traverse", json=payload, timeout=2)
+        resp.raise_for_status()
+        return resp.json()
+
+    def compile_agent(self, payload):
+        resp = requests.post(f"{self.base_url}/api/v1/agents/compile", json=payload, timeout=2)
+        resp.raise_for_status()
+        return resp.json()
+
+    def search_and_execute(self, payload):
+        resp = requests.post(f"{self.base_url}/api/v1/agents/search-and-execute", json=payload, timeout=2)
+        resp.raise_for_status()
+        return resp.json()
+
+    def search_agents(self, payload):
+        resp = requests.post(f"{self.base_url}/api/v1/agents/search", json=payload, timeout=2)
+        resp.raise_for_status()
+        return resp.json()
+
+    def promote_skill(self, skill_id):
+        resp = requests.post(f"{self.base_url}/api/v1/skills/{skill_id}/promote", timeout=2)
+        resp.raise_for_status()
+        return resp.json()
+
+    def delete_skill(self, skill_id):
+        resp = requests.delete(f"{self.base_url}/api/v1/skills/{skill_id}", timeout=2)
+        resp.raise_for_status()
+        return resp.json()
+
+    def analyze_refactor(self, payload):
+        resp = requests.post(f"{self.base_url}/api/v1/agents/refactor/analyze", json=payload, timeout=2)
+        resp.raise_for_status()
+        return resp.json()
+
+    def verify_contract(self, payload):
+        resp = requests.post(f"{self.base_url}/api/v1/agents/verify-contract", json=payload, timeout=2)
+        resp.raise_for_status()
+        return resp.json()
