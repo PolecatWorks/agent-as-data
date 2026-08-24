@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
@@ -12,6 +12,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatTabsModule } from '@angular/material/tabs';
+import { MatMenuModule } from '@angular/material/menu';
 import { ApiService, TraitContract } from '../../services/api.service';
 import { GuardrailsEditorComponent } from '../guardrails-editor/guardrails-editor.component';
 import { forkJoin } from 'rxjs';
@@ -32,14 +33,28 @@ import { forkJoin } from 'rxjs';
     MatTabsModule,
     MatSnackBarModule,
     GuardrailsEditorComponent,
-    MatFormFieldModule
+    MatFormFieldModule,
+    MatMenuModule,
+    RouterModule
   ],
 
   templateUrl: './traits-registry.component.html',
   styleUrl: './traits-registry.component.scss'
 })
 export class TraitsRegistryComponent implements OnInit {
-  
+  isSidebarCollapsed = false;
+  menuItems = [
+    { path: '/traits-registry', icon: 'verified', label: 'Trait Contracts' },
+    { path: '/tools', icon: 'dns', label: 'Tools' },
+    { path: '/skills-registry', icon: 'extension', label: 'Skills' },
+    { path: '/agents', icon: 'smart_toy', label: 'Agents' },
+    { path: '/knowledge', icon: 'hub', label: 'Knowledge Base' },
+    { path: '/workbench', icon: 'dashboard_customize', label: 'Workbench' },
+  ];
+
+  toggleSidebar(): void {
+    this.isSidebarCollapsed = !this.isSidebarCollapsed;
+  }
 
   traitContracts: TraitContract[] = [
     {
