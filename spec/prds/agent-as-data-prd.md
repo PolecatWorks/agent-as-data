@@ -87,7 +87,7 @@ Agent-As-Data (AAD) is an enterprise-grade declarative platform and specificatio
 
 ### 10. Agent Development UI & Testing Kit Container (`aad-fe-container`)
 - **Interactive Development Studio**: Web dashboard container built with Angular 18+ (Standalone Components, Angular Material, RxJS, and TailwindCSS) following the `sward-warden/sw-fe-container` architecture.
-- **Top-Level Trait Definition Registry (`/traits-registry`)**: Dedicated workspace to inspect, define, and edit Trait specifications across Capability Requirements, Behavioral Invariants, Evaluation Criteria, and Mandatory Execution Guardrails.
+- **Top-Level Trait Definition Registry (`/traits`)**: Dedicated workspace to inspect, define, and edit Trait specifications across Capability Requirements, Behavioral Invariants, Evaluation Criteria, and Mandatory Execution Guardrails.
 - **Testing Kit & SSE Workbench**: Interactive testing playground for running synchronous agents, streaming real-time SSE token events, and testing dynamic trait mapping overrides.
 - **Visual Diagnostics**: Embedded Mermaid network diagram visualizer, Refactoring & Compression lab, Knowledge SPO tuple inspector, and Remote Tool manager.
 - **Conversational Workbench**: Multiuser capabilities allowing users to maintain independent, isolated conversation threads driven by an active `userid`.
@@ -164,8 +164,8 @@ Agent-As-Data (AAD) is an enterprise-grade declarative platform and specificatio
 - `id` (UUID): Unique agent identifier.
 - `name` (String), `description` (String), `tags` (TEXT[]), `version` (String - SemVer e.g., '1.0.0', updated minor component on save).
 - **Traits & Abstraction**:
-  - `implements_traits` (TEXT[]):
-    - `uses_traits` (TEXT[]): List of abstract trait interfaces this agent satisfies (e.g., `["SecurityAuditor", "CodeReviewer"]`).
+  - `implements_traits` (TEXT[]): List of abstract trait contracts this agent satisfies/implements (e.g., `["SecurityAuditor", "CodeReviewer"]`).
+  - `uses_traits` (TEXT[]): List of abstract trait interfaces this agent depends on or delegates to — it references the trait contract without directly implementing it.
 - **Access Control & Ownership**:
   - `owner_id` (UUID): Owner user or service account.
   - `read_groups` (TEXT[]): Groups with discovery and read permissions.
@@ -198,7 +198,13 @@ The database persists connections to remote tools and caches their exported capa
 - `id` (UUID), `agent_id` (UUID), `agent_version` (String - SemVer), `execution_version` (Integer - OCC version counter), `status` (Enum: `pending`, `running`, `completed`, `failed`), `working_memory` (JSONB - Persistent working memory snapshot), `request_payload` (JSONB), `response_payload` (JSONB), `error_message` (Text), `started_at` & `completed_at` (Timestamps).
 
 ### Skill Entity (`skills`)
-- `id` (UUID), `name` (String), `description` (String), `tags` (TEXT[]), `version` (String - SemVer, updated minor component on save), `owner_id` (UUID), `read_groups` (TEXT[]), `write_groups` (TEXT[]), `input_schema` (JSONB), `output_schema` (JSONB), `implementation` (JSONB), `created_at` & `updated_at` (Timestamps).
+- `id` (UUID), `name` (String), `description` (String), `tags` (TEXT[]), `version` (String - SemVer, updated minor component on save), `owner_id` (UUID).
+- `implements_traits` (TEXT[]): Trait contracts this skill satisfies/implements.
+- `uses_traits` (TEXT[]): Trait interfaces this skill depends on or delegates to.
+- `attached_skills` (UUID[]): Sub-skill dependencies.
+- `attached_tools` (UUID[]): MCP tool dependencies.
+- `input_schema` (JSONB), `output_schema` (JSONB), `implementation` (JSONB).
+- `created_at` & `updated_at` (Timestamps).
 
 
 

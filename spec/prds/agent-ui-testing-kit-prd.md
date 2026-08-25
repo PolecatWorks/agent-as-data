@@ -13,14 +13,15 @@ Following `sward-warden`, the frontend is containerized in `aad-fe-container`:
 
 ```mermaid
 graph TD
-    subgraph Frontend ["aad-fe-container (Angular 18 + TailwindCSS)"]
-        RegistryView["1. Agent Registry & Builder"]
-        TestingKit["2. Interactive Agent Testing Studio"]
-        NetworkGraph["3. Mermaid Delegation Graph Visualizer"]
-        RefactorStudio["4. Agent Refactoring & Compression Lab"]
-        KnowledgeLab["5. Knowledge Base Lab & SPO Triples"]
-        ToolManager["6. Remote Tool Manager"]
-        Visualizer["7. Interactive Graph Visualizer"]
+    subgraph Frontend ["aad-fe-container (Angular 18 + Material + TailwindCSS)"]
+        TraitRegistry["1. Trait Contracts Registry (/traits)"]
+        AgentRegistry["2. Agent Registry & Builder (/agents)"]
+        SkillsRegistry["3. Skills Registry (/skills)"]
+        TestingKit["4. Interactive Agent Testing Studio"]
+        NetworkGraph["5. Mermaid Delegation Graph Visualizer"]
+        RefactorStudio["6. Agent Refactoring & Compression Lab"]
+        KnowledgeLab["7. Knowledge Base Lab & SPO Triples"]
+        ToolManager["8. Remote Tool Manager"]
     end
 
     subgraph Backend ["aad-be-container (Rust Microservice)"]
@@ -28,12 +29,12 @@ graph TD
         SSE["SSE Token Stream"]
     end
 
-    RegistryView --> REST
+    TraitRegistry --> REST
+    AgentRegistry --> REST
+    SkillsRegistry --> REST
     TestingKit <-->|SSE Token Stream| SSE
     NetworkGraph --> REST
-    TestingStudio --> REST
     ToolManager --> REST
-    Visualizer --> REST
 ```
 
 ---
@@ -42,20 +43,34 @@ graph TD
 
 **UI Consistency Requirement:** For Traits, Tools, Skills, and Agents edit views, the fields `Name`, `Owner`, `Description`, and `Tags` must be presented as the top lines on the view with consistent labels (`Name`, `Owner`, `Description`, `Tags`).
 
-### 1. Declarative Agent Registry & Builder Module
-- **Visual Agent Editor**: Form fields for `name`, `description`, `tags`, `implements_traits`, `model`, `agent_definition` (system prompt), `tools`, `available_skills`, and `available_agents`.
-  - **Active Trait Filtering & Hover Descriptions**: Search filter for active implemented traits (`implements_traits`) and tooltips displaying contract descriptions on hover.
+### 1. Declarative Agent Registry & Builder Module (`/agents`)
+- **Visual Agent Editor**: Form fields for `name`, `description`, `tags`, `implements_traits`, `uses_traits`, `model`, `agent_definition` (system prompt), `tools`, `available_skills`, and `available_agents`.
+  - **`implements_traits`**: Traits this agent actively implements/satisfies.
+  - **`uses_traits`**: Traits this agent depends on or delegates to (without implementing them).
+  - **Active Trait Filtering & Hover Descriptions**: Search filter for active implemented traits and tooltips displaying contract descriptions on hover.
+- **Skill & Tool Count on Cards**: Agent sidebar cards display `N Skills` and `N Tools` counts to provide at-a-glance dependency insight.
 - **Guardrail Configurator**: Visual JSON/rule builder for `incoming_guardrails` and `outgoing_guardrails`.
 - **RBAC Group Assignment**: Interface to select `owner_id`, `read_groups`, `write_groups`, and `execute_groups`.
 - **Version Lineage Viewer**: Inspect historical snapshots from `agent_revisions` with visual side-by-side diffing.
 
-### 2. Interactive Agent Testing Studio (Playground)
+### 2. Skills Registry Module (`/skills`)
+- **Visual Skill Editor**: Form fields for `name`, `description`, `tags`, `definition` (instructions), `implements_traits`, `uses_traits`, `attached_tools`, and `attached_skills`.
+- **Skill & Tool Count on Cards**: Skill sidebar cards mirror the agent card layout — displaying `N Skills` and `N Tools` counts for at-a-glance dependency insight (consistent UI parity with the Agent Registry).
+- **Promote to Agent**: One-click `POST /api/v1/skills/:id/promote` converts a skill into a full declarative agent.
+- **Schemas & Mappings Tab**: Dedicated sub-tab for editing `input_schema`, `output_schema`, and `implementation` (JSONB) configuration.
+
+### 3. Trait Contracts Registry (`/traits`)
+- **Trait Definition Editor**: CRUD workspace for `name`, `description`, `owner_id`, `capability_requirements`, `behavioral_invariants`, `evaluation_criteria`, `tags`, and `guardrails`.
+- **Idempotent Create**: Trait creation uses upsert semantics (`ON CONFLICT (name) DO UPDATE`) so duplicate names update in place rather than failing with a constraint error.
+- **Sync with Backend**: Trait editor actions (create, update, delete) are verified by integration tests (`test_journey_11_trait_editor_ui.robot`) to confirm UI and backend remain in sync.
+
+### 4. Interactive Agent Testing Studio (Playground)
 - **Live Execution Workbench**: Test synchronous execution (`POST /api/v1/agents/:id/execute`) and prompt discovery execution (`search-and-execute`).
 - **Real-Time SSE Token Streaming**: Renders streaming tokens, reasoning logs, and tool call invocations in real-time.
 - **Dynamic Trait Mapping Overrides**: UI controls to override `trait_mappings` during test executions (e.g. mapping `trait:SecurityAuditor` to a custom test agent UUID).
 - **Contract Verification Tester**: Live badge showing pass/fail status of `verify-contract` semantic fit and trait compatibility checks.
 
-### 3. Agent Delegation Network Visualizer
+### 5. Agent Delegation Network Visualizer
 - **Interactive Mermaid / Canvas Graph**: Visualizes agent hierarchies, sub-agent delegation links (`available_agents`), and skill dependencies (`available_skills`).
 - **Live Filtering**: Filter visual graph by trait interface, ownership group, or tag.
 
@@ -84,8 +99,10 @@ graph TD
     - **Editor Pane (Right)**: Direct content editing and review area (e.g., code diffs, files, or context modified through conversation).
 
 ### 9. Robot Framework Integration Testing Suite (Ref: `sward-warden/integration-tests`)
-- **Declarative User Journey Robot Tests**: `/integration-tests/tests/*.robot` test cases mapping 1-to-1 to all 9 user journeys in `user-journeys-spec.md`.
-- **Python Integration Libraries**: Custom Python helper modules (`AADRequests.py`, `TestSeed.py`) extending Robot Framework for authenticated REST/SSE requests, database seeding, and OCC state reset.
+- **Declarative User Journey Robot Tests**: `/integration-tests/tests/*.robot` test cases mapping 1-to-1 to all 12 user journeys, covering 24 tests total (all currently passing).
+- **Python Integration Libraries**: Custom Python helper modules (`AADRequests.py`) extending Robot Framework for authenticated REST requests, database seeding, and state verification.
+- **Idempotent Seed Test**: `test_seed_exemplar_data.robot` seeds the database with exemplar data using upsert semantics — safe to re-run at any time without constraint conflicts.
+- **UI Journey Tests (Playwright/Browser Library)**: `test_journey_11_trait_editor_ui.robot` drives a headless Chromium instance to verify the Trait Editor UI lifecycle (create, persist, delete) in sync with the backend REST API.
 - **Local Dev & Garden Test Runners**: `run-tests-local.sh` local pre-flight runner verifying backend (`http://localhost:8080`) and frontend (`http://localhost:4200`) before running `robot` suites, integrated into Kubernetes via `garden.yml` (`kind: Test`).
 
 ---
