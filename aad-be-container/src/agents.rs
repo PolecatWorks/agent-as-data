@@ -27,7 +27,7 @@ pub async fn create_agent(
     // 1. Insert Agent
     sqlx::query(
         r#"
-        INSERT INTO agents (id, name, description, tags, implements_traits, current_version, owner_id, read_groups, write_groups, execute_groups, agent_definition, model, judge_threshold, attached_skills, attached_tools, attached_agents, incoming_guardrails, outgoing_guardrails)
+        INSERT INTO agents (id, name, description, tags, implements_traits, uses_traits, current_version, owner_id, read_groups, write_groups, execute_groups, agent_definition, model, judge_threshold, attached_skills, attached_tools, attached_agents, incoming_guardrails, outgoing_guardrails)
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
         "#,
     )
@@ -36,6 +36,7 @@ pub async fn create_agent(
     .bind(&payload.description)
     .bind(&payload.tags)
     .bind(&payload.implements_traits)
+    .bind(&payload.uses_traits)
     .bind(&current_version)
     .bind(payload.owner_id)
     .bind(&payload.read_groups)
@@ -114,6 +115,7 @@ pub async fn update_agent(
         .bind(&payload.description)
         .bind(&payload.tags)
         .bind(&payload.implements_traits)
+    .bind(&payload.uses_traits)
         .bind(&payload.read_groups)
         .bind(&payload.write_groups)
         .bind(&payload.execute_groups)
@@ -147,7 +149,7 @@ pub async fn get_agent(
 ) -> Result<Json<Agent>, (StatusCode, String)> {
     let row = sqlx::query(
         r#"
-        SELECT id, name, description, tags, implements_traits, current_version, owner_id, read_groups, write_groups, execute_groups, agent_definition, model, judge_threshold, attached_skills, attached_tools, attached_agents, incoming_guardrails, outgoing_guardrails, guardrail_config, archived_at
+        SELECT id, name, description, tags, implements_traits, uses_traits, current_version, owner_id, read_groups, write_groups, execute_groups, agent_definition, model, judge_threshold, attached_skills, attached_tools, attached_agents, incoming_guardrails, outgoing_guardrails, guardrail_config, archived_at
         FROM agents
         WHERE id = $1
         "#
@@ -160,6 +162,7 @@ pub async fn get_agent(
     if let Some(r) = row {
         let tags: Vec<String> = r.get("tags");
         let implements_traits: Vec<String> = r.get("implements_traits");
+        let uses_traits: Vec<String> = r.try_get("uses_traits").unwrap_or_default();
         let read_groups: Vec<String> = r.get("read_groups");
         let write_groups: Vec<String> = r.get("write_groups");
         let execute_groups: Vec<String> = r.get("execute_groups");
@@ -187,6 +190,7 @@ pub async fn get_agent(
             description: r.get("description"),
             tags,
             implements_traits,
+            uses_traits,
             attached_tools,
             attached_agents,
             attached_skills,
@@ -389,7 +393,7 @@ pub async fn search_agents(
 
     let rows = sqlx::query(
         r#"
-        SELECT id, name, description, current_version, implements_traits, tags
+        SELECT id, name, description, current_version, implements_traits, uses_traits, tags
         FROM agents
         WHERE (name ILIKE $1 OR description ILIKE $1) AND archived_at IS NULL
         LIMIT $2
@@ -409,6 +413,7 @@ pub async fn search_agents(
             description: r.get("description"),
             current_version: r.get("current_version"),
             implements_traits: r.get("implements_traits"),
+                uses_traits: r.try_get("uses_traits").unwrap_or_default(),
             tags: r.get("tags"),
             score: 0.98,
         })
@@ -430,7 +435,7 @@ pub async fn create_skill(
 
     sqlx::query(
         r#"
-        INSERT INTO skills (id, name, description, definition, tags, current_version, owner_id, attached_skills, attached_tools, input_schema, output_schema, implementation, implements_traits)
+        INSERT INTO skills (id, name, description, definition, tags, current_version, owner_id, attached_skills, attached_tools, input_schema, output_schema, implementation, implements_traits, uses_traits)
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
         "#,
     )
@@ -447,6 +452,7 @@ pub async fn create_skill(
     .bind(output_schema)
     .bind(implementation)
     .bind(&payload.implements_traits)
+    .bind(&payload.uses_traits)
     .execute(&pool)
     .await
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Skill DB Error: {}", e)))?;
@@ -476,6 +482,7 @@ pub async fn promote_skill(
     let description: String = skill_row.get("description");
     let owner_id: Uuid = skill_row.get("owner_id");
     let implements_traits: Vec<String> = skill_row.get("implements_traits");
+    let uses_traits: Vec<String> = skill_row.try_get("uses_traits").unwrap_or_default();
 
     let agent_id = Uuid::new_v4();
     let agent_definition = serde_json::json!({
@@ -485,7 +492,7 @@ pub async fn promote_skill(
 
     sqlx::query(
         r#"
-        INSERT INTO agents (id, name, description, current_version, owner_id, agent_definition, implements_traits)
+        INSERT INTO agents (id, name, description, current_version, owner_id, agent_definition, implements_traits, uses_traits)
         VALUES ($1, $2, $3, '1.0.0', $4, $5, $6)
         "#,
     )
@@ -495,6 +502,7 @@ pub async fn promote_skill(
     .bind(owner_id)
     .bind(&agent_definition)
     .bind(&implements_traits)
+    .bind(&uses_traits)
     .execute(&pool)
     .await
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Promote Error: {}", e)))?;
@@ -507,6 +515,7 @@ pub async fn promote_skill(
             description,
             tags: vec![],
             implements_traits,
+            uses_traits,
             attached_tools: vec![],
             attached_agents: vec![],
             attached_skills: vec![],
@@ -653,7 +662,7 @@ pub async fn list_skills(
     State(pool): State<PgPool>,
 ) -> Result<Json<Vec<Skill>>, (StatusCode, String)> {
     let skills = sqlx::query_as::<_, Skill>(
-        "SELECT id, name, description, definition, tags, current_version, owner_id, attached_skills, attached_tools, input_schema, output_schema, implementation, implements_traits FROM skills ORDER BY created_at DESC"
+        "SELECT id, name, description, definition, tags, current_version, owner_id, attached_skills, attached_tools, input_schema, output_schema, implementation, implements_traits, uses_traits FROM skills ORDER BY created_at DESC"
     )
     .fetch_all(&pool)
     .await
@@ -666,7 +675,7 @@ pub async fn get_skill(
     Path(id): Path<Uuid>,
 ) -> Result<Json<Skill>, (StatusCode, String)> {
     let skill = sqlx::query_as::<_, Skill>(
-        "SELECT id, name, description, definition, tags, current_version, owner_id, attached_skills, attached_tools, input_schema, output_schema, implementation, implements_traits FROM skills WHERE id = $1"
+        "SELECT id, name, description, definition, tags, current_version, owner_id, attached_skills, attached_tools, input_schema, output_schema, implementation, implements_traits, uses_traits FROM skills WHERE id = $1"
     )
     .bind(id)
     .fetch_optional(&pool)
@@ -704,6 +713,7 @@ pub async fn update_skill(
     .bind(output_schema)
     .bind(implementation)
     .bind(&payload.implements_traits)
+    .bind(&payload.uses_traits)
     .bind(id)
     .execute(&pool)
     .await
