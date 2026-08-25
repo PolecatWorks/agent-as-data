@@ -105,6 +105,7 @@ export interface Agent {
   description: string;
   tags: string[];
   implements_traits: string[];
+  uses_traits: string[];
   attached_tools?: string[];
   attached_agents?: string[];
   attached_skills?: string[];
@@ -151,6 +152,7 @@ export interface Skill {
   definition: string;
   tags: string[];
   implements_traits?: string[];
+  uses_traits?: string[];
   current_version: string;
   attached_skills?: string[];
   attached_tools?: string[];

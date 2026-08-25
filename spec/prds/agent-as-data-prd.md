@@ -164,7 +164,8 @@ Agent-As-Data (AAD) is an enterprise-grade declarative platform and specificatio
 - `id` (UUID): Unique agent identifier.
 - `name` (String), `description` (String), `tags` (TEXT[]), `version` (String - SemVer e.g., '1.0.0', updated minor component on save).
 - **Traits & Abstraction**:
-  - `implements_traits` (TEXT[]): List of abstract trait interfaces this agent satisfies (e.g., `["SecurityAuditor", "CodeReviewer"]`).
+  - `implements_traits` (TEXT[]):
+    - `uses_traits` (TEXT[]): List of abstract trait interfaces this agent satisfies (e.g., `["SecurityAuditor", "CodeReviewer"]`).
 - **Access Control & Ownership**:
   - `owner_id` (UUID): Owner user or service account.
   - `read_groups` (TEXT[]): Groups with discovery and read permissions.

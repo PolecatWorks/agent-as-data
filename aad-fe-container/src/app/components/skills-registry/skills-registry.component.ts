@@ -71,6 +71,7 @@ export class SkillsRegistryComponent implements OnInit {
     definition: '',
     tags: [],
     implements_traits: [],
+    uses_traits: [],
     attached_skills: [],
     attached_tools: [],
     input_schema: {},
@@ -170,7 +171,8 @@ export class SkillsRegistryComponent implements OnInit {
       ...skill,
       attached_skills: skill.attached_skills ? [...skill.attached_skills] : [],
       attached_tools: skill.attached_tools ? [...skill.attached_tools] : [],
-      implements_traits: skill.implements_traits ? [...skill.implements_traits] : []
+      implements_traits: skill.implements_traits ? [...skill.implements_traits] : [],
+      uses_traits: skill.uses_traits ? [...skill.uses_traits] : []
     };
     this.inputSchemaStr = JSON.stringify(skill.input_schema || {}, null, 2);
     this.outputSchemaStr = JSON.stringify(skill.output_schema || {}, null, 2);
@@ -189,6 +191,7 @@ export class SkillsRegistryComponent implements OnInit {
       definition: '',
       tags: [],
       implements_traits: [],
+    uses_traits: [],
       current_version: '1.0.0',
       attached_skills: [],
       attached_tools: [],

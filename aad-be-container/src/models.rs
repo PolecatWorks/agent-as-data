@@ -99,6 +99,8 @@ pub struct Agent {
     #[serde(default)]
     pub implements_traits: Vec<String>,
     #[serde(default)]
+    pub uses_traits: Vec<String>,
+    #[serde(default)]
     pub attached_tools: Vec<Uuid>,
     #[serde(default)]
     pub attached_agents: Vec<Uuid>,
@@ -165,6 +167,8 @@ pub struct AgentSearchResult {
     pub description: Option<String>,
     pub current_version: String,
     pub implements_traits: Vec<String>,
+    #[serde(default)]
+    pub uses_traits: Vec<String>,
     pub tags: Vec<String>,
     pub score: f64,
 }
@@ -182,6 +186,8 @@ pub struct Skill {
     pub current_version: String,
     #[serde(default)]
     pub implements_traits: Vec<String>,
+    #[serde(default)]
+    pub uses_traits: Vec<String>,
     #[serde(default)]
     pub attached_skills: Vec<Uuid>,
     #[serde(default)]
