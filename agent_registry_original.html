@@ -1,157 +1,71 @@
-<div class="h-full w-full flex flex-row bg-slate-50 overflow-hidden">
+<div class="container mx-auto p-6 space-y-6">
 
-  <!-- Left Sidebar -->
-  <div [ngClass]="isSidebarCollapsed ? 'w-16' : 'w-72'" class="h-full bg-white border-r border-slate-200 shadow-sm flex flex-col transition-all duration-300 z-10 shrink-0 overflow-hidden">
-    
-    <!-- Sidebar Header -->
-    <div class="p-4 border-b border-slate-100 flex items-center shrink-0 h-14" [ngClass]="isSidebarCollapsed ? 'justify-center px-0' : 'justify-between'">
-      <div class="flex items-center gap-2 overflow-hidden" *ngIf="!isSidebarCollapsed">
-        <div class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white font-bold shrink-0">
-          <mat-icon class="!w-5 !h-5 !text-xl">build</mat-icon>
-        </div>
-        <span class="font-black text-slate-800 text-lg whitespace-nowrap">AAD</span>
-      </div>
-      <button mat-icon-button (click)="toggleSidebar()" class="text-slate-400 hover:text-slate-700" [title]="isSidebarCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'">
-        <mat-icon>{{ isSidebarCollapsed ? 'chevron_right' : 'chevron_left' }}</mat-icon>
-      </button>
+  <!-- Header Banner -->
+  <div class="flex justify-between items-center bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+    <div class="space-y-1">
+      <h1 class="text-2xl font-black text-slate-900 m-0 flex items-center gap-2">
+        <mat-icon class="!w-8 !h-8 !text-3xl text-indigo-600">app_registration</mat-icon> Agents
+      </h1>
+      <p class="text-sm text-slate-500 m-0">
+        Browse declarative agent specifications, manage trait contracts, and build persona prompts
+      </p>
     </div>
-
-    <!-- Search -->
-    <div class="p-3 border-b border-slate-100 shrink-0" *ngIf="!isSidebarCollapsed">
-      <div class="relative">
-        <mat-icon class="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 !w-4 !h-4 !text-base">search</mat-icon>
-        <input type="text" placeholder="Search agents by name..."
-               class="w-full pl-9 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
-               [(ngModel)]="searchQuery" />
-      </div>
-    </div>
-
-    <!-- Agent List -->
-    <div class="flex-1 overflow-y-auto py-2">
-      <div *ngIf="getFilteredAgents().length === 0 && !isSidebarCollapsed" class="text-center py-8 text-slate-400 text-xs">
-        No matching agents found.
-      </div>
-      
-      <div class="space-y-2 px-2 pb-2">
-        @for (agent of getFilteredAgents(); track agent.id) {
-          <div class="group p-3 rounded-xl border transition-all cursor-pointer bg-white"
-               [ngClass]="selectedAgent?.id === agent.id ? 'border-indigo-500 shadow-sm ring-1 ring-indigo-500/20' : 'border-slate-200 hover:border-slate-300'"
-               (click)="selectAgent(agent)"
-               [matTooltip]="agent.name"
-               matTooltipPosition="right"
-               [matTooltipDisabled]="!isSidebarCollapsed">
-            
-            <!-- Expanded View -->
-            <div class="flex flex-col w-full" *ngIf="!isSidebarCollapsed">
-              <div class="flex justify-between items-start">
-                <div class="flex items-start gap-3 overflow-hidden flex-1">
-                  <mat-icon class="shrink-0 text-slate-400 mt-0.5"
-                            [ngClass]="{'text-indigo-600': selectedAgent?.id === agent.id}">
-                    smart_toy
-                  </mat-icon>
-                  <div class="flex-1 min-w-0">
-                    <h5 class="text-sm font-bold text-slate-900 m-0 truncate leading-tight mt-0.5">{{ agent.name }}</h5>
-                  </div>
-                </div>
-                
-                <div class="flex items-center gap-1 ml-2 shrink-0">
-                  <span class="px-2.5 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded-md">
-                    v{{ agent.current_version }}
-                  </span>
-                </div>
-              </div>
-
-              <!-- Description -->
-              <p *ngIf="agent.description" class="text-xs text-slate-500 m-0 mt-2 line-clamp-2 leading-relaxed">
-                {{ agent.description }}
-              </p>
-
-              <!-- Attached Items Summary -->
-              <div class="flex gap-4 mt-2">
-                <span class="text-[10px] font-bold text-slate-400 flex items-center gap-1">
-                  <mat-icon class="!w-3 !h-3 !text-[12px] leading-3 text-indigo-400">extension</mat-icon>
-                  {{ agent.attached_skills?.length || 0 }} Skills
-                </span>
-                <span class="text-[10px] font-bold text-slate-400 flex items-center gap-1">
-                  <mat-icon class="!w-3 !h-3 !text-[12px] leading-3 text-blue-400">dns</mat-icon>
-                  {{ agent.attached_tools?.length || 0 }} Tools
-                </span>
-              </div>
-
-              <!-- Tags -->
-              <div *ngIf="agent.tags && agent.tags.length > 0" class="flex flex-wrap gap-1 mt-2">
-                @for (tag of agent.tags; track tag) {
-                  <span class="px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded text-[9px] font-semibold">#{{ tag }}</span>
-                }
-              </div>
-            </div>
-
-            <!-- Collapsed View -->
-            <div class="flex justify-center items-center" *ngIf="isSidebarCollapsed">
-               <mat-icon class="text-slate-400 transition-colors"
-                        [ngClass]="{'text-indigo-600': selectedAgent?.id === agent.id}">
-                smart_toy
-              </mat-icon>
-            </div>
-          </div>
-        }
-      </div>
-    </div>
+    <button mat-flat-button color="primary" class="!rounded-xl !px-6 !font-bold" (click)="createNewAgent()">
+      <mat-icon>add</mat-icon> Create New Agent
+    </button>
   </div>
 
-  <!-- Right Area (Workspace) -->
-  <div class="flex-1 flex flex-col min-w-0 overflow-hidden bg-slate-50 relative">
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
     
-    <!-- Top Bar -->
-    <div class="h-14 bg-white border-b border-slate-200 flex items-center justify-between px-4 shrink-0 shadow-sm z-10">
-      
-      <!-- Left side of top bar (Context/Badges) -->
-      <div class="flex items-center gap-3">
-        <span class="bg-indigo-100 text-indigo-800 text-xs font-bold px-2.5 py-1 rounded-full flex items-center gap-1">
-          <mat-icon class="!w-3.5 !h-3.5 !text-sm">smart_toy</mat-icon> Agents Registry
-        </span>
-      </div>
+    <!-- Left Column: Search & Registered Agent List -->
+    <div class="space-y-4">
+      <mat-card class="!rounded-2xl border border-slate-200/80 shadow-sm">
+        <mat-card-content class="p-4 space-y-4">
 
-      <!-- Right side of top bar (Actions) -->
-      <div class="flex items-center gap-2">
-        <button mat-flat-button color="primary" class="!rounded-lg !px-4 !font-bold h-9 mr-2" (click)="createNewAgent()">
-          <mat-icon class="mr-1">add</mat-icon> New Agent
-        </button>
-
-        <!-- Hamburger Menu for App Navigation -->
-        <button mat-icon-button [matMenuTriggerFor]="appMenu" aria-label="Menu" class="text-slate-500 hover:text-slate-800">
-          <mat-icon>menu</mat-icon>
-        </button>
-        
-        <mat-menu #appMenu="matMenu">
-          @for (item of menuItems; track item.path) {
-            <a mat-menu-item [routerLink]="item.path" routerLinkActive="active-link">
-              <mat-icon>{{ item.icon }}</mat-icon>
-              <span>{{ item.label }}</span>
-            </a>
-          }
-        </mat-menu>
-        
-        <div class="w-px h-6 bg-slate-200 mx-1"></div> <!-- Divider -->
-        
-        <!-- View Toggle Icon (Mock) -->
-        <button mat-icon-button class="text-slate-500 hover:text-slate-800" title="Change View">
-          <mat-icon>view_column</mat-icon>
-        </button>
-        
-        <!-- User Profile (Mock) -->
-        <button mat-icon-button class="ml-1">
-          <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-amber-400 to-orange-500 border-2 border-white shadow-sm flex items-center justify-center text-white font-bold text-sm">
-            BG
+          <div class="relative">
+            <mat-icon class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">search</mat-icon>
+            <input type="text" placeholder="Search agents by name, tag, or trait..."
+                   class="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                   [(ngModel)]="searchQuery" />
           </div>
-        </button>
-      </div>
+
+          <!-- Agent Cards List -->
+          <div class="space-y-2 max-h-[750px] overflow-y-auto pr-1">
+            @if (getFilteredAgents().length === 0) {
+              <div class="text-center py-8 text-slate-400 text-xs">
+                No matching agents found.
+              </div>
+            }
+            @for (agent of getFilteredAgents(); track agent.id) {
+              <div class="p-4 rounded-xl border transition-all cursor-pointer bg-white hover:border-slate-300"
+                   [class.border-indigo-500]="selectedAgent?.id === agent.id"
+                   [class.shadow-md]="selectedAgent?.id === agent.id"
+                   [class.border-slate-200]="selectedAgent?.id !== agent.id"
+                   (click)="selectAgent(agent)">
+                <div class="flex justify-between items-center">
+                  <h5 class="text-sm font-bold text-slate-900 m-0">🤖 {{ agent.name }}</h5>
+                  <span class="px-2.5 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded-md">v{{ agent.current_version }}</span>
+                </div>
+                <p class="text-xs text-slate-500 m-0 mt-1 line-clamp-2 leading-relaxed">{{ agent.description }}</p>
+                <div class="flex flex-wrap gap-1 pt-2">
+                  @for (trait of agent.implements_traits; track trait) {
+                    <span class="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded">🛡️ {{ trait }}</span>
+                  }
+                  @for (tag of agent.tags; track tag) {
+                    <span class="px-2 py-0.5 bg-slate-100 text-slate-600 text-[10px] font-mono rounded">#{{ tag }}</span>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+
+        </mat-card-content>
+      </mat-card>
     </div>
-    
-    <!-- Workspace Content (Scrollable) -->
-    <div class="flex-1 overflow-y-auto p-6">
-<!-- Right Column: Agent Definition Editor Form -->
-          @if (selectedAgent || isEditing) {
+
+    <!-- Right Column: Agent Definition Editor Form -->
+    <div class="lg:col-span-2">
+      @if (selectedAgent || isEditing) {
         <mat-card class="!rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
           <div class="p-6 bg-slate-50/80 border-b border-slate-200/60 flex justify-between items-center">
             <div>
@@ -473,4 +387,5 @@
       }
     </div>
   </div>
+
 </div>
