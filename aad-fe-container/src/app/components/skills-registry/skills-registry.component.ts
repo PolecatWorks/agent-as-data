@@ -63,6 +63,7 @@ export class SkillsRegistryComponent implements OnInit {
   traitContracts: TraitContract[] = [];
   registeredTraitsCatalog: string[] = [];
   traitSearchQuery: string = '';
+  usesTraitSearchQuery: string = '';
 
   // Editor fields
   skillForm: Partial<Skill> = {
