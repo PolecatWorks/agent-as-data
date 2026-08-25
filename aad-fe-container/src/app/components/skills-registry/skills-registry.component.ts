@@ -44,7 +44,7 @@ export class SkillsRegistryComponent implements OnInit {
   menuItems = [
     { path: '/traits', icon: 'verified', label: 'Trait Contracts' },
     { path: '/tools', icon: 'dns', label: 'Tools' },
-    { path: '/skills-registry', icon: 'extension', label: 'Skills' },
+    { path: '/skills', icon: 'extension', label: 'Skills' },
     { path: '/agents', icon: 'app_registration', label: 'Agents' },
     { path: '/interactive-testing', icon: 'bug_report', label: 'Interactive Testing Studio' },
     { path: '/network-visualizer', icon: 'account_tree', label: 'Network Graph Visualizer' },
@@ -180,7 +180,7 @@ export class SkillsRegistryComponent implements OnInit {
     this.inputSchemaStr = JSON.stringify(skill.input_schema || {}, null, 2);
     this.outputSchemaStr = JSON.stringify(skill.output_schema || {}, null, 2);
     this.implementationStr = JSON.stringify(skill.implementation || {}, null, 2);
-    this.router.navigate(['/skills-registry', skill.id], {
+    this.router.navigate(['/skills', skill.id], {
       queryParams: keepEdit ? { edit: 'true' } : {}
     });
   }
@@ -211,9 +211,9 @@ export class SkillsRegistryComponent implements OnInit {
   enableEdit(): void {
     this.isEditing = true;
     if (this.selectedSkill) {
-      this.router.navigate(['/skills-registry', this.selectedSkill.id], { queryParams: { edit: 'true' } });
+      this.router.navigate(['/skills', this.selectedSkill.id], { queryParams: { edit: 'true' } });
     } else {
-      this.router.navigate(['/skills-registry'], { queryParams: { edit: 'true' } });
+      this.router.navigate(['/skills'], { queryParams: { edit: 'true' } });
     }
   }
 
@@ -222,7 +222,7 @@ export class SkillsRegistryComponent implements OnInit {
       this.selectSkill(this.selectedSkill, false);
     } else {
       this.isEditing = false;
-      this.router.navigate(['/skills-registry'], { queryParams: {} });
+      this.router.navigate(['/skills'], { queryParams: {} });
     }
   }
 
@@ -294,7 +294,7 @@ export class SkillsRegistryComponent implements OnInit {
           this.isEditing = false;
           this.showDeleteConfirm = false;
           this.loadSkills();
-          this.router.navigate(['/skills-registry']);
+          this.router.navigate(['/skills']);
         },
         error: (err) => {
           this.snackBar.open(`Deletion failed: ${err.message || err}`, 'Close', { duration: 3000 });

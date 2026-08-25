@@ -7,8 +7,8 @@ export const routes: Routes = [
   { path: 'agents/:id', loadComponent: () => import('./components/agent-registry/agent-registry.component').then(m => m.AgentRegistryComponent) },
   { path: 'traits', loadComponent: () => import('./components/traits-registry/traits-registry.component').then(m => m.TraitsRegistryComponent) },
   { path: 'traits/:id', loadComponent: () => import('./components/traits-registry/traits-registry.component').then(m => m.TraitsRegistryComponent) },
-  { path: 'skills-registry', loadComponent: () => import('./components/skills-registry/skills-registry.component').then(m => m.SkillsRegistryComponent) },
-  { path: 'skills-registry/:id', loadComponent: () => import('./components/skills-registry/skills-registry.component').then(m => m.SkillsRegistryComponent) },
+  { path: 'skills', loadComponent: () => import('./components/skills-registry/skills-registry.component').then(m => m.SkillsRegistryComponent) },
+  { path: 'skills/:id', loadComponent: () => import('./components/skills-registry/skills-registry.component').then(m => m.SkillsRegistryComponent) },
 
   { path: 'interactive-testing', loadComponent: () => import('./components/interactive-testing/interactive-testing.component').then(m => m.InteractiveTestingComponent) },
   { path: 'network-visualizer', loadComponent: () => import('./components/network-visualizer/network-visualizer.component').then(m => m.NetworkVisualizerComponent) },

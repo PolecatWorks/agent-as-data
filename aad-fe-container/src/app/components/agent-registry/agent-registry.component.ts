@@ -59,7 +59,7 @@ export class AgentRegistryComponent implements OnInit {
   menuItems = [
     { path: '/traits', icon: 'verified', label: 'Trait Contracts' },
     { path: '/tools', icon: 'dns', label: 'Tools' },
-    { path: '/skills-registry', icon: 'extension', label: 'Skills' },
+    { path: '/skills', icon: 'extension', label: 'Skills' },
     { path: '/agents', icon: 'app_registration', label: 'Agents' },
     { path: '/interactive-testing', icon: 'bug_report', label: 'Interactive Testing Studio' },
     { path: '/network-visualizer', icon: 'account_tree', label: 'Network Graph Visualizer' },
@@ -578,7 +578,7 @@ export class AgentRegistryComponent implements OnInit {
       this.apiService.demoteAgent(this.selectedAgent.id).subscribe({
         next: (res) => {
           this.snackBar.open(`Successfully demoted agent to Skill: ${res.skill_id || ''}`, 'Close', { duration: 3000 });
-          this.router.navigate(['/skills-registry', res.skill_id]);
+          this.router.navigate(['/skills', res.skill_id]);
         },
         error: (err) => {
           this.snackBar.open(`Demotion failed: ${err.message || err}`, 'Close', { duration: 3000 });

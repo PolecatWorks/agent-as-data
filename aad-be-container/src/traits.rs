@@ -58,6 +58,12 @@ pub async fn create_trait(
         r#"
         INSERT INTO trait_contracts (id, name, description, version, capability_requirements, behavioral_invariants, evaluation_criteria, tags, guardrails, owner_id)
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+        ON CONFLICT (name) DO UPDATE
+            SET description = EXCLUDED.description,
+                tags = EXCLUDED.tags,
+                guardrails = EXCLUDED.guardrails,
+                owner_id = EXCLUDED.owner_id,
+                updated_at = NOW()
         RETURNING id, name, description, version, capability_requirements, behavioral_invariants, evaluation_criteria, tags, guardrails, owner_id, created_at, updated_at
         "#
     )

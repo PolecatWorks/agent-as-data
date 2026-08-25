@@ -16,11 +16,12 @@ Verify Trait Editor UI Sync with Backend
     # 1. Open the Trait Contracts Registry in UI
     ${health}=    Check Health
     Pass Execution If    not ${health}    Backend/Frontend is offline - skipping live test
-    New Page    ${FE_BASE_URL}/traits-registry
-    Wait For Elements State    text=Trait Definition Registry    visible    timeout=10s
+    New Page    ${FE_BASE_URL}/traits
+    Wait For Elements State    text=Traits Registry    visible    timeout=10s
 
-    # 2. Click "+ Create Trait Definition"
-    Click    button >> text=Create Trait Definition    button=left
+    # 2. Click "+ New Trait"
+    Click    button >> text=New Trait    button=left
+    Wait For Elements State    id=trait-name-input    editable    timeout=10s
     
     # 3. Enter Name & Description
     ${random_str}=    Evaluate    str(random.randint(1000, 9999))    modules=random

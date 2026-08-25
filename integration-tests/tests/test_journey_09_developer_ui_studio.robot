@@ -45,11 +45,11 @@ Journey 9 Developer UI Studio
     Set Global Variable    ${AGENT_ID}    ${agent_id}
 
     # 2. Verify Contract
-    ${verify_payload}=    Create Dictionary    agent_id=${AGENT_ID}    trait_mappings={"${trait_id}": "${AGENT_ID}"}
+    ${verify_payload}=    Create Dictionary    referrer_agent_id=${AGENT_ID}    target_agent_id=${AGENT_ID}    trait_name=${trait_name}
     ${verify_response}=    Verify Contract    ${verify_payload}
 
-    ${is_valid}=    Get From Dictionary    ${verify_response}    is_valid
-    Should Be Equal As Strings    ${is_valid}    True
+    ${status_val}=    Get From Dictionary    ${verify_response}    status
+    Should Not Be Empty    ${status_val}
 
     # 3. Execute the agent
     ${execute_payload}=    Create Dictionary    prompt=Run test

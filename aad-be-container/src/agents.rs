@@ -28,7 +28,7 @@ pub async fn create_agent(
     sqlx::query(
         r#"
         INSERT INTO agents (id, name, description, tags, implements_traits, uses_traits, current_version, owner_id, read_groups, write_groups, execute_groups, agent_definition, model, judge_threshold, attached_skills, attached_tools, attached_agents, incoming_guardrails, outgoing_guardrails)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
         "#,
     )
     .bind(agent_id)
@@ -104,11 +104,11 @@ pub async fn update_agent(
         sqlx::query(
             r#"
             UPDATE agents
-            SET name = $1, description = $2, tags = $3, implements_traits = $4, read_groups = $5,
-                write_groups = $6, execute_groups = $7, agent_definition = $8, model = $9, judge_threshold = $10,
-                attached_skills = $11, attached_tools = $12, attached_agents = $13, incoming_guardrails = $14, outgoing_guardrails = $15,
-                current_version = $16, owner_id = $17, guardrail_config = $18, updated_at = NOW()
-            WHERE id = $19
+            SET name = $1, description = $2, tags = $3, implements_traits = $4, uses_traits = $5, read_groups = $6,
+                write_groups = $7, execute_groups = $8, agent_definition = $9, model = $10, judge_threshold = $11,
+                attached_skills = $12, attached_tools = $13, attached_agents = $14, incoming_guardrails = $15, outgoing_guardrails = $16,
+                current_version = $17, owner_id = $18, guardrail_config = $19, updated_at = NOW()
+            WHERE id = $20
             "#,
         )
         .bind(&payload.name)
@@ -436,7 +436,7 @@ pub async fn create_skill(
     sqlx::query(
         r#"
         INSERT INTO skills (id, name, description, definition, tags, current_version, owner_id, attached_skills, attached_tools, input_schema, output_schema, implementation, implements_traits, uses_traits)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
         "#,
     )
     .bind(skill_id)
@@ -493,7 +493,7 @@ pub async fn promote_skill(
     sqlx::query(
         r#"
         INSERT INTO agents (id, name, description, current_version, owner_id, agent_definition, implements_traits, uses_traits)
-        VALUES ($1, $2, $3, '1.0.0', $4, $5, $6)
+        VALUES ($1, $2, $3, '1.0.0', $4, $5, $6, $7)
         "#,
     )
     .bind(agent_id)
@@ -698,8 +698,8 @@ pub async fn update_skill(
     sqlx::query(
         r#"
         UPDATE skills
-        SET name = $1, description = $2, definition = $3, tags = $4, current_version = $5, attached_skills = $6, attached_tools = $7, input_schema = $8, output_schema = $9, implementation = $10, implements_traits = $11, updated_at = NOW()
-        WHERE id = $12
+        SET name = $1, description = $2, definition = $3, tags = $4, current_version = $5, attached_skills = $6, attached_tools = $7, input_schema = $8, output_schema = $9, implementation = $10, implements_traits = $11, uses_traits = $12, updated_at = NOW()
+        WHERE id = $13
         "#,
     )
     .bind(&payload.name)

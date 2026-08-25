@@ -34,7 +34,7 @@ Journey 5 Preflight Compiler
     ${compile_response}=    Compile Agent    ${compile_payload}
 
     ${status}=    Get From Dictionary    ${compile_response}    status
-    Should Be Equal As Strings    ${status}    success
+    Should Be Equal As Strings    ${status}    clean
 
     [Teardown]    Teardown Journey 5
 

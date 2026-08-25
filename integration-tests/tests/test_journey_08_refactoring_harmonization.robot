@@ -17,7 +17,7 @@ Journey 8 Refactoring Engine
     ${health}=    Check Health
     Pass Execution If    not ${health}    Backend is offline - skipping live test
 
-    ${payload}=    Create Dictionary    similarity_threshold=0.88
+    ${payload}=    Create Dictionary    similarity_threshold=${0.88}
 
     ${response}=    Analyze Refactor    ${payload}
 
