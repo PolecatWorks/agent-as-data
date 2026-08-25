@@ -66,6 +66,18 @@
                 {{ skill.description }}
               </p>
 
+              <!-- Attached Items Summary -->
+              <div class="flex gap-4 mt-2">
+                <span class="text-[10px] font-bold text-slate-400 flex items-center gap-1">
+                  <mat-icon class="!w-3 !h-3 !text-[12px] leading-3 text-indigo-400">extension</mat-icon>
+                  {{ skill.attached_skills?.length || 0 }} Skills
+                </span>
+                <span class="text-[10px] font-bold text-slate-400 flex items-center gap-1">
+                  <mat-icon class="!w-3 !h-3 !text-[12px] leading-3 text-blue-400">dns</mat-icon>
+                  {{ skill.attached_tools?.length || 0 }} Tools
+                </span>
+              </div>
+
               <!-- Tags -->
               <div *ngIf="skill.tags && skill.tags.length > 0" class="flex flex-wrap gap-1 pt-2">
                 @for (tag of skill.tags; track tag) {

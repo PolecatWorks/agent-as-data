@@ -44,12 +44,15 @@ import { forkJoin } from 'rxjs';
 export class TraitsRegistryComponent implements OnInit {
   isSidebarCollapsed = false;
   menuItems = [
-    { path: '/traits-registry', icon: 'verified', label: 'Trait Contracts' },
+    { path: '/traits', icon: 'verified', label: 'Trait Contracts' },
     { path: '/tools', icon: 'dns', label: 'Tools' },
     { path: '/skills-registry', icon: 'extension', label: 'Skills' },
-    { path: '/agents', icon: 'smart_toy', label: 'Agents' },
-    { path: '/knowledge', icon: 'hub', label: 'Knowledge Base' },
-    { path: '/workbench', icon: 'dashboard_customize', label: 'Workbench' },
+    { path: '/agents', icon: 'app_registration', label: 'Agents' },
+    { path: '/interactive-testing', icon: 'bug_report', label: 'Interactive Testing Studio' },
+    { path: '/network-visualizer', icon: 'account_tree', label: 'Network Graph Visualizer' },
+    { path: '/refactoring-lab', icon: 'build_circle', label: 'Refactoring & Compression Lab' },
+    { path: '/knowledge-inspector', icon: 'library_books', label: 'Knowledge & SPO Tuple Inspector' },
+    { path: '/workbench', icon: 'work', label: 'Workbench' }
   ];
 
   toggleSidebar(): void {
@@ -314,7 +317,7 @@ export class TraitsRegistryComponent implements OnInit {
     this.selectedTraitContract = trait;
     this.isEditing = keepEdit;
     this.showDeleteConfirm = false;
-    this.router.navigate(['/traits-registry', trait.id], {
+    this.router.navigate(['/traits', trait.id], {
       queryParams: keepEdit ? { edit: 'true' } : {}
     });
     this.traitForm = {
@@ -365,9 +368,9 @@ export class TraitsRegistryComponent implements OnInit {
   enableEdit(): void {
     this.isEditing = true;
     if (this.selectedTraitContract) {
-      this.router.navigate(['/traits-registry', this.selectedTraitContract.id], { queryParams: { edit: 'true' } });
+      this.router.navigate(['/traits', this.selectedTraitContract.id], { queryParams: { edit: 'true' } });
     } else {
-      this.router.navigate(['/traits-registry'], { queryParams: { edit: 'true' } });
+      this.router.navigate(['/traits'], { queryParams: { edit: 'true' } });
     }
   }
 
@@ -376,7 +379,7 @@ export class TraitsRegistryComponent implements OnInit {
       this.selectTraitContract(this.selectedTraitContract, false);
     } else {
       this.isEditing = false;
-      this.router.navigate(['/traits-registry'], { queryParams: {} });
+      this.router.navigate(['/traits'], { queryParams: {} });
     }
   }
 
@@ -437,7 +440,7 @@ export class TraitsRegistryComponent implements OnInit {
         this.selectTraitContract(this.traitContracts[0]);
       } else {
         this.selectedTraitContract = null;
-        this.router.navigate(['/traits-registry'], { queryParams: {} });
+        this.router.navigate(['/traits'], { queryParams: {} });
       }
       this.snackBar.open('Removed temporary trait definition', 'Close', { duration: 3000 });
       return;
@@ -452,7 +455,7 @@ export class TraitsRegistryComponent implements OnInit {
           this.selectTraitContract(this.traitContracts[0]);
         } else {
           this.selectedTraitContract = null;
-          this.router.navigate(['/traits-registry'], { queryParams: {} });
+          this.router.navigate(['/traits'], { queryParams: {} });
         }
         this.snackBar.open('Trait contract deleted successfully', 'Close', { duration: 3000 });
       },
