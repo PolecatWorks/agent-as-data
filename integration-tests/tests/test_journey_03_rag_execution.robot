@@ -33,7 +33,7 @@ Journey 3 RAG Execution
     ${execute_payload}=    Create Dictionary    task_query=Review pull request #42 for Rust security vulnerabilities and unsafe code blocks    prompt=Check the unsafe raw_pointer_offset function
 
     ${response}=    Search And Execute    ${execute_payload}
-    ${execution_id}=    Get From Dictionary    ${response}    id
+    ${execution_id}=    Get From Dictionary    ${response}    execution_id
     Should Not Be Empty    ${execution_id}
 
     ${status}=    Get From Dictionary    ${response}    status
