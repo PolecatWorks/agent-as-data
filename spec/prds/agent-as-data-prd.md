@@ -162,7 +162,7 @@ Agent-As-Data (AAD) is an enterprise-grade declarative platform and specificatio
 
 ### Agent Entity
 - `id` (UUID): Unique agent identifier.
-- `name` (String), `description` (String), `tags` (TEXT[]), `version` (String - SemVer e.g., '1.0.0', updated minor component on save).
+- `name` (String), `description` (String), `tags` (TEXT[]), `current_version` (String — SemVer, e.g. `'1.0.0'`, bumped on each save).
 - **Traits & Abstraction**:
   - `implements_traits` (TEXT[]): List of abstract trait contracts this agent satisfies/implements (e.g., `["SecurityAuditor", "CodeReviewer"]`).
   - `uses_traits` (TEXT[]): List of abstract trait interfaces this agent depends on or delegates to — it references the trait contract without directly implementing it.
@@ -171,8 +171,10 @@ Agent-As-Data (AAD) is an enterprise-grade declarative platform and specificatio
   - `read_groups` (TEXT[]): Groups with discovery and read permissions.
   - `write_groups` (TEXT[]): Groups with edit, refactor, and delete permissions.
   - `execute_groups` (TEXT[]): Groups with execution permissions.
-- `incoming_guardrails` (JSONB), `outgoing_guardrails` (JSONB).
-- `agent_definition` (JSONB), `model` (JSONB), `tools` (JSONB), `available_skills` (JSONB), `available_agents` (JSONB).
+- `incoming_guardrails` (JSONB array of guardrail types), `outgoing_guardrails` (JSONB array of guardrail types), `guardrail_config` (JSONB).
+- `agent_definition` (JSONB — system prompt/persona), `model` (JSONB — LLM provider config).
+- `attached_tools` (UUID[]), `attached_skills` (UUID[]), `attached_agents` (UUID[]).
+- `judge_threshold` (f64), `archived_at` (Timestamp — soft delete).
 - `created_at` & `updated_at` (Timestamps).
 
 ### Remote Tool Cache Entity (`tools`)
@@ -233,9 +235,10 @@ To prevent common architecture anti-patterns and performance degradation, AAD in
 
 ## REST & MCP Specification
 ### REST Endpoints
-- **Agents**: `/api/v1/agents` (CRUD, revisions, search, execute).
-- **Executions**: `/api/v1/executions` (Async job creation & status).
-- **Traits**: `/api/v1/traits` (CRUD for Trait Contracts).
+- **Agents**: `/api/v1/agents` (CRUD via POST/GET/PUT/DELETE, search, compile, verify-contract, refactor/analyze, test, demote).
+- **Executions**: `/api/v1/executions/{id}` GET (status/result of a recorded execution). _Note: A standalone async job queue `POST /api/v1/executions` is planned but not yet implemented — executions are currently initiated via `/api/v1/agents/{id}/execute`._
+- **Skills**: `/api/v1/skills` (CRUD + `POST /api/v1/skills/{id}/promote`).
+- **Traits**: `/api/v1/traits` (CRUD).
   - *Browse Pagination Pattern*: `GET /api/v1/traits` accepts page options query parameters and returns a paged list of IDs with the structure:
     ```json
     {
@@ -246,11 +249,18 @@ To prevent common architecture anti-patterns and performance degradation, AAD in
       }
     }
     ```
+- **Tools**: `/api/v1/agents/tools` (register, list, delete).
 - **Knowledge**:
   - `POST /api/v1/knowledge`: Store document/chunk.
   - `POST /api/v1/knowledge/search`: RAG semantic search over knowledge.
-  - `POST /api/v1/knowledge/tuples`: Store graph relation tuple.
   - `POST /api/v1/knowledge/graph/traverse`: Multi-hop tuple graph traversal.
+- **Threads & Workspace**:
+  - `POST /api/v1/threads/create`, `POST /api/v1/threads` (list), `GET/PUT /api/v1/threads/{id}`: Conversational thread CRUD.
+  - `GET/POST /api/v1/threads/{id}/messages`: Message history per thread.
+  - `POST /api/v1/threads/{id}/fs/write`, `GET /api/v1/threads/{id}/fs/read/{filepath}`, `POST /api/v1/threads/{id}/fs/list`, `POST /api/v1/threads/{id}/fs/delete`: Isolated per-thread workspace filesystem operations.
+
+> [!NOTE]
+> The following endpoints are **planned but not yet implemented**: `GET /api/v1/agents/visualize` (Mermaid/graph output), `GET /api/v1/analytics/usage` (telemetry), `GET /api/v1/skills/guidance` (skill vs agent guidance), native MCP server transport.
 
 
 ## System Overview Architecture
