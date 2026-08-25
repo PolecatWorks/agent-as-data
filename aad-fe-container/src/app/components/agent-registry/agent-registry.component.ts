@@ -165,6 +165,7 @@ export class AgentRegistryComponent implements OnInit {
 
   // Selected Item Pickers for Form
   traitSearchQuery: string = '';
+  usesTraitSearchQuery: string = '';
   selectedToolToAdd: string = '';
   selectedSubAgentToAdd: string = '';
   selectedSkillToAdd: string = '';
