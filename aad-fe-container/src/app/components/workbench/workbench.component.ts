@@ -64,16 +64,16 @@ export class WorkbenchComponent implements OnInit {
   @HostListener('document:mousemove', ['$event'])
   onMouseMove(event: MouseEvent): void {
     if (!this.isResizing) return;
-    
+
     const sidebarWidth = this.isSidebarCollapsed ? 64 : 256;
     const rightWorkspaceWidth = window.innerWidth - sidebarWidth;
     const mouseXInWorkspace = event.clientX - sidebarWidth;
-    
+
     let newPercentage = (mouseXInWorkspace / rightWorkspaceWidth) * 100;
-    
+
     if (newPercentage < 20) newPercentage = 20;
     if (newPercentage > 80) newPercentage = 80;
-    
+
     this.chatPanePercentage = newPercentage;
   }
 
@@ -92,7 +92,7 @@ export class WorkbenchComponent implements OnInit {
     this.apiService.getThreads().subscribe({
       next: (threads) => {
         this.threads = threads;
-        
+
         this.route.paramMap.subscribe(params => {
           const threadId = params.get('id');
           if (threadId) {
@@ -182,7 +182,7 @@ export class WorkbenchComponent implements OnInit {
 
   saveThreadTitle(): void {
     if (!this.activeThread || !this.isEditingTitle) return;
-    
+
     const newTitle = this.editingTitleContent.trim();
     if (newTitle && newTitle !== this.activeThread.title) {
       this.activeThread.title = newTitle;
@@ -199,7 +199,7 @@ export class WorkbenchComponent implements OnInit {
     }
     this.isEditingTitle = false;
   }
-  
+
   cancelEditingTitle(): void {
     this.isEditingTitle = false;
   }
