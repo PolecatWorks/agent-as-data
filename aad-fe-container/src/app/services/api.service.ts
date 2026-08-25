@@ -82,8 +82,8 @@ export interface GuardrailConfig {
 
 export interface Thread {
   id: string;
-  title: string;
   owner_id: string;
+  title: string;
   description?: string;
   tags?: string[];
   created_at?: string;
