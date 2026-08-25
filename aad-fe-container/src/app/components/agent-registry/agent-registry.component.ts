@@ -57,13 +57,15 @@ export class AgentRegistryComponent implements OnInit {
   isSidebarCollapsed = false;
 
   menuItems = [
-    { path: '/workbench', icon: 'dashboard', label: 'Workbench' },
-    { path: '/network', icon: 'hub', label: 'Knowledge Base' },
-    { path: '/skills', icon: 'extension', label: 'Skills' },
-    { path: '/traits', icon: 'psychology', label: 'Traits' },
+    { path: '/traits', icon: 'verified', label: 'Trait Contracts' },
     { path: '/tools', icon: 'dns', label: 'Tools' },
-    { path: '/agents', icon: 'smart_toy', label: 'Agents' },
-    { path: '/testing', icon: 'science', label: 'Testing' }
+    { path: '/skills-registry', icon: 'extension', label: 'Skills' },
+    { path: '/agents', icon: 'app_registration', label: 'Agents' },
+    { path: '/interactive-testing', icon: 'bug_report', label: 'Interactive Testing Studio' },
+    { path: '/network-visualizer', icon: 'account_tree', label: 'Network Graph Visualizer' },
+    { path: '/refactoring-lab', icon: 'build_circle', label: 'Refactoring & Compression Lab' },
+    { path: '/knowledge-inspector', icon: 'library_books', label: 'Knowledge & SPO Tuple Inspector' },
+    { path: '/workbench', icon: 'work', label: 'Workbench' }
   ];
 
   toggleSidebar() {
@@ -203,6 +205,16 @@ export class AgentRegistryComponent implements OnInit {
       return available;
     }
     const q = this.traitSearchQuery.toLowerCase().trim();
+    return available.filter(t => t.toLowerCase().includes(q));
+  }
+
+  get filteredUsesTraitsCatalog(): string[] {
+    const attached = this.agentForm.uses_traits || [];
+    const available = this.registeredTraitsCatalog.filter(t => !attached.includes(t));
+    if (!this.usesTraitSearchQuery.trim()) {
+      return available;
+    }
+    const q = this.usesTraitSearchQuery.toLowerCase().trim();
     return available.filter(t => t.toLowerCase().includes(q));
   }
 
@@ -382,7 +394,7 @@ export class AgentRegistryComponent implements OnInit {
         };
         this.isEditing = keepEdit;
         this.showDeleteConfirm = false;
-        this.router.navigate(['/agent-registry', fullAgent.id], {
+        this.router.navigate(['/agents', fullAgent.id], {
           queryParams: keepEdit ? { edit: 'true' } : {}
         });
       },
@@ -397,7 +409,7 @@ export class AgentRegistryComponent implements OnInit {
         };
         this.isEditing = keepEdit;
         this.showDeleteConfirm = false;
-        this.router.navigate(['/agent-registry', agent.id], {
+        this.router.navigate(['/agents', agent.id], {
           queryParams: keepEdit ? { edit: 'true' } : {}
         });
       }
@@ -436,9 +448,9 @@ export class AgentRegistryComponent implements OnInit {
   enableEdit(): void {
     this.isEditing = true;
     if (this.selectedAgent) {
-      this.router.navigate(['/agent-registry', this.selectedAgent.id], { queryParams: { edit: 'true' } });
+      this.router.navigate(['/agents', this.selectedAgent.id], { queryParams: { edit: 'true' } });
     } else {
-      this.router.navigate(['/agent-registry'], { queryParams: { edit: 'true' } });
+      this.router.navigate(['/agents'], { queryParams: { edit: 'true' } });
     }
   }
 
@@ -447,7 +459,7 @@ export class AgentRegistryComponent implements OnInit {
       this.selectAgent(this.selectedAgent, false);
     } else {
       this.isEditing = false;
-      this.router.navigate(['/agent-registry'], { queryParams: {} });
+      this.router.navigate(['/agents'], { queryParams: {} });
     }
   }
 
@@ -735,6 +747,16 @@ export class AgentRegistryComponent implements OnInit {
     }
   }
 
+  attachUsesTraitFromCatalog(trait: string): void {
+    if (this.agentForm) {
+      if (!this.agentForm.uses_traits) this.agentForm.uses_traits = [];
+      if (!this.agentForm.uses_traits.includes(trait)) {
+        this.agentForm.uses_traits.push(trait);
+        this.usesTraitSearchQuery = '';
+      }
+    }
+  }
+
   addTrait(): void {
     if (this.newTrait.trim() && this.agentForm) {
       const traitName = this.newTrait.trim();
@@ -807,6 +829,12 @@ export class AgentRegistryComponent implements OnInit {
   removeTrait(trait: string): void {
     if (this.agentForm?.implements_traits) {
       this.agentForm.implements_traits = this.agentForm.implements_traits.filter((t: string) => t !== trait);
+    }
+  }
+
+  removeUsesTrait(trait: string): void {
+    if (this.agentForm?.uses_traits) {
+      this.agentForm.uses_traits = this.agentForm.uses_traits.filter((t: string) => t !== trait);
     }
   }
 

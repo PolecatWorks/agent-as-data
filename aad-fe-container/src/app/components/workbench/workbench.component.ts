@@ -31,10 +31,10 @@ export class WorkbenchComponent implements OnInit {
   editingTitleContent = '';
 
   menuItems = [
-    { path: '/traits-registry', icon: 'verified', label: 'Trait Contracts' },
+    { path: '/traits', icon: 'verified', label: 'Trait Contracts' },
     { path: '/tools', icon: 'dns', label: 'Tools' },
     { path: '/skills-registry', icon: 'extension', label: 'Skills' },
-    { path: '/agent-registry', icon: 'app_registration', label: 'Agents' },
+    { path: '/agents', icon: 'app_registration', label: 'Agents' },
     { path: '/interactive-testing', icon: 'bug_report', label: 'Interactive Testing Studio' },
     { path: '/network-visualizer', icon: 'account_tree', label: 'Network Graph Visualizer' },
     { path: '/refactoring-lab', icon: 'build_circle', label: 'Refactoring & Compression Lab' },

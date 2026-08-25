@@ -42,13 +42,15 @@ export class SkillsRegistryComponent implements OnInit {
   isSidebarCollapsed = false;
 
   menuItems = [
-    { path: '/workbench', icon: 'dashboard', label: 'Workbench' },
-    { path: '/network', icon: 'hub', label: 'Knowledge Base' },
-    { path: '/skills', icon: 'extension', label: 'Skills' },
-    { path: '/traits', icon: 'psychology', label: 'Traits' },
+    { path: '/traits', icon: 'verified', label: 'Trait Contracts' },
     { path: '/tools', icon: 'dns', label: 'Tools' },
-    { path: '/agents', icon: 'smart_toy', label: 'Agents' },
-    { path: '/testing', icon: 'science', label: 'Testing' }
+    { path: '/skills-registry', icon: 'extension', label: 'Skills' },
+    { path: '/agents', icon: 'app_registration', label: 'Agents' },
+    { path: '/interactive-testing', icon: 'bug_report', label: 'Interactive Testing Studio' },
+    { path: '/network-visualizer', icon: 'account_tree', label: 'Network Graph Visualizer' },
+    { path: '/refactoring-lab', icon: 'build_circle', label: 'Refactoring & Compression Lab' },
+    { path: '/knowledge-inspector', icon: 'library_books', label: 'Knowledge & SPO Tuple Inspector' },
+    { path: '/workbench', icon: 'work', label: 'Workbench' }
   ];
 
   toggleSidebar() {
@@ -306,7 +308,7 @@ export class SkillsRegistryComponent implements OnInit {
       this.apiService.promoteSkill(this.selectedSkill.id).subscribe({
         next: (agent) => {
           this.snackBar.open(`Successfully promoted to Agent: ${agent.name}`, 'Close', { duration: 3000 });
-          this.router.navigate(['/agent-registry', agent.id]);
+          this.router.navigate(['/agents', agent.id]);
         },
         error: (err) => {
           this.snackBar.open(`Promotion failed: ${err.message || err}`, 'Close', { duration: 3000 });
