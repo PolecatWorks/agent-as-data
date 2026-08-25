@@ -3,13 +3,15 @@ import { HttpClientTestingModule } from '@angular/common/http/testing';
 
 import { WorkbenchComponent } from './workbench.component';
 
+import { RouterModule } from '@angular/router';
+
 describe('WorkbenchComponent', () => {
   let component: WorkbenchComponent;
   let fixture: ComponentFixture<WorkbenchComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [WorkbenchComponent, HttpClientTestingModule]
+      imports: [WorkbenchComponent, HttpClientTestingModule, RouterModule.forRoot([])]
     })
     .compileComponents();
 
