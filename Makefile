@@ -101,7 +101,7 @@ aad-fe-dev:
 	cd aad-fe-container && npm start
 
 aad-fe-test:
-	cd aad-fe-container && npm test
+	cd aad-fe-container && npm test -- --watch=false --browsers=ChromeHeadless
 
 aad-fe-docker:
 	docker build -t agent-as-data-fe:latest aad-fe-container

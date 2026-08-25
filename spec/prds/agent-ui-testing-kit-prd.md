@@ -37,11 +37,32 @@ graph TD
     ToolManager --> REST
 ```
 
+## UI Consistency & Standard Global Navigation
+
+### Global Top Bar & Navigation Menu Specification
+All views across the application must share an identical, standardized top bar (`h-14 bg-white border-b border-slate-200 shadow-sm`) and navigation menu to ensure a seamless, uniform developer experience:
+- **Left Context / Title Area**: Displays a pill badge with the module icon and current workspace name (e.g. `Trait Contracts`, `Skills Registry`, `Agents Registry`, `Interactive Testing Studio`).
+- **Primary View Action (Left of Menu)**: Contextual creation button styled consistently with a solid fill (`mat-flat-button color="primary"`), e.g., `+ New Trait`, `+ New Skill`, `+ New Agent`, or `+ New Thread`. Clicking this initializes a clean form in-place without triggering full route reloads.
+- **Global Navigation (Hamburger Menu)**: An `appMenu` triggered by a standard hamburger icon (`menu`) providing one-click routing across all top-level workspaces:
+  - `verified` -> `/traits` (Trait Contracts)
+  - `dns` -> `/tools` (Tools)
+  - `extension` -> `/skills` (Skills)
+  - `app_registration` -> `/agents` (Agents)
+  - `bug_report` -> `/interactive-testing` (Interactive Testing Studio)
+  - `account_tree` -> `/network-visualizer` (Network Graph Visualizer)
+  - `build_circle` -> `/refactoring-lab` (Refactoring & Compression Lab)
+  - `library_books` -> `/knowledge-inspector` (Knowledge & SPO Tuple Inspector)
+  - `work` -> `/workbench` (Workbench)
+- **Top Bar Secondary Controls**: Divider line, layout/view toggle icon (`view_column`), and user profile avatar badge (`BG`).
+
+### Appearance & Styling Uniformity
+- **Layout Consistency**: 2-column split view across all major registries (collapsible sidebar list with search/filter on the left, full edit/blueprint workspace on the right).
+- **Form Layout Standard**: For Traits, Tools, Skills, and Agents edit views, the fields `Name`, `Owner`, `Description`, and `Tags` must be presented as the top lines on the view with consistent labels (`Name`, `Owner`, `Description`, `Tags`).
+- **Card Parity**: Sidebar cards across Agents, Skills, and Tools must share card styling (icon, title, version/meta tags, description snippet, and attached items summary badges like `N Skills` / `N Tools`).
+
 ---
 
 ## Key UI Modules & Features
-
-**UI Consistency Requirement:** For Traits, Tools, Skills, and Agents edit views, the fields `Name`, `Owner`, `Description`, and `Tags` must be presented as the top lines on the view with consistent labels (`Name`, `Owner`, `Description`, `Tags`).
 
 ### 1. Declarative Agent Registry & Builder Module (`/agents`)
 - **Visual Agent Editor**: Form fields for `name`, `description`, `tags`, `implements_traits`, `uses_traits`, `model`, `agent_definition` (system prompt), `tools`, `available_skills`, and `available_agents`.
