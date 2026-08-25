@@ -33,7 +33,7 @@ export class WorkbenchComponent implements OnInit {
   menuItems = [
     { path: '/traits', icon: 'verified', label: 'Trait Contracts' },
     { path: '/tools', icon: 'dns', label: 'Tools' },
-    { path: '/skills-registry', icon: 'extension', label: 'Skills' },
+    { path: '/skills', icon: 'extension', label: 'Skills' },
     { path: '/agents', icon: 'app_registration', label: 'Agents' },
     { path: '/interactive-testing', icon: 'bug_report', label: 'Interactive Testing Studio' },
     { path: '/network-visualizer', icon: 'account_tree', label: 'Network Graph Visualizer' },
@@ -65,18 +65,12 @@ export class WorkbenchComponent implements OnInit {
   onMouseMove(event: MouseEvent): void {
     if (!this.isResizing) return;
     
-    // Calculate new percentage based on mouse position
-    // Assuming the resizer is between the two panes in the right workspace
-    // We'll need to know the width of the right workspace container, but a rough calculation based on screen width can work, 
-    // or we can use a ViewChild for precise measurement. 
-    // For simplicity, let's just do a rough calculation assuming sidebar is 256px when open, 64px when closed.
     const sidebarWidth = this.isSidebarCollapsed ? 64 : 256;
     const rightWorkspaceWidth = window.innerWidth - sidebarWidth;
     const mouseXInWorkspace = event.clientX - sidebarWidth;
     
     let newPercentage = (mouseXInWorkspace / rightWorkspaceWidth) * 100;
     
-    // Constrain the percentage
     if (newPercentage < 20) newPercentage = 20;
     if (newPercentage > 80) newPercentage = 80;
     
@@ -169,13 +163,11 @@ export class WorkbenchComponent implements OnInit {
     }
 
     const content = this.newMessageContent;
-    this.newMessageContent = ''; // Clear input immediately
+    this.newMessageContent = '';
 
     this.apiService.createMessage(this.activeThread.id, 'user', content).subscribe({
       next: (message) => {
         this.activeThreadMessages.push(message);
-        // Normally an agent process would kick off here and respond.
-        // For the sake of the UI implementation, we simply append the message.
       },
       error: (err) => console.error('Failed to send message', err)
     });
@@ -193,7 +185,7 @@ export class WorkbenchComponent implements OnInit {
     
     const newTitle = this.editingTitleContent.trim();
     if (newTitle && newTitle !== this.activeThread.title) {
-      this.activeThread.title = newTitle; // optimistic update
+      this.activeThread.title = newTitle;
       this.apiService.updateThread(this.activeThread.id, newTitle).subscribe({
         next: (updatedThread) => {
           if (this.activeThread && this.activeThread.id === updatedThread.id) {
