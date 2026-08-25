@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatInputModule } from '@angular/material/input';
@@ -11,6 +11,7 @@ import { MatTabsModule } from '@angular/material/tabs';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatBadgeModule } from '@angular/material/badge';
+import { MatMenuModule } from '@angular/material/menu';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { ApiService, Agent, GuardrailConfig, TraitContract } from '../../services/api.service';
@@ -33,6 +34,7 @@ export interface LLMModelOption {
   imports: [
     CommonModule,
     FormsModule,
+    RouterModule,
     MatCardModule,
     MatButtonModule,
     MatInputModule,
@@ -42,6 +44,7 @@ export interface LLMModelOption {
     MatChipsModule,
     MatTabsModule,
     MatBadgeModule,
+    MatMenuModule,
     MatTooltipModule,
     MatSnackBarModule,
     GuardrailsEditorComponent
@@ -51,6 +54,22 @@ export interface LLMModelOption {
   styleUrl: './agent-registry.component.scss'
 })
 export class AgentRegistryComponent implements OnInit {
+  isSidebarCollapsed = false;
+
+  menuItems = [
+    { path: '/workbench', icon: 'dashboard', label: 'Workbench' },
+    { path: '/network', icon: 'hub', label: 'Knowledge Base' },
+    { path: '/skills', icon: 'extension', label: 'Skills' },
+    { path: '/traits', icon: 'psychology', label: 'Traits' },
+    { path: '/tools', icon: 'dns', label: 'Tools' },
+    { path: '/agents', icon: 'smart_toy', label: 'Agents' },
+    { path: '/testing', icon: 'science', label: 'Testing' }
+  ];
+
+  toggleSidebar() {
+    this.isSidebarCollapsed = !this.isSidebarCollapsed;
+  }
+
   agents: Agent[] = [];
   selectedAgent: Agent | null = null;
   searchQuery: string = '';

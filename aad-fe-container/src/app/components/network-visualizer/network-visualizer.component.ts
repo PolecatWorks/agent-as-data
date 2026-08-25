@@ -1,13 +1,14 @@
 import { Component, ElementRef, OnInit, ViewChild, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatInputModule } from '@angular/material/input';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatMenuModule } from '@angular/material/menu';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import mermaid from 'mermaid';
@@ -39,18 +40,36 @@ export interface SelectableEntity {
   imports: [
     CommonModule,
     FormsModule,
+    RouterModule,
     MatCardModule,
     MatButtonModule,
     MatInputModule,
     MatIconModule,
     MatTooltipModule,
     MatProgressSpinnerModule,
+    MatMenuModule
   ],
   templateUrl: './network-visualizer.component.html',
   styleUrl: './network-visualizer.component.scss'
 })
 export class NetworkVisualizerComponent implements OnInit, AfterViewInit {
   @ViewChild('mermaidContainer') mermaidContainer!: ElementRef;
+
+  isSidebarCollapsed = false;
+
+  menuItems = [
+    { path: '/workbench', icon: 'dashboard', label: 'Workbench' },
+    { path: '/network', icon: 'hub', label: 'Knowledge Base' },
+    { path: '/skills', icon: 'extension', label: 'Skills' },
+    { path: '/traits', icon: 'psychology', label: 'Traits' },
+    { path: '/tools', icon: 'dns', label: 'Tools' },
+    { path: '/agents', icon: 'smart_toy', label: 'Agents' },
+    { path: '/testing', icon: 'science', label: 'Testing' }
+  ];
+
+  toggleSidebar() {
+    this.isSidebarCollapsed = !this.isSidebarCollapsed;
+  }
 
   // Data
   agents: Agent[] = [];

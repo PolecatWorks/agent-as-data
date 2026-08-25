@@ -1,13 +1,15 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatInputModule } from '@angular/material/input';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatMenuModule } from '@angular/material/menu';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { ApiService } from '../../services/api.service';
 
 @Component({
@@ -16,17 +18,36 @@ import { ApiService } from '../../services/api.service';
   imports: [
     CommonModule,
     FormsModule,
+    RouterModule,
     MatCardModule,
     MatButtonModule,
     MatInputModule,
     MatIconModule,
     MatSelectModule,
-    MatSnackBarModule
+    MatSnackBarModule,
+    MatMenuModule,
+    MatTooltipModule
   ],
   templateUrl: './tool-manager.component.html',
   styleUrl: './tool-manager.component.scss'
 })
 export class ToolManagerComponent implements OnInit {
+  isSidebarCollapsed = false;
+
+  menuItems = [
+    { path: '/workbench', icon: 'dashboard', label: 'Workbench' },
+    { path: '/network', icon: 'hub', label: 'Knowledge Base' },
+    { path: '/skills', icon: 'extension', label: 'Skills' },
+    { path: '/traits', icon: 'psychology', label: 'Traits' },
+    { path: '/tools', icon: 'dns', label: 'Tools' },
+    { path: '/agents', icon: 'smart_toy', label: 'Agents' },
+    { path: '/testing', icon: 'science', label: 'Testing' }
+  ];
+
+  toggleSidebar() {
+    this.isSidebarCollapsed = !this.isSidebarCollapsed;
+  }
+
   searchQuery: string = '';
   isEditing: boolean = false;
   showDeleteConfirm: boolean = false;
