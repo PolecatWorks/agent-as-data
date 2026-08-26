@@ -261,7 +261,7 @@
               <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
                 <div class="sm:col-span-2">
                   <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Test Prompt</label>
-                  <input type="text" [(ngModel)]="promptInput" placeholder="Type prompt execution instructions..."
+                  <input type="text" [(ngModel)]="promptInput" (keydown.enter)="runExecution()" placeholder="Type prompt execution instructions..."
                          class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all" />
                 </div>
                 <div>
