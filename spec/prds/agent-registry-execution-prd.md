@@ -43,9 +43,13 @@ The **Agent Registry & Execution Engine** in **Agent-As-Data (AAD)** treats AI a
 - **Prompt Search**: Endpoint `POST /api/v1/agents/search` returns the top `n` most relevant agents for a natural language task description.
 
 ### 3. Execution Engine & Guardrails
-- **Synchronous / Streaming**: Immediate execution (`POST /api/v1/agents/:id/execute` and `POST /api/v1/agents/search-and-execute`) streaming output tokens and tool calls via SSE.
+- **Synchronous / Streaming**: Immediate execution (`POST /api/v1/agents/:id/execute`, `POST /api/v1/skills/:id/execute`, and `POST /api/v1/agents/search-and-execute`) streaming output tokens and tool calls via SSE.
 - **Asynchronous Execution Jobs**: Job queue creation (`POST /api/v1/executions`) and status tracking (`GET /api/v1/executions/:id`) for long-running agent workflows.
-- **AI Execution via Rig**: The backend integrates `rig-core` to facilitate interaction with LLM endpoints (e.g. Ollama) allowing natural language inference and task execution capabilities.
+- **AI Execution via Rig & Local Ollama Runtime**:
+  - The backend integrates `rig-core` with the Ollama provider (`rig_core::providers::ollama::Client`).
+  - Configured for local testing against Ollama (`http://localhost:11434` or environment-configured `OLLAMA_API_BASE_URL`), defaulting to `qwen2.5-coder:14b` (or the model declared in the agent's `model` field).
+  - Injects the agent's `agent_definition` (system prompt) or skill's `definition` as the completion instructions, passing the user prompt through Rig's completion agent pipeline.
+  - Returns the final LLM response text along with execution logs and guardrail validation status for live developer inspection.
 ### 4. Agent Refactoring & Compression Engine
 - **Overlap & Duplication Detection**: Vector similarity scans across `agent_embeddings` identify candidate clusters of overlapping, duplicate, or conflicting agents (`POST /api/v1/agents/refactor/analyze`).
 - **Conflict Resolution & Harmonization**: Analyzes candidate agent definitions to identify:

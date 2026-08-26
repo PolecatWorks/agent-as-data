@@ -56,13 +56,18 @@ All views across the application must share an identical, standardized top bar (
 - **Top Bar Secondary Controls**: Divider line, layout/view toggle icon (`view_column`), and user profile avatar badge (`BG`).
 
 ### Appearance & Styling Uniformity
-- **Layout Consistency**: 2-column split view across all major registries (collapsible sidebar list with search/filter on the left, full edit/blueprint workspace on the right).
+- **Layout Consistency**: 2-column split view across all major registries and studios (collapsible sidebar list with search/filter on the left, full edit/blueprint or execution workspace on the right).
 - **Form Layout Standard**: For Traits, Tools, Skills, and Agents edit views, the fields `Name`, `Owner`, `Description`, and `Tags` must be presented as the top lines on the view with consistent labels (`Name`, `Owner`, `Description`, `Tags`).
-- **Card Parity**: Sidebar cards across Agents, Skills, and Tools must share card styling (icon, title, version/meta tags, description snippet, and attached items summary badges like `N Skills` / `N Tools`).
+- **Card Parity**: Sidebar cards across Agents, Skills, Tools, and the Interactive Testing Studio must share unified card styling (icon, title, version/meta tags, description snippet, and attached items summary badges like `N Skills` / `N Tools`).
+- **Interactive Testing Studio Alignment with Skills Layout**:
+  - **Collapsible Sidebar**: Left-hand target entity selector with smooth collapse/expand toggle (`w-72` expanded / `w-16` collapsed) matching Skills Registry navigation.
+  - **Entity Filter & Search**: Pinned search input filtering across both agents and skills.
+  - **Entity Context & Prompt Inspector**: Selection of an agent or skill displays the entity's full **Description** and **System Prompt / Definition** (`agent_definition` for agents, `definition` for skills) in an inspectable, collapsible card directly within the testing workspace so developers can reference instructions while testing.
+  - **Unified Visual Hierarchy**: Consistent top action bar, status badges, and Material styling.
 - **Independent Card List Scrolling & Viewport Isolation Standard**:
   - **Fixed Viewport Shell**: The global application shell (`app-root`, `html`, `body`, and `router-outlet + *`) is strictly locked to `100%` viewport height with `overflow: hidden`, preventing the outer page, browser window, or top navigation bar from ever scrolling.
   - **Isolated List Scrolling**: Any collection or list of objects/cards (including sidebar lists on `/skills`, `/agents`, `/traits`, `/tools`, `/workbench`, and `/network-visualizer`, cluster/redundancy columns in `/refactoring-lab`, entity selectors in `/interactive-testing`, RAG chunk results, and SPO tuple results in `/knowledge-inspector`) must be contained in a dedicated scroll container (`flex-1 min-h-0 overflow-y-auto`).
-  - **User Interaction Expectation**: When a user hovers their mouse over a list of cards (e.g. the list of skills on `/skills` or `/skills/:id`) and scrolls with their mouse wheel or trackpad, only the list of cards scrolls vertically. The top bar, search bar, and opposite workspace pane remain entirely stationary.
+  - **User Interaction Expectation**: When a user hovers their mouse over a list of cards (e.g. the list of skills on `/skills` or target entities on `/interactive-testing`) and scrolls with their mouse wheel or trackpad, only the list of cards scrolls vertically. The top bar, search bar, and opposite workspace pane remain entirely stationary.
   - **Detail Form & Inner Container Scrolling**: The main detail/editor workspace pane independently scrolls its own form content when required without bubbling scroll events to the outer viewport shell.
 
 ---
@@ -90,33 +95,74 @@ All views across the application must share an identical, standardized top bar (
 - **Idempotent Create**: Trait creation uses upsert semantics (`ON CONFLICT (name) DO UPDATE`) so duplicate names update in place rather than failing with a constraint error.
 - **Sync with Backend**: Trait editor actions (create, update, delete) are verified by integration tests (`test_journey_11_trait_editor_ui.robot`) to confirm UI and backend remain in sync.
 
-### 4. Interactive Agent Testing Studio (Playground)
-- **Live Execution Workbench**: Test synchronous execution (`POST /api/v1/agents/:id/execute`) and prompt discovery execution (`search-and-execute`).
-- **Real-Time SSE Token Streaming**: Renders streaming tokens, reasoning logs, and tool call invocations in real-time.
+### 4. Interactive Agent Testing Studio (`/interactive-testing`)
+
+```mermaid
+flowchart TD
+    subgraph TestingStudioLayout ["Interactive Testing Studio Layout (Skills Registry Alignment)"]
+        subgraph LeftSidebar ["Left Sidebar (Collapsible: w-72 / w-16)"]
+            SidebarHeader["Header + Collapse/Expand Toggle"]
+            SearchInput["Search Filter (Agents & Skills)"]
+            EntityList["Scrollable Entity Cards List\n(Name, Type, Version, Tags, N Skills / Tools)"]
+        end
+        
+        subgraph RightWorkspace ["Right Workspace (Execution & Inspection)"]
+            TopActionBar["Top Bar: Entity Title, Model Selector (e.g. qwen2.5-coder:14b), Status (IDLE/RUNNING), Execute Button"]
+            
+            subgraph EntityInspector ["Selected Entity Context & Prompt Inspector"]
+                EntityDesc["Description Panel (Expanded metadata & purpose)"]
+                PromptViewer["System Prompt / Definition Inspector\n(agent_definition / skill definition in formatted block)"]
+            end
+            
+            subgraph ExecutionControls ["Execution & Streaming Console"]
+                TestInputs["Prompt Input + Optional Webhook URL + Model Override"]
+                TerminalLog["Dark Terminal Window (Real-time SSE token stream, logs, tool invocations)"]
+                FinalOutputCard["Final LLM Output Inspector (Parsed output from LLM + Agent/Skill)"]
+            end
+        end
+    end
+
+    LeftSidebar -->|Select Agent or Skill| EntityInspector
+    ExecutionControls -->|Execute Request| BackendAPI["POST /api/v1/agents/:id/execute\n(or /api/v1/skills/:id/execute)"]
+    BackendAPI -->|Rig-Core + Local Ollama (qwen2.5-coder:14b)| LLMRuntime["Ollama Runtime (http://localhost:11434)"]
+    LLMRuntime -->|SSE Token Stream & Final Text| TerminalLog
+    LLMRuntime -->|Final LLM Response| FinalOutputCard
+```
+
+- **Skills-Aligned Layout & Styling**:
+  - **Collapsible Entity Sidebar**: Responsive left panel (`w-72` expanded / `w-16` collapsed) with toggle control and scroll isolation.
+  - **Entity Cards with Metadata Badges**: Renders unified card styling with icons (`smart_toy` for agents, `extension` for skills), name, version pills (`v1.0.0`), description snippets, and attached items badges (`N Skills`, `N Tools`).
+- **Live Description & System Prompt / Definition Inspector**:
+  - Automatically loads and displays the active entity's **Description** and full **Prompt / Definition** (`agent_definition` for agents, `definition` for skills).
+  - Presented in an inspectable, collapsible context card with monospace formatting and easy copy/reference controls, allowing developers to inspect behavioral instructions and constraints directly alongside test executions.
+- **Rig-Powered Execution with Local Ollama Integration**:
+  - Execution requests dispatch to the backend execution engine powered by `rig-core`.
+  - Configured to connect to the developer's local Ollama instance (`http://localhost:11434` / `OLLAMA_API_BASE_URL`), defaulting to models such as `qwen2.5-coder:14b` or the agent's defined model.
+  - Injects `agent_definition` / `definition` as the system context prompt, passing the developer's test input through the Rig completion pipeline.
+  - Directly supports executing both Agents and Skills, providing unified inspection across deterministic and reasoning entities.
+- **Final LLM Output & Telemetry Inspector**:
+  - Renders the complete, finalized output text from the LLM + Agent/Skill execution.
+  - Accompanied by real-time SSE token streaming, status badges (`IDLE`, `RUNNING`, `COMPLETED`, `FAILED`), execution latency, and guardrail validation audit checks in the dark terminal console (`bg-slate-950`).
 - **Dynamic Trait Mapping Overrides**: UI controls to override `trait_mappings` during test executions (e.g. mapping `trait:SecurityAuditor` to a custom test agent UUID).
 - **Contract Verification Tester**: Live badge showing pass/fail status of `verify-contract` semantic fit and trait compatibility checks.
 
-### 5. Agent Delegation Network Visualizer
+### 5. Agent Delegation Network Visualizer (`/network-visualizer`)
 - **Interactive Mermaid / Canvas Graph**: Visualizes agent hierarchies, sub-agent delegation links (`available_agents`), and skill dependencies (`available_skills`).
 - **Live Filtering**: Filter visual graph by trait interface, ownership group, or tag.
 
-### 4. Agent Refactoring & Compression Lab
+### 6. Agent Refactoring & Compression Lab (`/refactoring-lab`)
 - **Overlap & Duplication Scanner**: Trigger cluster analysis (`POST /api/v1/agents/refactor/analyze`) to discover duplicate or conflicting agents.
 - **Harmonization & Merge Diff Viewer**: Review suggested merges or deliberate contradiction labels before applying changes to `agent_revisions`.
 
-### 5. Knowledge & SPO Tuple Inspector
+### 7. Knowledge & SPO Tuple Inspector (`/knowledge-inspector`)
 - **Hybrid Knowledge Search**: RAG vector query input (`POST /api/v1/knowledge/search`) displaying semantic chunk similarity scores alongside Subject-Predicate-Object relation tuples (`knowledge_tuples`).
 - **Graph Traversal Tree**: Interactive multi-hop entity graph visualizer.
 
-### 6. Remote Tool Manager
+### 8. Remote Tool Manager (`/tools`)
 - **Tool Ingestion**: Register external MCP servers Stdio commands or SSE transport URLs (`POST /api/v1/agents/tools/register`).
 - **Cached Tool & Schema Browser**: Inspect cached tool argument schemas, descriptions, and type signatures retrieved from remote servers.
 
-### 7. Interactive Graph Visualizer
-- **Mermaid D3 Network Architecture**: An interactive map rendering live declarative agent architectures, sub-agent delegation (`agent:`), utilized remote tools (`mcp:`), and deterministic skill executions (`skill:`).
-- **Clean Labeling & Hover States**: Version numbers, tool counts, and item descriptions are natively injected into node hover tooltips to avoid cluttering visual text labels.
-
-### 8. Workbench (Multiuser Conversational Threads)
+### 9. Workbench (Multiuser Conversational Threads) (`/workbench`)
 - **2-Column Layout**:
   - **Left Sidebar**: Collapsible threads list showing historical conversations (filtered by current active `userid`) with a global search filter. Each thread is rendered as a rich card displaying the thread title, short-form date badge, description (if any), and string tags.
   - **Right Workspace**: A resizable split-pane area containing the conversation and editor views, topped by a global action bar.
@@ -124,7 +170,7 @@ All views across the application must share an identical, standardized top bar (
     - **Conversation Pane (Left)**: Conversational chat interface for the active thread. Features a click-to-edit thread title header and a message input area. Supports direct URL routing via `/workbench/:threadId`.
     - **Editor Pane (Right)**: Direct content editing and review area (e.g., code diffs, files, or context modified through conversation).
 
-### 9. Robot Framework Integration Testing Suite (Ref: `sward-warden/integration-tests`)
+### 10. Robot Framework Integration Testing Suite (Ref: `sward-warden/integration-tests`)
 - **Declarative User Journey Robot Tests**: `/integration-tests/tests/*.robot` test cases mapping 1-to-1 to all 12 user journeys, covering 24 tests total (all currently passing).
 - **Python Integration Libraries**: Custom Python helper modules (`AADRequests.py`) extending Robot Framework for authenticated REST requests, database seeding, and state verification.
 - **Idempotent Seed Test**: `test_seed_exemplar_data.robot` seeds the database with exemplar data using upsert semantics — safe to re-run at any time without constraint conflicts.
@@ -135,12 +181,14 @@ All views across the application must share an identical, standardized top bar (
 
 ## User Journeys: Testing Agents, Skills & Traits via UI
 
-### Journey 1: Interactive Agent Testing via Playground
-**Scenario**: A developer finishes modifying an agent's system prompt and wants to verify its behavior before saving.
-1. The developer navigates to the **Interactive Agent Testing Studio**.
-2. They select the agent from the registry and provide a test input payload.
-3. The UI opens a real-time SSE stream, passing the input to the backend, which is now powered by the `rig-core` LLM integration.
-4. Tokens are streamed back to the frontend, along with tool call invocations, rendering reasoning logs in real-time.
+### Journey 1: Interactive Agent & Skill Testing via Playground
+**Scenario**: A developer finishes modifying an agent's system prompt or a skill's instructions and wants to verify its behavior before saving.
+1. The developer navigates to the **Interactive Agent Testing Studio** (`/interactive-testing`).
+2. They select the agent or skill from the collapsible left sidebar list.
+3. The right workspace displays the entity's complete **Description** and **System Prompt / Definition** (`agent_definition` or `definition`) in an inspectable panel, allowing the developer to examine the exact active prompt guidelines during the test.
+4. The developer provides a test input payload and clicks **Execute**.
+5. The UI opens a real-time SSE stream, passing the input to the backend, which is powered by the `rig-core` LLM integration.
+6. Tokens are streamed back to the dark terminal window in real-time alongside tool call invocations, reasoning logs, and guardrail statuses.
 
 ### Journey 2: Trait Contract Verification Testing
 **Scenario**: A developer has built a new agent that is intended to map to the `SecurityAuditor` trait and wants to test if it satisfies the contract.
