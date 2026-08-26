@@ -89,7 +89,7 @@ export class InteractiveTestingComponent implements OnInit {
   selectedModel: string = 'qwen2.5-coder:14b';
 
   // Execution
-  promptInput: string = 'Run a diagnostic review and outline key recommendations.';
+  promptInput: string = '';
   webhookUrl: string = '';
   isExecuting: boolean = false;
   executionOutput: string = '';

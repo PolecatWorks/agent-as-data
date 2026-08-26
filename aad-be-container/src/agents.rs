@@ -225,6 +225,19 @@ pub async fn delete_agent(
     let mut agent_res = get_agent(State(pool.clone()), Path(id)).await?;
 
     if params.hard.unwrap_or(false) {
+        // Check if there are referencing executions
+        let exec_count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM executions WHERE agent_id = $1")
+            .bind(id)
+            .fetch_one(&pool)
+            .await
+            .unwrap_or(0);
+        if exec_count > 0 {
+            return Err((
+                StatusCode::CONFLICT,
+                "Cannot hard delete agent with existing executions".to_string(),
+            ));
+        }
+
         sqlx::query("DELETE FROM agents WHERE id = $1")
             .bind(id)
             .execute(&pool)
