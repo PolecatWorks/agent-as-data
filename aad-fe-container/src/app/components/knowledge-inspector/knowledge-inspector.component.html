@@ -1,74 +1,133 @@
-<div class="p-6 max-w-7xl mx-auto space-y-6">
-  <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex justify-between items-center">
-    <div class="flex items-center space-x-3">
+<div class="h-full w-full flex flex-col bg-slate-50 overflow-hidden">
+  <!-- Top Bar -->
+  <div class="h-14 bg-white border-b border-slate-200 flex items-center justify-between px-4 shrink-0 shadow-sm z-10">
+    <!-- Left side of top bar (Title) -->
+    <div class="flex items-center gap-2">
       <mat-icon class="text-blue-600">library_books</mat-icon>
-      <div>
-        <h1 class="text-xl font-bold text-slate-800 m-0">Knowledge & SPO Relation Tuple Inspector</h1>
-        <p class="text-sm text-slate-500 m-0">Hybrid pgvector semantic chunk search and multi-hop entity relation tuple graph inspector</p>
-      </div>
+      <h1 class="text-lg font-black text-slate-800 m-0">Knowledge & SPO Tuple Inspector</h1>
+    </div>
+
+    <!-- Right side of top bar (Actions) -->
+    <div class="flex items-center gap-2">
+      <!-- Hamburger Menu for App Navigation -->
+      <button mat-icon-button [matMenuTriggerFor]="appMenu" aria-label="Menu" class="text-slate-500 hover:text-slate-800">
+        <mat-icon>menu</mat-icon>
+      </button>
+
+      <mat-menu #appMenu="matMenu">
+        @for (item of menuItems; track item.path) {
+          <a mat-menu-item [routerLink]="item.path" routerLinkActive="active-link">
+            <mat-icon>{{ item.icon }}</mat-icon>
+            <span>{{ item.label }}</span>
+          </a>
+        }
+      </mat-menu>
+
+      <div class="w-px h-6 bg-slate-200 mx-1"></div> <!-- Divider -->
+
+      <!-- View Toggle Icon (Mock) -->
+      <button mat-icon-button class="text-slate-500 hover:text-slate-800" title="Change View">
+        <mat-icon>view_column</mat-icon>
+      </button>
+
+      <!-- User Profile (Mock) -->
+      <button mat-icon-button class="ml-1">
+        <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-amber-400 to-orange-500 border-2 border-white shadow-sm flex items-center justify-center text-white font-bold text-sm">
+          BG
+        </div>
+      </button>
     </div>
   </div>
 
-  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-    <!-- RAG Vector Search Card -->
-    <mat-card class="rounded-xl border border-slate-200">
-      <mat-card-header class="border-b border-slate-100 pb-3">
-        <mat-card-title class="text-base font-bold text-slate-800">Hybrid Vector RAG Search</mat-card-title>
-      </mat-card-header>
-      <mat-card-content class="p-4 space-y-4">
-        <div class="flex gap-2">
-          <mat-form-field appearance="outline" class="flex-1">
-            <mat-label>Semantic Search Query</mat-label>
-            <input matInput [(ngModel)]="searchQuery" (keyup.enter)="runSearch()">
-          </mat-form-field>
-          <button mat-flat-button color="primary" class="h-14" (click)="runSearch()">
-            <mat-icon>search</mat-icon> Search
-          </button>
+  <!-- Main Workspace: 2 Column Grid with Scrollable Result Lists -->
+  <div class="flex-1 min-h-0 p-6 flex flex-col overflow-hidden">
+    <div class="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
+
+      <!-- Column 1: RAG Vector Search Card -->
+      <mat-card class="!rounded-2xl border border-slate-200/80 shadow-sm flex flex-col h-full overflow-hidden bg-white">
+        <mat-card-header class="p-4 border-b border-slate-100 shrink-0">
+          <mat-card-title class="text-sm font-bold text-slate-800 flex items-center gap-2">
+            <mat-icon class="!w-4 !h-4 !text-base text-blue-600">search</mat-icon>
+            Hybrid Vector RAG Search ({{ searchResults.length }} chunks)
+          </mat-card-title>
+        </mat-card-header>
+
+        <!-- Search Input Toolbar (Fixed/Pinned) -->
+        <div class="p-4 pb-2 shrink-0">
+          <div class="flex gap-2">
+            <mat-form-field appearance="outline" class="flex-1">
+              <mat-label>Semantic Search Query</mat-label>
+              <input matInput [(ngModel)]="searchQuery" (keyup.enter)="runSearch()">
+            </mat-form-field>
+            <button mat-flat-button color="primary" class="h-[52px] !rounded-xl !font-bold" (click)="runSearch()">
+              <mat-icon>search</mat-icon> Search
+            </button>
+          </div>
         </div>
 
-        <div class="space-y-2 max-h-[400px] overflow-y-auto">
+        <!-- Scrollable Chunk Results List -->
+        <mat-card-content class="flex-1 min-h-0 overflow-y-auto px-4 pb-4 space-y-2">
           @for (res of searchResults; track res.chunk_index) {
-            <div class="p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-1">
+            <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1 hover:border-slate-300 transition-all">
               <div class="flex justify-between items-center text-xs text-slate-500 font-medium">
-                <span>Chunk #{{ res.chunk_index }}</span>
-                <span class="px-2 py-0.5 bg-blue-100 text-blue-800 rounded font-bold">Similarity Score: {{ (res.score * 100).toFixed(1) }}%</span>
+                <span class="font-bold text-slate-700">Chunk #{{ res.chunk_index }}</span>
+                <span class="px-2 py-0.5 bg-blue-100 text-blue-800 rounded-md font-bold text-[10px]">
+                  Similarity Score: {{ (res.score * 100).toFixed(1) }}%
+                </span>
               </div>
               <p class="text-xs text-slate-800 m-0 leading-relaxed">{{ res.chunk_text }}</p>
             </div>
-          }
-        </div>
-      </mat-card-content>
-    </mat-card>
-
-    <!-- SPO Relation Tuple Card -->
-    <mat-card class="rounded-xl border border-slate-200">
-      <mat-card-header class="border-b border-slate-100 pb-3">
-        <mat-card-title class="text-base font-bold text-slate-800">SPO Tuple Graph Traversal</mat-card-title>
-      </mat-card-header>
-      <mat-card-content class="p-4 space-y-4">
-        <div class="flex gap-2">
-          <mat-form-field appearance="outline" class="flex-1">
-            <mat-label>Subject Canonical Entity</mat-label>
-            <input matInput [(ngModel)]="subjectQuery" (keyup.enter)="runTraverse()">
-          </mat-form-field>
-          <button mat-flat-button color="accent" class="h-14" (click)="runTraverse()">
-            <mat-icon>account_tree</mat-icon> Traverse Graph
-          </button>
-        </div>
-
-        <div class="space-y-2 max-h-[400px] overflow-y-auto">
-          @for (tuple of graphResults; track tuple.object) {
-            <div class="p-3 bg-emerald-50 rounded-lg border border-emerald-200 flex items-center justify-between text-xs">
-              <div class="flex items-center space-x-2 font-mono">
-                <span class="px-2 py-1 bg-emerald-200 text-emerald-900 rounded font-bold">{{ tuple.subject }}</span>
-                <span class="text-emerald-600 font-semibold">─[{{ tuple.predicate }}]─►</span>
-                <span class="px-2 py-1 bg-emerald-200 text-emerald-900 rounded font-bold">{{ tuple.object }}</span>
-              </div>
-              <span class="text-[10px] text-emerald-700 font-bold">Confidence: {{ tuple.confidence }}</span>
+          } @empty {
+            <div class="text-center py-12 text-slate-400 text-xs">
+              No matching knowledge chunks found.
             </div>
           }
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Column 2: SPO Relation Tuple Card -->
+      <mat-card class="!rounded-2xl border border-slate-200/80 shadow-sm flex flex-col h-full overflow-hidden bg-white">
+        <mat-card-header class="p-4 border-b border-slate-100 shrink-0">
+          <mat-card-title class="text-sm font-bold text-slate-800 flex items-center gap-2">
+            <mat-icon class="!w-4 !h-4 !text-base text-emerald-600">account_tree</mat-icon>
+            SPO Tuple Graph Traversal ({{ graphResults.length }} triples)
+          </mat-card-title>
+        </mat-card-header>
+
+        <!-- Traversal Input Toolbar (Fixed/Pinned) -->
+        <div class="p-4 pb-2 shrink-0">
+          <div class="flex gap-2">
+            <mat-form-field appearance="outline" class="flex-1">
+              <mat-label>Subject Canonical Entity</mat-label>
+              <input matInput [(ngModel)]="subjectQuery" (keyup.enter)="runTraverse()">
+            </mat-form-field>
+            <button mat-flat-button color="accent" class="h-[52px] !rounded-xl !font-bold" (click)="runTraverse()">
+              <mat-icon>account_tree</mat-icon> Traverse
+            </button>
+          </div>
         </div>
-      </mat-card-content>
-    </mat-card>
+
+        <!-- Scrollable Tuple Results List -->
+        <mat-card-content class="flex-1 min-h-0 overflow-y-auto px-4 pb-4 space-y-2">
+          @for (tuple of graphResults; track tuple.object) {
+            <div class="p-3 bg-emerald-50/70 rounded-xl border border-emerald-200 flex items-center justify-between text-xs hover:border-emerald-300 transition-all">
+              <div class="flex items-center space-x-2 font-mono flex-wrap gap-1">
+                <span class="px-2 py-0.5 bg-emerald-200 text-emerald-900 rounded-md font-bold text-[11px]">{{ tuple.subject }}</span>
+                <span class="text-emerald-700 font-semibold text-[11px]">─[{{ tuple.predicate }}]─►</span>
+                <span class="px-2 py-0.5 bg-emerald-200 text-emerald-900 rounded-md font-bold text-[11px]">{{ tuple.object }}</span>
+              </div>
+              <span class="text-[10px] text-emerald-800 font-bold bg-emerald-100 px-2 py-0.5 rounded-md shrink-0 ml-2">
+                Conf: {{ tuple.confidence }}
+              </span>
+            </div>
+          } @empty {
+            <div class="text-center py-12 text-slate-400 text-xs">
+              No relational graph tuples found.
+            </div>
+          }
+        </mat-card-content>
+      </mat-card>
+
+    </div>
   </div>
 </div>

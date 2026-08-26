@@ -1,34 +1,74 @@
-<div class="container mx-auto p-6 space-y-6">
+<div class="h-full w-full flex flex-col bg-slate-50 overflow-hidden">
+  <!-- Top Bar -->
+  <div class="h-14 bg-white border-b border-slate-200 flex items-center justify-between px-4 shrink-0 shadow-sm z-10">
+    <!-- Left side of top bar (Title) -->
+    <div class="flex items-center gap-2">
+      <mat-icon class="text-amber-500">bug_report</mat-icon>
+      <h1 class="text-lg font-black text-slate-800 m-0">Interactive Testing Studio</h1>
+    </div>
 
-  <!-- Top Banner -->
-  <div class="flex justify-between items-center bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-    <div class="space-y-1">
-      <h1 class="text-2xl font-black text-slate-900 m-0 flex items-center gap-2">
-        <mat-icon class="!w-8 !h-8 !text-3xl text-amber-500 font-bold">bug_report</mat-icon> Interactive Testing Studio
-      </h1>
-      <p class="text-sm text-slate-500 m-0">
-        Live prompt execution, token streaming, guardrail interceptor validation, and contract testing.
-      </p>
+    <!-- Right side of top bar (Actions) -->
+    <div class="flex items-center gap-2">
+      <button mat-flat-button color="primary" class="!rounded-lg !px-4 !font-bold h-9 mr-2"
+              [disabled]="isExecuting || !selectedEntity" (click)="runExecution()">
+        <mat-icon class="mr-1">play_arrow</mat-icon> Execute
+      </button>
+
+      <!-- Hamburger Menu for App Navigation -->
+      <button mat-icon-button [matMenuTriggerFor]="appMenu" aria-label="Menu" class="text-slate-500 hover:text-slate-800">
+        <mat-icon>menu</mat-icon>
+      </button>
+
+      <mat-menu #appMenu="matMenu">
+        @for (item of menuItems; track item.path) {
+          <a mat-menu-item [routerLink]="item.path" routerLinkActive="active-link">
+            <mat-icon>{{ item.icon }}</mat-icon>
+            <span>{{ item.label }}</span>
+          </a>
+        }
+      </mat-menu>
+
+      <div class="w-px h-6 bg-slate-200 mx-1"></div> <!-- Divider -->
+
+      <!-- View Toggle Icon (Mock) -->
+      <button mat-icon-button class="text-slate-500 hover:text-slate-800" title="Change View">
+        <mat-icon>view_column</mat-icon>
+      </button>
+
+      <!-- User Profile (Mock) -->
+      <button mat-icon-button class="ml-1">
+        <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-amber-400 to-orange-500 border-2 border-white shadow-sm flex items-center justify-center text-white font-bold text-sm">
+          BG
+        </div>
+      </button>
     </div>
   </div>
 
   <!-- Main Split-Pane Workspace -->
-  <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+  <div class="flex-1 min-h-0 p-6 flex flex-col overflow-hidden">
+    <div class="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
 
-    <!-- Left Sidebar: Agent & Skill Selector -->
-    <div class="lg:col-span-4 space-y-4">
-      <mat-card class="!rounded-2xl border border-slate-200/80 shadow-sm">
-        <mat-card-content class="p-4 space-y-4">
+      <!-- Left Column: Agent & Skill Selector Card -->
+      <div class="lg:col-span-4 h-full flex flex-col min-h-0 overflow-hidden">
+        <mat-card class="!rounded-2xl border border-slate-200/80 shadow-sm h-full flex flex-col overflow-hidden bg-white">
+          <mat-card-header class="p-4 border-b border-slate-100 shrink-0">
+            <mat-card-title class="text-sm font-bold text-slate-800 flex items-center gap-2">
+              <mat-icon class="!w-4 !h-4 !text-base text-amber-500">list_alt</mat-icon>
+              Target Entity ({{ getFilteredEntities().length }})
+            </mat-card-title>
+          </mat-card-header>
 
-          <!-- Search -->
-          <div class="relative">
-            <mat-icon class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">search</mat-icon>
-            <input type="text" placeholder="Search agents or skills..."
-                   class="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all"
-                   [(ngModel)]="searchQuery" />
+          <!-- Search (Fixed/Pinned) -->
+          <div class="p-4 pb-2 shrink-0">
+            <div class="relative">
+              <mat-icon class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 !w-4 !h-4 !text-base">search</mat-icon>
+              <input type="text" placeholder="Search agents or skills..."
+                     class="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all"
+                     [(ngModel)]="searchQuery" />
+            </div>
           </div>
 
-          <!-- Loading -->
+          <!-- Loading Spinner -->
           @if (isLoading) {
             <div class="flex justify-center items-center py-10 text-slate-400 gap-3">
               <mat-spinner diameter="24"></mat-spinner>
@@ -36,25 +76,28 @@
             </div>
           }
 
-          <!-- Entity List -->
+          <!-- Scrollable Entity Cards List -->
           @if (!isLoading) {
-            <div class="space-y-2 max-h-[600px] overflow-y-auto">
+            <mat-card-content class="flex-1 min-h-0 overflow-y-auto px-4 pb-4 space-y-2">
               @if (getFilteredEntities().length === 0) {
                 <div class="text-center py-8 text-slate-400 text-xs">
                   No matching agents or skills found.
                 </div>
               }
               @for (entity of getFilteredEntities(); track entity.id) {
-                <div class="p-4 rounded-xl border transition-all cursor-pointer bg-white hover:border-slate-300"
+                <div class="p-3 rounded-xl border transition-all cursor-pointer bg-white hover:border-slate-300"
                      [class.border-amber-500]="selectedEntity?.id === entity.id && selectedEntity?.type === entity.type"
-                     [class.shadow-md]="selectedEntity?.id === entity.id && selectedEntity?.type === entity.type"
+                     [class.shadow-sm]="selectedEntity?.id === entity.id && selectedEntity?.type === entity.type"
+                     [class.ring-1]="selectedEntity?.id === entity.id && selectedEntity?.type === entity.type"
+                     [class.ring-amber-500]="selectedEntity?.id === entity.id && selectedEntity?.type === entity.type"
                      [class.border-slate-200]="!(selectedEntity?.id === entity.id && selectedEntity?.type === entity.type)"
                      (click)="selectEntity(entity)">
                   <div class="flex justify-between items-center">
-                    <h5 class="text-sm font-bold text-slate-900 m-0">
-                      {{ getEntityIcon(entity.type) }} {{ entity.name }}
+                    <h5 class="text-xs font-bold text-slate-900 m-0 truncate flex items-center gap-1.5">
+                      <span>{{ getEntityIcon(entity.type) }}</span>
+                      <span class="truncate">{{ entity.name }}</span>
                     </h5>
-                    <span class="px-2.5 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded-md">
+                    <span class="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded-md shrink-0 ml-1">
                       v{{ entity.version }}
                     </span>
                   </div>
@@ -64,9 +107,9 @@
                     </p>
                   }
                   @if (entity.tags && entity.tags.length > 0) {
-                    <div class="flex flex-wrap gap-1 pt-2">
+                    <div class="flex flex-wrap gap-1 pt-1.5">
                       @for (tag of entity.tags; track tag) {
-                        <span class="px-2 py-0.5 bg-slate-100 text-slate-600 text-[10px] font-mono rounded">
+                        <span class="px-1.5 py-0.5 bg-slate-100 text-slate-600 text-[9px] font-mono rounded">
                           #{{ tag }}
                         </span>
                       }
@@ -74,65 +117,71 @@
                   }
                 </div>
               }
-            </div>
+            </mat-card-content>
           }
+        </mat-card>
+      </div>
 
-        </mat-card-content>
-      </mat-card>
-    </div>
-
-    <!-- Right Content Panel: Execution Console -->
-    <div class="lg:col-span-8">
-      <mat-card class="!rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
-        <div class="p-5 bg-slate-50/80 border-b border-slate-200/60 flex justify-between items-center">
-          <div class="flex items-center gap-2">
-            <mat-icon class="text-slate-500 !w-5 !h-5 !text-xl">terminal</mat-icon>
-            <div>
-              <h2 class="text-base font-black text-slate-800 m-0">
-                @if (selectedEntity) {
-                  {{ getEntityIcon(selectedEntity.type) }} {{ selectedEntity.name }}
-                } @else {
-                  Execution Console
+      <!-- Right Column: Execution Console Card -->
+      <div class="lg:col-span-8 h-full flex flex-col min-h-0 overflow-hidden">
+        <mat-card class="!rounded-2xl border border-slate-200/80 shadow-sm h-full flex flex-col overflow-hidden bg-white">
+          <div class="p-4 bg-slate-50/80 border-b border-slate-200/60 flex justify-between items-center shrink-0">
+            <div class="flex items-center gap-2">
+              <mat-icon class="text-slate-500 !w-5 !h-5 !text-xl">terminal</mat-icon>
+              <div>
+                <h2 class="text-sm font-black text-slate-800 m-0">
+                  @if (selectedEntity) {
+                    {{ getEntityIcon(selectedEntity.type) }} {{ selectedEntity.name }}
+                  } @else {
+                    Execution Console
+                  }
+                </h2>
+                @if (selectedEntity?.version) {
+                  <p class="text-[11px] text-slate-400 m-0">
+                    {{ selectedEntity!.type === 'agent' ? 'Agent' : 'Skill' }} &mdash; v{{ selectedEntity!.version }}
+                  </p>
                 }
-              </h2>
-              @if (selectedEntity?.version) {
-                <p class="text-xs text-slate-400 m-0 mt-0.5">
-                  {{ selectedEntity!.type === 'agent' ? 'Agent' : 'Skill' }} &mdash; v{{ selectedEntity!.version }}
-                </p>
-              }
+              </div>
             </div>
-          </div>
-          <button mat-flat-button color="primary" class="!rounded-xl !font-bold"
-                  [disabled]="isExecuting || !selectedEntity" (click)="runExecution()">
-            <mat-icon>play_arrow</mat-icon> Execute
-          </button>
-        </div>
-        <mat-card-content class="p-5 space-y-4">
-          <mat-form-field appearance="outline" class="w-full">
-            <mat-label>Input Prompt Payload</mat-label>
-            <textarea matInput rows="3" [(ngModel)]="promptInput" placeholder="Type prompt execution instructions..."></textarea>
-          </mat-form-field>
-
-          <mat-form-field appearance="outline" class="w-full">
-            <mat-label>Optional Webhook URL</mat-label>
-            <input matInput [(ngModel)]="webhookUrl" placeholder="https://example.com/webhook">
-          </mat-form-field>
-
-          <!-- Execution Log Terminal -->
-          <div class="bg-slate-950 text-slate-100 rounded-xl font-mono text-xs overflow-hidden border border-slate-800">
-            <div class="flex justify-between items-center text-slate-400 border-b border-slate-800 px-4 py-2.5">
-              <span class="font-bold tracking-widest text-[10px] uppercase">Execution Log Terminal</span>
-              <span class="px-2.5 py-0.5 rounded-md text-[10px] font-bold tracking-wider"
-                    [ngClass]="isExecuting ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' : 'bg-slate-800 text-slate-400 border border-slate-700'">
-                {{ isExecuting ? '● RUNNING' : '○ IDLE' }}
+            <div class="flex items-center gap-2">
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded-md"
+                    [ngClass]="isExecuting ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-600'">
+                {{ isExecuting ? 'RUNNING' : 'IDLE' }}
               </span>
             </div>
-            <pre class="whitespace-pre-wrap m-0 p-4 text-slate-200 min-h-[300px] leading-relaxed">{{ executionOutput || 'Select an agent or skill from the list, then click Execute.' }}</pre>
           </div>
-        </mat-card-content>
-      </mat-card>
-    </div>
 
+          <mat-card-content class="flex-1 min-h-0 p-4 flex flex-col gap-3 overflow-hidden">
+            <!-- Inputs Toolbar (Fixed) -->
+            <div class="space-y-2 shrink-0">
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <div class="sm:col-span-2">
+                  <input type="text" [(ngModel)]="promptInput" placeholder="Type prompt execution instructions..."
+                         class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all" />
+                </div>
+                <div>
+                  <input type="text" [(ngModel)]="webhookUrl" placeholder="Optional Webhook URL..."
+                         class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all" />
+                </div>
+              </div>
+            </div>
+
+            <!-- Execution Log Terminal (Scrollable inner logs) -->
+            <div class="flex-1 min-h-0 flex flex-col bg-slate-950 text-slate-100 rounded-xl font-mono text-xs overflow-hidden border border-slate-800">
+              <div class="flex justify-between items-center text-slate-400 border-b border-slate-800 px-4 py-2 shrink-0">
+                <span class="font-bold tracking-widest text-[10px] uppercase">Execution Log Terminal</span>
+                <span class="px-2 py-0.5 rounded-md text-[10px] font-bold tracking-wider"
+                      [ngClass]="isExecuting ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' : 'bg-slate-800 text-slate-400 border border-slate-700'">
+                  {{ isExecuting ? '● RUNNING' : '○ IDLE' }}
+                </span>
+              </div>
+              <pre class="flex-1 min-h-0 overflow-y-auto whitespace-pre-wrap m-0 p-4 text-slate-200 leading-relaxed font-mono text-xs">{{ executionOutput || 'Select an agent or skill from the list, then click Execute.' }}</pre>
+            </div>
+          </mat-card-content>
+        </mat-card>
+      </div>
+
+    </div>
   </div>
 </div>
 
