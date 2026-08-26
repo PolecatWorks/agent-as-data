@@ -6,9 +6,12 @@ webservice:
   address: "0.0.0.0:8080"
 
 llm:
-  ollama_url: "http://ollama.k8s:80"
   # ollama_url: "http://localhost:11434"
-  model: "llama3"
+  ollama_url: "http://ollama.k8s:80"
+  # model: "llama3"
+  model: "qwen2.5-coder:14b"
+  timeout_secs: 120
+
 
 hams:
   name: "aad-be"

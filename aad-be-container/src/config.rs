@@ -33,6 +33,7 @@ where
 pub struct LlmConfig {
     pub ollama_url: String,
     pub model: String,
+    pub timeout_secs: u64,
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
@@ -75,6 +76,9 @@ impl AppConfig {
         if self.llm.model.trim().is_empty() {
             return Err("LLM Model cannot be empty".to_string());
         }
+        if self.llm.timeout_secs == 0 {
+            return Err("LLM timeout_secs must be greater than 0".to_string());
+        }
         Url::parse(&self.database.url).map_err(|e| format!("Invalid Database URL format: {}", e))?;
         Url::parse(&self.llm.ollama_url).map_err(|e| format!("Invalid LLM Ollama URL format: {}", e))?;
         Ok(())
@@ -98,6 +102,7 @@ mod tests {
             llm: LlmConfig {
                 ollama_url: "http://localhost:11434".to_string(),
                 model: "llama3".to_string(),
+                timeout_secs: 15,
             },
             hams: ::hams::hams::config::HamsConfig::default(),
             runtime: ThreadRuntime::default(),
@@ -123,6 +128,7 @@ mod tests {
             llm: LlmConfig {
                 ollama_url: "http://localhost:11434".to_string(),
                 model: "llama3".to_string(),
+                timeout_secs: 15,
             },
             hams: ::hams::hams::config::HamsConfig::default(),
             runtime: ThreadRuntime::default(),
@@ -148,6 +154,33 @@ mod tests {
             llm: LlmConfig {
                 ollama_url: "".to_string(),
                 model: "llama3".to_string(),
+                timeout_secs: 15,
+            },
+            hams: ::hams::hams::config::HamsConfig::default(),
+            runtime: ThreadRuntime::default(),
+            debugging: DebuggingConfig {
+                environment: "development".to_string(),
+                log_level: "info".to_string(),
+            },
+        };
+
+        assert!(config.validate().is_err());
+    }
+
+    #[test]
+    fn test_config_validation_zero_timeout() {
+        let config = AppConfig {
+            database: DatabaseConfig {
+                url: "postgres://postgres:mysecretpassword@localhost:5432/aaddb".to_string(),
+                max_connections: 5,
+            },
+            webservice: WebServiceConfig {
+                address: "0.0.0.0:8080".to_string(),
+            },
+            llm: LlmConfig {
+                ollama_url: "http://localhost:11434".to_string(),
+                model: "llama3".to_string(),
+                timeout_secs: 0,
             },
             hams: ::hams::hams::config::HamsConfig::default(),
             runtime: ThreadRuntime::default(),

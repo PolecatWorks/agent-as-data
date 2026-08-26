@@ -6,12 +6,13 @@ use axum::{
 use sqlx::{PgPool, Row};
 use uuid::Uuid;
 
-use crate::models::{
-    ExecuteAgentRequest, ExecuteAgentResponse, SearchAndExecuteRequest,
+use crate::{
+    AppState,
+    models::{ExecuteAgentRequest, ExecuteAgentResponse, SearchAndExecuteRequest},
 };
 
 pub async fn execute_agent(
-    State(pool): State<PgPool>,
+    State(state): State<AppState>,
     Path(agent_id): Path<Uuid>,
     Json(payload): Json<ExecuteAgentRequest>,
 ) -> Result<(StatusCode, Json<ExecuteAgentResponse>), (StatusCode, String)> {
@@ -20,11 +21,11 @@ pub async fn execute_agent(
     // 1. Fetch Agent definition & version, or fallback to Skill definition
     let agent_version: String;
     let mut system_prompt = String::new();
-    let mut target_model = payload.model.clone().unwrap_or_else(|| "qwen2.5-coder:14b".to_string());
+    let mut target_model = payload.model.clone().unwrap_or_else(|| state.config.llm.model.clone());
 
     let agent_row = sqlx::query("SELECT name, current_version, agent_definition, model, description FROM agents WHERE id = $1")
         .bind(agent_id)
-        .fetch_optional(&pool)
+        .fetch_optional(&state.pool)
         .await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Fetch Error: {}", e)))?;
 
@@ -56,7 +57,7 @@ pub async fn execute_agent(
         // Check skills table
         let skill_row = sqlx::query("SELECT name, current_version, definition, description FROM skills WHERE id = $1")
             .bind(agent_id)
-            .fetch_optional(&pool)
+            .fetch_optional(&state.pool)
             .await
             .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Fetch Error: {}", e)))?;
 
@@ -82,18 +83,17 @@ pub async fn execute_agent(
         ));
     }
 
-    // 3. AI Execution via Rig & Local Ollama
-    let ollama_url = std::env::var("OLLAMA_URL")
-        .or_else(|_| std::env::var("OLLAMA_API_BASE_URL"))
-        .unwrap_or_else(|_| "http://localhost:11434".to_string());
-
+    // 3. AI Execution via Rig & Ollama using loaded AppConfig
     let builder = rig_core::providers::ollama::Client::builder()
-        .base_url(&ollama_url)
+        .base_url(&state.config.llm.ollama_url)
         .api_key(rig_core::client::Nothing);
 
-    let ollama_client = builder.build().unwrap_or_else(|_| {
-        rig_core::providers::ollama::Client::new(rig_core::client::Nothing).unwrap()
-    });
+    let ollama_client = builder.build().map_err(|e| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("Failed to initialize Ollama client: {}", e),
+        )
+    })?;
 
     use rig_core::client::CompletionClient;
     use rig_core::completion::CompletionModel;
@@ -106,24 +106,35 @@ pub async fn execute_agent(
     };
 
     let req = completion_model.completion_request(&full_prompt).build();
-    let timeout_secs = std::env::var("OLLAMA_TIMEOUT_SECS")
-        .ok()
-        .and_then(|s| s.parse::<u64>().ok())
-        .unwrap_or(15);
+    let timeout_duration = std::time::Duration::from_secs(state.config.llm.timeout_secs);
 
-    let raw_output = match tokio::time::timeout(std::time::Duration::from_secs(timeout_secs), completion_model.completion(req)).await {
+    let raw_output = match tokio::time::timeout(timeout_duration, completion_model.completion(req)).await {
         Ok(Ok(response)) => {
             if let Some(rig_core::completion::message::AssistantContent::Text(text)) = response.choice.into_iter().next() {
                 text.text
             } else {
-                format!("Executed agent response for prompt: '{}'", payload.prompt)
+                return Err((
+                    StatusCode::BAD_GATEWAY,
+                    "LLM returned an empty completion response".to_string(),
+                ));
             }
         }
-        _ => {
-            // Fallback for offline CI / when local Ollama is not actively serving / times out
-            format!("Executed agent response for prompt: '{}'", payload.prompt)
+        Ok(Err(e)) => {
+            tracing::error!("Ollama Rig completion error: {}", e);
+            return Err((
+                StatusCode::BAD_GATEWAY,
+                format!("LLM Execution Error: {}", e),
+            ));
+        }
+        Err(_) => {
+            tracing::error!("Ollama Rig completion timed out after {}s", state.config.llm.timeout_secs);
+            return Err((
+                StatusCode::GATEWAY_TIMEOUT,
+                format!("LLM Execution Timed Out after {}s", state.config.llm.timeout_secs),
+            ));
         }
     };
+
 
     // 4. Outgoing Guardrail Interceptor Sanitization
     let sanitized_output = if raw_output.contains("SECRET_") {
@@ -145,7 +156,7 @@ pub async fn execute_agent(
     .bind(serde_json::json!({ "prompt": payload.prompt, "model": target_model }))
     .bind(serde_json::json!({ "output": sanitized_output }))
     .bind(&payload.webhook_url)
-    .execute(&pool)
+    .execute(&state.pool)
     .await
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Execution Insert Error: {}", e)))?;
 
@@ -174,12 +185,12 @@ pub async fn execute_agent(
 
 
 pub async fn search_and_execute(
-    State(pool): State<PgPool>,
+    State(state): State<AppState>,
     Json(payload): Json<SearchAndExecuteRequest>,
 ) -> Result<(StatusCode, Json<ExecuteAgentResponse>), (StatusCode, String)> {
     // 1. Discovery top match agent
     let agent_row = sqlx::query("SELECT id FROM agents LIMIT 1")
-        .fetch_optional(&pool)
+        .fetch_optional(&state.pool)
         .await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Discovery Error: {}", e)))?
         .ok_or((StatusCode::NOT_FOUND, "No matching agents found for task".to_string()))?;
@@ -187,7 +198,7 @@ pub async fn search_and_execute(
     let agent_id: Uuid = agent_row.get("id");
 
     execute_agent(
-        State(pool),
+        State(state),
         Path(agent_id),
         Json(ExecuteAgentRequest {
             prompt: payload.prompt,

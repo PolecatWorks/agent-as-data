@@ -256,13 +256,13 @@ pub async fn delete_agent(
 }
 
 pub async fn test_agent(
-    State(pool): State<PgPool>,
+    State(state): State<crate::AppState>,
     Path(id): Path<Uuid>,
     Json(payload): Json<TestAgentRequest>,
 ) -> Result<Json<TestAgentResponse>, (StatusCode, String)> {
     let row = sqlx::query("SELECT current_version, judge_threshold, name, agent_definition FROM agents WHERE id = $1")
         .bind(id)
-        .fetch_optional(&pool)
+        .fetch_optional(&state.pool)
         .await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Fetch Error: {}", e)))?;
 
@@ -272,21 +272,26 @@ pub async fn test_agent(
         let name: String = r.get("name");
         let agent_definition: serde_json::Value = r.get("agent_definition");
 
-        // Calculate score for each test case via rig-core LLM, fallback to 0.9 if fails
+        // Calculate score for each test case via rig-core LLM
         let mut total_score = 0.0;
         let mut num_evaluated = 0;
 
-        let ollama_url = std::env::var("OLLAMA_URL").unwrap_or_else(|_| "http://localhost:11434".to_string());
         let builder = rig_core::providers::ollama::Client::builder()
-            .base_url(&ollama_url)
+            .base_url(&state.config.llm.ollama_url)
             .api_key(rig_core::client::Nothing);
 
-        let ollama_client = builder.build().unwrap_or_else(|_| rig_core::providers::ollama::Client::new(rig_core::client::Nothing).unwrap());
+        let ollama_client = builder.build().map_err(|e| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Failed to initialize Ollama client: {}", e),
+            )
+        })?;
 
         use rig_core::client::CompletionClient;
         use rig_core::completion::CompletionModel;
-        let model = ollama_client.completion_model("llama3.2");
+        let model = ollama_client.completion_model(&state.config.llm.model);
 
+        let timeout_duration = std::time::Duration::from_secs(state.config.llm.timeout_secs);
         for test_case in &payload.test_cases {
             let prompt = format!(
                 "You are an AI judge evaluating a test case. \nInput:\n{}\n\nRubric:\n{}\n\nRate the response from 0.0 to 1.0 based on how well it meets the rubric. Output ONLY the float number.",
@@ -295,7 +300,7 @@ pub async fn test_agent(
             );
 
             let req = model.completion_request(&prompt).build();
-            let score = match tokio::time::timeout(std::time::Duration::from_millis(400), model.completion(req)).await {
+            let score = match tokio::time::timeout(timeout_duration, model.completion(req)).await {
                 Ok(Ok(response)) => {
                     // Try to parse the response as an f64. If it fails, fallback to 0.9.
                     if let rig_core::completion::message::AssistantContent::Text(text) = &response.choice[0] {
@@ -332,7 +337,7 @@ pub async fn test_agent(
             )
             .bind(&new_version)
             .bind(id)
-            .execute(&pool)
+            .execute(&state.pool)
             .await
             .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Update Version Error: {}", e)))?;
 
@@ -353,7 +358,7 @@ pub async fn test_agent(
             .bind(id)
             .bind(&new_version)
             .bind(snapshot)
-            .execute(&pool)
+            .execute(&state.pool)
             .await
             .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Revision DB Error: {}", e)))?;
         } else {
@@ -380,7 +385,7 @@ pub async fn test_agent(
         .bind(payload.suite_id)
         .bind(status)
         .bind(&judge_eval)
-        .execute(&pool)
+        .execute(&state.pool)
         .await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Test Run Log Error: {}", e)))?;
 

@@ -81,3 +81,11 @@ Both dev servers have **watch/hot-reload enabled** — do **NOT** manually kill 
 
 - **Manual Intervention Danger**: Never manually alter database schemas (e.g. `ALTER TABLE` via `psql`) if there is an active `sqlx` migration (`.up.sql`) pending. This permanently desyncs the `_sqlx_migrations` table and causes the `make aad-be-watch` process to enter an unrecoverable crash loop. Always let the backend startup automatically execute `.up.sql` migrations sequentially.
 - **Strict Entity Dependencies**: Be extremely cautious when enforcing strict non-null database properties (e.g., changing `owner_id` from `Option<Uuid>` to `Uuid`). If the database contains existing rows with `NULL` values, the backend API will successfully return a 500 parsing error, silently breaking frontend components (e.g. Angular dropdowns/filters going empty). Always backfill existing rows before enforcing strict schemas on production tables.
+
+## Configuration Management & Loading Standards
+
+- **Zero Direct Runtime Environment Variables**: Never read environment variables directly at runtime in handler, execution, or business logic code (e.g. via `std::env::var`, `std::env::var_os`, `process.env`, or similar).
+- **Centralized Configuration Loader**: ALL configuration MUST be defined in configuration structs, provided via the centralized configuration loader (`AppConfig` / YAML configuration files loaded at startup with environment variable override prefixes like `AAD_BE__`), and validated fail-fast during startup.
+- **No Hardcoded Defaults in Runtime Code**: Using fallback defaults in runtime code (e.g. `.unwrap_or(...)`, `.unwrap_or_else(...)`, or hardcoded URLs/ports/timeouts) is strictly prohibited. If a configuration value is required for operation, it must be declared in the configuration schema, populated in configuration files, and verified in `AppConfig::validate()`.
+- **Fail-Fast Validation**: Any missing, empty, or malformed configuration must fail immediately at service startup before opening database pools, binding listeners, or starting background workers.
+

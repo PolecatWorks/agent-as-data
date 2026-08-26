@@ -86,6 +86,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     .map_err(|e| format!("Migration failed: {}", e))?;
                 info!("Database migrations applied successfully.");
 
+                let app_state = aad_be_container::AppState {
+                    pool,
+                    config: config.clone(),
+                };
+
                 // Start Axum Main REST Service
                 let app = axum::Router::new()
                     .route("/health", axum::routing::get(|| async { "OK" }))
@@ -130,7 +135,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     .route("/api/v1/threads/{id}/fs/read/{*filepath}", axum::routing::get(aad_be_container::fs_tools::read_file))
                     .route("/api/v1/threads/{id}/fs/list", axum::routing::post(aad_be_container::fs_tools::list_files))
                     .route("/api/v1/threads/{id}/fs/delete", axum::routing::post(aad_be_container::fs_tools::delete_file))
-                    .with_state(pool);
+                    .with_state(app_state);
 
 
                 let listener = tokio::net::TcpListener::bind(&config.webservice.address).await
