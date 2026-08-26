@@ -241,6 +241,7 @@ pub struct Tool {
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct ExecuteAgentRequest {
     pub prompt: String,
+    pub model: Option<String>,
     pub context: Option<serde_json::Value>,
     pub webhook_url: Option<String>,
 }

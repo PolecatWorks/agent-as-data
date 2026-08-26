@@ -7,6 +7,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatMenuModule } from '@angular/material/menu';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { RouterModule } from '@angular/router';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
@@ -19,8 +20,14 @@ export interface TestEntity {
   name: string;
   type: TestEntityType;
   description?: string;
+  definition?: string;
   tags?: string[];
   version?: string;
+  attached_skills?: string[];
+  attached_tools?: string[];
+  model?: string;
+  owner_id?: string;
+  implements_traits?: string[];
 }
 
 @Component({
@@ -35,6 +42,7 @@ export interface TestEntity {
     MatIconModule,
     MatProgressSpinnerModule,
     MatMenuModule,
+    MatTooltipModule,
     RouterModule
   ],
   templateUrl: './interactive-testing.component.html',
@@ -54,20 +62,38 @@ export class InteractiveTestingComponent implements OnInit {
     { label: 'Refactoring Lab', path: '/refactoring-lab', icon: 'build_circle' },
     { label: 'Knowledge Inspector', path: '/knowledge-inspector', icon: 'library_books' }
   ];
+
   // Data
   agents: Agent[] = [];
   skills: Skill[] = [];
 
-  // Entity selector (mirrors network visualizer pattern)
+  // Entity selector
   allEntities: TestEntity[] = [];
   searchQuery: string = '';
   selectedEntity: TestEntity | null = null;
+  isSidebarCollapsed: boolean = false;
+
+  // Prompt Inspector State
+  isPromptExpanded: boolean = true;
+  copiedPrompt: boolean = false;
+
+  // Model Selection (Local Ollama)
+  availableModels: string[] = [
+    'qwen2.5-coder:14b',
+    'qwen2.5-coder:7b',
+    'llama3.2:3b',
+    'llama3.1',
+    'mistral',
+    'deepseek-r1'
+  ];
+  selectedModel: string = 'qwen2.5-coder:14b';
 
   // Execution
-  promptInput: string = 'Run a diagnostic code review for memory safety vulnerabilities.';
+  promptInput: string = 'Run a diagnostic review and outline key recommendations.';
   webhookUrl: string = '';
   isExecuting: boolean = false;
   executionOutput: string = '';
+  finalOutput: string = '';
 
   // State
   isLoading: boolean = false;
@@ -85,12 +111,31 @@ export class InteractiveTestingComponent implements OnInit {
         this.skills = skills as Skill[];
         this.buildEntityList();
         if (this.allEntities.length > 0) {
-          this.selectedEntity = this.allEntities[0];
+          this.selectEntity(this.allEntities[0]);
         }
         this.isLoading = false;
       },
       error: () => { this.isLoading = false; }
     });
+  }
+
+  toggleSidebar(): void {
+    this.isSidebarCollapsed = !this.isSidebarCollapsed;
+  }
+
+  togglePromptExpanded(): void {
+    this.isPromptExpanded = !this.isPromptExpanded;
+  }
+
+  selectModel(model: string): void {
+    this.selectedModel = model;
+  }
+
+  copyPrompt(text: string): void {
+    if (!text) return;
+    navigator.clipboard.writeText(text);
+    this.copiedPrompt = true;
+    setTimeout(() => this.copiedPrompt = false, 2000);
   }
 
   buildEntityList(): void {
@@ -100,16 +145,28 @@ export class InteractiveTestingComponent implements OnInit {
         name: a.name,
         type: 'agent' as TestEntityType,
         description: a.description,
+        definition: a.agent_definition || '',
         tags: a.tags,
-        version: a.current_version
+        version: a.current_version,
+        attached_skills: a.attached_skills || [],
+        attached_tools: a.attached_tools || [],
+        model: a.model || 'qwen2.5-coder:14b',
+        owner_id: a.owner_id,
+        implements_traits: a.implements_traits || []
       })),
       ...this.skills.map(s => ({
         id: s.id!,
         name: s.name,
         type: 'skill' as TestEntityType,
         description: s.description,
+        definition: s.definition || '',
         tags: s.tags,
-        version: s.current_version
+        version: s.current_version,
+        attached_skills: s.attached_skills || [],
+        attached_tools: s.attached_tools || [],
+        model: 'qwen2.5-coder:14b',
+        owner_id: s.owner_id,
+        implements_traits: s.implements_traits || []
       }))
     ];
   }
@@ -127,30 +184,34 @@ export class InteractiveTestingComponent implements OnInit {
 
   selectEntity(entity: TestEntity): void {
     this.selectedEntity = entity;
-  }
-
-  getEntityIcon(type: TestEntityType): string {
-    return type === 'agent' ? '🤖' : '⚡';
+    if (entity.model) {
+      this.selectedModel = entity.model;
+    }
   }
 
   runExecution(): void {
     if (!this.promptInput.trim() || !this.selectedEntity) return;
     this.isExecuting = true;
-    this.executionOutput = 'Initializing execution runtime...\nEvaluating incoming guardrails...\nDispatching prompt to agent execution context...\n';
+    this.finalOutput = '';
+    this.executionOutput = `[1/3] Initializing Rig execution runtime for ${this.selectedEntity.type} '${this.selectedEntity.name}'...\n` +
+      `[2/3] Connecting to Ollama runtime (model: ${this.selectedModel})...\n` +
+      `[3/3] Ingesting system instructions and evaluating guardrails...\n`;
 
-    // Only agents can be directly executed; skills are executed via their parent agent
-    const agentId = this.selectedEntity.type === 'agent'
-      ? this.selectedEntity.id
-      : this.agents.find(a => (a.attached_skills || []).includes(this.selectedEntity!.id))?.id || '';
+    const targetId = this.selectedEntity.id;
 
-    this.apiService.executeAgent(agentId, this.promptInput, this.webhookUrl || undefined).subscribe({
+    this.apiService.executeAgent(targetId, this.promptInput, this.webhookUrl || undefined, this.selectedModel).subscribe({
       next: (res) => {
         this.isExecuting = false;
-        this.executionOutput += `\n[Status: ${res.status.toUpperCase()}]\n` + res.output;
+        this.finalOutput = res.output;
+        this.executionOutput += `\n[Status: ${res.status.toUpperCase()}]\n` +
+          `Execution ID: ${res.execution_id}\n` +
+          `Model: ${this.selectedModel}\n` +
+          `\n--- Streamed LLM Output ---\n` +
+          res.output;
       },
       error: (err) => {
         this.isExecuting = false;
-        this.executionOutput += `\n[EXECUTION FAILED]: ${err.error || 'Server error or guardrail rejection'}`;
+        this.executionOutput += `\n[EXECUTION FAILED]: ${err.error || err.message || 'Server error or guardrail rejection'}`;
       }
     });
   }

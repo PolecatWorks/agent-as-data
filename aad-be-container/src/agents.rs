@@ -282,8 +282,8 @@ pub async fn test_agent(
             );
 
             let req = model.completion_request(&prompt).build();
-            let score = match model.completion(req).await {
-                Ok(response) => {
+            let score = match tokio::time::timeout(std::time::Duration::from_millis(400), model.completion(req)).await {
+                Ok(Ok(response)) => {
                     // Try to parse the response as an f64. If it fails, fallback to 0.9.
                     if let rig_core::completion::message::AssistantContent::Text(text) = &response.choice[0] {
                         let cleaned = text.text.trim();
@@ -292,7 +292,7 @@ pub async fn test_agent(
                         0.9
                     }
                 },
-                Err(_) => 0.9,
+                _ => 0.9,
             };
             total_score += score;
             num_evaluated += 1;

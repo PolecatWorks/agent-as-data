@@ -209,8 +209,12 @@ export class ApiService {
   }
 
   // Execution APIs
-  executeAgent(agentId: string, prompt: string, webhookUrl?: string): Observable<any> {
-    return this.http.post(`${this.baseUrl}/agents/${agentId}/execute`, { prompt, webhook_url: webhookUrl });
+  executeAgent(agentId: string, prompt: string, webhookUrl?: string, model?: string): Observable<any> {
+    return this.http.post(`${this.baseUrl}/agents/${agentId}/execute`, {
+      prompt,
+      webhook_url: webhookUrl,
+      model
+    });
   }
 
   searchAndExecute(prompt: string): Observable<any> {

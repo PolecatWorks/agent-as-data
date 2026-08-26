@@ -1,147 +1,251 @@
-<div class="h-full w-full flex flex-col bg-slate-50 overflow-hidden">
-  <!-- Top Bar -->
-  <div class="h-14 bg-white border-b border-slate-200 flex items-center justify-between px-4 shrink-0 shadow-sm z-10">
-    <!-- Left side of top bar (Title) -->
-    <div class="flex items-center gap-2">
-      <mat-icon class="text-amber-500">bug_report</mat-icon>
-      <h1 class="text-lg font-black text-slate-800 m-0">Interactive Testing Studio</h1>
-    </div>
+<div class="h-full w-full flex flex-row bg-slate-50 overflow-hidden">
 
-    <!-- Right side of top bar (Actions) -->
-    <div class="flex items-center gap-2">
-      <button mat-flat-button color="primary" class="!rounded-lg !px-4 !font-bold h-9 mr-2"
-              [disabled]="isExecuting || !selectedEntity" (click)="runExecution()">
-        <mat-icon class="mr-1">play_arrow</mat-icon> Execute
-      </button>
+  <!-- Left Sidebar -->
+  <div [ngClass]="isSidebarCollapsed ? 'w-16' : 'w-72'" class="h-full bg-white border-r border-slate-200 shadow-sm flex flex-col transition-all duration-300 z-10 shrink-0 overflow-hidden">
 
-      <!-- Hamburger Menu for App Navigation -->
-      <button mat-icon-button [matMenuTriggerFor]="appMenu" aria-label="Menu" class="text-slate-500 hover:text-slate-800">
-        <mat-icon>menu</mat-icon>
-      </button>
-
-      <mat-menu #appMenu="matMenu">
-        @for (item of menuItems; track item.path) {
-          <a mat-menu-item [routerLink]="item.path" routerLinkActive="active-link">
-            <mat-icon>{{ item.icon }}</mat-icon>
-            <span>{{ item.label }}</span>
-          </a>
-        }
-      </mat-menu>
-
-      <div class="w-px h-6 bg-slate-200 mx-1"></div> <!-- Divider -->
-
-      <!-- View Toggle Icon (Mock) -->
-      <button mat-icon-button class="text-slate-500 hover:text-slate-800" title="Change View">
-        <mat-icon>view_column</mat-icon>
-      </button>
-
-      <!-- User Profile (Mock) -->
-      <button mat-icon-button class="ml-1">
-        <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-amber-400 to-orange-500 border-2 border-white shadow-sm flex items-center justify-center text-white font-bold text-sm">
-          BG
+    <!-- Sidebar Header -->
+    <div class="p-4 border-b border-slate-100 flex items-center shrink-0 h-14" [ngClass]="isSidebarCollapsed ? 'justify-center px-0' : 'justify-between'">
+      <div class="flex items-center gap-2 overflow-hidden" *ngIf="!isSidebarCollapsed">
+        <div class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white font-bold shrink-0">
+          <mat-icon class="!w-5 !h-5 !text-xl">bug_report</mat-icon>
         </div>
+        <span class="font-black text-slate-800 text-lg whitespace-nowrap">AAD</span>
+      </div>
+      <button mat-icon-button (click)="toggleSidebar()" class="text-slate-400 hover:text-slate-700" [title]="isSidebarCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'">
+        <mat-icon>{{ isSidebarCollapsed ? 'chevron_right' : 'chevron_left' }}</mat-icon>
       </button>
     </div>
+
+    <!-- Search -->
+    <div class="p-3 border-b border-slate-100 shrink-0" *ngIf="!isSidebarCollapsed">
+      <div class="relative">
+        <mat-icon class="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 !w-4 !h-4 !text-base">search</mat-icon>
+        <input type="text" placeholder="Search agents or skills..."
+               class="w-full pl-9 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+               [(ngModel)]="searchQuery" />
+      </div>
+    </div>
+
+    <!-- Loading Spinner -->
+    @if (isLoading) {
+      <div class="flex justify-center items-center py-10 text-slate-400 gap-3">
+        <mat-spinner diameter="24"></mat-spinner>
+        <span class="text-xs" *ngIf="!isSidebarCollapsed">Loading...</span>
+      </div>
+    }
+
+    <!-- Entity List -->
+    @if (!isLoading) {
+      <div class="flex-1 min-h-0 overflow-y-auto py-2">
+        <div *ngIf="getFilteredEntities().length === 0 && !isSidebarCollapsed" class="text-center py-8 text-slate-400 text-xs">
+          No matching agents or skills found.
+        </div>
+
+        <div class="space-y-2 px-2 pb-2">
+          @for (entity of getFilteredEntities(); track entity.id) {
+            <div class="group p-3 rounded-xl border transition-all cursor-pointer bg-white"
+                 [ngClass]="selectedEntity?.id === entity.id ? 'border-indigo-500 shadow-sm ring-1 ring-indigo-500/20' : 'border-slate-200 hover:border-slate-300'"
+                 (click)="selectEntity(entity)"
+                 [matTooltip]="entity.name"
+                 matTooltipPosition="right"
+                 [matTooltipDisabled]="!isSidebarCollapsed">
+
+              <!-- Expanded View -->
+              <div class="flex flex-col w-full" *ngIf="!isSidebarCollapsed">
+                <div class="flex justify-between items-start">
+                  <div class="flex items-start gap-3 overflow-hidden flex-1">
+                    <mat-icon class="shrink-0 text-slate-400 mt-0.5"
+                              [ngClass]="{'text-indigo-600': selectedEntity?.id === entity.id}">
+                      {{ entity.type === 'agent' ? 'smart_toy' : 'extension' }}
+                    </mat-icon>
+                    <div class="flex-1 min-w-0">
+                      <h5 class="text-sm font-bold text-slate-900 m-0 truncate leading-tight mt-0.5">{{ entity.name }}</h5>
+                    </div>
+                  </div>
+
+                  <div class="flex items-center gap-1 ml-2 shrink-0">
+                    <span class="px-2.5 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded-md">
+                      v{{ entity.version || '1.0.0' }}
+                    </span>
+                  </div>
+                </div>
+
+                <!-- Description -->
+                <p *ngIf="entity.description" class="text-xs text-slate-500 m-0 mt-2 line-clamp-2 leading-relaxed">
+                  {{ entity.description }}
+                </p>
+
+                <!-- Attached Items Summary -->
+                <div class="flex gap-4 mt-2">
+                  <span class="text-[10px] font-bold text-slate-400 flex items-center gap-1">
+                    <mat-icon class="!w-3 !h-3 !text-[12px] leading-3 text-indigo-400">extension</mat-icon>
+                    {{ entity.attached_skills?.length || 0 }} Skills
+                  </span>
+                  <span class="text-[10px] font-bold text-slate-400 flex items-center gap-1">
+                    <mat-icon class="!w-3 !h-3 !text-[12px] leading-3 text-blue-400">dns</mat-icon>
+                    {{ entity.attached_tools?.length || 0 }} Tools
+                  </span>
+                </div>
+
+                <!-- Tags -->
+                <div *ngIf="entity.tags && entity.tags.length > 0" class="flex flex-wrap gap-1 pt-2">
+                  @for (tag of entity.tags; track tag) {
+                    <span class="px-2 py-0.5 bg-slate-100 text-slate-600 text-[10px] font-mono rounded">
+                      #{{ tag }}
+                    </span>
+                  }
+                </div>
+              </div>
+
+              <!-- Collapsed View -->
+              <div class="flex justify-center items-center" *ngIf="isSidebarCollapsed">
+                <mat-icon class="text-slate-400 transition-colors"
+                          [ngClass]="{'text-indigo-600': selectedEntity?.id === entity.id}">
+                  {{ entity.type === 'agent' ? 'smart_toy' : 'extension' }}
+                </mat-icon>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    }
   </div>
 
-  <!-- Main Split-Pane Workspace -->
-  <div class="flex-1 min-h-0 p-6 flex flex-col overflow-hidden">
-    <div class="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+  <!-- Right Area (Workspace) -->
+  <div class="flex-1 flex flex-col min-w-0 overflow-hidden bg-slate-50 relative">
 
-      <!-- Left Column: Agent & Skill Selector Card -->
-      <div class="lg:col-span-4 h-full flex flex-col min-h-0 overflow-hidden">
-        <mat-card class="!rounded-2xl border border-slate-200/80 shadow-sm h-full flex flex-col overflow-hidden bg-white">
-          <mat-card-header class="p-4 border-b border-slate-100 shrink-0">
-            <mat-card-title class="text-sm font-bold text-slate-800 flex items-center gap-2">
-              <mat-icon class="!w-4 !h-4 !text-base text-amber-500">list_alt</mat-icon>
-              Target Entity ({{ getFilteredEntities().length }})
-            </mat-card-title>
-          </mat-card-header>
+    <!-- Top Bar -->
+    <div class="h-14 bg-white border-b border-slate-200 flex items-center justify-between px-4 shrink-0 shadow-sm z-10">
+      <!-- Left side of top bar (Title) -->
+      <div class="flex items-center gap-2">
+        <mat-icon class="text-indigo-600">bug_report</mat-icon>
+        <h1 class="text-lg font-black text-slate-800 m-0">Interactive Testing Studio</h1>
+      </div>
 
-          <!-- Search (Fixed/Pinned) -->
-          <div class="p-4 pb-2 shrink-0">
-            <div class="relative">
-              <mat-icon class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 !w-4 !h-4 !text-base">search</mat-icon>
-              <input type="text" placeholder="Search agents or skills..."
-                     class="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all"
-                     [(ngModel)]="searchQuery" />
+      <!-- Right side of top bar (Actions & Navigation) -->
+      <div class="flex items-center gap-2">
+        <!-- Model Selection Dropdown (Ollama local runtime) -->
+        <div class="flex items-center bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-full px-3 py-1 text-xs font-semibold text-slate-700 gap-1.5 transition-colors cursor-pointer"
+             [matMenuTriggerFor]="modelMenu" title="Select Ollama Model">
+          <mat-icon class="!w-4 !h-4 !text-[16px] text-slate-500 leading-none">memory</mat-icon>
+          <span>{{ selectedModel }}</span>
+          <mat-icon class="!w-4 !h-4 !text-[16px] text-slate-400 leading-none">expand_more</mat-icon>
+        </div>
+
+        <mat-menu #modelMenu="matMenu">
+          @for (model of availableModels; track model) {
+            <button mat-menu-item (click)="selectModel(model)" [class.font-bold]="selectedModel === model">
+              <mat-icon [class.text-indigo-600]="selectedModel === model">
+                {{ selectedModel === model ? 'check' : 'smart_toy' }}
+              </mat-icon>
+              <span>{{ model }}</span>
+            </button>
+          }
+        </mat-menu>
+
+        <button mat-flat-button color="primary" class="!rounded-lg !px-4 !font-bold h-9 ml-2"
+                [disabled]="isExecuting || !selectedEntity" (click)="runExecution()">
+          <mat-icon class="mr-1">play_arrow</mat-icon> Execute
+        </button>
+
+        <!-- Hamburger Menu for App Navigation -->
+        <button mat-icon-button [matMenuTriggerFor]="appMenu" aria-label="Menu" class="text-slate-500 hover:text-slate-800">
+          <mat-icon>menu</mat-icon>
+        </button>
+
+        <mat-menu #appMenu="matMenu">
+          @for (item of menuItems; track item.path) {
+            <a mat-menu-item [routerLink]="item.path" routerLinkActive="active-link">
+              <mat-icon>{{ item.icon }}</mat-icon>
+              <span>{{ item.label }}</span>
+            </a>
+          }
+        </mat-menu>
+
+        <div class="w-px h-6 bg-slate-200 mx-1"></div> <!-- Divider -->
+
+        <!-- View Toggle Icon (Mock) -->
+        <button mat-icon-button class="text-slate-500 hover:text-slate-800" title="Change View">
+          <mat-icon>view_column</mat-icon>
+        </button>
+
+        <!-- User Profile (Mock) -->
+        <button mat-icon-button class="ml-1">
+          <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-amber-400 to-orange-500 border-2 border-white shadow-sm flex items-center justify-center text-white font-bold text-sm">
+            BG
+          </div>
+        </button>
+      </div>
+    </div>
+
+    <!-- Workspace Content (Scrollable) -->
+    <div class="flex-1 min-h-0 overflow-y-auto p-6 space-y-5">
+      @if (selectedEntity) {
+
+        <!-- Selected Entity Context & Prompt Inspector Card -->
+        <mat-card class="!rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden bg-white">
+          <div class="p-4 bg-slate-50/80 border-b border-slate-200/60 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+              <div class="w-9 h-9 rounded-xl flex items-center justify-center text-white font-bold"
+                   [ngClass]="selectedEntity.type === 'agent' ? 'bg-indigo-600' : 'bg-amber-500'">
+                <mat-icon class="!w-5 !h-5 !text-xl">{{ selectedEntity.type === 'agent' ? 'smart_toy' : 'extension' }}</mat-icon>
+              </div>
+              <div>
+                <div class="flex items-center gap-2">
+                  <h2 class="text-sm font-black text-slate-800 m-0">{{ selectedEntity.name }}</h2>
+                  <span class="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded-md">
+                    v{{ selectedEntity.version || '1.0.0' }}
+                  </span>
+                  <span class="px-2 py-0.5 bg-slate-100 text-slate-600 text-[10px] font-bold uppercase rounded-md">
+                    {{ selectedEntity.type }}
+                  </span>
+                </div>
+                @if (selectedEntity.id) {
+                  <p class="text-[11px] text-slate-400 m-0 mt-0.5 font-mono">ID: {{ selectedEntity.id }}</p>
+                }
+              </div>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <button mat-stroked-button class="!rounded-xl !text-xs !font-semibold"
+                      [matTooltip]="copiedPrompt ? 'Copied to Clipboard!' : 'Copy Prompt'"
+                      (click)="copyPrompt(selectedEntity.definition || selectedEntity.description || '')">
+                <mat-icon class="!w-4 !h-4 !text-base mr-1">{{ copiedPrompt ? 'check' : 'content_copy' }}</mat-icon>
+                {{ copiedPrompt ? 'Copied' : 'Copy Prompt' }}
+              </button>
+              <button mat-icon-button (click)="togglePromptExpanded()" class="text-slate-400 hover:text-slate-700">
+                <mat-icon>{{ isPromptExpanded ? 'expand_less' : 'expand_more' }}</mat-icon>
+              </button>
             </div>
           </div>
 
-          <!-- Loading Spinner -->
-          @if (isLoading) {
-            <div class="flex justify-center items-center py-10 text-slate-400 gap-3">
-              <mat-spinner diameter="24"></mat-spinner>
-              <span class="text-xs">Loading registry data...</span>
+          <mat-card-content class="p-4 space-y-3" *ngIf="isPromptExpanded">
+            <!-- Description -->
+            @if (selectedEntity.description) {
+              <div>
+                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Description</span>
+                <p class="text-xs text-slate-700 leading-relaxed m-0 bg-slate-50 p-3 rounded-xl border border-slate-100">
+                  {{ selectedEntity.description }}
+                </p>
+              </div>
+            }
+
+            <!-- System Prompt / Definition -->
+            <div>
+              <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                {{ selectedEntity.type === 'agent' ? 'Agent System Prompt (agent_definition)' : 'Skill Definition / Instructions' }}
+              </span>
+              <pre class="m-0 p-3.5 bg-slate-900 text-slate-100 rounded-xl font-mono text-xs leading-relaxed overflow-x-auto whitespace-pre-wrap select-all max-h-48 border border-slate-800">{{ selectedEntity.definition || 'No explicit system prompt or definition configured for this entity.' }}</pre>
             </div>
-          }
-
-          <!-- Scrollable Entity Cards List -->
-          @if (!isLoading) {
-            <mat-card-content class="flex-1 min-h-0 overflow-y-auto px-4 pb-4 space-y-2">
-              @if (getFilteredEntities().length === 0) {
-                <div class="text-center py-8 text-slate-400 text-xs">
-                  No matching agents or skills found.
-                </div>
-              }
-              @for (entity of getFilteredEntities(); track entity.id) {
-                <div class="p-3 rounded-xl border transition-all cursor-pointer bg-white hover:border-slate-300"
-                     [class.border-amber-500]="selectedEntity?.id === entity.id && selectedEntity?.type === entity.type"
-                     [class.shadow-sm]="selectedEntity?.id === entity.id && selectedEntity?.type === entity.type"
-                     [class.ring-1]="selectedEntity?.id === entity.id && selectedEntity?.type === entity.type"
-                     [class.ring-amber-500]="selectedEntity?.id === entity.id && selectedEntity?.type === entity.type"
-                     [class.border-slate-200]="!(selectedEntity?.id === entity.id && selectedEntity?.type === entity.type)"
-                     (click)="selectEntity(entity)">
-                  <div class="flex justify-between items-center">
-                    <h5 class="text-xs font-bold text-slate-900 m-0 truncate flex items-center gap-1.5">
-                      <span>{{ getEntityIcon(entity.type) }}</span>
-                      <span class="truncate">{{ entity.name }}</span>
-                    </h5>
-                    <span class="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded-md shrink-0 ml-1">
-                      v{{ entity.version }}
-                    </span>
-                  </div>
-                  @if (entity.description) {
-                    <p class="text-xs text-slate-500 m-0 mt-1 line-clamp-2 leading-relaxed">
-                      {{ entity.description }}
-                    </p>
-                  }
-                  @if (entity.tags && entity.tags.length > 0) {
-                    <div class="flex flex-wrap gap-1 pt-1.5">
-                      @for (tag of entity.tags; track tag) {
-                        <span class="px-1.5 py-0.5 bg-slate-100 text-slate-600 text-[9px] font-mono rounded">
-                          #{{ tag }}
-                        </span>
-                      }
-                    </div>
-                  }
-                </div>
-              }
-            </mat-card-content>
-          }
+          </mat-card-content>
         </mat-card>
-      </div>
 
-      <!-- Right Column: Execution Console Card -->
-      <div class="lg:col-span-8 h-full flex flex-col min-h-0 overflow-hidden">
-        <mat-card class="!rounded-2xl border border-slate-200/80 shadow-sm h-full flex flex-col overflow-hidden bg-white">
-          <div class="p-4 bg-slate-50/80 border-b border-slate-200/60 flex justify-between items-center shrink-0">
+        <!-- Execution & Terminal Console Card -->
+        <mat-card class="!rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden bg-white">
+          <div class="p-4 bg-slate-50/80 border-b border-slate-200/60 flex justify-between items-center">
             <div class="flex items-center gap-2">
               <mat-icon class="text-slate-500 !w-5 !h-5 !text-xl">terminal</mat-icon>
-              <div>
-                <h2 class="text-sm font-black text-slate-800 m-0">
-                  @if (selectedEntity) {
-                    {{ getEntityIcon(selectedEntity.type) }} {{ selectedEntity.name }}
-                  } @else {
-                    Execution Console
-                  }
-                </h2>
-                @if (selectedEntity?.version) {
-                  <p class="text-[11px] text-slate-400 m-0">
-                    {{ selectedEntity!.type === 'agent' ? 'Agent' : 'Skill' }} &mdash; v{{ selectedEntity!.version }}
-                  </p>
-                }
-              </div>
+              <h2 class="text-sm font-black text-slate-800 m-0">Live Execution Workbench (Rig + Ollama)</h2>
             </div>
             <div class="flex items-center gap-2">
               <span class="text-[10px] font-bold px-2 py-0.5 rounded-md"
@@ -151,23 +255,25 @@
             </div>
           </div>
 
-          <mat-card-content class="flex-1 min-h-0 p-4 flex flex-col gap-3 overflow-hidden">
-            <!-- Inputs Toolbar (Fixed) -->
-            <div class="space-y-2 shrink-0">
+          <mat-card-content class="p-4 space-y-4">
+            <!-- Inputs Toolbar -->
+            <div class="space-y-2">
               <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
                 <div class="sm:col-span-2">
+                  <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Test Prompt</label>
                   <input type="text" [(ngModel)]="promptInput" placeholder="Type prompt execution instructions..."
-                         class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all" />
+                         class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all" />
                 </div>
                 <div>
+                  <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Webhook URL (Optional)</label>
                   <input type="text" [(ngModel)]="webhookUrl" placeholder="Optional Webhook URL..."
-                         class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all" />
+                         class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all" />
                 </div>
               </div>
             </div>
 
-            <!-- Execution Log Terminal (Scrollable inner logs) -->
-            <div class="flex-1 min-h-0 flex flex-col bg-slate-950 text-slate-100 rounded-xl font-mono text-xs overflow-hidden border border-slate-800">
+            <!-- Execution Log Terminal -->
+            <div class="flex flex-col bg-slate-950 text-slate-100 rounded-xl font-mono text-xs overflow-hidden border border-slate-800">
               <div class="flex justify-between items-center text-slate-400 border-b border-slate-800 px-4 py-2 shrink-0">
                 <span class="font-bold tracking-widest text-[10px] uppercase">Execution Log Terminal</span>
                 <span class="px-2 py-0.5 rounded-md text-[10px] font-bold tracking-wider"
@@ -175,13 +281,33 @@
                   {{ isExecuting ? '● RUNNING' : '○ IDLE' }}
                 </span>
               </div>
-              <pre class="flex-1 min-h-0 overflow-y-auto whitespace-pre-wrap m-0 p-4 text-slate-200 leading-relaxed font-mono text-xs">{{ executionOutput || 'Select an agent or skill from the list, then click Execute.' }}</pre>
+              <pre class="min-h-[120px] max-h-56 overflow-y-auto whitespace-pre-wrap m-0 p-4 text-slate-200 leading-relaxed font-mono text-xs">{{ executionOutput || 'Click Execute to trigger Rig execution via Ollama (' + selectedModel + ').' }}</pre>
             </div>
+
+            <!-- Final LLM Output Inspector -->
+            @if (finalOutput) {
+              <div class="bg-emerald-50/50 border border-emerald-200 rounded-xl p-4">
+                <div class="flex justify-between items-center mb-2">
+                  <span class="text-xs font-bold text-emerald-900 flex items-center gap-1.5">
+                    <mat-icon class="!w-4 !h-4 !text-base text-emerald-600">check_circle</mat-icon>
+                    Final LLM Output Response
+                  </span>
+                  <button mat-icon-button (click)="copyPrompt(finalOutput)" class="text-emerald-700 hover:text-emerald-900" title="Copy Output">
+                    <mat-icon class="!w-4 !h-4 !text-base">content_copy</mat-icon>
+                  </button>
+                </div>
+                <pre class="m-0 p-3 bg-white text-slate-800 rounded-lg font-sans text-xs leading-relaxed whitespace-pre-wrap border border-emerald-100">{{ finalOutput }}</pre>
+              </div>
+            }
           </mat-card-content>
         </mat-card>
-      </div>
 
+      } @else {
+        <div class="text-center py-20 text-slate-400">
+          <mat-icon class="!w-12 !h-12 !text-5xl text-slate-300 mb-2">touch_app</mat-icon>
+          <p class="text-sm font-semibold">Select an agent or skill from the left sidebar to start interactive testing.</p>
+        </div>
+      }
     </div>
   </div>
 </div>
-
