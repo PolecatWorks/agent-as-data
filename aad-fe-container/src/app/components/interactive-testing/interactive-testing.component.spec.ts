@@ -2,6 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { provideHttpClient } from '@angular/common/http';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
+import { provideRouter } from '@angular/router';
 import { InteractiveTestingComponent } from './interactive-testing.component';
 
 describe('InteractiveTestingComponent', () => {
@@ -11,7 +12,11 @@ describe('InteractiveTestingComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [InteractiveTestingComponent],
-      providers: [provideHttpClient(), provideAnimationsAsync()]
+      providers: [
+        provideHttpClient(),
+        provideAnimationsAsync(),
+        provideRouter([])
+      ]
     })
     .compileComponents();
 
