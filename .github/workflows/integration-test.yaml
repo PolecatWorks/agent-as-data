@@ -1,0 +1,429 @@
+name: Integration Tests
+
+on:
+  pull_request:
+    branches: [main]
+  merge_group:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: "PR Number to target (e.g. 188). Defaults to 'local'."
+        required: false
+        default: "local"
+
+concurrency:
+  group: k8s-integration-env-${{ github.event.pull_request.number || github.event.inputs.pr_number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+  pull-requests: write
+  packages: read
+  id-token: write
+
+jobs:
+  check-paths:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+      spec: ${{ steps.filter.outputs.spec }}
+      run_tests: ${{ steps.filter.outputs.run_tests }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          ref: ${{ github.event.merge_group.base_ref || github.ref }}
+          filters: |
+            backend:
+              - 'aad-be-container/**'
+              - '.github/workflows/aad-be-docker-publish.yml'
+            frontend:
+              - 'aad-fe-container/**'
+              - '.github/workflows/aad-fe-docker-publish.yml'
+            spec:
+              - 'spec/**'
+            run_tests:
+              - 'aad-be-container/**'
+              - '.github/workflows/aad-be-docker-publish.yml'
+              - 'aad-fe-container/**'
+              - '.github/workflows/aad-fe-docker-publish.yml'
+              - 'charts/**'
+              - '.github/workflows/helm-ci-pr.yaml'
+              - '.github/workflows/helm-ci-main.yaml'
+              - 'integration-tests/**'
+              - '.github/workflows/integration-test.yaml'
+
+  run-tests:
+    needs: check-paths
+    if: needs.check-paths.outputs.run_tests == 'true' && (github.event_name == 'merge_group' || github.event_name == 'workflow_dispatch')
+    runs-on: polecatworks-runner
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch History without gh-pages
+        run: |
+          git config --add remote.origin.fetch ^refs/heads/gh-pages
+          if [ -f .git/shallow ]; then
+            git fetch --unshallow
+          fi
+
+      - name: Prepare Image Variables
+        run: |
+          REPO_LOWER=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          if [ "${{ github.event_name }}" == "merge_group" ]; then
+            HEAD_REF="${{ github.event.merge_group.head_ref }}"
+            if [[ $HEAD_REF =~ pr-([0-9]+)- ]]; then
+              PR_NUMBER="${BASH_REMATCH[1]}"
+            else
+              PR_NUMBER="${{ github.run_id }}"
+            fi
+          else
+            PR_NUMBER="${{ github.event.pull_request.number || github.event.inputs.pr_number || github.run_id }}"
+          fi
+          echo "PR_NUMBER=$PR_NUMBER" >> $GITHUB_ENV
+          echo "ARCH=$(uname -m)" >> $GITHUB_ENV
+
+          if [[ "${{ needs.check-paths.outputs.backend }}" == "true" ]]; then
+            BACKEND_SHA=$(git log -1 --format=%H -- aad-be-container/ .github/workflows/aad-be-docker-publish.yml)
+            echo "AAD_BE_IMAGE=ghcr.io/${REPO_LOWER}-be" >> $GITHUB_ENV
+            echo "AAD_BE_TAG=sha-$BACKEND_SHA" >> $GITHUB_ENV
+          else
+            echo "AAD_BE_IMAGE=ghcr.io/${REPO_LOWER}-be" >> $GITHUB_ENV
+            echo "AAD_BE_TAG=main" >> $GITHUB_ENV
+          fi
+
+          if [[ "${{ needs.check-paths.outputs.frontend }}" == "true" ]]; then
+            FRONTEND_SHA=$(git log -1 --format=%H -- aad-fe-container/ .github/workflows/aad-fe-docker-publish.yml)
+            echo "AAD_FE_IMAGE=ghcr.io/${REPO_LOWER}-fe" >> $GITHUB_ENV
+            echo "AAD_FE_TAG=sha-$FRONTEND_SHA" >> $GITHUB_ENV
+          else
+            echo "AAD_FE_IMAGE=ghcr.io/${REPO_LOWER}-fe" >> $GITHUB_ENV
+            echo "AAD_FE_TAG=main" >> $GITHUB_ENV
+          fi
+
+      - name: Install GitHub CLI
+        run: |
+          if [ "$ARCH" = "aarch64" ] || [ "$ARCH" = "arm64" ]; then
+            GH_ARCH="arm64"
+          else
+            GH_ARCH="amd64"
+          fi
+
+          GH_VERSION=$(curl -sL -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/repos/cli/cli/releases/latest | jq -r .tag_name | sed 's/v//' || echo "")
+          if [ -z "$GH_VERSION" ] || [ "$GH_VERSION" == "null" ]; then
+            echo "Failed to get GH_VERSION, falling back to a known version"
+            GH_VERSION="2.54.0"
+          fi
+
+          for i in 1 2 3 4 5; do
+            if curl -sSL -f "https://github.com/cli/cli/releases/download/v${GH_VERSION}/gh_${GH_VERSION}_linux_${GH_ARCH}.tar.gz" -o gh.tar.gz; then
+              break
+            else
+              echo "Download failed, retrying in 10s..."
+              sleep 10
+            fi
+          done
+
+          if [ ! -f gh.tar.gz ]; then
+            echo "Failed to download gh cli after retries!"
+          else
+            tar xzf gh.tar.gz
+            echo "$(pwd)/gh_${GH_VERSION}_linux_${GH_ARCH}/bin" >> $GITHUB_PATH
+            chmod +x $(pwd)/gh_${GH_VERSION}_linux_${GH_ARCH}/bin/gh
+            mkdir -p $HOME/.local/bin
+            mv gh_${GH_VERSION}_linux_${GH_ARCH}/bin/gh $HOME/.local/bin/ || true
+            echo "$HOME/.local/bin" >> $GITHUB_PATH
+            chmod +x $HOME/.local/bin/gh
+            $HOME/.local/bin/gh --version
+          fi
+
+      - name: Install Garden
+        run: |
+          if [ "$ARCH" = "aarch64" ] || [ "$ARCH" = "arm64" ]; then
+            GARDEN_ARCH="arm64"
+          else
+            GARDEN_ARCH="amd64"
+          fi
+
+          GARDEN_VERSION="0.13.35"
+          LATEST_VERSION=$(curl -sL -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/repos/garden-io/garden/releases/latest | jq -r .tag_name | sed 's/v//' || echo "")
+          if [ -n "$LATEST_VERSION" ] && [ "$LATEST_VERSION" != "null" ]; then
+            GARDEN_VERSION=$LATEST_VERSION
+          fi
+          echo "Using Garden version $GARDEN_VERSION"
+
+          for i in 1 2 3 4 5; do
+            if curl -sSL -f "https://github.com/garden-io/garden/releases/download/${GARDEN_VERSION}/garden-${GARDEN_VERSION}-linux-${GARDEN_ARCH}.tar.gz" -o garden.tar.gz; then
+              break
+            else
+              echo "Download failed, retrying in 10s..."
+              sleep 10
+            fi
+          done
+
+          if [ ! -f garden.tar.gz ]; then
+            echo "Failed to download Garden after retries!"
+            exit 1
+          fi
+          tar xzf garden.tar.gz
+          echo "$(pwd)/linux-${GARDEN_ARCH}" >> $GITHUB_PATH
+          chmod +x $(pwd)/linux-${GARDEN_ARCH}/garden
+          ./linux-${GARDEN_ARCH}/garden version
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          version: "latest"
+
+      - name: Configure and Check Kubeconfig
+        run: |
+          kubectl config set-cluster local --server=https://kubernetes.default.svc --certificate-authority=/var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+          kubectl config set-credentials runner --token=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)
+          kubectl config set-context local --cluster=local --user=runner
+          kubectl config use-context local
+
+          echo "Kubernetes access check:"
+          kubectl get nodes || echo "Warning: Could not list nodes. Check ClusterRole permissions."
+          kubectl config view
+          kubectl config get-contexts
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          version: "latest"
+
+      - name: Configure Helm and Docker
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io -u ${{ github.actor }} --password-stdin
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      - name: Create Mock Secrets
+        run: |
+          NAMESPACE="agent-as-data-pr-${{ env.PR_NUMBER }}"
+          kubectl delete namespace $NAMESPACE --ignore-not-found
+          kubectl create namespace $NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
+          kubectl create secret docker-registry ghcr-secret -n $NAMESPACE \
+            --docker-server=ghcr.io \
+            --docker-username=${{ github.actor }} \
+            --docker-password=${{ secrets.GITHUB_TOKEN }} \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Debug Environment Variables
+        run: |
+          echo "AAD_BE_IMAGE: $AAD_BE_IMAGE"
+          echo "AAD_BE_TAG: $AAD_BE_TAG"
+          echo "AAD_FE_IMAGE: $AAD_FE_IMAGE"
+          echo "AAD_FE_TAG: $AAD_FE_TAG"
+          echo "PR_NUMBER: $PR_NUMBER"
+
+      - name: Wait for Docker Images
+        run: |
+          echo "Waiting for backend image $AAD_BE_IMAGE:$AAD_BE_TAG..."
+          for i in {1..60}; do
+            if docker manifest inspect "$AAD_BE_IMAGE:$AAD_BE_TAG" >/dev/null 2>&1; then
+              echo "Backend image is available!"
+              break
+            fi
+            echo "Backend image not available yet. Waiting 10s... ($i/60)"
+            sleep 10
+          done
+          if ! docker manifest inspect "$AAD_BE_IMAGE:$AAD_BE_TAG" >/dev/null 2>&1; then
+            echo "Error: Backend image $AAD_BE_IMAGE:$AAD_BE_TAG was not built/pushed in time."
+            exit 1
+          fi
+
+          echo "Waiting for frontend image $AAD_FE_IMAGE:$AAD_FE_TAG..."
+          for i in {1..60}; do
+            if docker manifest inspect "$AAD_FE_IMAGE:$AAD_FE_TAG" >/dev/null 2>&1; then
+              echo "Frontend image is available!"
+              break
+            fi
+            echo "Frontend image not available yet. Waiting 10s... ($i/60)"
+            sleep 10
+          done
+          if ! docker manifest inspect "$AAD_FE_IMAGE:$AAD_FE_TAG" >/dev/null 2>&1; then
+            echo "Error: Frontend image $AAD_FE_IMAGE:$AAD_FE_TAG was not built/pushed in time."
+            exit 1
+          fi
+
+      - name: Run Integration Tests with Garden
+        env:
+          PR_NUMBER: ${{ env.PR_NUMBER }}
+          GARDEN_KUBECONTEXT: local
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GHCR_USER: ${{ github.actor }}
+        run: |
+          garden test --env pr \
+            --log-level verbose \
+            --show-timestamps \
+            --var aad-be-image="$AAD_BE_IMAGE" \
+            --var aad-be-tag="$AAD_BE_TAG" \
+            --var aad-fe-image="$AAD_FE_IMAGE" \
+            --var aad-fe-tag="$AAD_FE_TAG"
+
+      - name: Extract Test Results
+        if: always()
+        run: |
+          mkdir -p ./robot-results
+          if [ -d "integration-tests/reports" ] && [ "$(ls -A integration-tests/reports)" ]; then
+            cp -r integration-tests/reports/* ./robot-results/
+          else
+            echo "Warning: integration-tests/reports is empty or does not exist."
+            NAMESPACE="agent-as-data-pr-${{ env.PR_NUMBER }}"
+            kubectl cp $NAMESPACE/robot-test-runner:/tmp/reports ./robot-results || echo "Failed to copy test results"
+          fi
+
+      - name: Upload Test Results
+        uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: robot-test-results
+          path: ./robot-results
+          retention-days: 3
+
+      - name: Deploy Reports to GitHub Pages
+        if: always()
+        env:
+          PR_NUMBER: ${{ env.PR_NUMBER }}
+        run: |
+          if [ "${{ github.event_name }}" == "pull_request" ] || [ "${{ github.event_name }}" == "merge_group" ]; then
+            TARGET_DIR="pr/${{ env.PR_NUMBER }}"
+          else
+            TARGET_DIR="main"
+          fi
+
+          echo "Configuring Git user and environment variables..."
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          export GIT_EDITOR=true
+          export GIT_TERMINAL_PROMPT=0
+
+          echo "Initializing temporary repository for gh-pages..."
+          mkdir gh-pages-repo
+          cd gh-pages-repo
+          git init
+          git remote add origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
+
+          echo "Configuring sparse checkout..."
+          git config core.sparseCheckout true
+          git sparse-checkout init --no-cone
+
+          echo "Setting sparse checkout path for $TARGET_DIR..."
+          git sparse-checkout set "$TARGET_DIR"
+
+          echo "Fetching gh-pages branch from remote..."
+          if git fetch --filter=blob:none --depth 1 origin gh-pages; then
+            echo "Checking out gh-pages branch..."
+            git checkout gh-pages
+            echo "Checkout successful, returning to parent directory."
+            cd ..
+          else
+            echo "gh-pages branch does not exist on remote. Creating a new orphan gh-pages branch..."
+            git checkout --orphan gh-pages
+            echo "Orphan branch created, returning to parent directory."
+            cd ..
+          fi
+
+          for i in {1..5}; do
+            echo "Attempt $i to publish test results..."
+
+            echo "Cleaning and copying new test results to gh-pages-repo/$TARGET_DIR..."
+            rm -rf gh-pages-repo/$TARGET_DIR
+            mkdir -p gh-pages-repo/$TARGET_DIR
+            cp -r ./robot-results/* gh-pages-repo/$TARGET_DIR/ || true
+            date +%s > gh-pages-repo/$TARGET_DIR/.timestamp
+
+            cd gh-pages-repo
+            git add .
+            if git diff --quiet && git diff --staged --quiet; then
+              echo "No changes to commit."
+              cd ..
+              break
+            fi
+
+            echo "Committing changes..."
+            git commit -m "Deploy reports for PR ${{ env.PR_NUMBER }} / $TARGET_DIR"
+
+            echo "Pushing commits to remote origin gh-pages..."
+            if git push origin gh-pages; then
+              echo "Successfully deployed!"
+              cd ..
+              break
+            fi
+
+            echo "Push failed! Pulling latest changes from remote with rebase..."
+            git pull --rebase -Xtheirs --no-edit origin gh-pages
+            cd ..
+
+            echo "Waiting 5 seconds before next attempt..."
+            sleep 5
+          done
+
+      - name: Comment PR with Report Link
+        if: always() && (github.event_name == 'pull_request' || github.event_name == 'merge_group')
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          REPO_NAME=$(echo "${{ github.repository }}" | cut -d'/' -f2 | tr '[:upper:]' '[:lower:]')
+          OWNER_NAME=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          REPORT_URL="https://${OWNER_NAME}.github.io/${REPO_NAME}/pr/${{ env.PR_NUMBER }}/log.html"
+
+          COMMENT_BODY="### 🤖 Robot Framework Test Results
+
+          The integration test run has finished. You can view the full HTML report (including images and videos) here:
+
+          🔗 **<a href=\"${REPORT_URL}\" target=\"_blank\">View Test Report</a>**
+
+          _Note: This report will be retained for 7 days._"
+
+          EXISTING_COMMENT=$(gh pr view ${{ env.PR_NUMBER }} --json comments --jq ".comments[] | select(.body | contains(\"${REPORT_URL}\")) | .id" | head -n 1)
+
+          if [ -z "$EXISTING_COMMENT" ]; then
+            gh pr comment ${{ env.PR_NUMBER }} --body "$COMMENT_BODY"
+          else
+            echo "Already commented with the report link."
+          fi
+
+      - name: Upload Robot Test Results Artifact
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: robot-test-results-pr-${{ env.PR_NUMBER }}
+          path: ./robot-results/
+          retention-days: 7
+
+      - name: Teardown Garden Environment
+        if: always()
+        env:
+          PR_NUMBER: ${{ env.PR_NUMBER }}
+          GARDEN_KUBECONTEXT: local
+        run: |
+          garden cleanup namespace --env pr
+
+          NAMESPACE="agent-as-data-pr-${{ env.PR_NUMBER }}"
+          echo "Decommissioning namespace: $NAMESPACE"
+          kubectl delete namespace $NAMESPACE --ignore-not-found
+
+  integration:
+    name: integration
+    needs: [check-paths, run-tests]
+    if: always() && (github.event_name == 'merge_group' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check Status
+        run: |
+          if [[ "${{ needs.check-paths.outputs.run_tests }}" == 'true' ]]; then
+            if [[ "${{ needs.run-tests.result }}" != 'success' ]]; then
+               echo "Integration tests failed!"
+               exit 1
+            fi
+          fi
+          echo "Success!"

@@ -5,6 +5,10 @@ name: agent-as-data
 variables:
   pr-number: ${local.env.PR_NUMBER || "local"}
   kube-context: "${local.env.GARDEN_KUBECONTEXT || (local.env.CI == 'true' ? 'local' : 'kubernetes-admin@kubernetes')}"
+  aad-be-image: ${local.env.AAD_BE_IMAGE || "agent-as-data-be"}
+  aad-be-tag: ${local.env.AAD_BE_TAG || "latest"}
+  aad-fe-image: ${local.env.AAD_FE_IMAGE || "agent-as-data-fe"}
+  aad-fe-tag: ${local.env.AAD_FE_TAG || "latest"}
 
 providers:
   - name: kubernetes
@@ -19,6 +23,30 @@ environments:
     defaultNamespace: agent-as-data-${local.env.USER}
   - name: pr
     defaultNamespace: agent-as-data-pr-${var.pr-number}
+
+---
+kind: Deploy
+type: kubernetes
+name: ghcr-external-secret
+description: "Creates GHCR image pull secret directly from GHCR_TOKEN environment variable"
+spec:
+  manifests:
+    - apiVersion: v1
+      kind: Secret
+      metadata:
+        name: ghcr-secret
+      type: kubernetes.io/dockerconfigjson
+      stringData:
+        .dockerconfigjson: |
+          {
+            "auths": {
+              "ghcr.io": {
+                "username": "${local.env.GHCR_USER || 'bengreene'}",
+                "password": "${local.env.GHCR_TOKEN || ''}",
+                "auth": "${base64Encode((local.env.GHCR_USER || 'bengreene') + ':' + (local.env.GHCR_TOKEN || ''))}"
+              }
+            }
+          }
 
 ---
 kind: Deploy
@@ -43,7 +71,7 @@ spec:
           spec:
             containers:
               - name: postgres
-                image: postgres:16-alpine
+                image: pgvector/pgvector:pg16
                 env:
                   - name: POSTGRES_DB
                     value: agent_as_data
@@ -73,14 +101,62 @@ name: agent-as-data-be
 description: "Deploy Agent-As-Data Rust backend service"
 dependencies:
   - deploy.postgres-test
+  - deploy.ghcr-external-secret
 source:
   path: charts/agent-as-data
 spec:
   values:
     image:
-      repository: agent-as-data-be
-      tag: latest
+      repository: ${var.aad-be-image}
+      tag: ${var.aad-be-tag}
       pullPolicy: IfNotPresent
+    imagePullSecrets:
+      - name: ghcr-secret
     config:
       database:
         url: postgresql://postgres:postgres@postgres-test:5432/agent_as_data
+
+---
+kind: Deploy
+type: kubernetes
+name: agent-as-data-fe
+description: "Deploy Agent-As-Data Angular frontend service"
+dependencies:
+  - deploy.ghcr-external-secret
+spec:
+  manifests:
+    - apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: agent-as-data-fe
+      spec:
+        replicas: 1
+        selector:
+          matchLabels:
+            app: agent-as-data-fe
+        template:
+          metadata:
+            labels:
+              app: agent-as-data-fe
+          spec:
+            imagePullSecrets:
+              - name: ghcr-secret
+            containers:
+              - name: fe
+                image: "${var.aad-fe-image}:${var.aad-fe-tag}"
+                imagePullPolicy: IfNotPresent
+                ports:
+                  - containerPort: 80
+                    name: http
+    - apiVersion: v1
+      kind: Service
+      metadata:
+        name: agent-as-data-fe
+      spec:
+        ports:
+          - port: 80
+            targetPort: 80
+            name: http
+        selector:
+          app: agent-as-data-fe
+
