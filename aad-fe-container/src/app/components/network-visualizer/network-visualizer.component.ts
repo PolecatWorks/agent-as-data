@@ -9,10 +9,12 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatMenuModule } from '@angular/material/menu';
+import { MatChipsModule } from '@angular/material/chips';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import mermaid from 'mermaid';
 import { ApiService, Agent, Skill, TraitContract } from '../../services/api.service';
+import { APP_NAV_MENU_ITEMS } from '../../models/navigation';
 
 export type EntityType = 'agent' | 'skill' | 'trait' | 'mcp';
 
@@ -45,6 +47,7 @@ export interface SelectableEntity {
     MatButtonModule,
     MatInputModule,
     MatIconModule,
+    MatChipsModule,
     MatTooltipModule,
     MatProgressSpinnerModule,
     MatMenuModule
@@ -57,17 +60,7 @@ export class NetworkVisualizerComponent implements OnInit, AfterViewInit {
 
   isSidebarCollapsed = false;
 
-  menuItems = [
-    { path: '/traits', icon: 'verified', label: 'Trait Contracts' },
-    { path: '/tools', icon: 'dns', label: 'Tools' },
-    { path: '/skills', icon: 'extension', label: 'Skills' },
-    { path: '/agents', icon: 'app_registration', label: 'Agents' },
-    { path: '/interactive-testing', icon: 'bug_report', label: 'Interactive Testing Studio' },
-    { path: '/network-visualizer', icon: 'account_tree', label: 'Network Graph Visualizer' },
-    { path: '/refactoring-lab', icon: 'build_circle', label: 'Refactoring & Compression Lab' },
-    { path: '/knowledge-inspector', icon: 'library_books', label: 'Knowledge & SPO Tuple Inspector' },
-    { path: '/workbench', icon: 'work', label: 'Workbench' }
-  ];
+  menuItems = APP_NAV_MENU_ITEMS;
 
   toggleSidebar() {
     this.isSidebarCollapsed = !this.isSidebarCollapsed;

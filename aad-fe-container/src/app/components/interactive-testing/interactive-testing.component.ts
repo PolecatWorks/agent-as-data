@@ -12,6 +12,7 @@ import { RouterModule } from '@angular/router';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { ApiService, Agent, Skill } from '../../services/api.service';
+import { APP_NAV_MENU_ITEMS } from '../../models/navigation';
 
 export type TestEntityType = 'agent' | 'skill';
 
@@ -50,18 +51,7 @@ export interface TestEntity {
 })
 export class InteractiveTestingComponent implements OnInit {
   // Navigation Menu
-  menuItems = [
-    { label: 'Home', path: '/home', icon: 'home' },
-    { label: 'Agents Registry', path: '/agents', icon: 'smart_toy' },
-    { label: 'Traits Registry', path: '/traits', icon: 'verified' },
-    { label: 'Skills Registry', path: '/skills', icon: 'extension' },
-    { label: 'Tools Registry', path: '/tools', icon: 'dns' },
-    { label: 'Testing Studio', path: '/interactive-testing', icon: 'bug_report' },
-    { label: 'Workbench', path: '/workbench', icon: 'chat' },
-    { label: 'Network Graph', path: '/network-visualizer', icon: 'account_tree' },
-    { label: 'Refactoring Lab', path: '/refactoring-lab', icon: 'build_circle' },
-    { label: 'Knowledge Inspector', path: '/knowledge-inspector', icon: 'library_books' }
-  ];
+  menuItems = APP_NAV_MENU_ITEMS;
 
   // Data
   agents: Agent[] = [];
