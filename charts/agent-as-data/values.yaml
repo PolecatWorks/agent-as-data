@@ -5,6 +5,8 @@ image:
   pullPolicy: IfNotPresent
   tag: "latest"
 
+imagePullSecrets: []
+
 service:
   type: ClusterIP
   port: 8080

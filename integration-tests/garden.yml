@@ -1,0 +1,36 @@
+kind: Deploy
+type: kubernetes
+name: robot-test-runner
+dependencies:
+  - deploy.agent-as-data-be
+  - deploy.agent-as-data-fe
+spec:
+  manifests:
+    - apiVersion: v1
+      kind: Pod
+      metadata:
+        name: robot-test-runner
+      spec:
+        containers:
+          - name: robot
+            image: marketsquare/robotframework-browser:latest
+            command: ["/bin/bash", "-c", "sleep infinity"]
+            securityContext:
+              runAsUser: 1001
+            resources:
+              requests:
+                cpu: 500m
+                memory: 1Gi
+              limits:
+                cpu: "2"
+                memory: 4Gi
+
+---
+kind: Test
+type: exec
+name: integration-all
+timeout: 900
+dependencies:
+  - deploy.robot-test-runner
+spec:
+  command: ["/bin/bash", "-c", "GARDEN_NAMESPACE=${environment.namespace} ./integration-tests/run-tests.sh"]
