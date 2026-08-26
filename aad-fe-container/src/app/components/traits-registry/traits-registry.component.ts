@@ -264,9 +264,10 @@ export class TraitsRegistryComponent implements OnInit {
             next: (fullTraits: any[]) => {
               this.traitContracts = fullTraits;
               const routeId = this.route.snapshot.paramMap.get('id');
+              const isEdit = this.route.snapshot.queryParams['edit'] === 'true';
               if (routeId) {
                 this.selectTraitById(routeId);
-              } else {
+              } else if (!this.isEditing && !isEdit && !this.selectedTraitContract) {
                 this.selectTraitContract(this.traitContracts[0]);
               }
             },
@@ -276,7 +277,9 @@ export class TraitsRegistryComponent implements OnInit {
           });
         } else {
           this.traitContracts = [];
-          this.selectedTraitContract = null;
+          if (!this.isEditing) {
+            this.selectedTraitContract = null;
+          }
         }
       },
       error: () => {
@@ -285,7 +288,7 @@ export class TraitsRegistryComponent implements OnInit {
           const id = this.route.snapshot.paramMap.get('id');
           if (id) {
             this.selectTraitById(id);
-          } else {
+          } else if (!this.isEditing) {
             this.selectTraitContract(this.traitContracts[0]);
           }
         }
@@ -348,6 +351,7 @@ export class TraitsRegistryComponent implements OnInit {
   createNewTraitContract(): void {
     this.selectedTraitContract = null;
     this.isEditing = true;
+    this.showDeleteConfirm = false;
     this.traitForm = {
       name: '',
       owner_id: '00000000-0000-0000-0000-000000000000',
@@ -362,7 +366,7 @@ export class TraitsRegistryComponent implements OnInit {
         output_guardrails: { active_guardrails: [] }
       }
     };
-    // Removed navigation to avoid flickering when already on the same route.
+    this.router.navigate(['/traits'], { queryParams: { edit: 'true' } });
   }
 
   enableEdit(): void {

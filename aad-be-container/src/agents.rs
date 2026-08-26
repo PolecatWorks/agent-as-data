@@ -433,10 +433,26 @@ pub async fn create_skill(
 
     let current_version = if payload.current_version.is_empty() || payload.current_version == "0" || payload.current_version == "1" { "1.0.0".to_string() } else { payload.current_version.clone() };
 
-    sqlx::query(
+    use sqlx::Row;
+    let row = sqlx::query(
         r#"
         INSERT INTO skills (id, name, description, definition, tags, current_version, owner_id, attached_skills, attached_tools, input_schema, output_schema, implementation, implements_traits, uses_traits)
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+        ON CONFLICT (name) DO UPDATE
+        SET description = EXCLUDED.description,
+            definition = EXCLUDED.definition,
+            tags = EXCLUDED.tags,
+            current_version = EXCLUDED.current_version,
+            owner_id = EXCLUDED.owner_id,
+            attached_skills = EXCLUDED.attached_skills,
+            attached_tools = EXCLUDED.attached_tools,
+            input_schema = EXCLUDED.input_schema,
+            output_schema = EXCLUDED.output_schema,
+            implementation = EXCLUDED.implementation,
+            implements_traits = EXCLUDED.implements_traits,
+            uses_traits = EXCLUDED.uses_traits,
+            updated_at = NOW()
+        RETURNING id
         "#,
     )
     .bind(skill_id)
@@ -453,12 +469,13 @@ pub async fn create_skill(
     .bind(implementation)
     .bind(&payload.implements_traits)
     .bind(&payload.uses_traits)
-    .execute(&pool)
+    .fetch_one(&pool)
     .await
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Skill DB Error: {}", e)))?;
 
+    let persisted_id: Uuid = row.get("id");
     let mut response_skill = payload.clone();
-    response_skill.id = Some(skill_id);
+    response_skill.id = Some(persisted_id);
     response_skill.current_version = current_version;
 
     Ok((
