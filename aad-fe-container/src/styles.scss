@@ -66,5 +66,34 @@ router-outlet + * {
   border-left: none !important;
 }
 
+/* Global Material Icon Centering & Alignment Fix */
+mat-icon,
+.mat-icon {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  vertical-align: middle !important;
+  line-height: 1 !important;
+  text-align: center !important;
+}
+
+.mdc-button .mat-icon,
+.mdc-button .mat-mdc-button-icon,
+.mat-mdc-outlined-button .mat-icon,
+.mat-mdc-unelevated-button .mat-icon {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  vertical-align: middle !important;
+  line-height: 1 !important;
+}
+
+.mat-mdc-icon-button {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 !important;
+}
+
 
 
