@@ -9,10 +9,26 @@
 
 html, body {
   height: 100%;
+  width: 100%;
   margin: 0;
+  overflow: hidden;
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   background-color: #f8fafc;
   color: #0f172a;
+}
+
+app-root {
+  display: block;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+router-outlet + * {
+  display: block;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
 }
 
 /* Custom Card & Elevation Styles */
