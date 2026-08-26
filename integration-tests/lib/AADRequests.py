@@ -82,7 +82,7 @@ class AADRequests:
         return resp.json()
 
     def execute_agent(self, agent_id, payload):
-        resp = requests.post(f"{self.base_url}/api/v1/agents/{agent_id}/execute", json=payload, timeout=2)
+        resp = requests.post(f"{self.base_url}/api/v1/agents/{agent_id}/execute", json=payload, timeout=30)
         resp.raise_for_status()
         return resp.json()
 
@@ -119,7 +119,7 @@ class AADRequests:
         return resp.json()
 
     def search_and_execute(self, payload):
-        resp = requests.post(f"{self.base_url}/api/v1/agents/search-and-execute", json=payload, timeout=2)
+        resp = requests.post(f"{self.base_url}/api/v1/agents/search-and-execute", json=payload, timeout=30)
         resp.raise_for_status()
         return resp.json()
 

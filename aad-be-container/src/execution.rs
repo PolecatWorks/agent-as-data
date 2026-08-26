@@ -106,7 +106,12 @@ pub async fn execute_agent(
     };
 
     let req = completion_model.completion_request(&full_prompt).build();
-    let raw_output = match tokio::time::timeout(std::time::Duration::from_millis(1500), completion_model.completion(req)).await {
+    let timeout_secs = std::env::var("OLLAMA_TIMEOUT_SECS")
+        .ok()
+        .and_then(|s| s.parse::<u64>().ok())
+        .unwrap_or(15);
+
+    let raw_output = match tokio::time::timeout(std::time::Duration::from_secs(timeout_secs), completion_model.completion(req)).await {
         Ok(Ok(response)) => {
             if let Some(rig_core::completion::message::AssistantContent::Text(text)) = response.choice.into_iter().next() {
                 text.text
