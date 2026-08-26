@@ -7,19 +7,19 @@
     <div class="p-4 border-b border-slate-100 flex items-center shrink-0 h-14" [ngClass]="isSidebarCollapsed ? 'justify-center px-0' : 'justify-between'">
       <div class="flex items-center gap-2 overflow-hidden" *ngIf="!isSidebarCollapsed">
         <div class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white font-bold shrink-0">
-          <mat-icon class="!w-5 !h-5 !text-xl">bug_report</mat-icon>
+          <mat-icon class="!w-5 !h-5 !text-[20px] !leading-none flex items-center justify-center">bug_report</mat-icon>
         </div>
         <span class="font-black text-slate-800 text-lg whitespace-nowrap">AAD</span>
       </div>
-      <button mat-icon-button (click)="toggleSidebar()" class="text-slate-400 hover:text-slate-700" [title]="isSidebarCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'">
-        <mat-icon>{{ isSidebarCollapsed ? 'chevron_right' : 'chevron_left' }}</mat-icon>
+      <button mat-icon-button (click)="toggleSidebar()" class="text-slate-400 hover:text-slate-700 !flex !items-center !justify-center !w-8 !h-8" [title]="isSidebarCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'">
+        <mat-icon class="!w-5 !h-5 !text-[20px] !leading-none flex items-center justify-center">{{ isSidebarCollapsed ? 'chevron_right' : 'chevron_left' }}</mat-icon>
       </button>
     </div>
 
     <!-- Search -->
     <div class="p-3 border-b border-slate-100 shrink-0" *ngIf="!isSidebarCollapsed">
       <div class="relative">
-        <mat-icon class="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 !w-4 !h-4 !text-base">search</mat-icon>
+        <mat-icon class="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 !w-4 !h-4 !text-[16px] !leading-none flex items-center justify-center">search</mat-icon>
         <input type="text" placeholder="Search agents or skills..."
                class="w-full pl-9 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
                [(ngModel)]="searchQuery" />
@@ -118,7 +118,7 @@
     <div class="h-14 bg-white border-b border-slate-200 flex items-center justify-between px-4 shrink-0 shadow-sm z-10">
       <!-- Left side of top bar (Title) -->
       <div class="flex items-center gap-2">
-        <mat-icon class="text-indigo-600">bug_report</mat-icon>
+        <mat-icon class="text-indigo-600 !w-6 !h-6 !text-[24px] !leading-none flex items-center justify-center">bug_report</mat-icon>
         <h1 class="text-lg font-black text-slate-800 m-0">Interactive Testing Studio</h1>
       </div>
 
@@ -127,9 +127,9 @@
         <!-- Model Selection Dropdown (Ollama local runtime) -->
         <div class="flex items-center bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-full px-3 py-1 text-xs font-semibold text-slate-700 gap-1.5 transition-colors cursor-pointer"
              [matMenuTriggerFor]="modelMenu" title="Select Ollama Model">
-          <mat-icon class="!w-4 !h-4 !text-[16px] text-slate-500 leading-none">memory</mat-icon>
+          <mat-icon class="!w-4 !h-4 !text-[16px] text-slate-500 !leading-none flex items-center justify-center">memory</mat-icon>
           <span>{{ selectedModel }}</span>
-          <mat-icon class="!w-4 !h-4 !text-[16px] text-slate-400 leading-none">expand_more</mat-icon>
+          <mat-icon class="!w-4 !h-4 !text-[16px] text-slate-400 !leading-none flex items-center justify-center">expand_more</mat-icon>
         </div>
 
         <mat-menu #modelMenu="matMenu">
@@ -143,9 +143,10 @@
           }
         </mat-menu>
 
-        <button mat-flat-button color="primary" class="!rounded-lg !px-4 !font-bold h-9 ml-2"
+        <button mat-flat-button color="primary" class="!rounded-lg !px-4 !font-bold h-9 ml-2 !inline-flex !items-center !justify-center"
                 [disabled]="isExecuting || !selectedEntity" (click)="runExecution()">
-          <mat-icon class="mr-1">play_arrow</mat-icon> Execute
+          <mat-icon class="mr-1 !w-5 !h-5 !text-[20px] !leading-none flex items-center justify-center">play_arrow</mat-icon>
+          <span>Execute</span>
         </button>
 
         <!-- Hamburger Menu for App Navigation -->
@@ -186,9 +187,9 @@
         <mat-card class="!rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden bg-white">
           <div class="p-4 bg-slate-50/80 border-b border-slate-200/60 flex justify-between items-center">
             <div class="flex items-center gap-3">
-              <div class="w-9 h-9 rounded-xl flex items-center justify-center text-white font-bold"
+              <div class="w-9 h-9 rounded-xl flex items-center justify-center text-white font-bold shrink-0"
                    [ngClass]="selectedEntity.type === 'agent' ? 'bg-indigo-600' : 'bg-amber-500'">
-                <mat-icon class="!w-5 !h-5 !text-xl">{{ selectedEntity.type === 'agent' ? 'smart_toy' : 'extension' }}</mat-icon>
+                <mat-icon class="!w-5 !h-5 !text-[20px] !leading-none flex items-center justify-center">{{ selectedEntity.type === 'agent' ? 'smart_toy' : 'extension' }}</mat-icon>
               </div>
               <div>
                 <div class="flex items-center gap-2">
@@ -207,14 +208,14 @@
             </div>
 
             <div class="flex items-center gap-2">
-              <button mat-stroked-button class="!rounded-xl !text-xs !font-semibold"
+              <button mat-stroked-button class="!rounded-xl !text-xs !font-semibold !inline-flex !items-center !justify-center !h-8 !px-3"
                       [matTooltip]="copiedPrompt ? 'Copied to Clipboard!' : 'Copy Prompt'"
                       (click)="copyPrompt(selectedEntity.definition || selectedEntity.description || '')">
-                <mat-icon class="!w-4 !h-4 !text-base mr-1">{{ copiedPrompt ? 'check' : 'content_copy' }}</mat-icon>
-                {{ copiedPrompt ? 'Copied' : 'Copy Prompt' }}
+                <mat-icon class="!w-3.5 !h-3.5 !text-[14px] !leading-none mr-1.5 flex items-center justify-center text-indigo-600">{{ copiedPrompt ? 'check' : 'content_copy' }}</mat-icon>
+                <span class="leading-none">{{ copiedPrompt ? 'Copied' : 'Copy Prompt' }}</span>
               </button>
-              <button mat-icon-button (click)="togglePromptExpanded()" class="text-slate-400 hover:text-slate-700">
-                <mat-icon>{{ isPromptExpanded ? 'expand_less' : 'expand_more' }}</mat-icon>
+              <button mat-icon-button (click)="togglePromptExpanded()" class="text-slate-400 hover:text-slate-700 !flex !items-center !justify-center !w-8 !h-8">
+                <mat-icon class="!w-5 !h-5 !text-[20px] !leading-none flex items-center justify-center">{{ isPromptExpanded ? 'expand_less' : 'expand_more' }}</mat-icon>
               </button>
             </div>
           </div>
@@ -288,12 +289,12 @@
             @if (finalOutput) {
               <div class="bg-emerald-50/50 border border-emerald-200 rounded-xl p-4">
                 <div class="flex justify-between items-center mb-2">
-                  <span class="text-xs font-bold text-emerald-900 flex items-center gap-1.5">
-                    <mat-icon class="!w-4 !h-4 !text-base text-emerald-600">check_circle</mat-icon>
+                  <span class="text-xs font-bold text-emerald-900 flex items-center gap-1.5 leading-none">
+                    <mat-icon class="!w-4 !h-4 !text-[16px] !leading-none text-emerald-600 flex items-center justify-center">check_circle</mat-icon>
                     Final LLM Output Response
                   </span>
-                  <button mat-icon-button (click)="copyPrompt(finalOutput)" class="text-emerald-700 hover:text-emerald-900" title="Copy Output">
-                    <mat-icon class="!w-4 !h-4 !text-base">content_copy</mat-icon>
+                  <button mat-icon-button (click)="copyPrompt(finalOutput)" class="text-emerald-700 hover:text-emerald-900 !w-7 !h-7 !flex !items-center !justify-center" title="Copy Output">
+                    <mat-icon class="!w-4 !h-4 !text-[16px] !leading-none flex items-center justify-center">content_copy</mat-icon>
                   </button>
                 </div>
                 <pre class="m-0 p-3 bg-white text-slate-800 rounded-lg font-sans text-xs leading-relaxed whitespace-pre-wrap border border-emerald-100">{{ finalOutput }}</pre>
