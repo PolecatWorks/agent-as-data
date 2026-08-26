@@ -27,7 +27,7 @@
     </div>
 
     <!-- Agent List -->
-    <div class="flex-1 overflow-y-auto py-2">
+    <div class="flex-1 min-h-0 overflow-y-auto py-2">
       <div *ngIf="getFilteredAgents().length === 0 && !isSidebarCollapsed" class="text-center py-8 text-slate-400 text-xs">
         No matching agents found.
       </div>
@@ -147,7 +147,7 @@
     </div>
 
     <!-- Workspace Content (Scrollable) -->
-    <div class="flex-1 overflow-y-auto p-6">
+    <div class="flex-1 min-h-0 overflow-y-auto p-6">
 <!-- Right Column: Agent Definition Editor Form -->
           @if (selectedAgent || isEditing) {
         <mat-card class="!rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">

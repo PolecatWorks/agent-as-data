@@ -59,6 +59,7 @@ All views across the application must share an identical, standardized top bar (
 - **Layout Consistency**: 2-column split view across all major registries (collapsible sidebar list with search/filter on the left, full edit/blueprint workspace on the right).
 - **Form Layout Standard**: For Traits, Tools, Skills, and Agents edit views, the fields `Name`, `Owner`, `Description`, and `Tags` must be presented as the top lines on the view with consistent labels (`Name`, `Owner`, `Description`, `Tags`).
 - **Card Parity**: Sidebar cards across Agents, Skills, and Tools must share card styling (icon, title, version/meta tags, description snippet, and attached items summary badges like `N Skills` / `N Tools`).
+- **Card List Scrolling & Fixed Viewport Standard**: All views maintain a fixed viewport container (`h-full overflow-hidden`). When views render collections or large numbers of objects/cards (such as sidebar entity lists, cluster/candidate columns, test entity selectors, knowledge chunks, or SPO relation tuples), the list of cards scrolls independently (`overflow-y-auto min-h-0`), ensuring the top bar and outer page remain fixed without whole-page vertical scrolling.
 
 ---
 
