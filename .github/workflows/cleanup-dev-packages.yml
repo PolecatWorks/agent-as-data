@@ -1,0 +1,58 @@
+name: Cleanup Dev Packages
+
+on:
+  schedule:
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+    steps:
+      - name: Set Repository Name
+        id: repo
+        run: |
+          REPO_NAME="${GITHUB_REPOSITORY#*/}"
+          echo "repo_name=$REPO_NAME" >> $GITHUB_ENV
+          echo "repo_name=$REPO_NAME" >> $GITHUB_OUTPUT
+
+      - name: Cleanup main backend packages older than 2 weeks (excluding release tags)
+        uses: snok/container-retention-policy@v2.2.1
+        with:
+          account-type: org
+          org-name: ${{ github.repository_owner }}
+          image-names: ${{ steps.repo.outputs.repo_name }}-be
+          cut-off: 2 weeks ago UTC
+          timestamp-to-use: updated_at
+          skip-tags: ^([0-9]+\.[0-9]+\.[0-9]+|main|latest|sha-.+)$
+          keep-at-least: 1
+          token: ${{ secrets.GITHUB_TOKEN }}
+          token-type: github-token
+
+      - name: Cleanup main frontend packages older than 2 weeks (excluding release tags)
+        uses: snok/container-retention-policy@v2.2.1
+        with:
+          account-type: org
+          org-name: ${{ github.repository_owner }}
+          image-names: ${{ steps.repo.outputs.repo_name }}-fe
+          cut-off: 2 weeks ago UTC
+          timestamp-to-use: updated_at
+          skip-tags: ^([0-9]+\.[0-9]+\.[0-9]+|main|latest|sha-.+)$
+          keep-at-least: 1
+          token: ${{ secrets.GITHUB_TOKEN }}
+          token-type: github-token
+
+      - name: Cleanup helm packages older than 2 weeks (excluding release tags)
+        uses: snok/container-retention-policy@v2.2.1
+        with:
+          account-type: org
+          org-name: ${{ github.repository_owner }}
+          image-names: ${{ steps.repo.outputs.repo_name }}/helm/agent-as-data
+          cut-off: 2 weeks ago UTC
+          timestamp-to-use: updated_at
+          skip-tags: ^([0-9]+\.[0-9]+\.[0-9]+|main|latest|sha-.+)$
+          keep-at-least: 1
+          token: ${{ secrets.GITHUB_TOKEN }}
+          token-type: github-token
