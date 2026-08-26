@@ -8,6 +8,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
 import { RouterModule } from '@angular/router';
 import { ApiService } from '../../services/api.service';
+import { APP_NAV_MENU_ITEMS } from '../../models/navigation';
 
 @Component({
   selector: 'app-knowledge-inspector',
@@ -32,18 +33,7 @@ export class KnowledgeInspectorComponent implements OnInit {
   graphResults: any[] = [];
   isSearching: boolean = false;
 
-  menuItems = [
-    { label: 'Home', path: '/home', icon: 'home' },
-    { label: 'Agents Registry', path: '/agents', icon: 'smart_toy' },
-    { label: 'Traits Registry', path: '/traits', icon: 'verified' },
-    { label: 'Skills Registry', path: '/skills', icon: 'extension' },
-    { label: 'Tools Registry', path: '/tools', icon: 'dns' },
-    { label: 'Testing Studio', path: '/interactive-testing', icon: 'bug_report' },
-    { label: 'Workbench', path: '/workbench', icon: 'chat' },
-    { label: 'Network Graph', path: '/network-visualizer', icon: 'account_tree' },
-    { label: 'Refactoring Lab', path: '/refactoring-lab', icon: 'build_circle' },
-    { label: 'Knowledge Inspector', path: '/knowledge-inspector', icon: 'library_books' }
-  ];
+  menuItems = APP_NAV_MENU_ITEMS;
 
   constructor(private apiService: ApiService) {}
 
