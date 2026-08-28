@@ -43,6 +43,7 @@ graph TD
 All views across the application must share an identical, standardized top bar (`h-14 bg-white border-b border-slate-200 shadow-sm`) and navigation menu to ensure a seamless, uniform developer experience:
 - **Left Context / Title Area**: Displays a pill badge with the module icon and current workspace name (e.g. `Trait Contracts`, `Skills Registry`, `Agents Registry`, `Interactive Testing Studio`).
 - **Primary View Action (Left of Menu)**: Contextual creation button styled consistently with a solid fill (`mat-flat-button color="primary"`), e.g., `+ New Trait`, `+ New Skill`, `+ New Agent`, or `+ New Thread`. Clicking this initializes a clean form in-place without triggering full route reloads.
+- **Secondary View Actions**: A secondary action button (`Sync Embeddings`) located on the top bar for both the Agent Registry and Skills Registry views. This action triggers the synchronization of the respective entity's embeddings into the vector database.
 - **Global Navigation (Hamburger Menu)**: An `appMenu` triggered by a standard hamburger icon (`menu`) providing one-click routing across all top-level workspaces:
   - `verified` -> `/traits` (Trait Contracts)
   - `dns` -> `/tools` (Tools)
@@ -52,6 +53,7 @@ All views across the application must share an identical, standardized top bar (
   - `account_tree` -> `/network-visualizer` (Network Graph Visualizer)
   - `build_circle` -> `/refactoring-lab` (Refactoring & Compression Lab)
   - `library_books` -> `/knowledge-inspector` (Knowledge & SPO Tuple Inspector)
+  - `search` -> `/agent-context` (Agent Context View)
   - `work` -> `/workbench` (Workbench)
 - **Top Bar Secondary Controls**: Divider line, layout/view toggle icon (`view_column`), and user profile avatar badge (`BG`).
 
@@ -73,6 +75,12 @@ All views across the application must share an identical, standardized top bar (
 ---
 
 ## Key UI Modules & Features
+
+### 10. Agent Context View (`/agent-context`)
+- **Semantic Entity Search**: A dedicated text input field allowing the user to provide natural language context. Upon pressing Enter, the view performs a RAG-type semantic search against the vector database.
+- **Matching & Scoring**: The system scores the separated embeddings (name, description, prompt) and picks the best matching Agents and Skills.
+- **Trace Depth Selection**: Provides a trace depth style tool (similar to the network graph analyzer) to configure and select the total number of Agents and Skills returned by the search.
+- **Match Feedback & Reasoning**: For each returned Agent and Skill, the view displays detailed feedback explaining the semantic similarity match, the calculated score, and reasoning on why it is a good fit for the provided context.
 
 ### 1. Declarative Agent Registry & Builder Module (`/agents`)
 - **Visual Agent Editor**: Form fields for `name`, `description`, `tags`, `implements_traits`, `uses_traits`, `model`, `agent_definition` (system prompt), `tools`, `available_skills`, and `available_agents`.

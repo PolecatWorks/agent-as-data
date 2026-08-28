@@ -1,0 +1,91 @@
+<div class="h-full flex flex-col bg-slate-50">
+  <div class="h-14 bg-white border-b border-slate-200 flex items-center justify-between px-4 shrink-0 shadow-sm z-10">
+    <div class="flex items-center gap-2">
+      <mat-icon class="text-indigo-600">search</mat-icon>
+      <h1 class="text-lg font-black text-slate-800 m-0">Agent Context Search</h1>
+    </div>
+  </div>
+
+  <div class="flex-1 overflow-y-auto p-8">
+    <div class="max-w-4xl mx-auto space-y-6">
+
+      <!-- Search Input Card -->
+      <mat-card class="!rounded-xl !shadow-sm !border !border-slate-200">
+        <mat-card-content class="!p-6">
+          <h2 class="text-xl font-bold mb-4">Semantic Context Discovery</h2>
+
+          <div class="flex gap-4 items-start">
+            <mat-form-field appearance="outline" class="flex-1">
+              <mat-label>Enter natural language task context</mat-label>
+              <textarea matInput [(ngModel)]="searchQuery" rows="3"
+                        placeholder="e.g. I need an agent that can review Rust code and check for security vulnerabilities"
+                        (keyup.enter)="onSearch()"></textarea>
+            </mat-form-field>
+          </div>
+
+          <div class="flex items-center gap-6 mt-2">
+            <div class="flex-1">
+              <label class="text-sm font-semibold text-slate-600 mb-1 block">Trace Depth (Results Limit: {{traceDepth}})</label>
+              <mat-slider class="w-full" min="1" max="20" step="1" discrete>
+                <input matSliderThumb [(ngModel)]="traceDepth">
+              </mat-slider>
+            </div>
+
+            <button mat-flat-button color="primary" class="!h-12 !px-8 !rounded-lg"
+                    [disabled]="isSearching || !searchQuery.trim()"
+                    (click)="onSearch()">
+              <mat-icon class="mr-2">{{ isSearching ? 'hourglass_empty' : 'search' }}</mat-icon>
+              {{ isSearching ? 'Searching...' : 'Find Matches' }}
+            </button>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Results List -->
+      <div *ngIf="searchResults.length > 0" class="space-y-4">
+        <h3 class="font-bold text-slate-700">Top Semantic Matches</h3>
+
+        <mat-card *ngFor="let result of searchResults" class="!rounded-xl !border !border-slate-200 !shadow-sm hover:!shadow-md transition-shadow">
+          <mat-card-content class="!p-5">
+            <div class="flex justify-between items-start mb-3">
+              <div class="flex items-center gap-3">
+                <mat-icon class="text-indigo-500" [fontIcon]="result.entity_type === 'agents' ? 'smart_toy' : 'extension'"></mat-icon>
+                <div>
+                  <div class="font-bold text-lg flex items-center gap-2">
+                    {{ result.entity_id }}
+                    <span class="text-xs font-mono bg-slate-100 text-slate-600 px-2 py-1 rounded">
+                      {{ result.entity_type }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <div class="flex flex-col items-end">
+                <div class="text-2xl font-black" [ngClass]="{'text-green-600': result.score > 0.8, 'text-yellow-600': result.score > 0.5 && result.score <= 0.8, 'text-red-600': result.score <= 0.5}">
+                  {{ (result.score * 100) | number:'1.0-0' }}%
+                </div>
+                <span class="text-xs text-slate-500 uppercase tracking-wider font-bold">Match Score</span>
+              </div>
+            </div>
+
+            <div class="bg-indigo-50/50 rounded-lg p-4 border border-indigo-100 mb-4">
+              <div class="text-xs uppercase font-bold text-indigo-400 mb-1 tracking-wider">Matched on {{ result.field_name }}</div>
+              <p class="text-sm text-slate-700 font-medium italic">"{{ result.content }}"</p>
+            </div>
+
+            <div class="flex items-start gap-2">
+              <mat-icon class="text-green-500 text-sm mt-0.5">check_circle</mat-icon>
+              <p class="text-sm text-slate-600 m-0">{{ result.match_reason }}</p>
+            </div>
+          </mat-card-content>
+        </mat-card>
+      </div>
+
+      <!-- Empty State -->
+      <div *ngIf="!isSearching && searchResults.length === 0 && searchQuery" class="text-center py-12">
+        <mat-icon class="text-6xl text-slate-300 mb-4 font-extralight">sentiment_dissatisfied</mat-icon>
+        <h3 class="text-xl font-bold text-slate-600 mb-2">No matches found</h3>
+        <p class="text-slate-500">Try adjusting your context description or increasing the trace depth.</p>
+      </div>
+    </div>
+  </div>
+</div>
