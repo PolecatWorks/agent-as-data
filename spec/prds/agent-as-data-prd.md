@@ -25,14 +25,14 @@ Agent-As-Data (AAD) is an enterprise-grade declarative platform and specificatio
 
 ### 2. RAG Agent Search & Discovery
 - **Vector Embeddings**: Automated embedding generation for agent definitions, descriptions, and tags stored in `pgvector`.
-- **Top-N Semantic Discovery**: Endpoint `POST /api/v1/agents/search` accepting a request context string and `n` parameter to return the top `n` nearest match agents sorted by cosine similarity score.
+- **Top-N Semantic Discovery**: Endpoint `POST /{{api_prefix}}/v1/agents/search` accepting a request context string and `n` parameter to return the top `n` nearest match agents sorted by cosine similarity score.
 - **Hybrid Search**: Combine semantic vector queries with explicit tag and capability filters.
 
 ### 3. Knowledge System (RAG + Graph Store)
 - **Knowledge Capture**: Capture topic notes, documents, and structured facts.
-- **Vector Chunking & RAG**: Split text into semantic chunks, generating vector embeddings in `pgvector` for similarity matching (`POST /api/v1/knowledge/search`).
+- **Vector Chunking & RAG**: Split text into semantic chunks, generating vector embeddings in `pgvector` for similarity matching (`POST /{{api_prefix}}/v1/knowledge/search`).
 - **Graph Triples**: Express semantic entity relationships as tuples (`subject`, `predicate`, `object`, metadata).
-- **Graph Traversal**: Traverse knowledge graphs (`POST /api/v1/knowledge/graph/traverse`) to discover connected entities and multi-hop relationships.
+- **Graph Traversal**: Traverse knowledge graphs (`POST /{{api_prefix}}/v1/knowledge/graph/traverse`) to discover connected entities and multi-hop relationships.
 * **ID**: UUID.
 * **Owner ID**: UUID (Strictly enforced non-optional identifier).
 
@@ -47,8 +47,8 @@ Agent-As-Data (AAD) is an enterprise-grade declarative platform and specificatio
   - `query_knowledge_graph`: Query subject-predicate-object relationships.
 
 ### 5. Agent Execution Engine
-- **Synchronous & Streaming Execution**: `POST /api/v1/agents/:id/execute` and `POST /api/v1/agents/search-and-execute`, streaming LLM output and tool call events back via SSE/chunked response.
-- **Asynchronous Execution Jobs**: `POST /api/v1/executions` for long-running agent tasks, allowing status polling (`GET /api/v1/executions/:id`) and log inspection.
+- **Synchronous & Streaming Execution**: `POST /{{api_prefix}}/v1/agents/:id/execute` and `POST /{{api_prefix}}/v1/agents/search-and-execute`, streaming LLM output and tool call events back via SSE/chunked response.
+- **Asynchronous Execution Jobs**: `POST /{{api_prefix}}/v1/executions` for long-running agent tasks, allowing status polling (`GET /{{api_prefix}}/v1/executions/:id`) and log inspection.
 - **Guardrail Interceptors**: Evaluated on incoming request payload and outgoing response payload.
 
 ### 6. Agent Refactoring & Compression Engine
@@ -61,7 +61,7 @@ Agent-As-Data (AAD) is an enterprise-grade declarative platform and specificatio
 
 ### 7. Agent Network & Relationship Visualization Engine
 - **Delegation & Skill Graph Generation**: Traverses sub-agent (`available_agents`) and skill (`available_skills`) relationships across registered agents.
-- **Dual Format Payload**: Endpoint `GET /api/v1/agents/visualize` returns:
+- **Dual Format Payload**: Endpoint `GET /{{api_prefix}}/v1/agents/visualize` returns:
   - `mermaid`: Formatted Mermaid string for instant rendering.
   - `graph_json`: Structured JSON payload (`{ "nodes": [...], "edges": [...] }`) for UI network rendering.
 
@@ -73,14 +73,14 @@ Agent-As-Data (AAD) is an enterprise-grade declarative platform and specificatio
   2. *Behavioral Invariants*: Strict rules and constraints the agent MUST ALWAYS or MUST NEVER violate (e.g. *MUST NEVER execute untrusted binaries*).
   3. *Evaluation Criteria*: Semantic guidelines and scoring rubrics for LLM judges or evaluators to grade performance.
 - **Inherited & Baseline Trait Guardrails**: Traits attach mandatory pre-execution and post-execution guardrails (e.g. `SecurityAuditor` trait carries `Prompt Injection Interceptor`, `PII Regex Filtering`, `Secret & API Key Redaction`, and `Internal Infra & Network Leakage Filter`). Any agent implementing a Trait automatically inherits its baseline guardrails.
-- **Semantic Compatibility Verification**: Endpoint `POST /api/v1/agents/verify-contract` executes a semantic similarity check (`pgvector`) to ensure a referenced sub-agent conceptually "fits" the referring agent's domain context and satisfies required capability traits.
+- **Semantic Compatibility Verification**: Endpoint `POST /{{api_prefix}}/v1/agents/verify-contract` executes a semantic similarity check (`pgvector`) to ensure a referenced sub-agent conceptually "fits" the referring agent's domain context and satisfies required capability traits.
 - **Abstract Sub-Agent Delegation**: Agents delegate tasks to trait signatures rather than concrete UUIDs, ensuring loose coupling and trait-contract enforcement.
 - **Dynamic User Trait Mapping**: At runtime, clients specify `trait_mappings` to substitute out-of-scope agents, which automatically pass contract verification before execution.
 
 
 
 ### 9. Remote Tool Registration & Schema Caching Engine
-- **Remote Tool Ingestion (`POST /api/v1/agents/tools/register`)**: Register external MCP servers (Stdio & SSE) as reusable Tools.
+- **Remote Tool Ingestion (`POST /{{api_prefix}}/v1/agents/tools/register`)**: Register external MCP servers (Stdio & SSE) as reusable Tools.
 - **Dynamic Schema Storage**: Extracted tools, arguments, and prompts from remote servers are cached locally.
 - **RAG Discovery Integration**: Generates `pgvector` embeddings for remote tools, allowing seamless discovery alongside native declarative agents.
 - **Background Tool Sync**: Agents can periodically re-ping remote servers to refresh types and schemas if upstream tools change.
@@ -99,20 +99,20 @@ Agent-As-Data (AAD) is an enterprise-grade declarative platform and specificatio
 ### 11. Probabilistic Agent Unit Testing & LLM-as-a-Judge Evaluation Engine
 - **Test Suite Declarations (`agent_test_suites`)**: Store test cases with input payloads and expected outcome rubrics.
 - **Dual Evaluation (Deterministic + LLM-as-a-Judge)**: Combines strict schema/guardrail checks with an automated "Judge Agent" that scores probabilistic text outputs on a 0.0-1.0 scale.
-- **CI/CD Quality Gates (`POST /api/v1/agents/:id/test`)**: Blocks regressions from publishing new `agent_revisions` if test pass rates or Judge scores drop below configurable thresholds.
+- **CI/CD Quality Gates (`POST /{{api_prefix}}/v1/agents/:id/test`)**: Blocks regressions from publishing new `agent_revisions` if test pass rates or Judge scores drop below configurable thresholds.
 
 ### 12. Agent & Tool Usage Audit Telemetry Subsystem
 - **Structured Audit Logs (`agent_usage_logs`)**: Records detailed telemetry whenever an agent or tool is discovered, invoked, or executed.
 - **Tracked Telemetry**: `agent_id`, `agent_version`, `caller_identity`, `tool_calls` (tool name, args, duration ms, status), `token_metrics` (prompt/completion/cost), and `guardrail_events`.
-- **Analytics & Observability APIs**: Endpoint `GET /api/v1/analytics/usage` for reporting tool usage frequency, error rates, and token consumption trends.
+- **Analytics & Observability APIs**: Endpoint `GET /{{api_prefix}}/v1/analytics/usage` for reporting tool usage frequency, error rates, and token consumption trends.
 
 ### 13. Managed Skills & Promotion/Demotion Engine
 - **Skills Registry (`skills`)**: Dedicated repository for single-purpose, direct execution routines without autonomous reasoning loops or sub-agent delegation.
 - **Trait Selection / Representation**: Skills can represent/implement trait contracts. The skills table contains `implements_traits` to specify which traits are satisfied/implemented by a given skill, allowing trait selection when editing a skill, consistent with the agent registry interface.
-- **Skill vs. Agent Differentiation & Guidance**: API `GET /api/v1/skills/guidance` providing guidance on when to create a Skill vs. an Agent.
+- **Skill vs. Agent Differentiation & Guidance**: API `GET /{{api_prefix}}/v1/skills/guidance` providing guidance on when to create a Skill vs. an Agent.
 - **Promotion & Demotion Lifecycle**:
-  - `POST /api/v1/skills/:id/promote`: Converts a growing skill into an Agent definition with guardrail defaults.
-  - `POST /api/v1/agents/:id/demote`: Extracts a prompt-wrapped agent down to a single-purpose deterministic skill routine.
+  - `POST /{{api_prefix}}/v1/skills/:id/promote`: Converts a growing skill into an Agent definition with guardrail defaults.
+  - `POST /{{api_prefix}}/v1/agents/:id/demote`: Extracts a prompt-wrapped agent down to a single-purpose deterministic skill routine.
 
 ### 14. Distributed Multi-Agent State Synchronization & Working Memory Persistence Subsystem
 - **Three-Tier Memory Architecture**:
@@ -122,7 +122,7 @@ Agent-As-Data (AAD) is an enterprise-grade declarative platform and specificatio
 - **Transactional State Locking**: Critical guardrail transitions acquire temporary distributed locks on `execution_id` to guarantee single-writer safety across distributed agent workers.
 
 ### 15. Agent Network Compilation & Conceptual Validation Engine
-- **Pre-Flight Verification (`POST /api/v1/agents/compile` or `POST /api/v1/agents/:id/validate`)**: Performs structural, contractual, and semantic verification across an agent network prior to execution deployment.
+- **Pre-Flight Verification (`POST /{{api_prefix}}/v1/agents/compile` or `POST /{{api_prefix}}/v1/agents/:id/validate`)**: Performs structural, contractual, and semantic verification across an agent network prior to execution deployment.
 - **Three Verification Layers**:
   1. *Structural DAG Topology Verification*: Scans delegation trees (`available_agents`) for circular dependency deadlocks, infinite loops, and unresolvable missing sub-agent UUIDs/traits.
   2. *Schema & Guardrail Contract Matching*: Verifies that parent agent output JSON schemas align with child sub-agent input JSON schemas and guardrail boundaries.
@@ -133,7 +133,7 @@ Agent-As-Data (AAD) is an enterprise-grade declarative platform and specificatio
 - **Offline / Mock Provider (`model: { "provider": "mock" }`)**: Internal deterministic execution engine returning pre-recorded token streams and mock tool call events for local development, CI pipelines, and offline testing without live LLM API keys.
 
 ### 18. Execution Webhook Subscriptions & Push Notifications
-- **Completion Webhooks (`POST /api/v1/executions`)**: Optional `webhook_url` parameter on async execution requests. AAD dispatches a signed HTTP POST event payload upon job completion or guardrail failure.
+- **Completion Webhooks (`POST /{{api_prefix}}/v1/executions`)**: Optional `webhook_url` parameter on async execution requests. AAD dispatches a signed HTTP POST event payload upon job completion or guardrail failure.
 
 ### 19. Remote Tool Authentication & Secret Management
 - **Encrypted Secret Credentials**: Remote tool configurations in `tools.endpoint_config` support encrypted bearer tokens and API keys stored in environment secrets (`auth_secret_name`).
@@ -238,11 +238,11 @@ To prevent common architecture anti-patterns and performance degradation, AAD in
 
 ## REST & MCP Specification
 ### REST Endpoints
-- **Agents**: `/api/v1/agents` (CRUD via POST/GET/PUT/DELETE, search, compile, verify-contract, refactor/analyze, test, demote).
-- **Executions**: `/api/v1/executions/{id}` GET (status/result of a recorded execution). _Note: A standalone async job queue `POST /api/v1/executions` is planned but not yet implemented — executions are currently initiated via `/api/v1/agents/{id}/execute`._
-- **Skills**: `/api/v1/skills` (CRUD + `POST /api/v1/skills/{id}/promote`).
-- **Traits**: `/api/v1/traits` (CRUD).
-  - *Browse Pagination Pattern*: `GET /api/v1/traits` accepts page options query parameters and returns a paged list of IDs with the structure:
+- **Agents**: `/{{api_prefix}}/v1/agents` (CRUD via POST/GET/PUT/DELETE, search, compile, verify-contract, refactor/analyze, test, demote).
+- **Executions**: `/{{api_prefix}}/v1/executions/{id}` GET (status/result of a recorded execution). _Note: A standalone async job queue `POST /{{api_prefix}}/v1/executions` is planned but not yet implemented — executions are currently initiated via `/{{api_prefix}}/v1/agents/{id}/execute`._
+- **Skills**: `/{{api_prefix}}/v1/skills` (CRUD + `POST /{{api_prefix}}/v1/skills/{id}/promote`).
+- **Traits**: `/{{api_prefix}}/v1/traits` (CRUD).
+  - *Browse Pagination Pattern*: `GET /{{api_prefix}}/v1/traits` accepts page options query parameters and returns a paged list of IDs with the structure:
     ```json
     {
       "ids": ["uuid-1", "uuid-2"],
@@ -252,18 +252,18 @@ To prevent common architecture anti-patterns and performance degradation, AAD in
       }
     }
     ```
-- **Tools**: `/api/v1/agents/tools` (register, list, delete).
+- **Tools**: `/{{api_prefix}}/v1/agents/tools` (register, list, delete).
 - **Knowledge**:
-  - `POST /api/v1/knowledge`: Store document/chunk.
-  - `POST /api/v1/knowledge/search`: RAG semantic search over knowledge.
-  - `POST /api/v1/knowledge/graph/traverse`: Multi-hop tuple graph traversal.
+  - `POST /{{api_prefix}}/v1/knowledge`: Store document/chunk.
+  - `POST /{{api_prefix}}/v1/knowledge/search`: RAG semantic search over knowledge.
+  - `POST /{{api_prefix}}/v1/knowledge/graph/traverse`: Multi-hop tuple graph traversal.
 - **Threads & Workspace**:
-  - `POST /api/v1/threads/create`, `POST /api/v1/threads` (list), `GET/PUT /api/v1/threads/{id}`: Conversational thread CRUD.
-  - `GET/POST /api/v1/threads/{id}/messages`: Message history per thread.
-  - `POST /api/v1/threads/{id}/fs/write`, `GET /api/v1/threads/{id}/fs/read/{filepath}`, `POST /api/v1/threads/{id}/fs/list`, `POST /api/v1/threads/{id}/fs/delete`: Isolated per-thread workspace filesystem operations.
+  - `POST /{{api_prefix}}/v1/threads/create`, `POST /{{api_prefix}}/v1/threads` (list), `GET/PUT /{{api_prefix}}/v1/threads/{id}`: Conversational thread CRUD.
+  - `GET/POST /{{api_prefix}}/v1/threads/{id}/messages`: Message history per thread.
+  - `POST /{{api_prefix}}/v1/threads/{id}/fs/write`, `GET /{{api_prefix}}/v1/threads/{id}/fs/read/{filepath}`, `POST /{{api_prefix}}/v1/threads/{id}/fs/list`, `POST /{{api_prefix}}/v1/threads/{id}/fs/delete`: Isolated per-thread workspace filesystem operations.
 
 > [!NOTE]
-> The following endpoints are **planned but not yet implemented**: `GET /api/v1/agents/visualize` (Mermaid/graph output), `GET /api/v1/analytics/usage` (telemetry), `GET /api/v1/skills/guidance` (skill vs agent guidance), native MCP server transport.
+> The following endpoints are **planned but not yet implemented**: `GET /{{api_prefix}}/v1/agents/visualize` (Mermaid/graph output), `GET /{{api_prefix}}/v1/analytics/usage` (telemetry), `GET /{{api_prefix}}/v1/skills/guidance` (skill vs agent guidance), native MCP server transport.
 
 
 ## System Overview Architecture

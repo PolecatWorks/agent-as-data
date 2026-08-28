@@ -11,7 +11,7 @@ This document defines the requirements for isolated workspace filesystem tools w
 ## Core Features
 
 ### 1. Workspace Initialization
-- Upon successful creation of a `Thread` (via the `POST /api/v1/threads/create` endpoint or equivalent backend logic), the system must automatically create a physical directory at `/tmp/workspace/<thread_id>`.
+- Upon successful creation of a `Thread` (via the `POST /{{api_prefix}}/v1/threads/create` endpoint or equivalent backend logic), the system must automatically create a physical directory at `/tmp/workspace/<thread_id>`.
 - If the directory already exists, it should not fail, ensuring idempotency.
 - Proper filesystem permissions should be enforced such that only the AAD backend process can access these directories.
 

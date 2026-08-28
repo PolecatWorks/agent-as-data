@@ -25,7 +25,7 @@ graph TD
     end
 
     subgraph Backend ["aad-be-container (Rust Microservice)"]
-        REST["REST API Server (/api/v1)"]
+        REST["REST API Server (/{{api_prefix}}/v1)"]
         SSE["SSE Token Stream"]
     end
 
@@ -87,7 +87,7 @@ All views across the application must share an identical, standardized top bar (
 ### 2. Skills Registry Module (`/skills`)
 - **Visual Skill Editor**: Form fields for `name`, `description`, `tags`, `definition` (instructions), `implements_traits`, `uses_traits`, `attached_tools`, and `attached_skills`.
 - **Skill & Tool Count on Cards**: Skill sidebar cards mirror the agent card layout — displaying `N Skills` and `N Tools` counts for at-a-glance dependency insight (consistent UI parity with the Agent Registry).
-- **Promote to Agent**: One-click `POST /api/v1/skills/:id/promote` converts a skill into a full declarative agent.
+- **Promote to Agent**: One-click `POST /{{api_prefix}}/v1/skills/:id/promote` converts a skill into a full declarative agent.
 - **Schemas & Mappings Tab**: Dedicated sub-tab for editing `input_schema`, `output_schema`, and `implementation` (JSONB) configuration.
 
 ### 3. Trait Contracts Registry (`/traits`)
@@ -123,7 +123,7 @@ flowchart TD
     end
 
     LeftSidebar -->|Select Agent or Skill| EntityInspector
-    ExecutionControls -->|Execute Request| BackendAPI["POST /api/v1/agents/:id/execute\n(or /api/v1/skills/:id/execute)"]
+    ExecutionControls -->|Execute Request| BackendAPI["POST /{{api_prefix}}/v1/agents/:id/execute\n(or /{{api_prefix}}/v1/skills/:id/execute)"]
     BackendAPI -->|Rig-Core + Local Ollama (qwen2.5-coder:14b)| LLMRuntime["Ollama Runtime (http://localhost:11434)"]
     LLMRuntime -->|SSE Token Stream & Final Text| TerminalLog
     LLMRuntime -->|Final LLM Response| FinalOutputCard
@@ -151,15 +151,15 @@ flowchart TD
 - **Live Filtering**: Filter visual graph by trait interface, ownership group, or tag.
 
 ### 6. Agent Refactoring & Compression Lab (`/refactoring-lab`)
-- **Overlap & Duplication Scanner**: Trigger cluster analysis (`POST /api/v1/agents/refactor/analyze`) to discover duplicate or conflicting agents.
+- **Overlap & Duplication Scanner**: Trigger cluster analysis (`POST /{{api_prefix}}/v1/agents/refactor/analyze`) to discover duplicate or conflicting agents.
 - **Harmonization & Merge Diff Viewer**: Review suggested merges or deliberate contradiction labels before applying changes to `agent_revisions`.
 
 ### 7. Knowledge & SPO Tuple Inspector (`/knowledge-inspector`)
-- **Hybrid Knowledge Search**: RAG vector query input (`POST /api/v1/knowledge/search`) displaying semantic chunk similarity scores alongside Subject-Predicate-Object relation tuples (`knowledge_tuples`).
+- **Hybrid Knowledge Search**: RAG vector query input (`POST /{{api_prefix}}/v1/knowledge/search`) displaying semantic chunk similarity scores alongside Subject-Predicate-Object relation tuples (`knowledge_tuples`).
 - **Graph Traversal Tree**: Interactive multi-hop entity graph visualizer.
 
 ### 8. Remote Tool Manager (`/tools`)
-- **Tool Ingestion**: Register external MCP servers Stdio commands or SSE transport URLs (`POST /api/v1/agents/tools/register`).
+- **Tool Ingestion**: Register external MCP servers Stdio commands or SSE transport URLs (`POST /{{api_prefix}}/v1/agents/tools/register`).
 - **Cached Tool & Schema Browser**: Inspect cached tool argument schemas, descriptions, and type signatures retrieved from remote servers.
 
 ### 9. Workbench (Multiuser Conversational Threads) (`/workbench`)
@@ -193,7 +193,7 @@ flowchart TD
 ### Journey 2: Trait Contract Verification Testing
 **Scenario**: A developer has built a new agent that is intended to map to the `SecurityAuditor` trait and wants to test if it satisfies the contract.
 1. In the **Interactive Agent Testing Studio**, the developer sets up a dynamic trait mapping, overriding the `SecurityAuditor` trait with the new agent's UUID.
-2. Before execution, the UI invokes `POST /api/v1/agents/verify-contract`.
+2. Before execution, the UI invokes `POST /{{api_prefix}}/v1/agents/verify-contract`.
 3. The live verification tester displays a pass/fail badge indicating if the semantic fit and compatibility checks succeeded, preventing a full run if the contract fails.
 
 ### Journey 3: Skill Execution Determinism vs. Agent Reasoning
