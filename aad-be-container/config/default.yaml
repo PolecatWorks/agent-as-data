@@ -4,6 +4,7 @@ database:
 
 webservice:
   address: "0.0.0.0:8080"
+  api_prefix: "/api"
 
 llm:
   # ollama_url: "http://localhost:11434"

@@ -51,6 +51,7 @@ pub struct DatabaseConfig {
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct WebServiceConfig {
     pub address: String,
+    pub api_prefix: String,
 }
 
 impl AppConfig {
@@ -98,6 +99,7 @@ mod tests {
             },
             webservice: WebServiceConfig {
                 address: "0.0.0.0:8080".to_string(),
+                api_prefix: "/api".to_string(),
             },
             llm: LlmConfig {
                 ollama_url: "http://localhost:11434".to_string(),
@@ -124,6 +126,7 @@ mod tests {
             },
             webservice: WebServiceConfig {
                 address: "0.0.0.0:8080".to_string(),
+                api_prefix: "/api".to_string(),
             },
             llm: LlmConfig {
                 ollama_url: "http://localhost:11434".to_string(),
@@ -150,6 +153,7 @@ mod tests {
             },
             webservice: WebServiceConfig {
                 address: "0.0.0.0:8080".to_string(),
+                api_prefix: "/api".to_string(),
             },
             llm: LlmConfig {
                 ollama_url: "".to_string(),
@@ -176,6 +180,7 @@ mod tests {
             },
             webservice: WebServiceConfig {
                 address: "0.0.0.0:8080".to_string(),
+                api_prefix: "/api".to_string(),
             },
             llm: LlmConfig {
                 ollama_url: "http://localhost:11434".to_string(),

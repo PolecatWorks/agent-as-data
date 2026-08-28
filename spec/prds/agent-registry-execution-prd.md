@@ -22,17 +22,17 @@ The **Agent Registry & Execution Engine** in **Agent-As-Data (AAD)** treats AI a
   2. *Behavioral Invariants*: Strict rules and constraints the agent MUST ALWAYS or MUST NEVER violate (e.g. *MUST NEVER execute untrusted binaries*).
   3. *Evaluation Criteria*: Semantic guidelines and scoring rubrics for LLM judges or evaluators to grade performance.
 - **Inherited & Mandatory Trait Guardrails**: Traits attach mandatory pre-execution and post-execution guardrails. When an Agent implements a Trait, it automatically inherits the Trait's baseline guardrails alongside any Agent-specific guardrails.
-- **Semantic Compatibility Verification**: When an agent references a concrete sub-agent or trait implementation, AAD executes a semantic similarity and contract check (`POST /api/v1/agents/verify-contract`):
+- **Semantic Compatibility Verification**: When an agent references a concrete sub-agent or trait implementation, AAD executes a semantic similarity and contract check (`POST /{{api_prefix}}/v1/agents/verify-contract`):
   - *Conceptual Fit Check*: Verifies vector similarity (`pgvector`) between the referring agent's prompt intent and the referenced agent's capabilities to ensure the sub-agent conceptually "fits".
   - *Trait Contract Validation*: Ensures the referenced agent satisfies required capability requirements, behavioral invariants, and guardrail boundaries.
 - **Dynamic Contract Negotiation & Fallback Resolution**: Trait resolution uses Depth-First Search (DFS) topological cycle detection (`ERR_CIRCULAR_DELEGATION`). If a user's custom `trait_mappings` fail contract verification, AAD attempts fallback negotiation to default trait agents or rejects with `422 Unprocessable Entity` in strict mode.
 
 
 ### 3. Remote Tool Agent Registration & Schema Caching
-- **External Tool Ingestion**: Endpoint `POST /api/v1/agents/tools/register` registers external tools (Stdio command or SSE URL transport).
+- **External Tool Ingestion**: Endpoint `POST /{{api_prefix}}/v1/agents/tools/register` registers external tools (Stdio command or SSE URL transport).
   - Automatically queries `tools/list`, `resources/list`, and `prompts/list` from the remote server upon registration.
   - Caches tool definitions, input/output JSON schemas, type information, and description metadata into the database's `tools` table JSONB.
-- **RAG Discovery Integration**: Generates vector embeddings (`pgvector`) for parsed tools and prompts, enabling dynamic RAG discovery (`POST /api/v1/agents/search`) of remote tools alongside native declarative agents.
+- **RAG Discovery Integration**: Generates vector embeddings (`pgvector`) for parsed tools and prompts, enabling dynamic RAG discovery (`POST /{{api_prefix}}/v1/agents/search`) of remote tools alongside native declarative agents.
 - **Background Sync Cache**: Periodic background refreshes re-query remote tool capabilities to ensure definitions remain up to date.
 
 
@@ -40,18 +40,18 @@ The **Agent Registry & Execution Engine** in **Agent-As-Data (AAD)** treats AI a
 
 ### 2. Semantic RAG Discovery
 - **Vector Embeddings**: Generates embeddings for agent definitions and tags in `agent_embeddings` (`pgvector`).
-- **Prompt Search**: Endpoint `POST /api/v1/agents/search` returns the top `n` most relevant agents for a natural language task description.
+- **Prompt Search**: Endpoint `POST /{{api_prefix}}/v1/agents/search` returns the top `n` most relevant agents for a natural language task description.
 
 ### 3. Execution Engine & Guardrails
-- **Synchronous / Streaming**: Immediate execution (`POST /api/v1/agents/:id/execute`, `POST /api/v1/skills/:id/execute`, and `POST /api/v1/agents/search-and-execute`) streaming output tokens and tool calls via SSE.
-- **Asynchronous Execution Jobs**: Job queue creation (`POST /api/v1/executions`) and status tracking (`GET /api/v1/executions/:id`) for long-running agent workflows.
+- **Synchronous / Streaming**: Immediate execution (`POST /{{api_prefix}}/v1/agents/:id/execute`, `POST /{{api_prefix}}/v1/skills/:id/execute`, and `POST /{{api_prefix}}/v1/agents/search-and-execute`) streaming output tokens and tool calls via SSE.
+- **Asynchronous Execution Jobs**: Job queue creation (`POST /{{api_prefix}}/v1/executions`) and status tracking (`GET /{{api_prefix}}/v1/executions/:id`) for long-running agent workflows.
 - **AI Execution via Rig & Local Ollama Runtime**:
   - The backend integrates `rig-core` with the Ollama provider (`rig_core::providers::ollama::Client`).
   - Configured for local testing against Ollama (`http://localhost:11434` or environment-configured `OLLAMA_API_BASE_URL`), defaulting to `qwen2.5-coder:14b` (or the model declared in the agent's `model` field).
   - Injects the agent's `agent_definition` (system prompt) or skill's `definition` as the completion instructions, passing the user prompt through Rig's completion agent pipeline.
   - Returns the final LLM response text along with execution logs and guardrail validation status for live developer inspection.
 ### 4. Agent Refactoring & Compression Engine
-- **Overlap & Duplication Detection**: Vector similarity scans across `agent_embeddings` identify candidate clusters of overlapping, duplicate, or conflicting agents (`POST /api/v1/agents/refactor/analyze`).
+- **Overlap & Duplication Detection**: Vector similarity scans across `agent_embeddings` identify candidate clusters of overlapping, duplicate, or conflicting agents (`POST /{{api_prefix}}/v1/agents/refactor/analyze`).
 - **Conflict Resolution & Harmonization**: Analyzes candidate agent definitions to identify:
   - *Redundant Agents*: Merges duplicate agent prompt capabilities into unified master definitions.
   - *Unintended Contradictions*: Harmonizes conflicting system prompts, tool bindings, or guardrail rules.
@@ -59,7 +59,7 @@ The **Agent Registry & Execution Engine** in **Agent-As-Data (AAD)** treats AI a
 - **Automated Versioning**: Applied changes create new version records in `agent_revisions`, preserving historical lineage.
 
 ### 5. Agent Network & Relationship Visualization Engine
-- **Delegation & Skill Graph Generation**: Endpoint `GET /api/v1/agents/visualize` (or `GET /api/v1/agents/:id/visualize`) traverses the `attached_agents` sub-agent hierarchy and `attached_skills` bindings.
+- **Delegation & Skill Graph Generation**: Endpoint `GET /{{api_prefix}}/v1/agents/visualize` (or `GET /{{api_prefix}}/v1/agents/:id/visualize`) traverses the `attached_agents` sub-agent hierarchy and `attached_skills` bindings.
 - **Dual Representation Output**: Returns the relationship graph in both formats in a single API response payload:
   - **`mermaid` (String)**: Renderable Mermaid flowchart diagram (e.g. `graph TD; AgentA -->|delegates| AgentB`).
   - **`graph_json` (JSON Object)**: Structured nodes and edges representation (`{ "nodes": [...], "edges": [...] }`) for programmatically rendering custom UI network graphs.
@@ -69,7 +69,7 @@ The **Agent Registry & Execution Engine** in **Agent-As-Data (AAD)** treats AI a
 - **Dual Evaluation Strategy**:
   - *1. Deterministic Schema & Guardrail Checks*: Validates input/output JSON schema compliance, required keys, regex patterns, and guardrail pass rates.
   - *2. Probabilistic LLM-as-a-Judge Evaluation*: Uses an independent evaluator agent persona ("Judge Agent") to assess probabilistic outputs against natural language rubrics (e.g. accuracy, tone, safety, constraint adherence) scoring 0.0 to 1.0.
-- **Regression Detection & CI/CD Gates**: Endpoint `POST /api/v1/agents/:id/test` runs test suites against new agent prompt iterations. If pass rate or Judge scores fall below configurable thresholds (e.g., `score < 0.85`), modification is flagged as a regression and blocked from updating `agent_revisions`.
+- **Regression Detection & CI/CD Gates**: Endpoint `POST /{{api_prefix}}/v1/agents/:id/test` runs test suites against new agent prompt iterations. If pass rate or Judge scores fall below configurable thresholds (e.g., `score < 0.85`), modification is flagged as a regression and blocked from updating `agent_revisions`.
 - **Test History Audit**: Test execution runs and Judge evaluation rubrics are persisted in `agent_test_runs` for auditability across version iterations.
 
 ### 7. Agent & Tool Usage Audit Logging Subsystem
@@ -80,7 +80,7 @@ The **Agent Registry & Execution Engine** in **Agent-As-Data (AAD)** treats AI a
   - `tool_calls` (JSONB): List of tools invoked, including tool name, arguments, execution duration (ms), status code, and error trace.
   - `token_metrics` (JSONB): Prompt tokens, completion tokens, total tokens, and estimated cost.
   - `guardrail_events` (JSONB): Pass/fail status of pre-execution (`incoming_guardrails`) and post-execution (`outgoing_guardrails`) checks.
-- **Audit & Analytics APIs**: Endpoints `GET /api/v1/agents/:id/logs` and `GET /api/v1/analytics/usage` for querying tool invocation frequencies, token consumption trends, error rates, and caller activity.
+- **Audit & Analytics APIs**: Endpoints `GET /{{api_prefix}}/v1/agents/:id/logs` and `GET /{{api_prefix}}/v1/analytics/usage` for querying tool invocation frequencies, token consumption trends, error rates, and caller activity.
 
 ### 8. Managed Skills Registry, Builder & Lifecycle Engine
 - **Dedicated Skills Registry (`skills` Table)**: Managed database repository for deterministic, single-purpose skills (`name`, `description`, `input_schema`, `output_schema`, `implementation`). Agents bind to skills via `attached_skills`.
@@ -88,15 +88,15 @@ The **Agent Registry & Execution Engine** in **Agent-As-Data (AAD)** treats AI a
   - *Skills*: Direct, single-purpose execution routines without autonomous reasoning loops or sub-agent delegation.
   - *Agents*: Autonomous reasoners with system prompts, guardrails, dynamic tool choice, and sub-agent delegation.
 - **Full Skills CRUD APIs**: 
-  - `GET /api/v1/skills` — Lists all registered skills (with optional tag and name filter).
-  * `GET /api/v1/skills/{id}` — Fetches the complete specification of a skill.
-  * `POST /api/v1/skills` — Registers a new skill.
-  * `PUT /api/v1/skills/{id}` — Updates an existing skill's schemas, tags, or execution template.
-  * `DELETE /api/v1/skills/{id}` — Deletes/archives a skill.
+  - `GET /{{api_prefix}}/v1/skills` — Lists all registered skills (with optional tag and name filter).
+  * `GET /{{api_prefix}}/v1/skills/{id}` — Fetches the complete specification of a skill.
+  * `POST /{{api_prefix}}/v1/skills` — Registers a new skill.
+  * `PUT /{{api_prefix}}/v1/skills/{id}` — Updates an existing skill's schemas, tags, or execution template.
+  * `DELETE /{{api_prefix}}/v1/skills/{id}` — Deletes/archives a skill.
 - **Skill <-> Agent Lifecycle Actions**:
-  - **Skill -> Agent Promotion (`POST /api/v1/skills/:id/promote`)**: Converts a growing skill into a full declarative agent, creating an `agent_definition`, wrapping it in guardrail defaults, and deprecating the original skill.
-  - **Agent -> Skill Demotion (`POST /api/v1/agents/:id/demote`)**: Simplifies a prompt-wrapped agent down to a single-purpose deterministic skill entry.
-- **Developer Guidance API (`GET /api/v1/skills/guidance`)**: Provides actionable feedback to developers on whether a proposed capability should be built as a Skill or an Agent based on complexity metrics.
+  - **Skill -> Agent Promotion (`POST /{{api_prefix}}/v1/skills/:id/promote`)**: Converts a growing skill into a full declarative agent, creating an `agent_definition`, wrapping it in guardrail defaults, and deprecating the original skill.
+  - **Agent -> Skill Demotion (`POST /{{api_prefix}}/v1/agents/:id/demote`)**: Simplifies a prompt-wrapped agent down to a single-purpose deterministic skill entry.
+- **Developer Guidance API (`GET /{{api_prefix}}/v1/skills/guidance`)**: Provides actionable feedback to developers on whether a proposed capability should be built as a Skill or an Agent based on complexity metrics.
 - **Skills Registry & Builder UI**:
   - **Skills Registry**: An interactive UI dashboard showcasing registered skills, filtering by tag, search capabilities, and usage stats.
   - **Skills Builder**: A schema-driven editor enabling developers to construct and configure new skills, define deterministic input/output JSON schemas, configure code/MCP implementation templates, and trigger lifecycle actions (Promote/Demote) directly from the interface.
@@ -109,7 +109,7 @@ The **Agent Registry & Execution Engine** in **Agent-As-Data (AAD)** treats AI a
 - **Transactional State Locking**: Critical guardrail transitions acquire temporary distributed locks on `execution_id` to guarantee single-writer safety across distributed agent workers.
 
 ### 10. Agent Network Compilation & Conceptual Validation Engine
-- **Validation & Compilation API (`POST /api/v1/agents/compile` or `POST /api/v1/agents/:id/validate`)**: Performs pre-flight structural, semantic, and contractual verification across an agent network prior to execution deployment.
+- **Validation & Compilation API (`POST /{{api_prefix}}/v1/agents/compile` or `POST /{{api_prefix}}/v1/agents/:id/validate`)**: Performs pre-flight structural, semantic, and contractual verification across an agent network prior to execution deployment.
 - **Verification Phases**:
   1. **Structural DAG Topology Verification**: Scans `available_agents` delegation trees for circular reference deadlocks, infinite loops, and unresolvable missing sub-agent UUIDs/traits.
   2. **Schema & Guardrail Contract Matching**: Verifies that outgoing response JSON schemas from parent agents align with incoming request JSON schemas and guardrail boundaries of child sub-agents.
@@ -139,13 +139,13 @@ The **Agent Registry & Execution Engine** in **Agent-As-Data (AAD)** treats AI a
 ### Journey 1: Programmatic Trait Constraint & Guardrail Testing
 **Scenario**: An automated CI script needs to verify that an agent correctly respects its inherited Trait constraints and guardrails when evaluating an ambiguous request.
 1. The CI test queries the registry for the agent and determines the expected strict Trait behaviors (e.g. MUST NEVER expose PII).
-2. It sends a series of edge-case payloads to `POST /api/v1/agents/:id/execute` with malicious or borderline inputs.
+2. It sends a series of edge-case payloads to `POST /{{api_prefix}}/v1/agents/:id/execute` with malicious or borderline inputs.
 3. The LLM processes the input, but the `rig-core` powered backend intercepts the response based on the `outgoing_guardrails`.
 4. The test verifies that the system appropriately blocks or sanitizes the output, returning a structural diagnostic failure to the caller instead of the raw LLM response.
 
 ### Journey 2: Automated Skill and Agent Evaluation via LLM-as-a-Judge
 **Scenario**: A deployment gate in a CI/CD pipeline ensures that a newly promoted Agent performs better or equal to the deterministic Skill it replaced.
-1. The pipeline triggers `POST /api/v1/agents/:id/test` for the newly promoted agent.
+1. The pipeline triggers `POST /{{api_prefix}}/v1/agents/:id/test` for the newly promoted agent.
 2. The engine first validates that the new agent's JSON output strictly conforms to the original Skill's expected schema (Deterministic Schema & Guardrail Check).
 3. The engine then passes the probabilistic output to a designated "Judge Agent" (LLM-as-a-Judge) which evaluates the qualitative accuracy and reasoning trace.
 4. The test passes if both the deterministic schema assertion and the probabilistic Judge score exceed the defined threshold (e.g. >0.85), allowing promotion to production `agent_revisions`.
@@ -160,7 +160,7 @@ sequenceDiagram
     participant RAG as pgvector RAG Index
     participant LLM as Target LLM Engine
 
-    Client->>AAD: POST /api/v1/agents/search-and-execute {query, payload}
+    Client->>AAD: POST /{{api_prefix}}/v1/agents/search-and-execute {query, payload}
     AAD->>RAG: Vector Search Top 1 Matching Agent
     RAG-->>AAD: Returns Agent Definition & System Prompt
     AAD->>AAD: Evaluate incoming_guardrails
