@@ -110,8 +110,15 @@ pub async fn execute_agent(
 
     let raw_output = match tokio::time::timeout(timeout_duration, completion_model.completion(req)).await {
         Ok(Ok(response)) => {
-            if let Some(rig_core::completion::message::AssistantContent::Text(text)) = response.choice.into_iter().next() {
-                text.text
+            if !response.choice.is_empty() {
+                if let rig_core::completion::message::AssistantContent::Text(text) = &response.choice[0] {
+                    text.text.clone()
+                } else {
+                    return Err((
+                        StatusCode::BAD_GATEWAY,
+                        "LLM returned an empty completion response".to_string(),
+                    ));
+                }
             } else {
                 return Err((
                     StatusCode::BAD_GATEWAY,
