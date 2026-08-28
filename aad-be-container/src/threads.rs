@@ -3,12 +3,12 @@ use axum::{
     http::StatusCode,
     Json,
 };
-use sqlx::PgPool;
 use uuid::Uuid;
 use crate::models::{Thread, CreateThreadRequest, UpdateThreadRequest, Message, CreateMessageRequest, ListThreadsRequest, PageOptions};
+use crate::AppState;
 
 pub async fn list_threads(
-    State(pool): State<PgPool>,
+    State(state): State<AppState>,
     Json(payload): Json<ListThreadsRequest>,
 ) -> Result<Json<Vec<Thread>>, (StatusCode, String)> {
     let mut query_builder = sqlx::QueryBuilder::new("SELECT * FROM threads WHERE owner_id = ");
@@ -23,7 +23,7 @@ pub async fn list_threads(
     query_builder.push_bind(opts.page.unwrap() * opts.size.unwrap());
 
     let threads = query_builder.build_query_as::<Thread>()
-        .fetch_all(&pool)
+        .fetch_all(&state.pool)
         .await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to list threads: {}", e)))?;
 
@@ -31,7 +31,7 @@ pub async fn list_threads(
 }
 
 pub async fn create_thread(
-    State(pool): State<PgPool>,
+    State(state): State<AppState>,
     Json(payload): Json<CreateThreadRequest>,
 ) -> Result<(StatusCode, Json<Thread>), (StatusCode, String)> {
     let tags_json = payload.tags.map(|t| sqlx::types::Json(t));
@@ -43,7 +43,7 @@ pub async fn create_thread(
     .bind(&payload.title)
     .bind(&payload.description)
     .bind(tags_json)
-    .fetch_one(&pool)
+    .fetch_one(&state.pool)
     .await
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to create thread: {}", e)))?;
 
@@ -60,12 +60,12 @@ pub async fn create_thread(
 }
 
 pub async fn get_thread(
-    State(pool): State<PgPool>,
+    State(state): State<AppState>,
     Path(id): Path<Uuid>,
 ) -> Result<Json<Thread>, (StatusCode, String)> {
     let thread = sqlx::query_as::<_, Thread>("SELECT * FROM threads WHERE id = $1")
         .bind(id)
-        .fetch_optional(&pool)
+        .fetch_optional(&state.pool)
         .await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to get thread: {}", e)))?;
 
@@ -77,7 +77,7 @@ pub async fn get_thread(
 }
 
 pub async fn update_thread(
-    State(pool): State<PgPool>,
+    State(state): State<AppState>,
     Path(id): Path<Uuid>,
     Json(payload): Json<UpdateThreadRequest>,
 ) -> Result<Json<Thread>, (StatusCode, String)> {
@@ -90,7 +90,7 @@ pub async fn update_thread(
     .bind(&payload.description)
     .bind(tags_json)
     .bind(id)
-    .fetch_optional(&pool)
+    .fetch_optional(&state.pool)
     .await
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to update thread: {}", e)))?;
 
@@ -102,14 +102,14 @@ pub async fn update_thread(
 }
 
 pub async fn list_messages(
-    State(pool): State<PgPool>,
+    State(state): State<AppState>,
     Path(thread_id): Path<Uuid>,
 ) -> Result<Json<Vec<Message>>, (StatusCode, String)> {
     let messages = sqlx::query_as::<_, Message>(
         "SELECT * FROM messages WHERE thread_id = $1 ORDER BY created_at ASC"
     )
     .bind(thread_id)
-    .fetch_all(&pool)
+    .fetch_all(&state.pool)
     .await
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to list messages: {}", e)))?;
 
@@ -117,7 +117,7 @@ pub async fn list_messages(
 }
 
 pub async fn create_message(
-    State(pool): State<PgPool>,
+    State(state): State<AppState>,
     Path(thread_id): Path<Uuid>,
     Json(payload): Json<CreateMessageRequest>,
 ) -> Result<(StatusCode, Json<Message>), (StatusCode, String)> {
@@ -127,15 +127,76 @@ pub async fn create_message(
     .bind(thread_id)
     .bind(&payload.role)
     .bind(&payload.content)
-    .fetch_one(&pool)
+    .fetch_one(&state.pool)
     .await
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to create message: {}", e)))?;
 
     // Update thread updated_at
     let _ = sqlx::query("UPDATE threads SET updated_at = CURRENT_TIMESTAMP WHERE id = $1")
         .bind(thread_id)
-        .execute(&pool)
+        .execute(&state.pool)
         .await;
+
+    // If message is from user, generate assistant response asynchronously
+    if payload.role == "user" {
+        let pool = state.pool.clone();
+        let ollama_url = state.config.llm.ollama_url.clone();
+        let model = state.config.llm.model.clone();
+        let timeout_secs = state.config.llm.timeout_secs;
+
+        tokio::spawn(async move {
+            // Fetch previous messages for context
+            let previous_messages = sqlx::query_as::<_, Message>(
+                "SELECT * FROM messages WHERE thread_id = $1 ORDER BY created_at ASC"
+            )
+            .bind(thread_id)
+            .fetch_all(&pool)
+            .await
+            .unwrap_or_default();
+
+            let mut conversation_context = String::new();
+            for msg in previous_messages {
+                conversation_context.push_str(&format!("{}: {}\n\n", msg.role, msg.content));
+            }
+
+            let builder = rig_core::providers::ollama::Client::builder()
+                .base_url(&ollama_url)
+                .api_key(rig_core::client::Nothing);
+
+            if let Ok(ollama_client) = builder.build() {
+                use rig_core::client::CompletionClient;
+                use rig_core::completion::CompletionModel;
+                let completion_model = ollama_client.completion_model(&model);
+
+                let prompt = format!("You are an AI assistant in a conversational workbench. Here is the conversation history:\n\n{}", conversation_context);
+
+                let req = completion_model.completion_request(&prompt).build();
+                let timeout_duration = std::time::Duration::from_secs(timeout_secs);
+
+                if let Ok(Ok(response)) = tokio::time::timeout(timeout_duration, completion_model.completion(req)).await {
+                    if !response.choice.is_empty() {
+                        if let rig_core::completion::message::AssistantContent::Text(text) = &response.choice[0] {
+                            let assistant_content = text.text.clone();
+                            let _ = sqlx::query(
+                                "INSERT INTO messages (thread_id, role, content) VALUES ($1, $2, $3)"
+                            )
+                            .bind(thread_id)
+                            .bind("assistant")
+                            .bind(&assistant_content)
+                            .execute(&pool)
+                            .await;
+
+                            // Update thread updated_at again
+                            let _ = sqlx::query("UPDATE threads SET updated_at = CURRENT_TIMESTAMP WHERE id = $1")
+                                .bind(thread_id)
+                                .execute(&pool)
+                                .await;
+                        }
+                    }
+                }
+            }
+        });
+    }
 
     Ok((StatusCode::CREATED, Json(message)))
 }
