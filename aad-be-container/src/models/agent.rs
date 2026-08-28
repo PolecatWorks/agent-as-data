@@ -158,3 +158,26 @@ pub struct CompileAgentResponse {
     pub status: String,
     pub diagnostics: Vec<DiagnosticMessage>,
 }
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct AgentContextSearchRequest {
+    pub query: String,
+    pub depth: Option<usize>,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct AgentContextSearchResult {
+    pub entity_id: Uuid,
+    pub entity_type: String,
+    pub field_name: String,
+    pub content: String,
+    pub score: f64,
+    pub match_reason: String,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct SyncEmbeddingsResponse {
+    pub status: String,
+    pub entity_id: Uuid,
+    pub embeddings_created: usize,
+}

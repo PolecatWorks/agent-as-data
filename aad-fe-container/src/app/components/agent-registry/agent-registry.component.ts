@@ -849,6 +849,19 @@ export class AgentRegistryComponent implements OnInit {
       return text;
     }
   }
+
+  syncEmbeddings() {
+    if (this.selectedAgent?.id) {
+      this.apiService.syncEmbeddings('agents', this.selectedAgent.id).subscribe({
+        next: (res) => {
+          this.snackBar.open(`Synced ${res.embeddings_created} embeddings`, 'Close', { duration: 3000 });
+        },
+        error: (err) => {
+          this.snackBar.open('Failed to sync embeddings', 'Close', { duration: 3000 });
+        }
+      });
+    }
+  }
 }
 
 

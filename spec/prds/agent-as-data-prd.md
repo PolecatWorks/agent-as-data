@@ -27,6 +27,8 @@ Agent-As-Data (AAD) is an enterprise-grade declarative platform and specificatio
 - **Vector Embeddings**: Automated embedding generation for agent definitions, descriptions, and tags stored in `pgvector`.
 - **Top-N Semantic Discovery**: Endpoint `POST /{{api_prefix}}/v1/agents/search` accepting a request context string and `n` parameter to return the top `n` nearest match agents sorted by cosine similarity score.
 - **Hybrid Search**: Combine semantic vector queries with explicit tag and capability filters.
+- **Embeddings Synchronization**: A new action button on the top bar for Agent and Skill views enables on-demand synchronization of embeddings. This process generates separate vector embeddings (potentially represented as graph nodes) for the entity's `name`, `description`, and `prompt` (`agent_definition` or `definition`), allowing finer-grained semantic discovery.
+- **Agent Context View**: A dedicated UI view allowing users to input context text. Hitting enter performs a RAG-based search against the vector database to score and select the best matching agents and skills, utilizing the separated embeddings to improve match relevance.
 
 ### 3. Knowledge System (RAG + Graph Store)
 - **Knowledge Capture**: Capture topic notes, documents, and structured facts.

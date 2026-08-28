@@ -41,6 +41,7 @@ The **Agent Registry & Execution Engine** in **Agent-As-Data (AAD)** treats AI a
 ### 2. Semantic RAG Discovery
 - **Vector Embeddings**: Generates embeddings for agent definitions and tags in `agent_embeddings` (`pgvector`).
 - **Prompt Search**: Endpoint `POST /{{api_prefix}}/v1/agents/search` returns the top `n` most relevant agents for a natural language task description.
+- **Embeddings Synchronization**: A manual sync button located on the top bar of the Agents and Skills registries. When triggered, the system processes and separates the embeddings for the entity's `name`, `description`, and `prompt` (`agent_definition` or `definition`) into distinct vectordb entries (or graph nodes). This granular separation improves the retrieval system's ability to locate the most appropriate skill or agent based on specific context matching.
 
 ### 3. Execution Engine & Guardrails
 - **Synchronous / Streaming**: Immediate execution (`POST /{{api_prefix}}/v1/agents/:id/execute`, `POST /{{api_prefix}}/v1/skills/:id/execute`, and `POST /{{api_prefix}}/v1/agents/search-and-execute`) streaming output tokens and tool calls via SSE.

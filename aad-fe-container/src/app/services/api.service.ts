@@ -349,6 +349,14 @@ export class ApiService {
   demoteAgent(id: string): Observable<any> {
     return this.http.post<any>(`${this.baseUrl}/agents/${id}/demote`, {});
   }
+
+  syncEmbeddings(type: 'agents' | 'skills', id: string): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/${type}/${id}/sync-embeddings`, {});
+  }
+
+  searchAgentContext(query: string, depth: number): Observable<any[]> {
+    return this.http.post<any[]>(`${this.baseUrl}/agent-context/search`, { query, depth });
+  }
 }
 
 export interface ListPages {

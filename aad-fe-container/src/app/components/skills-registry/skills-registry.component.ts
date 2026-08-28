@@ -462,4 +462,16 @@ export class SkillsRegistryComponent implements OnInit {
     }
   }
 
+  syncEmbeddings() {
+    if (this.selectedSkill?.id) {
+      this.apiService.syncEmbeddings('skills', this.selectedSkill.id).subscribe({
+        next: (res) => {
+          this.snackBar.open(`Synced ${res.embeddings_created} embeddings`, 'Close', { duration: 3000 });
+        },
+        error: (err) => {
+          this.snackBar.open('Failed to sync embeddings', 'Close', { duration: 3000 });
+        }
+      });
+    }
+  }
 }

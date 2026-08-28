@@ -19,6 +19,7 @@ pub fn router() -> Router<AppState> {
         .route("/{id}", get(get_skill).put(update_skill).delete(delete_skill))
         .route("/{id}/promote", post(promote_skill))
         .route("/{id}/demote", post(demote_skill))
+        .route("/{id}/sync-embeddings", post(sync_skill_embeddings))
 }
 
 pub async fn list_skills(
@@ -252,4 +253,70 @@ pub async fn demote_skill(
         "demoted_to_agent_id": agent_id,
         "status": "demoted"
     })))
+}
+
+pub async fn sync_skill_embeddings(
+    State(pool): State<PgPool>,
+    Path(id): Path<Uuid>,
+) -> Result<Json<crate::models::SyncEmbeddingsResponse>, (StatusCode, String)> {
+    let skill_row = sqlx::query("SELECT name, description, definition FROM skills WHERE id = $1")
+        .bind(id)
+        .fetch_optional(&pool)
+        .await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Fetch Error: {}", e)))?;
+
+    let skill_row = match skill_row {
+        Some(row) => row,
+        None => return Err((StatusCode::NOT_FOUND, "Skill not found".to_string())),
+    };
+
+    let name: String = skill_row.get("name");
+    let description: String = skill_row.try_get("description").unwrap_or_default();
+    let definition: String = skill_row.try_get("definition").unwrap_or_default();
+
+    // Clean up old embeddings
+    sqlx::query("DELETE FROM entity_embeddings WHERE entity_id = $1")
+        .bind(id)
+        .execute(&pool)
+        .await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Delete Old Error: {}", e)))?;
+
+    let mut count = 0;
+
+    // Insert Name
+    sqlx::query("INSERT INTO entity_embeddings (entity_id, entity_type, field_name, content) VALUES ($1, 'skills', 'name', $2)")
+        .bind(id)
+        .bind(&name)
+        .execute(&pool)
+        .await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Insert Name Error: {}", e)))?;
+    count += 1;
+
+    // Insert Description
+    if !description.is_empty() {
+        sqlx::query("INSERT INTO entity_embeddings (entity_id, entity_type, field_name, content) VALUES ($1, 'skills', 'description', $2)")
+            .bind(id)
+            .bind(&description)
+            .execute(&pool)
+            .await
+            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Insert Desc Error: {}", e)))?;
+        count += 1;
+    }
+
+    // Insert Definition (Prompt)
+    if !definition.is_empty() {
+        sqlx::query("INSERT INTO entity_embeddings (entity_id, entity_type, field_name, content) VALUES ($1, 'skills', 'prompt', $2)")
+            .bind(id)
+            .bind(&definition)
+            .execute(&pool)
+            .await
+            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Insert Def Error: {}", e)))?;
+        count += 1;
+    }
+
+    Ok(Json(crate::models::SyncEmbeddingsResponse {
+        status: "success".to_string(),
+        entity_id: id,
+        embeddings_created: count,
+    }))
 }

@@ -112,6 +112,9 @@
 
       <!-- Right side of top bar (Actions) -->
       <div class="flex items-center gap-2">
+        <button *ngIf="selectedAgent?.id" mat-stroked-button color="primary" class="!rounded-lg !px-4 !font-bold h-9 mr-2" (click)="syncEmbeddings()">
+          <mat-icon class="mr-1">sync</mat-icon> Sync Embeddings
+        </button>
         <button mat-flat-button color="primary" class="!rounded-lg !px-4 !font-bold h-9 mr-2" (click)="createNewAgent()">
           <mat-icon class="mr-1">add</mat-icon> New Agent
         </button>

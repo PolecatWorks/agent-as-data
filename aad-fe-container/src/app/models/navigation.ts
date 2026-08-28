@@ -14,5 +14,6 @@ export const APP_NAV_MENU_ITEMS: NavMenuItem[] = [
   { path: '/workbench', icon: 'chat', label: 'Workbench' },
   { path: '/network-visualizer', icon: 'account_tree', label: 'Network Graph' },
   { path: '/refactoring-lab', icon: 'build_circle', label: 'Refactoring Lab' },
-  { path: '/knowledge-inspector', icon: 'library_books', label: 'Knowledge Inspector' }
+  { path: '/knowledge-inspector', icon: 'library_books', label: 'Knowledge Inspector' },
+  { path: '/agent-context', icon: 'search', label: 'Agent Context Search' }
 ];
