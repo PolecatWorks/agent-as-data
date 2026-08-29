@@ -1,0 +1,86 @@
+---
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: OCIRepository
+metadata:
+  name: mfe-shell
+  namespace: agent-as-data-dev
+spec:
+  interval: 10m
+  url: oci://ghcr.io/polecatworks/mfe-shell/helm/nginx-view
+  ref:
+    semver: ">= 0.1.x-0"
+    semverFilter: .*-main
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: agent-as-data-fe
+  namespace: agent-as-data-dev
+spec:
+  releaseName: aad-fe
+  chartRef:
+    kind: OCIRepository
+    name: mfe-shell
+  interval: 50m
+  install:
+    remediation:
+      retries: 3
+  values:
+    image:
+      repository: ghcr.io/polecatworks/agent-as-data-fe
+      tag: main
+      pullPolicy: Always
+    imagePullSecrets:
+      - name: ghcr-docker-auth
+    resources:
+      requests:
+        cpu: 10m
+        memory: 128Mi
+      limits:
+        cpu: 100m
+        memory: 256Mi
+    env:
+      - name: SERVE_ROOT
+        value: /
+    config:
+      configs:
+        default.conf.template: |
+          map $http_origin $cors_origin {
+            default "";
+            "~^http://localhost(:\d+)?$" "$http_origin";
+          }
+
+          server {
+            listen 8080;
+            server_name localhost;
+            root /usr/share/nginx/html;
+
+            # 1. Health Checks (High Priority)
+            location /alive { return 200; access_log off; }
+            location /ready { return 200; access_log off; }
+
+            # 2. SPA routing logic. Serve index.html if we hit a 404
+            location / {
+                alias /usr/share/nginx/html/;
+                index  index.html index.htm;
+                try_files $uri $uri/ /index.html;
+            }
+            error_page  404              /index.html;
+
+            # 3. General Static Files
+            location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|json)$ {
+                expires 1y;
+                add_header Cache-Control "public, no-transform";
+                add_header 'Access-Control-Allow-Origin' $cors_origin;
+            }
+          }
+      contents:
+        app-config.json: |
+          {
+            "apiPath": "/api",
+            "logLevel": "INFO",
+            "otel": {
+              "collectorUrl": "/otel",
+              "logLevel": "info"
+            }
+          }

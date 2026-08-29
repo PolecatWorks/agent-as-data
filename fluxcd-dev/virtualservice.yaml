@@ -1,0 +1,32 @@
+---
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: agent-as-data
+  namespace: agent-as-data-dev
+spec:
+  hosts:
+    - aad.k8s
+    - agent-as-data.k8s
+  gateways:
+    - istio-ingress/k8s-gateway
+    - mesh # applies to all the sidecars in the mesh
+  http:
+    - name: agent-as-data-be
+      match:
+        - uri:
+            prefix: /api
+      route:
+        - destination:
+            host: agent-as-data-be
+            port:
+              number: 8080
+    - name: agent-as-data-fe
+      match:
+        - uri:
+            prefix: /
+      route:
+        - destination:
+            host: aad-fe-nginx-view
+            port:
+              number: 8080
