@@ -31,6 +31,36 @@ spec:
       repository: ghcr.io/polecatworks/agent-as-data-be
       tag: main
       pullPolicy: Always
+    imagePullSecrets:
+      - name: ghcr-docker-auth
     config:
       database:
-        url: "postgres://postgres:mysecretpassword@aad-postgres:5432/aaddb"
+        url:
+          url: postgresql://aad-postgres:5432/aaddb
+          username_file: persistence/db/connection/username
+          password_file: persistence/db/connection/password
+        max_connections: 5
+      webservice:
+        address: "0.0.0.0:8080"
+        api_prefix: "/api"
+      llm:
+        ollama_url: "http://ollama.k8s:80"
+        model: "qwen2.5-coder:14b"
+        timeout_secs: 120
+      debugging:
+        environment: "development"
+        log_level: "info"
+    volumes:
+      - name: secrets
+        projected:
+          sources:
+            - secret:
+                name: db0-aad-user
+                items:
+                  - key: username
+                    path: persistence/db/connection/username
+                  - key: password
+                    path: persistence/db/connection/password
+    volumeMounts:
+      - name: secrets
+        mountPath: /etc/aad-be/secrets

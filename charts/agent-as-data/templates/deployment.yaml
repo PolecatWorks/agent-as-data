@@ -1,3 +1,4 @@
+{{- $configsha := substr 0 8 ((include "agent-as-data.config" . ) | sha256sum) }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -11,6 +12,11 @@ spec:
       app: {{ include "agent-as-data.name" . }}
   template:
     metadata:
+      annotations:
+        checksum/config: {{ $configsha }}
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
       labels:
         app: {{ include "agent-as-data.name" . }}
     spec:
@@ -22,12 +28,43 @@ spec:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["/usr/local/bin/aad-be-container", "--config-path", "/etc/aad-be/config.yaml", "--secrets-dir", "/etc/aad-be/secrets", "serve"]
+          {{- if .Values.env }}
           env:
-            - name: DATABASE_URL
-              value: {{ .Values.config.database.url | quote }}
+            {{- include "agent-as-data.env" . | nindent 12 }}
+          {{- end }}
           ports:
             - name: http
-              containerPort: 8080
+              containerPort: {{ .Values.service.port | default 8080 }}
               protocol: TCP
+            - name: hams
+              containerPort: {{ .Values.service.hamsPort | default 8079 }}
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /alive
+              port: hams
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: hams
+            initialDelaySeconds: 5
+            periodSeconds: 10
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: config
+              mountPath: /etc/aad-be/config.yaml
+              subPath: config.yaml
+            {{- if .Values.volumeMounts }}
+            {{- include "agent-as-data.volumeMounts" . | nindent 12 }}
+            {{- end }}
+      volumes:
+        - name: config
+          configMap:
+            name: {{ include "agent-as-data.fullname" . }}
+        {{- if .Values.volumes }}
+        {{- include "agent-as-data.volumes" . | nindent 8 }}
+        {{- end }}

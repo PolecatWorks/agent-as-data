@@ -11,5 +11,9 @@ spec:
       targetPort: http
       protocol: TCP
       name: http
+    - port: {{ .Values.service.hamsPort | default 8079 }}
+      targetPort: hams
+      protocol: TCP
+      name: hams
   selector:
     app: {{ include "agent-as-data.name" . }}

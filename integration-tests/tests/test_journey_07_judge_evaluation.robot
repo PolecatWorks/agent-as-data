@@ -32,9 +32,9 @@ Test LLM-as-a-Judge Evaluation Engine & Regression Blocker
     ${initial_version}=    Get From Dictionary    ${agent}    current_version
     Should Be Equal As Strings    ${initial_version}    1.0.0
 
-    # 2. Test agent -> Should fail threshold (0.9 < 0.95), version should not bump
-    ${input}=    Create Dictionary    prompt=hello
-    ${test_case}=    Create Dictionary    input=${input}    rubric=Should say hello
+    # 2. Test agent -> Should fail threshold (score < 0.95), version should not bump
+    ${input}=    Create Dictionary    prompt=The sky is blue
+    ${test_case}=    Create Dictionary    input=${input}    rubric=Must provide a detailed 500-word essay proving the sky is bright neon green with verifiable mathematical equations
     ${test_cases}=    Create List    ${test_case}
     ${test_payload}=    Create Dictionary    test_cases=${test_cases}
 
@@ -51,8 +51,13 @@ Test LLM-as-a-Judge Evaluation Engine & Regression Blocker
     ${updated_threshold}=    Get From Dictionary    ${updated_agent}    judge_threshold
     Should Be Equal As Numbers    ${updated_threshold}    0.8
 
-    # 4. Test agent again -> Should pass threshold (0.9 >= 0.8), version should bump
-    ${test_response2}=    Test Agent    ${agent_id}    ${test_payload}
+    # 4. Test agent again with valid passing test case -> Should pass threshold (score >= 0.8), version should bump
+    ${pass_input}=    Create Dictionary    prompt=Say hello
+    ${pass_test_case}=    Create Dictionary    input=${pass_input}    rubric=Any greeting or friendly acknowledgment is completely acceptable and satisfactory.
+    ${pass_test_cases}=    Create List    ${pass_test_case}
+    ${pass_test_payload}=    Create Dictionary    test_cases=${pass_test_cases}
+
+    ${test_response2}=    Test Agent    ${agent_id}    ${pass_test_payload}
     ${status2}=    Get From Dictionary    ${test_response2}    status
     ${version_bumped2}=    Get From Dictionary    ${test_response2}    version_bumped
     ${new_version}=    Get From Dictionary    ${test_response2}    new_version
@@ -62,7 +67,7 @@ Test LLM-as-a-Judge Evaluation Engine & Regression Blocker
     Should Be Equal As Strings    ${new_version}    1.1.0
 
     # 5. Execute agent to create a referencing record in executions table
-    ${exec_payload}=    Create Dictionary    prompt=run diagnostic checks
+    ${exec_payload}=    Create Dictionary    prompt=run diagnostic checks. Reply in 1 word: OK.
     ${exec_response}=    Execute Agent    ${agent_id}    ${exec_payload}
 
     # 6. Soft Delete agent -> Should succeed and mark it archived

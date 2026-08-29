@@ -24,13 +24,13 @@ Journey 3 RAG Execution
 
     # 1. Create a specific agent for this task to ensure it exists
     ${agent_def}=    Create Dictionary    role=reviewer
-    ${payload}=    Create Dictionary    name=${agent_name}    owner_id=${TEST_OWNER_ID}    agent_definition=${agent_def}
+    ${payload}=    Create Dictionary    name=${agent_name}    description=Review pull request for Rust security vulnerabilities and unsafe code blocks    owner_id=${TEST_OWNER_ID}    agent_definition=${agent_def}
     ${agent}=    Create Agent    ${payload}
     ${agent_id}=    Get From Dictionary    ${agent}    id
     Set Global Variable    ${AGENT_ID}    ${agent_id}
 
     # 2. Search and execute
-    ${execute_payload}=    Create Dictionary    task_query=Review pull request #42 for Rust security vulnerabilities and unsafe code blocks    prompt=Check the unsafe raw_pointer_offset function
+    ${execute_payload}=    Create Dictionary    task_query=Review pull request for Rust security vulnerabilities and unsafe code blocks    prompt=Check the unsafe raw_pointer_offset function. Provide a concise 1-sentence verdict.
 
     ${response}=    Search And Execute    ${execute_payload}
     ${execution_id}=    Get From Dictionary    ${response}    execution_id

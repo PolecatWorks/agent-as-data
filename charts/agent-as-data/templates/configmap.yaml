@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "agent-as-data.fullname" . }}
+  labels:
+    app: {{ include "agent-as-data.name" . }}
+data:
+  config.yaml: |
+    {{- include "agent-as-data.config" . | nindent 4 }}
