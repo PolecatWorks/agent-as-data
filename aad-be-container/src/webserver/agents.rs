@@ -1,28 +1,52 @@
 use axum::{
     Json,
-    extract::{Path, State, Query},
+    extract::{Path, Query, State},
     http::StatusCode,
+    routing::{get, post},
+    Router,
 };
 use sqlx::{PgPool, Row};
 use uuid::Uuid;
 
-use crate::models::{
-    Agent, AgentSearchRequest, AgentSearchResult, Skill,
-    VerifyContractRequest, VerifyContractResponse,
-    TestAgentRequest, TestAgentResponse,
-    RefactorAnalyzeRequest, RefactorAnalyzeResponse, CompileAgentRequest, CompileAgentResponse, DiagnosticMessage,
-    InputGuardrailType, OutputGuardrailType,
+use crate::{
+    models::{
+        Agent, AgentSearchRequest, AgentSearchResult, CompileAgentRequest, CompileAgentResponse,
+        DiagnosticMessage, InputGuardrailType, OutputGuardrailType, RefactorAnalyzeRequest,
+        RefactorAnalyzeResponse, TestAgentRequest, TestAgentResponse, VerifyContractRequest,
+        VerifyContractResponse,
+    },
+    state::AppState,
 };
+
+pub fn router() -> Router<AppState> {
+    Router::new()
+        .route("/", post(create_agent))
+        .route("/{id}", get(get_agent).put(update_agent).delete(delete_agent))
+        .route("/{id}/test", post(test_agent))
+        .route("/search", post(search_agents))
+        .route("/verify-contract", post(verify_contract))
+        .route("/refactor/analyze", post(analyze_refactor))
+        .route("/compile", post(compile_agent))
+}
 
 pub async fn create_agent(
     State(pool): State<PgPool>,
     Json(payload): Json<Agent>,
 ) -> Result<(StatusCode, Json<Agent>), (StatusCode, String)> {
     let agent_id = payload.id.unwrap_or_else(Uuid::new_v4);
-    let current_version = if payload.current_version.is_empty() || payload.current_version == "0" || payload.current_version == "1" { "1.0.0".to_string() } else { payload.current_version.clone() };
-    
-    let incoming_json = serde_json::to_value(&payload.input_guardrails).unwrap_or_else(|_| serde_json::json!([]));
-    let outgoing_json = serde_json::to_value(&payload.output_guardrails).unwrap_or_else(|_| serde_json::json!([]));
+    let current_version = if payload.current_version.is_empty()
+        || payload.current_version == "0"
+        || payload.current_version == "1"
+    {
+        "1.0.0".to_string()
+    } else {
+        payload.current_version.clone()
+    };
+
+    let incoming_json =
+        serde_json::to_value(&payload.input_guardrails).unwrap_or_else(|_| serde_json::json!([]));
+    let outgoing_json =
+        serde_json::to_value(&payload.output_guardrails).unwrap_or_else(|_| serde_json::json!([]));
 
     // 1. Insert Agent
     sqlx::query(
@@ -80,10 +104,7 @@ pub async fn create_agent(
     response_agent.id = Some(agent_id);
     response_agent.current_version = current_version;
 
-    Ok((
-        StatusCode::CREATED,
-        Json(response_agent),
-    ))
+    Ok((StatusCode::CREATED, Json(response_agent)))
 }
 
 pub async fn update_agent(
@@ -98,8 +119,10 @@ pub async fn update_agent(
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Fetch Error: {}", e)))?;
 
     if row.is_some() {
-        let incoming_json = serde_json::to_value(&payload.input_guardrails).unwrap_or_else(|_| serde_json::json!([]));
-        let outgoing_json = serde_json::to_value(&payload.output_guardrails).unwrap_or_else(|_| serde_json::json!([]));
+        let incoming_json =
+            serde_json::to_value(&payload.input_guardrails).unwrap_or_else(|_| serde_json::json!([]));
+        let outgoing_json =
+            serde_json::to_value(&payload.output_guardrails).unwrap_or_else(|_| serde_json::json!([]));
 
         sqlx::query(
             r#"
@@ -115,7 +138,7 @@ pub async fn update_agent(
         .bind(&payload.description)
         .bind(&payload.tags)
         .bind(&payload.implements_traits)
-    .bind(&payload.uses_traits)
+        .bind(&payload.uses_traits)
         .bind(&payload.read_groups)
         .bind(&payload.write_groups)
         .bind(&payload.execute_groups)
@@ -181,8 +204,10 @@ pub async fn get_agent(
         let incoming_val: serde_json::Value = r.get("incoming_guardrails");
         let outgoing_val: serde_json::Value = r.get("outgoing_guardrails");
 
-        let input_guardrails: Vec<InputGuardrailType> = serde_json::from_value(incoming_val).unwrap_or_default();
-        let output_guardrails: Vec<OutputGuardrailType> = serde_json::from_value(outgoing_val).unwrap_or_default();
+        let input_guardrails: Vec<InputGuardrailType> =
+            serde_json::from_value(incoming_val).unwrap_or_default();
+        let output_guardrails: Vec<OutputGuardrailType> =
+            serde_json::from_value(outgoing_val).unwrap_or_default();
 
         Ok(Json(Agent {
             id: Some(id),
@@ -225,12 +250,12 @@ pub async fn delete_agent(
     let mut agent_res = get_agent(State(pool.clone()), Path(id)).await?;
 
     if params.hard.unwrap_or(false) {
-        // Check if there are referencing executions
-        let exec_count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM executions WHERE agent_id = $1")
-            .bind(id)
-            .fetch_one(&pool)
-            .await
-            .unwrap_or(0);
+        let exec_count: i64 =
+            sqlx::query_scalar("SELECT COUNT(*) FROM executions WHERE agent_id = $1")
+                .bind(id)
+                .fetch_one(&pool)
+                .await
+                .unwrap_or(0);
         if exec_count > 0 {
             return Err((
                 StatusCode::CONFLICT,
@@ -256,15 +281,17 @@ pub async fn delete_agent(
 }
 
 pub async fn test_agent(
-    State(state): State<crate::AppState>,
+    State(state): State<AppState>,
     Path(id): Path<Uuid>,
     Json(payload): Json<TestAgentRequest>,
 ) -> Result<Json<TestAgentResponse>, (StatusCode, String)> {
-    let row = sqlx::query("SELECT current_version, judge_threshold, name, agent_definition FROM agents WHERE id = $1")
-        .bind(id)
-        .fetch_optional(&state.pool)
-        .await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Fetch Error: {}", e)))?;
+    let row = sqlx::query(
+        "SELECT current_version, judge_threshold, name, agent_definition FROM agents WHERE id = $1",
+    )
+    .bind(id)
+    .fetch_optional(&state.pool)
+    .await
+    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Fetch Error: {}", e)))?;
 
     if let Some(r) = row {
         let current_version: String = r.get("current_version");
@@ -272,7 +299,6 @@ pub async fn test_agent(
         let name: String = r.get("name");
         let agent_definition: serde_json::Value = r.get("agent_definition");
 
-        // Calculate score for each test case via rig-core LLM
         let mut total_score = 0.0;
         let mut num_evaluated = 0;
 
@@ -302,14 +328,15 @@ pub async fn test_agent(
             let req = model.completion_request(&prompt).build();
             let score = match tokio::time::timeout(timeout_duration, model.completion(req)).await {
                 Ok(Ok(response)) => {
-                    // Try to parse the response as an f64. If it fails, fallback to 0.9.
-                    if let rig_core::completion::message::AssistantContent::Text(text) = &response.choice[0] {
+                    if let rig_core::completion::message::AssistantContent::Text(text) =
+                        &response.choice[0]
+                    {
                         let cleaned = text.text.trim();
                         cleaned.parse::<f64>().unwrap_or(0.9)
                     } else {
                         0.9
                     }
-                },
+                }
                 _ => 0.9,
             };
             total_score += score;
@@ -331,15 +358,17 @@ pub async fn test_agent(
             version_bumped = true;
             new_version = crate::models::bump_minor_version(&current_version);
 
-            // Bump version and create a new immutable revision snapshot
-            sqlx::query(
-                "UPDATE agents SET current_version = $1, updated_at = NOW() WHERE id = $2"
-            )
-            .bind(&new_version)
-            .bind(id)
-            .execute(&state.pool)
-            .await
-            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Update Version Error: {}", e)))?;
+            sqlx::query("UPDATE agents SET current_version = $1, updated_at = NOW() WHERE id = $2")
+                .bind(&new_version)
+                .bind(id)
+                .execute(&state.pool)
+                .await
+                .map_err(|e| {
+                    (
+                        StatusCode::INTERNAL_SERVER_ERROR,
+                        format!("Update Version Error: {}", e),
+                    )
+                })?;
 
             let snapshot = serde_json::json!({
                 "id": id,
@@ -360,7 +389,12 @@ pub async fn test_agent(
             .bind(snapshot)
             .execute(&state.pool)
             .await
-            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Revision DB Error: {}", e)))?;
+            .map_err(|e| {
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    format!("Revision DB Error: {}", e),
+                )
+            })?;
         } else {
             status = "regression_blocked";
         }
@@ -372,7 +406,6 @@ pub async fn test_agent(
             "test_cases_evaluated": payload.test_cases.len()
         });
 
-        // Log test run
         sqlx::query(
             r#"
             INSERT INTO agent_test_runs (id, agent_id, agent_version, suite_id, status, judge_evaluation)
@@ -431,7 +464,7 @@ pub async fn search_agents(
             description: r.get("description"),
             current_version: r.get("current_version"),
             implements_traits: r.get("implements_traits"),
-                uses_traits: r.try_get("uses_traits").unwrap_or_default(),
+            uses_traits: r.try_get("uses_traits").unwrap_or_default(),
             tags: r.get("tags"),
             score: 0.98,
         })
@@ -440,141 +473,10 @@ pub async fn search_agents(
     Ok(Json(results))
 }
 
-pub async fn create_skill(
-    State(pool): State<PgPool>,
-    Json(payload): Json<Skill>,
-) -> Result<(StatusCode, Json<Skill>), (StatusCode, String)> {
-    let skill_id = payload.id.unwrap_or_else(Uuid::new_v4);
-    let input_schema = payload.input_schema.clone().unwrap_or_else(|| serde_json::json!({}));
-    let output_schema = payload.output_schema.clone().unwrap_or_else(|| serde_json::json!({}));
-    let implementation = payload.implementation.clone().unwrap_or_else(|| serde_json::json!({}));
-
-    let current_version = if payload.current_version.is_empty() || payload.current_version == "0" || payload.current_version == "1" { "1.0.0".to_string() } else { payload.current_version.clone() };
-
-    use sqlx::Row;
-    let row = sqlx::query(
-        r#"
-        INSERT INTO skills (id, name, description, definition, tags, current_version, owner_id, attached_skills, attached_tools, input_schema, output_schema, implementation, implements_traits, uses_traits)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
-        ON CONFLICT (name) DO UPDATE
-        SET description = EXCLUDED.description,
-            definition = EXCLUDED.definition,
-            tags = EXCLUDED.tags,
-            current_version = EXCLUDED.current_version,
-            owner_id = EXCLUDED.owner_id,
-            attached_skills = EXCLUDED.attached_skills,
-            attached_tools = EXCLUDED.attached_tools,
-            input_schema = EXCLUDED.input_schema,
-            output_schema = EXCLUDED.output_schema,
-            implementation = EXCLUDED.implementation,
-            implements_traits = EXCLUDED.implements_traits,
-            uses_traits = EXCLUDED.uses_traits,
-            updated_at = NOW()
-        RETURNING id
-        "#,
-    )
-    .bind(skill_id)
-    .bind(&payload.name)
-    .bind(&payload.description)
-    .bind(&payload.definition)
-    .bind(&payload.tags)
-    .bind(&current_version)
-    .bind(payload.owner_id)
-    .bind(&payload.attached_skills)
-    .bind(&payload.attached_tools)
-    .bind(input_schema)
-    .bind(output_schema)
-    .bind(implementation)
-    .bind(&payload.implements_traits)
-    .bind(&payload.uses_traits)
-    .fetch_one(&pool)
-    .await
-    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Skill DB Error: {}", e)))?;
-
-    let persisted_id: Uuid = row.get("id");
-    let mut response_skill = payload.clone();
-    response_skill.id = Some(persisted_id);
-    response_skill.current_version = current_version;
-
-    Ok((
-        StatusCode::CREATED,
-        Json(response_skill),
-    ))
-}
-
-pub async fn promote_skill(
-    State(pool): State<PgPool>,
-    Path(id): Path<Uuid>,
-) -> Result<(StatusCode, Json<Agent>), (StatusCode, String)> {
-    let skill_row = sqlx::query("SELECT name, description, owner_id, implements_traits FROM skills WHERE id = $1")
-        .bind(id)
-        .fetch_optional(&pool)
-        .await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Skill Fetch Error: {}", e)))?
-        .ok_or((StatusCode::NOT_FOUND, "Skill not found".to_string()))?;
-
-    let name: String = skill_row.get("name");
-    let description: String = skill_row.get("description");
-    let owner_id: Uuid = skill_row.get("owner_id");
-    let implements_traits: Vec<String> = skill_row.get("implements_traits");
-    let uses_traits: Vec<String> = skill_row.try_get("uses_traits").unwrap_or_default();
-
-    let agent_id = Uuid::new_v4();
-    let agent_definition = serde_json::json!({
-        "promoted_from_skill_id": id,
-        "instructions": description
-    });
-
-    sqlx::query(
-        r#"
-        INSERT INTO agents (id, name, description, current_version, owner_id, agent_definition, implements_traits, uses_traits)
-        VALUES ($1, $2, $3, '1.0.0', $4, $5, $6, $7)
-        "#,
-    )
-    .bind(agent_id)
-    .bind(&name)
-    .bind(&description)
-    .bind(owner_id)
-    .bind(&agent_definition)
-    .bind(&implements_traits)
-    .bind(&uses_traits)
-    .execute(&pool)
-    .await
-    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Promote Error: {}", e)))?;
-
-    Ok((
-        StatusCode::CREATED,
-        Json(Agent {
-            id: Some(agent_id),
-            name,
-            description,
-            tags: vec![],
-            implements_traits,
-            uses_traits,
-            attached_tools: vec![],
-            attached_agents: vec![],
-            attached_skills: vec![],
-            current_version: "1.0.0".to_string(),
-            owner_id,
-            judge_threshold: 0.8,
-            input_guardrails: vec![],
-            output_guardrails: vec![],
-            guardrail_config: None,
-            read_groups: vec![],
-            write_groups: vec![],
-            execute_groups: vec![],
-            agent_definition,
-            model: serde_json::json!({}),
-            archived_at: None,
-        }),
-    ))
-}
-
 pub async fn verify_contract(
     State(pool): State<PgPool>,
     Json(payload): Json<VerifyContractRequest>,
 ) -> Result<Json<VerifyContractResponse>, (StatusCode, String)> {
-    // Verify target agent implements requested trait
     let row = sqlx::query("SELECT implements_traits FROM agents WHERE id = $1")
         .bind(payload.target_agent_id)
         .fetch_optional(&pool)
@@ -583,8 +485,14 @@ pub async fn verify_contract(
 
     if let Some(r) = row {
         let traits: Vec<String> = r.get("implements_traits");
-        let contract_valid = traits.iter().any(|t| t.eq_ignore_ascii_case(&payload.trait_name));
-        let status = if contract_valid { "verified" } else { "trait_mismatch" };
+        let contract_valid = traits
+            .iter()
+            .any(|t| t.eq_ignore_ascii_case(&payload.trait_name));
+        let status = if contract_valid {
+            "verified"
+        } else {
+            "trait_mismatch"
+        };
         let score = if contract_valid { 0.96 } else { 0.20 };
 
         Ok(Json(VerifyContractResponse {
@@ -597,50 +505,10 @@ pub async fn verify_contract(
     }
 }
 
-pub async fn demote_skill(
-    State(pool): State<PgPool>,
-    Path(id): Path<Uuid>,
-) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
-    // Fetch skill definition and create matching standalone agent
-    let skill_row = sqlx::query("SELECT name, description, owner_id FROM skills WHERE id = $1")
-        .bind(id)
-        .fetch_optional(&pool)
-        .await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Fetch Error: {}", e)))?
-        .ok_or((StatusCode::NOT_FOUND, "Skill not found".to_string()))?;
-
-    let name: String = skill_row.get("name");
-    let description: String = skill_row.get("description");
-    let owner_id: Uuid = skill_row.get("owner_id");
-
-    let agent_id = Uuid::new_v4();
-    sqlx::query(
-        r#"
-        INSERT INTO agents (id, name, description, current_version, owner_id)
-        VALUES ($1, $2, $3, '1.0.0', $4)
-        "#,
-    )
-    .bind(agent_id)
-    .bind(format!("Demoted_{}", name))
-    .bind(&description)
-    .bind(owner_id)
-    .execute(&pool)
-    .await
-    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Agent DB Error: {}", e)))?;
-
-    Ok(Json(serde_json::json!({
-        "skill_id": id,
-        "demoted_to_agent_id": agent_id,
-        "status": "demoted"
-    })))
-}
-
-
 pub async fn analyze_refactor(
     State(pool): State<PgPool>,
     Json(_payload): Json<RefactorAnalyzeRequest>,
 ) -> Result<Json<RefactorAnalyzeResponse>, (StatusCode, String)> {
-    // Fetch registered agents to analyze overlap clusters
     let rows = sqlx::query("SELECT id FROM agents WHERE archived_at IS NULL LIMIT 10")
         .fetch_all(&pool)
         .await
@@ -664,7 +532,6 @@ pub async fn compile_agent(
     State(pool): State<PgPool>,
     Json(payload): Json<CompileAgentRequest>,
 ) -> Result<Json<CompileAgentResponse>, (StatusCode, String)> {
-    // Layer 1: Verify root agent exists
     let agent_row = sqlx::query("SELECT name FROM agents WHERE id = $1")
         .bind(payload.root_agent_id)
         .fetch_optional(&pool)
@@ -682,93 +549,14 @@ pub async fn compile_agent(
         }));
     }
 
-    // Structural DAG cycle check & semantic verification
     Ok(Json(CompileAgentResponse {
         status: "clean".to_string(),
         diagnostics: vec![DiagnosticMessage {
             code: "INFO_DAG_CLEAN".to_string(),
-            message: "DAG topology verified, no circular dependencies or contract mismatches found.".to_string(),
+            message:
+                "DAG topology verified, no circular dependencies or contract mismatches found."
+                    .to_string(),
             severity: "info".to_string(),
         }],
     }))
 }
-
-pub async fn list_skills(
-    State(pool): State<PgPool>,
-) -> Result<Json<Vec<Skill>>, (StatusCode, String)> {
-    let skills = sqlx::query_as::<_, Skill>(
-        "SELECT id, name, description, definition, tags, current_version, owner_id, attached_skills, attached_tools, input_schema, output_schema, implementation, implements_traits, uses_traits FROM skills ORDER BY created_at DESC"
-    )
-    .fetch_all(&pool)
-    .await
-    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Fetch Skills Error: {}", e)))?;
-    Ok(Json(skills))
-}
-
-pub async fn get_skill(
-    State(pool): State<PgPool>,
-    Path(id): Path<Uuid>,
-) -> Result<Json<Skill>, (StatusCode, String)> {
-    let skill = sqlx::query_as::<_, Skill>(
-        "SELECT id, name, description, definition, tags, current_version, owner_id, attached_skills, attached_tools, input_schema, output_schema, implementation, implements_traits, uses_traits FROM skills WHERE id = $1"
-    )
-    .bind(id)
-    .fetch_optional(&pool)
-    .await
-    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Fetch Skill Error: {}", e)))?
-    .ok_or((StatusCode::NOT_FOUND, "Skill not found".to_string()))?;
-    Ok(Json(skill))
-}
-
-pub async fn update_skill(
-    State(pool): State<PgPool>,
-    Path(id): Path<Uuid>,
-    Json(payload): Json<Skill>,
-) -> Result<Json<Skill>, (StatusCode, String)> {
-    let input_schema = payload.input_schema.clone().unwrap_or_else(|| serde_json::json!({}));
-    let output_schema = payload.output_schema.clone().unwrap_or_else(|| serde_json::json!({}));
-    let implementation = payload.implementation.clone().unwrap_or_else(|| serde_json::json!({}));
-    let current_version = crate::models::bump_minor_version(&payload.current_version);
-
-    sqlx::query(
-        r#"
-        UPDATE skills
-        SET name = $1, description = $2, definition = $3, tags = $4, current_version = $5, attached_skills = $6, attached_tools = $7, input_schema = $8, output_schema = $9, implementation = $10, implements_traits = $11, uses_traits = $12, updated_at = NOW()
-        WHERE id = $13
-        "#,
-    )
-    .bind(&payload.name)
-    .bind(&payload.description)
-    .bind(&payload.definition)
-    .bind(&payload.tags)
-    .bind(&current_version)
-    .bind(&payload.attached_skills)
-    .bind(&payload.attached_tools)
-    .bind(input_schema)
-    .bind(output_schema)
-    .bind(implementation)
-    .bind(&payload.implements_traits)
-    .bind(&payload.uses_traits)
-    .bind(id)
-    .execute(&pool)
-    .await
-    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Update Skill Error: {}", e)))?;
-
-    let mut response_skill = payload.clone();
-    response_skill.current_version = current_version;
-    Ok(Json(response_skill))
-}
-
-pub async fn delete_skill(
-    State(pool): State<PgPool>,
-    Path(id): Path<Uuid>,
-) -> Result<StatusCode, (StatusCode, String)> {
-    sqlx::query("DELETE FROM skills WHERE id = $1")
-        .bind(id)
-        .execute(&pool)
-        .await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Delete Skill Error: {}", e)))?;
-    Ok(StatusCode::NO_CONTENT)
-}
-
-

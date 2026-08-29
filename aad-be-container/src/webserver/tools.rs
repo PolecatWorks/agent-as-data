@@ -1,8 +1,24 @@
-use axum::{Json, extract::State, http::StatusCode};
-use sqlx::PgPool;
+use axum::{
+    Json,
+    extract::{Path, State},
+    http::StatusCode,
+    routing::{delete, get, post},
+    Router,
+};
+use sqlx::{PgPool, Row};
 use uuid::Uuid;
 
-use crate::models::{RegisterToolRequest, RegisterToolResponse};
+use crate::{
+    models::{RegisterToolRequest, RegisterToolResponse, Tool},
+    state::AppState,
+};
+
+pub fn router() -> Router<AppState> {
+    Router::new()
+        .route("/", get(list_tools))
+        .route("/register", post(register_tool))
+        .route("/{id}", delete(delete_tool))
+}
 
 pub async fn register_tool(
     State(pool): State<PgPool>,
@@ -10,7 +26,6 @@ pub async fn register_tool(
 ) -> Result<(StatusCode, Json<RegisterToolResponse>), (StatusCode, String)> {
     let server_id = payload.id.unwrap_or_else(Uuid::new_v4);
 
-    // Mock cached tools capability discovery
     let cached_capabilities = serde_json::json!({
         "tools": [
             { "name": "search_agents", "description": "RAG search for matching agents" },
@@ -20,7 +35,6 @@ pub async fn register_tool(
         "prompts": []
     });
 
-    use sqlx::Row;
     let row = sqlx::query(
         r#"
         INSERT INTO tools (id, server_name, transport_type, endpoint_config, cached_capabilities, owner_id)
@@ -38,7 +52,7 @@ pub async fn register_tool(
     .bind(&payload.transport_type)
     .bind(&payload.endpoint_config)
     .bind(&cached_capabilities)
-    .bind(&payload.owner_id)
+    .bind(payload.owner_id)
     .fetch_one(&pool)
     .await
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("MCP Register Error: {}", e)))?;
@@ -58,8 +72,8 @@ pub async fn register_tool(
 
 pub async fn list_tools(
     State(pool): State<PgPool>,
-) -> Result<(StatusCode, Json<Vec<crate::models::Tool>>), (StatusCode, String)> {
-    let servers = sqlx::query_as::<_, crate::models::Tool>(
+) -> Result<(StatusCode, Json<Vec<Tool>>), (StatusCode, String)> {
+    let servers = sqlx::query_as::<_, Tool>(
         "SELECT id, server_name, transport_type, endpoint_config, cached_capabilities, owner_id FROM tools"
     )
     .fetch_all(&pool)
@@ -68,8 +82,6 @@ pub async fn list_tools(
 
     Ok((StatusCode::OK, Json(servers)))
 }
-
-use axum::extract::Path;
 
 pub async fn delete_tool(
     State(pool): State<PgPool>,

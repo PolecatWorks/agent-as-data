@@ -1,11 +1,35 @@
-use axum::{Json, extract::State, http::StatusCode};
+use axum::{
+    Json,
+    extract::State,
+    http::StatusCode,
+    routing::post,
+    Router,
+};
 use sqlx::{PgPool, Row};
 use uuid::Uuid;
 
-use crate::models::{
-    GraphTraverseRequest, GraphTraverseResult, IngestKnowledgeRequest, IngestKnowledgeResponse,
-    KnowledgeSearchRequest, KnowledgeSearchResult,
+use crate::{
+    models::{
+        GraphTraverseRequest, GraphTraverseResult, IngestKnowledgeRequest, IngestKnowledgeResponse,
+        KnowledgeSearchRequest, KnowledgeSearchResult,
+    },
+    state::AppState,
 };
+
+pub fn router() -> Router<AppState> {
+    Router::new()
+        .route("/", post(ingest_knowledge))
+        .route("/search", post(search_knowledge))
+        .route("/graph/traverse", post(traverse_graph))
+}
+
+pub fn chunk_text(text: &str, chunk_size: usize) -> Vec<String> {
+    text.chars()
+        .collect::<Vec<char>>()
+        .chunks(chunk_size)
+        .map(|c| c.iter().collect::<String>())
+        .collect()
+}
 
 pub async fn ingest_knowledge(
     State(pool): State<PgPool>,
@@ -60,18 +84,16 @@ pub async fn ingest_knowledge(
             let confidence = tuple.confidence.unwrap_or(1.0);
             sqlx::query(
                 r#"
-                INSERT INTO knowledge_tuples (id, subject, subject_canonical, predicate, object, object_canonical, confidence, source_node_id)
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                INSERT INTO knowledge_tuples (id, node_id, subject, predicate, object, confidence)
+                VALUES ($1, $2, $3, $4, $5, $6)
                 "#,
             )
             .bind(tuple_id)
-            .bind(&tuple.subject)
-            .bind(tuple.subject.to_lowercase())
-            .bind(&tuple.predicate)
-            .bind(&tuple.object)
-            .bind(tuple.object.to_lowercase())
-            .bind(confidence)
             .bind(node_id)
+            .bind(tuple.subject)
+            .bind(tuple.predicate)
+            .bind(tuple.object)
+            .bind(confidence)
             .execute(&pool)
             .await
             .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Tuple Insert Error: {}", e)))?;
@@ -127,16 +149,17 @@ pub async fn traverse_graph(
     State(pool): State<PgPool>,
     Json(payload): Json<GraphTraverseRequest>,
 ) -> Result<Json<Vec<GraphTraverseResult>>, (StatusCode, String)> {
-    let subject_canonical = payload.subject.to_lowercase();
+    let max_depth = payload.max_depth.unwrap_or(2);
 
     let rows = sqlx::query(
         r#"
         SELECT subject, predicate, object, confidence
         FROM knowledge_tuples
-        WHERE LOWER(subject) = $1 OR LOWER(subject_canonical) = $1
+        WHERE subject ILIKE $1 OR object ILIKE $1
+        LIMIT 10
         "#,
     )
-    .bind(subject_canonical)
+    .bind(&payload.subject)
     .fetch_all(&pool)
     .await
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Traverse Error: {}", e)))?;
@@ -148,34 +171,21 @@ pub async fn traverse_graph(
             predicate: r.get("predicate"),
             object: r.get("object"),
             confidence: r.get("confidence"),
-            depth: 1,
+            depth: max_depth,
         })
         .collect();
 
     Ok(Json(results))
 }
 
-fn chunk_text(text: &str, max_len: usize) -> Vec<String> {
-    if text.is_empty() {
-        return vec![];
-    }
-    text.chars()
-        .collect::<Vec<char>>()
-        .chunks(max_len)
-        .map(|c| c.iter().collect())
-        .collect()
-}
-
-
 #[cfg(test)]
-mod tests {
+pub mod tests {
     use super::*;
 
     #[test]
     fn test_chunk_text() {
-        let text = "Hello world from Agent-As-Data Knowledge Engine";
-        let chunks = chunk_text(text, 10);
-        assert!(!chunks.is_empty());
-        assert_eq!(chunks[0], "Hello worl");
+        let text = "abcdefghij";
+        let chunks = chunk_text(text, 3);
+        assert_eq!(chunks, vec!["abc", "def", "ghi", "j"]);
     }
 }

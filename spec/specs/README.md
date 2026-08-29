@@ -45,8 +45,12 @@ flowchart TD
         Spec08["08-developer-ui-studio-spec.md<br/>(Angular 18+ Developer UI Workbench)"]:::complete
     end
 
+    subgraph Phase5 ["Phase 5: Codebase Architecture & Refactoring"]
+        Spec09["09-backend-modular-architecture-spec.md<br/>(Backend Modular Layout & Webservice Routing)"]:::complete
+    end
 
     classDef complete fill:#10B981,stroke:#047857,stroke-width:2px,color:#ffffff;
+    classDef draft fill:#3B82F6,stroke:#1D4ED8,stroke-width:2px,color:#ffffff;
 
     SchemaSpec -.->|Informs Schema & Payloads| Spec01
     SchemaSpec -.->|Informs Schema & Payloads| Spec02
@@ -73,6 +77,7 @@ flowchart TD
     Spec05 --> Spec08
     Spec06 --> Spec08
     Spec07 --> Spec08
+    Spec08 --> Spec09
 ```
 
 ## Index of Task Specifications
@@ -84,17 +89,9 @@ flowchart TD
 | **Phase 1** | [01-core-storage-spec.md](./01-core-storage-spec.md) | `complete` | Database DDL Tables, Extension Init (`pgvector`), `sqlx` Migrations, & Seed Engine | [Master PRD](../prds/agent-as-data-prd.md) | Root Phase 1 Spec (Informed by `agent-schema-spec.md`) |
 | **Phase 2** | [02-knowledge-engine-spec.md](./02-knowledge-engine-spec.md) | `complete` | Text Chunks RAG, SPO Graph Store, Canonical Entity Resolution, & Pruning | [Knowledge PRD](../prds/knowledge-data-system-prd.md) | Depends on [01-core-storage-spec.md](./01-core-storage-spec.md) |
 | **Phase 2** | [03-declarative-agent-registry-spec.md](./03-declarative-agent-registry-spec.md) | `complete` | Declarative Agents, Managed Skills, Skill Promotion, & Trait Verification | [Agent Registry PRD](../prds/agent-registry-execution-prd.md) | Depends on [01-core-storage-spec.md](./01-core-storage-spec.md) |
-
-
 | **Phase 3** | [04-mcp-server-spec.md](./04-mcp-server-spec.md) | `complete` | Native MCP Server (Stdio/SSE), 11 Tools, & Remote MCP Registration | [Master PRD](../prds/agent-as-data-prd.md) | Depends on [02-knowledge-engine-spec.md](./02-knowledge-engine-spec.md) & [03-declarative-agent-registry-spec.md](./03-declarative-agent-registry-spec.md) |
 | **Phase 3** | [05-execution-guardrails-engine-spec.md](./05-execution-guardrails-engine-spec.md) | `complete` | Sync/Async Execution Engine, Guardrails, OCC State Sync, & Webhooks | [Agent Registry PRD](../prds/agent-registry-execution-prd.md) | Depends on [01-core-storage-spec.md](./01-core-storage-spec.md) & [03-declarative-agent-registry-spec.md](./03-declarative-agent-registry-spec.md) |
-
-
-
 | **Phase 4** | [06-agent-test-judge-engine-spec.md](./06-agent-test-judge-engine-spec.md) | `complete` | Probabilistic Unit Testing, LLM-as-a-Judge Evaluation, & CI Quality Gates | [Agent Registry PRD](../prds/agent-registry-execution-prd.md) | Depends on [03-declarative-agent-registry-spec.md](./03-declarative-agent-registry-spec.md) & [05-execution-guardrails-engine-spec.md](./05-execution-guardrails-engine-spec.md) |
 | **Phase 4** | [07-refactoring-compiler-engine-spec.md](./07-refactoring-compiler-engine-spec.md) | `complete` | Overlap Cluster Refactoring Engine & Pre-Flight Agent Network Compiler | [Agent Registry PRD](../prds/agent-registry-execution-prd.md) | Depends on [03-declarative-agent-registry-spec.md](./03-declarative-agent-registry-spec.md) |
 | **Phase 4** | [08-developer-ui-studio-spec.md](./08-developer-ui-studio-spec.md) | `complete` | Angular 18+ Web Dashboard (`aad-fe-container`), Interactive Testing Studio (Skills Layout & Prompt Inspector), & Rig Ollama Execution | [Agent UI PRD](../prds/agent-ui-testing-kit-prd.md) | Depends on [04-mcp-server-spec.md](./04-mcp-server-spec.md), [05-execution-guardrails-engine-spec.md](./05-execution-guardrails-engine-spec.md), [06-agent-test-judge-engine-spec.md](./06-agent-test-judge-engine-spec.md), & [07-refactoring-compiler-engine-spec.md](./07-refactoring-compiler-engine-spec.md) |
-
-
-
-
+| **Phase 5** | [09-backend-modular-architecture-spec.md](./09-backend-modular-architecture-spec.md) | `complete` | Backend Codebase Layout, CLI Separation (`main.rs`), App Runtime (`lib.rs`), Webservice Router (`webserver/`), & Domain Models (`models/`) | [Master PRD](../prds/agent-as-data-prd.md) | Depends on Phases 1-4 |

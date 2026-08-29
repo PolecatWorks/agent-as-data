@@ -1,12 +1,23 @@
 use axum::{
     Json,
-    extract::{Path, State, Query},
+    extract::{Path, Query, State},
     http::StatusCode,
+    routing::get,
+    Router,
 };
 use sqlx::{PgPool, Row};
 use uuid::Uuid;
 
-use crate::models::{TraitContract, PageOptions, ListPages, bump_minor_version};
+use crate::{
+    models::{ListPages, PageOptions, TraitContract},
+    state::AppState,
+};
+
+pub fn router() -> Router<AppState> {
+    Router::new()
+        .route("/", get(list_traits).post(create_trait))
+        .route("/{id}", get(get_trait).put(update_trait).delete(delete_trait))
+}
 
 pub async fn list_traits(
     State(pool): State<PgPool>,
@@ -52,7 +63,11 @@ pub async fn create_trait(
     Json(payload): Json<TraitContract>,
 ) -> Result<(StatusCode, Json<TraitContract>), (StatusCode, String)> {
     let id = payload.id.unwrap_or_else(Uuid::new_v4);
-    let version = if payload.version.is_empty() || payload.version == "0" || payload.version == "1" { "1.0.0".to_string() } else { payload.version };
+    let version = if payload.version.is_empty() || payload.version == "0" || payload.version == "1" {
+        "1.0.0".to_string()
+    } else {
+        payload.version
+    };
 
     let new_trait = sqlx::query_as::<_, TraitContract>(
         r#"
@@ -70,16 +85,16 @@ pub async fn create_trait(
     .bind(id)
     .bind(&payload.name)
     .bind(&payload.description)
-    .bind(version)
+    .bind(&version)
     .bind(&payload.capability_requirements)
     .bind(&payload.behavioral_invariants)
     .bind(&payload.evaluation_criteria)
     .bind(&payload.tags)
     .bind(&payload.guardrails)
-    .bind(&payload.owner_id)
+    .bind(payload.owner_id)
     .fetch_one(&pool)
     .await
-    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Creation Error: {}", e)))?;
+    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Insert Trait Error: {}", e)))?;
 
     Ok((StatusCode::CREATED, Json(new_trait)))
 }
@@ -89,57 +104,47 @@ pub async fn update_trait(
     Path(id): Path<Uuid>,
     Json(payload): Json<TraitContract>,
 ) -> Result<Json<TraitContract>, (StatusCode, String)> {
-    let existing = sqlx::query_as::<_, TraitContract>(
-        "SELECT id, name, description, version, capability_requirements, behavioral_invariants, evaluation_criteria, tags, guardrails, owner_id, created_at, updated_at FROM trait_contracts WHERE id = $1"
-    )
-    .bind(id)
-    .fetch_optional(&pool)
-    .await
-    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Fetch Error: {}", e)))?;
+    let current_version = crate::models::bump_minor_version(&payload.version);
 
-    let existing = match existing {
-        Some(t) => t,
-        None => return Err((StatusCode::NOT_FOUND, "Trait contract not found".to_string())),
-    };
-
-    let new_version = bump_minor_version(&existing.version);
-
-    let updated = sqlx::query_as::<_, TraitContract>(
+    let updated_trait = sqlx::query_as::<_, TraitContract>(
         r#"
         UPDATE trait_contracts
-        SET name = $1, description = $2, version = $3, capability_requirements = $4, behavioral_invariants = $5, evaluation_criteria = $6, tags = $7, guardrails = $8, owner_id = $9, updated_at = NOW()
+        SET name = $1, description = $2, version = $3, capability_requirements = $4, behavioral_invariants = $5,
+            evaluation_criteria = $6, tags = $7, guardrails = $8, owner_id = $9, updated_at = NOW()
         WHERE id = $10
         RETURNING id, name, description, version, capability_requirements, behavioral_invariants, evaluation_criteria, tags, guardrails, owner_id, created_at, updated_at
         "#
     )
     .bind(&payload.name)
     .bind(&payload.description)
-    .bind(new_version)
+    .bind(&current_version)
     .bind(&payload.capability_requirements)
     .bind(&payload.behavioral_invariants)
     .bind(&payload.evaluation_criteria)
     .bind(&payload.tags)
     .bind(&payload.guardrails)
-    .bind(&payload.owner_id)
+    .bind(payload.owner_id)
     .bind(id)
     .fetch_one(&pool)
     .await
-    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Update Error: {}", e)))?;
+    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Update Trait Error: {}", e)))?;
 
-    Ok(Json(updated))
+    Ok(Json(updated_trait))
 }
 
 pub async fn delete_trait(
     State(pool): State<PgPool>,
     Path(id): Path<Uuid>,
-) -> Result<Json<TraitContract>, (StatusCode, String)> {
-    let trait_res = get_trait(State(pool.clone()), Path(id)).await?;
-
-    sqlx::query("DELETE FROM trait_contracts WHERE id = $1")
+) -> Result<StatusCode, (StatusCode, String)> {
+    let result = sqlx::query("DELETE FROM trait_contracts WHERE id = $1")
         .bind(id)
         .execute(&pool)
         .await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Delete Error: {}", e)))?;
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Delete Trait Error: {}", e)))?;
 
-    Ok(trait_res)
+    if result.rows_affected() == 0 {
+        return Err((StatusCode::NOT_FOUND, "Trait not found".to_string()));
+    }
+
+    Ok(StatusCode::NO_CONTENT)
 }
