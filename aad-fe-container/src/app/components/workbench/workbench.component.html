@@ -167,7 +167,7 @@
             <div *ngFor="let msg of activeThreadMessages"
                  class="flex"
                  [ngClass]="{'justify-end': msg.role === 'user', 'justify-start': msg.role !== 'user'}">
-              <div class="p-3 rounded-2xl max-w-[85%] text-sm shadow-sm"
+              <div class="p-3 rounded-2xl max-w-[85%] text-sm shadow-sm whitespace-pre-wrap"
                    [ngClass]="{
                      'bg-indigo-600 text-white rounded-br-sm': msg.role === 'user',
                      'bg-slate-100 text-slate-800 rounded-bl-sm border border-slate-200': msg.role !== 'user'
@@ -177,7 +177,18 @@
             </div>
           </ng-container>
 
-          <div *ngIf="activeThread && activeThreadMessages.length === 0" class="flex flex-col items-center justify-center h-full text-slate-400">
+          <div *ngIf="isProcessing" class="flex justify-start">
+            <div class="p-3 rounded-2xl max-w-[85%] text-sm shadow-sm bg-slate-100 text-slate-800 rounded-bl-sm border border-slate-200 flex items-center gap-2">
+              <div class="flex space-x-1">
+                <div class="w-2 h-2 bg-slate-400 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+                <div class="w-2 h-2 bg-slate-400 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+                <div class="w-2 h-2 bg-slate-400 rounded-full animate-bounce"></div>
+              </div>
+              <span class="text-xs text-slate-500 font-medium">Agent is thinking...</span>
+            </div>
+          </div>
+
+          <div *ngIf="activeThread && activeThreadMessages.length === 0 && !isProcessing" class="flex flex-col items-center justify-center h-full text-slate-400">
             <div class="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mb-3">
               <mat-icon class="text-slate-300">chat</mat-icon>
             </div>
@@ -188,15 +199,15 @@
 
         <!-- Input Area -->
         <div class="p-4 border-t border-slate-100 bg-white shrink-0">
-          <div class="relative flex items-end shadow-sm border border-slate-200 rounded-xl bg-slate-50 focus-within:ring-2 focus-within:ring-indigo-500/20 focus-within:border-indigo-500 focus-within:bg-white transition-all">
+          <div class="relative flex items-end shadow-sm border border-slate-200 rounded-xl bg-slate-50 focus-within:ring-2 focus-within:ring-indigo-500/20 focus-within:border-indigo-500 focus-within:bg-white transition-all" [ngClass]="{'opacity-50 cursor-not-allowed': isProcessing}">
             <textarea class="flex-1 px-4 py-3 bg-transparent border-none text-sm focus:outline-none focus:ring-0 resize-none min-h-[44px]"
-                      rows="1" placeholder="Type a message..."
+                      rows="1" [placeholder]="isProcessing ? 'Waiting for agent...' : 'Type a message...'"
                       [(ngModel)]="newMessageContent"
-                      [disabled]="!activeThread"
+                      [disabled]="!activeThread || isProcessing"
                       (keydown.enter)="$event.preventDefault(); sendMessage()">
             </textarea>
             <button mat-icon-button color="primary" class="m-1 shrink-0"
-                    [disabled]="!activeThread || !newMessageContent.trim()"
+                    [disabled]="!activeThread || !newMessageContent.trim() || isProcessing"
                     (click)="sendMessage()">
               <mat-icon>send</mat-icon>
             </button>
@@ -215,38 +226,55 @@
         <!-- Editor Header -->
         <div class="px-4 py-2 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center shrink-0 h-12">
           <div class="flex items-center gap-2">
-            <h2 class="text-sm font-bold text-slate-800 m-0">Review</h2>
+            <h2 class="text-sm font-bold text-slate-800 m-0">Filesystem</h2>
           </div>
           <div class="flex gap-2">
-            <button mat-button class="!text-xs !py-0 !px-2 !min-w-0 h-6 bg-white border border-slate-200 rounded text-slate-600 font-medium">Collapse all</button>
-            <button mat-button class="!text-xs !py-0 !px-2 !min-w-0 h-6 bg-white border border-slate-200 rounded text-slate-600 font-medium flex items-center gap-1">Stacked <mat-icon class="!w-3 !h-3 !text-[12px] leading-3">expand_more</mat-icon></button>
+            <button mat-button class="!text-xs !py-0 !px-2 !min-w-0 h-6 bg-indigo-50 border border-indigo-200 rounded text-indigo-700 font-medium flex items-center gap-1" (click)="createNewFile()" [disabled]="!activeThread">
+              <mat-icon class="!w-3 !h-3 !text-[12px] leading-3">note_add</mat-icon> Add File
+            </button>
+            <button mat-button class="!text-xs !py-0 !px-2 !min-w-0 h-6 bg-emerald-50 border border-emerald-200 rounded text-emerald-700 font-medium flex items-center gap-1" (click)="saveFile()" [disabled]="!selectedFile">
+              <mat-icon class="!w-3 !h-3 !text-[12px] leading-3">save</mat-icon> Save
+            </button>
           </div>
         </div>
 
-        <!-- Editor Content (Mock diff view similar to Jules screenshot) -->
-        <div class="flex-1 p-4 overflow-auto bg-[#fafafa]">
+        <!-- Editor Content (File Explorer & Text Area) -->
+        <div class="flex-1 flex flex-row overflow-hidden bg-[#fafafa]">
+          <!-- Left: File List -->
+          <div class="w-48 border-r border-slate-200 bg-slate-50 flex flex-col overflow-y-auto">
+            <div *ngIf="files.length === 0" class="text-slate-400 text-xs text-center mt-4">
+              No files in workspace.
+            </div>
+            <div *ngFor="let file of files"
+                 class="group flex items-center justify-between px-3 py-2 cursor-pointer text-sm border-b border-slate-100"
+                 [ngClass]="file === selectedFile ? 'bg-indigo-50 text-indigo-700 font-medium' : 'text-slate-600 hover:bg-slate-100'"
+                 (click)="selectFile(file)">
+               <div class="flex items-center gap-2 overflow-hidden">
+                 <mat-icon class="!w-4 !h-4 !text-base shrink-0" [ngClass]="file.endsWith('/') ? 'text-amber-400' : 'text-slate-400'">
+                   {{ file.endsWith('/') ? 'folder' : 'insert_drive_file' }}
+                 </mat-icon>
+                 <span class="truncate">{{ file }}</span>
+               </div>
+               <mat-icon class="!w-4 !h-4 !text-base shrink-0 text-slate-300 hover:text-red-500 hidden group-hover:block transition-colors"
+                         (click)="deleteFile(file, $event)" title="Delete File">delete</mat-icon>
+            </div>
+          </div>
 
-          <div class="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden mb-4">
-             <div class="bg-indigo-50/50 border-b border-slate-200 px-4 py-2 flex justify-between items-center min-h-[36px]">
-               <div class="flex items-center gap-2">
-                 <span class="w-5 h-5 rounded bg-indigo-100 text-indigo-700 flex items-center justify-center text-[10px] font-bold leading-none shrink-0">A</span>
-                 <span class="text-xs font-bold text-slate-700 font-mono leading-none flex items-center h-5">aad-be-container/src/fs_tools.rs</span>
-                 <span class="text-[10px] font-bold text-emerald-600 bg-emerald-100 px-1.5 py-0.5 rounded leading-none shrink-0">+247</span>
+          <!-- Right: Text Area -->
+          <div class="flex-1 flex flex-col min-w-0 relative">
+            <ng-container *ngIf="selectedFile">
+               <div class="h-8 bg-slate-100 border-b border-slate-200 flex items-center px-4 shrink-0 shadow-inner">
+                 <span class="text-xs font-mono text-slate-600">{{ selectedFile }}</span>
                </div>
-               <div class="flex items-center gap-1 text-slate-400">
-                 <mat-icon class="!w-4 !h-4 !text-[16px] !leading-4 !m-0 cursor-pointer hover:text-slate-700 flex items-center justify-center" title="Download zip">download</mat-icon>
-                 <mat-icon class="!w-4 !h-4 !text-[16px] !leading-4 !m-0 cursor-pointer hover:text-slate-700 flex items-center justify-center" title="Copy">content_copy</mat-icon>
-               </div>
-             </div>
-             <div class="p-4 bg-[#e6ffed] text-[#22863a] font-mono text-xs overflow-x-auto whitespace-pre" ngNonBindable>
-1 + use axum::{{
-2 +   extract::Path,
-3 +   http::StatusCode,
-4 +   Json,
-5 + }};
-6 + use serde::{{Deserialize, Serialize}};
-7 + use std::path::Path as StdPath;
-             </div>
+               <textarea class="flex-1 w-full p-4 font-mono text-sm resize-none border-none focus:outline-none focus:ring-0 bg-white shadow-inner"
+                         [(ngModel)]="selectedFileContent"
+                         placeholder="Type here..."
+                         spellcheck="false"></textarea>
+            </ng-container>
+            <div *ngIf="!selectedFile" class="flex-1 flex flex-col items-center justify-center text-slate-400">
+               <mat-icon class="!w-12 !h-12 !text-[48px] text-slate-200 mb-2">edit_document</mat-icon>
+               <span class="text-sm font-medium">Select a file to edit</span>
+            </div>
           </div>
         </div>
       </div>
