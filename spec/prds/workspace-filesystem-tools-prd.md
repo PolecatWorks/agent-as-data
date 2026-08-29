@@ -5,7 +5,7 @@ This document defines the requirements for isolated workspace filesystem tools w
 
 ## Objectives
 1. **Thread Isolation**: Each thread must have its own isolated filesystem directory located at `/tmp/workspace/<thread_id>`.
-2. **Filesystem Tools**: Expose specific tools (`read_file`, `write_file`, `list_files`, `delete_file`) that operate exclusively within a thread's workspace.
+2. **Filesystem Tools**: Expose specific tools (`read_file`, `write_file`, `replace_in_file`, `list_files`, `delete_file`, `rename_file`) that operate exclusively within a thread's workspace.
 3. **Security & Path Constraints**: Strictly prevent path traversal vulnerabilities. No operation should be able to access, read, or modify files outside of its designated `/tmp/workspace/<thread_id>` directory.
 
 ## Core Features
@@ -27,6 +27,10 @@ The following operations will be provided as tools. They accept a `thread_id` an
   - Reads the content of the file at `filepath`.
   - Returns an error if the file does not exist or is a directory.
 
+- **`replace_in_file(thread_id, filepath, search_string, replace_string)`**:
+  - Searches for an exact `search_string` block in the file and replaces it with `replace_string`.
+  - Returns an error if the `search_string` is not found or the file does not exist.
+
 - **`list_files(thread_id, dir_path)`**:
   - Lists the contents of `dir_path` (defaults to the root of the workspace if empty).
   - Returns a list of filenames/directory names.
@@ -34,7 +38,14 @@ The following operations will be provided as tools. They accept a `thread_id` an
 - **`delete_file(thread_id, filepath)`**:
   - Deletes the file or directory at `filepath`.
 
-### 3. Security & Path Traversal Prevention
+- **`rename_file(thread_id, filepath, new_filepath)`**:
+  - Renames or moves a file or directory from `filepath` to `new_filepath`.
+
+### 3. LLM Integration
+- The tools mentioned above will be implemented as `rig_core::tool::PortableTool` tools.
+- They will be dynamically added to the `CompletionModel` builder if a `thread_id` is supplied in the context payload during agent execution.
+
+### 4. Security & Path Traversal Prevention
 - **Strict Canonicalization**: All input paths must be resolved and canonicalized.
 - **Boundary Check**: After resolving an absolute path, the system must verify that the resulting path starts with exactly `/tmp/workspace/<thread_id>/`.
 - Any attempt to use `../` or absolute paths like `/etc/passwd` that resolve outside the workspace root must be immediately rejected with a definitive security error.
@@ -46,5 +57,5 @@ The following operations will be provided as tools. They accept a `thread_id` an
 ## Implementation Phases
 1. Update thread creation logic to scaffold `/tmp/workspace/<thread_id>`.
 2. Implement robust path sanitization and boundary checking utility in Rust.
-3. Implement the tool functions (`read_file`, `write_file`, etc.).
+3. Implement the tool functions (`read_file`, `write_file`, `replace_in_file`, `list_files`, `delete_file`, `rename_file`) as `rig_core` PortableTools.
 4. Expose these functions to the internal agent execution context or via REST API endpoints as needed.

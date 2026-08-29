@@ -49,7 +49,7 @@ pub struct DeleteFileRequest {
     pub filepath: String,
 }
 
-fn resolve_safe_path(workspace_root: &StdPath, relative_path: &str) -> Result<PathBuf, String> {
+pub(crate) fn resolve_safe_path(workspace_root: &StdPath, relative_path: &str) -> Result<PathBuf, String> {
     let mut intended_path = workspace_root.to_path_buf();
     let relative = relative_path.trim_start_matches('/');
     intended_path.push(relative);
@@ -88,7 +88,7 @@ fn resolve_safe_path(workspace_root: &StdPath, relative_path: &str) -> Result<Pa
     Ok(final_path)
 }
 
-fn get_workspace_root(thread_id: Uuid) -> PathBuf {
+pub(crate) fn get_workspace_root(thread_id: Uuid) -> PathBuf {
     PathBuf::from(format!("/tmp/workspace/{}", thread_id))
 }
 
