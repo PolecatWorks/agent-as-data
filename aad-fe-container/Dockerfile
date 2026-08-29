@@ -7,13 +7,16 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install dependencies
-RUN npm ci
+RUN --mount=type=cache,target=/root/.npm \
+    npm ci
 
 # Copy the rest of the application source code
 COPY . .
 
 # Build the application for production
-RUN npm run build -- --configuration production
+RUN --mount=type=cache,target=/root/.npm \
+    --mount=type=cache,target=/app/.angular/cache \
+    npm run build -- --configuration production
 
 # Stage 2: Serve the application with Nginx
 FROM nginx:alpine
