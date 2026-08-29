@@ -10,12 +10,14 @@ pub mod tools;
 pub mod traits;
 
 use axum::{routing::get, Router};
+use axum_prometheus::PrometheusMetricLayer;
 use tracing::info;
 
 use crate::config::WebServiceConfig;
 use crate::state::AppState;
 
 pub fn app_router(state: AppState) -> Router {
+    let metric_layer = PrometheusMetricLayer::new();
     let api_routes = Router::new()
         .nest("/v1/agents", agents::router())
         .nest("/v1/skills", skills::router())
@@ -30,11 +32,13 @@ pub fn app_router(state: AppState) -> Router {
     Router::new()
         .route("/health", get(|| async { "OK" }))
         .nest(&state.config.webservice.api_prefix, api_routes)
+        .layer(metric_layer)
 }
 
 pub async fn start_webserver(
     state: AppState,
     config: &WebServiceConfig,
+    ct: tokio_util::sync::CancellationToken,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let app = app_router(state);
     let listener = tokio::net::TcpListener::bind(&config.address)
@@ -43,6 +47,10 @@ pub async fn start_webserver(
 
     info!("Axum REST Service listening on {}", config.address);
     axum::serve(listener, app)
+        .with_graceful_shutdown(async move {
+            ct.cancelled().await;
+            info!("Received cancellation token, shutting down web server");
+        })
         .await
         .map_err(|e| format!("Axum serve error: {}", e))?;
 

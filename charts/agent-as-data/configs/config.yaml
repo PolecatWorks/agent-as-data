@@ -27,3 +27,4 @@ runtime:
 debugging:
   environment: "production"
   log_level: "info"
+  fail_debug_delay: "0s"

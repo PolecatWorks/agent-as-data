@@ -30,3 +30,4 @@ runtime:
 debugging:
   environment: "development"
   log_level: "info"
+  fail_debug_delay: "0s"

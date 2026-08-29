@@ -7,6 +7,7 @@ pub mod config;
 pub mod db;
 pub mod error;
 pub mod hams_tools;
+pub mod metrics;
 pub mod models;
 pub mod state;
 pub mod tokio_tools;
@@ -17,13 +18,17 @@ pub use state::AppState;
 pub const NAME: &str = env!("CARGO_PKG_NAME");
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
+use std::ffi::c_void;
 use std::path::Path;
+use std::sync::Arc;
 use tracing::info;
 use ::hams::hams::Hams;
+use axum_prometheus::metrics_exporter_prometheus::PrometheusBuilder;
 
 use crate::config::AppConfig;
 use crate::db::{init_db_pool, verify_pgvector_extension};
 use crate::hams_tools::HamsHarness;
+use crate::metrics::{prometheus_response_free, prometheus_response_mystate};
 use crate::webserver::start_webserver;
 
 /// Main application service orchestrator.
@@ -49,15 +54,22 @@ pub async fn service_main(
         format!("Fail-Fast Configuration Error: {}", e)
     })?;
 
+    // Setup Prometheus Metrics Recorder
+    let metric_handle = PrometheusBuilder::new()
+        .install_recorder()
+        .map_err(|e| format!("Failed to install Prometheus recorder: {e}"))?;
+
+    let ct = tokio_util::sync::CancellationToken::new();
+
     // 2. Initialize HaMS Health Monitoring Sidecar & ProbeManual readiness signal
     let mut hams_config = config.hams.clone();
     hams_config.name = NAME.to_owned();
     hams_config.version = VERSION.to_owned();
 
     let hams = Hams::new(hams_config);
-    let _hams_harness = HamsHarness::init(hams).await
+    let mut hams_harness = HamsHarness::init(hams, ct.clone()).await
         .map_err(|e| format!("HaMS init error: {}", e))?;
-    info!("HaMS health sidecar started on port 8079 with readiness probe.");
+    info!("HaMS health sidecar started on port 8079 with readiness probe and shutdown hook.");
 
     // 3. Connect DB Pool & Verify pgvector (Fail-Fast)
     let db_url: url::Url = config.database.url.clone().into();
@@ -78,10 +90,28 @@ pub async fn service_main(
     let app_state = AppState {
         pool,
         config: config.clone(),
+        prometheus_handle: Arc::new(metric_handle),
     };
 
+    // HaMS Prometheus Registration
+    hams_harness.hams.register_prometheus(
+        prometheus_response_mystate,
+        prometheus_response_free,
+        &app_state as *const _ as *const c_void,
+    ).map_err(|e| format!("Failed to register Prometheus with HaMS: {e}"))?;
+
     // 5. Start Axum Main REST Webservice
-    start_webserver(app_state, &config.webservice).await?;
+    let res = start_webserver(app_state, &config.webservice, ct).await;
+
+    if let Err(e) = hams_harness.hams.deregister_prometheus() {
+        tracing::error!("Failed to deregister Prometheus: {e}");
+    }
+
+    if let Err(e) = hams_harness.hams.stop() {
+        tracing::info!("Failed to stop HaMS, it may already be stopped: {e}");
+    }
+
+    res?;
 
     Ok(())
 }
