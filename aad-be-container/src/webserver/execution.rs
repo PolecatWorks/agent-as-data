@@ -116,7 +116,27 @@ pub async fn execute_agent(
         format!("System: {}\nUser: {}", system_prompt, payload.prompt)
     };
 
-    let req = model.completion_request(&full_prompt).build();
+    let mut req_builder = model.completion_request(&full_prompt);
+
+    // Inject filesystem tools if thread_id is available in context
+    if let Some(ctx) = &payload.context {
+        if let Some(thread_id_val) = ctx.get("thread_id") {
+            if let Some(thread_id_str) = thread_id_val.as_str() {
+                if let Ok(thread_id) = uuid::Uuid::parse_str(thread_id_str) {
+                    use rig_core::tool::portable_tool_definition;
+                    req_builder = req_builder
+                        .tool(portable_tool_definition(&crate::llm_tools::ReadFileTool { thread_id }))
+                        .tool(portable_tool_definition(&crate::llm_tools::WriteFileTool { thread_id }))
+                        .tool(portable_tool_definition(&crate::llm_tools::ReplaceInFileTool { thread_id }))
+                        .tool(portable_tool_definition(&crate::llm_tools::ListFilesTool { thread_id }))
+                        .tool(portable_tool_definition(&crate::llm_tools::DeleteFileTool { thread_id }))
+                        .tool(portable_tool_definition(&crate::llm_tools::RenameFileTool { thread_id }));
+                }
+            }
+        }
+    }
+
+    let req = req_builder.build();
     let output_text =
         match tokio::time::timeout(timeout_duration, model.completion(req)).await {
             Ok(Ok(response)) => {

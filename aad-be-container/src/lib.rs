@@ -7,6 +7,7 @@ pub mod config;
 pub mod db;
 pub mod error;
 pub mod hams_tools;
+pub mod llm_tools;
 pub mod metrics;
 pub mod models;
 pub mod state;
