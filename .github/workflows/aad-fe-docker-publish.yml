@@ -152,7 +152,7 @@ jobs:
           outputs: type=image,name=${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWERCASE }},push-by-digest=true,name-canonical=true,push=true,oci-mediatypes=true
           cache-from: |
             type=gha,scope=${{ github.repository }}-aad-fe-main-${{ matrix.platform }}
-          cache-to: ${{ github.ref_name == 'main' && format('type=gha,mode=max,scope={0}-aad-fe-main-{1}', github.repository, matrix.platform) || '' }}
+          cache-to: type=gha,mode=max,scope=${{ github.repository }}-aad-fe-main-${{ matrix.platform }}
 
       - name: Export digest
         run: |
