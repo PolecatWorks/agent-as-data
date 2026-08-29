@@ -1,14 +1,22 @@
 use axum::{
     extract::Path,
     http::StatusCode,
-    Json,
+    routing::{get, post},
+    Json, Router,
 };
 use serde::{Deserialize, Serialize};
 use std::path::{Path as StdPath, PathBuf};
 use uuid::Uuid;
 
-// Note: These tool handlers could be implemented as Axum routes for an internal API
-// or invoked directly. For now, they return JSON responses matching standard Axum handlers.
+use crate::state::AppState;
+
+pub fn router() -> Router<AppState> {
+    Router::new()
+        .route("/{id}/fs/write", post(write_file))
+        .route("/{id}/fs/read/{*filepath}", get(read_file))
+        .route("/{id}/fs/list", post(list_files))
+        .route("/{id}/fs/delete", post(delete_file))
+}
 
 #[derive(Deserialize)]
 pub struct WriteFileRequest {
@@ -41,59 +49,48 @@ pub struct DeleteFileRequest {
     pub filepath: String,
 }
 
-/// Helper function to safely resolve paths and prevent path traversal.
-/// Takes the base workspace root and the user-provided relative path.
 fn resolve_safe_path(workspace_root: &StdPath, relative_path: &str) -> Result<PathBuf, String> {
-    // 1. Construct the intended path
     let mut intended_path = workspace_root.to_path_buf();
-
-    // Strip leading slashes to ensure it's treated as relative to the workspace root
     let relative = relative_path.trim_start_matches('/');
     intended_path.push(relative);
-
-    // 2. Canonicalize the path.
-    // `canonicalize` requires the file/directory to exist. If it doesn't, we can't canonicalize it directly.
-    // So we'll iterate through ancestors until we find one that exists, canonicalize that, and then append the rest.
 
     let mut existing_part = intended_path.as_path();
     let mut non_existing_parts = Vec::new();
 
     while !existing_part.exists() {
+        if let Some(file_name) = existing_part.file_name() {
+            non_existing_parts.push(file_name.to_os_string());
+        }
         if let Some(parent) = existing_part.parent() {
-            if let Some(file_name) = existing_part.file_name() {
-                non_existing_parts.push(file_name);
-            }
             existing_part = parent;
         } else {
-            return Err("Invalid path resolution".to_string());
+            break;
         }
     }
 
-    let canonical_existing = match existing_part.canonicalize() {
-        Ok(path) => path,
-        Err(_) => return Err("Failed to resolve path".to_string()),
-    };
+    let canonical_root = workspace_root
+        .canonicalize()
+        .map_err(|e| format!("Failed to canonicalize workspace root: {}", e))?;
 
-    // Reconstruct the full path
+    let canonical_existing = existing_part
+        .canonicalize()
+        .map_err(|e| format!("Failed to canonicalize path: {}", e))?;
+
+    if !canonical_existing.starts_with(&canonical_root) {
+        return Err("Access denied: Path is outside workspace root".to_string());
+    }
+
     let mut final_path = canonical_existing;
     for part in non_existing_parts.into_iter().rev() {
         final_path.push(part);
     }
 
-    // 3. Verify boundary check
-    let canonical_root = workspace_root.canonicalize().map_err(|_| "Failed to resolve workspace root".to_string())?;
-
-    if final_path.starts_with(&canonical_root) {
-        Ok(final_path)
-    } else {
-        Err("Path traversal detected: Access denied".to_string())
-    }
+    Ok(final_path)
 }
 
 fn get_workspace_root(thread_id: Uuid) -> PathBuf {
     PathBuf::from(format!("/tmp/workspace/{}", thread_id))
 }
-
 
 pub async fn write_file(
     Path(thread_id): Path<Uuid>,
@@ -101,10 +98,13 @@ pub async fn write_file(
 ) -> Result<(StatusCode, Json<FileOperationResponse>), (StatusCode, String)> {
     let workspace_root = get_workspace_root(thread_id);
 
-    // Ensure workspace exists before attempting to write inside it
     if !workspace_root.exists() {
-         std::fs::create_dir_all(&workspace_root)
-            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to create workspace root: {}", e)))?;
+        if let Err(e) = std::fs::create_dir_all(&workspace_root) {
+            return Err((
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Failed to create workspace directory: {}", e),
+            ));
+        }
     }
 
     let safe_path = resolve_safe_path(&workspace_root, &payload.filepath)
@@ -112,8 +112,12 @@ pub async fn write_file(
 
     if let Some(parent) = safe_path.parent() {
         if !parent.exists() {
-            std::fs::create_dir_all(parent)
-                .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to create directories: {}", e)))?;
+            std::fs::create_dir_all(parent).map_err(|e| {
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    format!("Failed to create parent directory: {}", e),
+                )
+            })?;
         }
     }
 
@@ -123,14 +127,13 @@ pub async fn write_file(
     Ok((
         StatusCode::OK,
         Json(FileOperationResponse {
-            message: format!("Successfully wrote to {}", payload.filepath),
+            message: format!("Successfully wrote {}", payload.filepath),
         }),
     ))
 }
 
 pub async fn read_file(
-    Path(thread_id): Path<Uuid>,
-    Path(filepath): Path<String>,
+    Path((thread_id, filepath)): Path<(Uuid, String)>,
 ) -> Result<(StatusCode, Json<ReadFileResponse>), (StatusCode, String)> {
     let workspace_root = get_workspace_root(thread_id);
 
@@ -146,18 +149,14 @@ pub async fn read_file(
     }
 
     if safe_path.is_dir() {
-        return Err((StatusCode::BAD_REQUEST, "Path is a directory".to_string()));
+        return Err((StatusCode::BAD_REQUEST, "Target path is a directory".to_string()));
     }
 
-    let content = std::fs::read_to_string(safe_path)
+    let content = std::fs::read_to_string(&safe_path)
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to read file: {}", e)))?;
 
-    Ok((
-        StatusCode::OK,
-        Json(ReadFileResponse { content }),
-    ))
+    Ok((StatusCode::OK, Json(ReadFileResponse { content })))
 }
-
 
 pub async fn list_files(
     Path(thread_id): Path<Uuid>,
@@ -171,7 +170,7 @@ pub async fn list_files(
 
     let target_dir = match payload.dir_path {
         Some(ref p) if !p.is_empty() => p.clone(),
-        _ => "".to_string(), // Root of workspace
+        _ => "".to_string(),
     };
 
     let safe_path = resolve_safe_path(&workspace_root, &target_dir)
@@ -203,13 +202,9 @@ pub async fn list_files(
         }
     }
 
-    // Sort to ensure deterministic output
     files.sort();
 
-    Ok((
-        StatusCode::OK,
-        Json(ListFilesResponse { files }),
-    ))
+    Ok((StatusCode::OK, Json(ListFilesResponse { files })))
 }
 
 pub async fn delete_file(

@@ -297,6 +297,90 @@ graph TD
     MCP --> Guardrails
     REST --> Guardrails
 
+## Backend Modular Codebase Architecture
+
+The backend (`aad-be-container`) codebase follows a strictly modular separation of responsibilities, separating binary CLI entrypoints, application runtime/orchestration, webservice routing/handlers, domain models, and core services.
+
+```mermaid
+graph TD
+    subgraph Binary["CLI Entrypoint (src/main.rs)"]
+        CLI[Clap CLI Parser]
+        CmdServe[Commands::Serve]
+        CmdMigrate[Commands::Migrate]
+        CmdVersion[Commands::Version]
+    end
+
+    subgraph CoreLib["Library & Runtime (src/lib.rs)"]
+        ServiceMain["service_main() / service_cancellable()"]
+        AppState["AppState"]
+    end
+
+    subgraph WebServer["Webservice Layer (src/webserver/)"]
+        WebMod["webserver::mod.rs (Router & Server Setup)"]
+        AgentsAPI["webserver::agents"]
+        SkillsAPI["webserver::skills"]
+        TraitsAPI["webserver::traits"]
+        ToolsAPI["webserver::tools"]
+        KnowledgeAPI["webserver::knowledge"]
+        ExecutionAPI["webserver::execution"]
+        ThreadsAPI["webserver::threads"]
+        FsAPI["webserver::fs"]
+    end
+
+    subgraph DomainCore["Domain Services & Data (src/)"]
+        Config["config.rs (AppConfig)"]
+        DB["db.rs (PgPool & PgVector)"]
+        Hams["hams_tools.rs (HaMS Health)"]
+        TokioRt["tokio_tools.rs (Runtime Builder)"]
+        Models["models/ (Domain Structs & DTOs)"]
+    end
+
+    CLI --> CmdServe & CmdMigrate & CmdVersion
+    CmdServe --> ServiceMain
+    ServiceMain --> Config
+    ServiceMain --> DB
+    ServiceMain --> Hams
+    ServiceMain --> TokioRt
+    ServiceMain --> WebMod
+    WebMod --> AgentsAPI & SkillsAPI & TraitsAPI & ToolsAPI & KnowledgeAPI & ExecutionAPI & ThreadsAPI & FsAPI
+    WebMod --> AppState
+```
+
+### Modular Structure & Responsibilities
+
+1. **`src/main.rs` (Binary CLI & Command Parsing)**:
+   - Dedicated exclusively to CLI parsing using `clap` (`Cli`, `Commands`).
+   - Parses flags (`--config-path`, `--secrets-dir`), initializes early logger, loads configuration fail-fast, and delegates command execution to `lib.rs` services (`service_main`, migration runners).
+   - Contains no direct web routing, business logic, or database query definitions.
+
+2. **`src/lib.rs` (Application Lifecycle & Runtime Orchestration)**:
+   - Defines core application metadata (`NAME`, `VERSION`), `AppState` shared state struct, and public module exports.
+   - Houses the top-level application orchestration (`service_main` / `service_cancellable`) initializing database connection pools, executing schema migrations, initializing the HaMS health monitoring sidecar, and binding the Axum web server.
+
+3. **`src/webserver/` (Explicit Webservice Layer & Route Handlers)**:
+   - **`src/webserver/mod.rs`**: Central router builder (`app_router`) and server listener (`start_webserver`), registering middleware (CORS, TraceLayer), health check endpoints (`/health`), and nesting modular domain route sub-routers under `config.webservice.api_prefix`.
+   - **Domain Handler Modules**: Structured modular route handlers organized by bounded context:
+     - `webserver::agents`: Agent CRUD, search, refactor analysis, compilation, testing, and contract verification.
+     - `webserver::skills`: Skill CRUD, promote, and demote handlers.
+     - `webserver::traits`: Trait contract CRUD and pagination.
+     - `webserver::tools`: MCP tool server registration, listing, and deletion.
+     - `webserver::knowledge`: Knowledge document ingestion, RAG vector search, and graph traversal.
+     - `webserver::execution`: Synchronous/streaming agent execution, search-and-execute, and execution logs.
+     - `webserver::threads`: Conversation thread CRUD and message history.
+     - `webserver::fs`: Thread-isolated workspace filesystem operations (`read`, `write`, `list`, `delete`).
+
+4. **`src/models/` (Domain Data Models & DTOs)**:
+   - Modularized domain entities, requests, responses, and serialization definitions grouped by domain (e.g. `models::agent`, `models::skill`, `models::trait_contract`, `models::tool`, `models::knowledge`, `models::thread`).
+
+5. **Core Infrastructure Modules**:
+   - `src/config.rs`: Centralized fail-fast `AppConfig` loader and validator.
+   - `src/db.rs`: Database connection pool initialization and `pgvector` validation.
+   - `src/hams_tools.rs`: HaMS health monitoring sidecar integration and readiness probes.
+   - `src/tokio_tools.rs`: Configurable single/multi-threaded Tokio runtime executor.
+   - `src/error.rs`: Unified `AppError` type with Axum `IntoResponse` status code conversions.
+
+---
+
 ## Configuration & Deployment Architecture (Fail-Early Standard)
 
 AAD follows strict **Fail-Early and Zero Baked-in Defaults** principles:
