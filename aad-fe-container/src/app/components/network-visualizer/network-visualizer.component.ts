@@ -92,6 +92,7 @@ export class NetworkVisualizerComponent implements OnInit, AfterViewInit {
     mermaid.initialize({
       startOnLoad: false,
       theme: 'default',
+      securityLevel: 'loose',
       flowchart: { htmlLabels: true, curve: 'basis' }
     });
     this.loadAllData();
@@ -321,7 +322,7 @@ export class NetworkVisualizerComponent implements OnInit, AfterViewInit {
       } else if (key.startsWith('trait:')) {
         type = 'trait';
         const traitName = key.slice('trait:'.length);
-        const matchedTrait = this.traits.find(t => t.name === traitName);
+        const matchedTrait = this.traits.find(t => t.name === traitName || t.id === traitName);
         id = matchedTrait ? matchedTrait.id : traitName;
       } else if (key.startsWith('mcp:')) {
         type = 'mcp';
@@ -330,8 +331,12 @@ export class NetworkVisualizerComponent implements OnInit, AfterViewInit {
 
       const linkUrl = `/network-visualizer/${type}/${id}`;
       // Clean up description for the mermaid tooltip syntax (remove quotes, newlines, etc.)
-      const cleanDesc = description.replace(/"/g, "'").replace(/\n/g, ' ').substring(0, 100);
-      nodeLines.push(`    click ${nid} href "${linkUrl}" "${cleanDesc}"`);
+      const cleanDesc = description ? description.replace(/["\r\n]/g, ' ').trim().substring(0, 100) : '';
+      if (cleanDesc) {
+        nodeLines.push(`    click ${nid} href "${linkUrl}" "${cleanDesc}"`);
+      } else {
+        nodeLines.push(`    click ${nid} href "${linkUrl}"`);
+      }
     };
 
     const emitEdge = (fromKey: string, toKey: string, label: string) => {
@@ -461,11 +466,10 @@ export class NetworkVisualizerComponent implements OnInit, AfterViewInit {
         }
 
       } else if (currentKey.startsWith('trait:')) {
-        const traitName = currentKey.slice('trait:'.length);
-        const trait = this.traits.find(t => t.name === traitName);
-        const label = trait
-          ? `🛡️ ${this.sanitizeLabel(traitName)}`
-          : `🛡️ ${this.sanitizeLabel(traitName)}`;
+        const traitKey = currentKey.slice('trait:'.length);
+        const trait = this.traits.find(t => t.name === traitKey || t.id === traitKey);
+        const displayName = trait ? trait.name : traitKey;
+        const label = `🛡️ ${this.sanitizeLabel(displayName)}`;
         const traitDesc = trait ? `v${trait.version} - ${trait.description || ''}` : '';
         emitNode(currentKey, label,
           isRoot
@@ -476,7 +480,7 @@ export class NetworkVisualizerComponent implements OnInit, AfterViewInit {
         if (depth < this.traceDepth) {
           // Reverse: agents implementing this trait
           this.agents
-            .filter(a => (a.implements_traits || []).includes(traitName))
+            .filter(a => (a.implements_traits || []).some(t => t === traitKey || (trait && (t === trait.id || t === trait.name))))
             .forEach(a => {
               const k = this.agentEntityKey(a.id);
               emitEdge(k, currentKey, 'implements');
@@ -484,7 +488,7 @@ export class NetworkVisualizerComponent implements OnInit, AfterViewInit {
             });
           // Reverse: skills implementing this trait
           this.skills
-            .filter(s => (s.implements_traits || []).includes(traitName))
+            .filter(s => (s.implements_traits || []).some(t => t === traitKey || (trait && (t === trait.id || t === trait.name))))
             .forEach(s => {
               const k = this.skillEntityKey(s.id!);
               emitEdge(k, currentKey, 'implements');
