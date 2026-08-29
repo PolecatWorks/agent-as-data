@@ -261,15 +261,60 @@ jobs:
         run: |
           docker buildx imagetools inspect '${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWERCASE }}:${{ steps.meta.outputs.version }}'
 
+  retag:
+    name: Retag existing image for main
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+      contents: read
+    needs: [check-paths, check-image]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.check-paths.outputs.fe == 'true' && needs.check-image.outputs.exists == 'true'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine FE Content SHA
+        id: fe-content
+        run: |
+          # shellcheck disable=SC2086
+          FE_SHA=$(git log -1 --format=%H -- aad-fe-container/ .github/workflows/aad-fe-docker-publish.yml)
+          echo "FE_SHA=$FE_SHA" >> "$GITHUB_ENV"
+
+      - name: Determine Image Name
+        id: image-name
+        run: |
+          # shellcheck disable=SC2086
+          repo_name="${{ github.repository }}"
+          echo "IMAGE_NAME_LOWERCASE=$(echo "$repo_name" | tr '[:upper:]' '[:lower:]')-fe" >> "$GITHUB_ENV"
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Retag main and latest
+        run: |
+          # shellcheck disable=SC2086
+          SOURCE_IMAGE="${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWERCASE }}:sha-${{ env.FE_SHA }}"
+          echo "Retagging $SOURCE_IMAGE to main and latest"
+          docker buildx imagetools create \
+            -t "${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWERCASE }}:main" \
+            -t "${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWERCASE }}:latest" \
+            "$SOURCE_IMAGE"
+
   rollout-dev:
     name: Rollout Dev
-    needs: [check-paths, check-image, merge]
+    needs: [check-paths, check-image, merge, retag]
     if: |
       always() &&
       github.event_name == 'push' &&
       github.ref == 'refs/heads/main' &&
       needs.check-paths.outputs.fe == 'true' &&
-      (needs.check-image.outputs.exists == 'true' || needs.merge.result == 'success')
+      (needs.retag.result == 'success' || needs.merge.result == 'success')
     runs-on: polecatworks-runner
     steps:
       - name: Set up kubectl
@@ -290,15 +335,15 @@ jobs:
 
   ci-success:
     name: AAD-FE Docker Success
-    needs: [check-paths, check-image, merge, rollout-dev]
+    needs: [check-paths, check-image, merge, retag, rollout-dev]
     if: always()
     runs-on: ubuntu-latest
     steps:
       - name: Check Status
         run: |
           if [[ "${{ github.event_name }}" != 'pull_request' && "${{ needs.check-paths.outputs.fe }}" == 'true' ]]; then
-            if [[ "${{ needs.check-image.outputs.exists }}" != 'true' && "${{ needs.merge.result }}" != 'success' ]]; then
-               echo "Build/Merge failed!"
+            if [[ "${{ needs.retag.result }}" != 'success' && "${{ needs.merge.result }}" != 'success' ]]; then
+               echo "Build/Merge/Retag failed!"
                exit 1
             fi
             if [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" == "refs/heads/main" && "${{ needs.rollout-dev.result }}" != 'success' ]]; then
