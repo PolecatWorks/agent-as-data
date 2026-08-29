@@ -20,3 +20,22 @@ Create a default fully qualified app name.
 {{- end }}
 {{- end }}
 {{- end }}
+
+{{- define "agent-as-data.config" -}}
+{{- $baseconfig := fromYaml (.Files.Get "configs/config.yaml") }}
+{{- $newconfig := default dict .Values.config }}
+{{- $postmerge := mergeOverwrite $baseconfig $newconfig }}
+{{- tpl (toYaml $postmerge) . }}
+{{- end -}}
+
+{{- define "agent-as-data.volumes" -}}
+{{- tpl (toYaml .Values.volumes) . }}
+{{- end -}}
+
+{{- define "agent-as-data.volumeMounts" -}}
+{{- tpl (toYaml .Values.volumeMounts) . }}
+{{- end -}}
+
+{{- define "agent-as-data.env" -}}
+{{- tpl (toYaml .Values.env) . }}
+{{- end -}}

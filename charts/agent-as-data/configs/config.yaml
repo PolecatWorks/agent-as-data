@@ -1,8 +1,8 @@
 database:
   url:
-    url: "postgres://localhost:5432/aaddb"
+    url: "postgres://localhost:5432/agent_as_data"
     username: "postgres"
-    password: "mysecretpassword"
+    password: "postgres"
   max_connections: 5
 
 webservice:
@@ -10,12 +10,9 @@ webservice:
   api_prefix: "/api"
 
 llm:
-  # ollama_url: "http://localhost:11434"
   ollama_url: "http://ollama.k8s:80"
-  # model: "llama3"
   model: "qwen2.5-coder:14b"
-  timeout_secs: 180
-
+  timeout_secs: 120
 
 hams:
   name: "aad-be"
@@ -28,5 +25,5 @@ runtime:
   name: "aad-worker"
 
 debugging:
-  environment: "development"
+  environment: "production"
   log_level: "info"

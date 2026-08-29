@@ -9,6 +9,7 @@ url = { version = "^2.5", features = ["serde"] }
 log = "^0.4"
 clap = { version = "^4.6", features = ["derive", "string", "env"] }
 figment = { version = "^0.10", features = ["yaml", "env"] }
+figment_file_provider_adapter = "~0.1"
 
 serde = { version = "^1.0", features = ["derive"] }
 serde_json = "^1.0"

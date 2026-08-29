@@ -1,5 +1,5 @@
-.PHONY: help all dev aad-be-dev aad-be-watch aad-be-migrate aad-be-docker aad-be-docker-run \
-        aad-fe-dev aad-fe-docker aad-fe-docker-run \
+.PHONY: help all dev aad-be-dev aad-be-watch aad-be-migrate aad-be-test aad-be-docker aad-be-docker-run \
+        aad-fe-dev aad-fe-test aad-fe-docker aad-fe-docker-run \
         db-up db-down compose-db-up compose-db-down compose-db-clean stop-other-db \
         test build-be build-fe build-docker garden-up robot-test
 
@@ -21,10 +21,12 @@ help:
 	@echo "  aad-be-dev         - Run Rust backend dev server with auto-port cleanup"
 	@echo "  aad-be-watch       - Run Rust backend with cargo watch auto-recompilation"
 	@echo "  aad-be-migrate     - Run database migrations against PostgreSQL"
+	@echo "  aad-be-test        - Run backend unit tests via cargo test"
 	@echo "  aad-be-docker      - Build Rust backend Docker image"
 	@echo "  aad-be-docker-run  - Build and run backend container locally"
 	@echo "  ensure-pgvector    - Ensure pgvector extension is installed in PostgreSQL"
 	@echo "  aad-fe-dev         - Run Angular frontend dev server"
+	@echo "  aad-fe-test        - Run Angular frontend unit tests via Karma/ChromeHeadless"
 	@echo "  aad-fe-docker      - Build Angular frontend Docker image"
 	@echo "  aad-fe-docker-run  - Build and run frontend container locally"
 	@echo "  db-up              - Alias for compose-db-up (Start Postgres via Docker Compose)"
@@ -33,7 +35,7 @@ help:
 	@echo "  compose-db-down    - Stop Postgres container"
 	@echo "  compose-db-clean   - Stop Postgres container and remove volumes"
 	@echo "  stop-other-db      - Stop conflicting Postgres container (sward-postgres)"
-	@echo "  test               - Run backend unit tests via cargo test"
+	@echo "  test               - Run backend unit tests via cargo test (alias for aad-be-test)"
 	@echo "  build-be           - Build backend Docker image (agent-as-data-be:latest)"
 	@echo "  build-fe           - Build frontend Docker image (agent-as-data-fe:latest)"
 	@echo "  build-docker       - Alias for build-be"
@@ -87,6 +89,9 @@ aad-be-migrate:
 	DATABASE_URL="$(DATABASE_URL)" \
 	cargo run -- migrate
 
+aad-be-test:
+	cd aad-be-container && cargo test
+
 aad-be-docker:
 	docker build -t agent-as-data-be:latest aad-be-container
 
@@ -111,8 +116,7 @@ aad-fe-docker-run: aad-fe-docker
 		-p $(aad-fe_PORT):80 \
 		agent-as-data-fe:latest
 
-test:
-	cd aad-be-container && cargo test
+test: aad-be-test
 
 build-be: aad-be-docker
 

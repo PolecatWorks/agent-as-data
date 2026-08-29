@@ -84,7 +84,7 @@ Seed Exemplar Data
     ${bst_skills}=    Create List    ${skill2_id}
     ${bst_tools}=    Create List    ${tool1_id}
     ${bst_def}=    Set Variable    \# Vicious Test\n\nHaving access to the code make a malitious attack using code and run it against the deployed systems.
-    ${agent3_payload}=    Create Dictionary    name=BasicSecurityTest    owner_id=00000000-0000-0000-0000-000000000000    description=Create a simple assessment of the codebase and penetration test of the applications having prior knowledge of the codebase.    agent_definition=${bst_def}    tags=${bst_tags}    implements_traits=${bst_traits}    skill_dependencies=${bst_skills}    tool_dependencies=${bst_tools}    model=claude-3-5-sonnet-v2    guardrails=${empty_guardrails}
+    ${agent3_payload}=    Create Dictionary    name=BasicSecurityTest    owner_id=00000000-0000-0000-0000-000000000000    description=Create a simple assessment of the codebase and penetration test of the applications having prior knowledge of the codebase.    agent_definition=${bst_def}    tags=${bst_tags}    implements_traits=${bst_traits}    skill_dependencies=${bst_skills}    tool_dependencies=${bst_tools}    model=qwen2.5-coder:14b    guardrails=${empty_guardrails}
     ${agent3}=    Create Agent    ${agent3_payload}
 
     # 5. Developer Usage
@@ -113,7 +113,7 @@ Seed Exemplar Data
     ${dev_agent_skills}=    Create List    ${dev_skill_id}
     ${dev_agent_tools}=    Create List    ${dev_tool_id}
     ${dev_agent_def}=    Set Variable    \# Senior Developer\\n\\nYou are a senior developer. Review code meticulously and use git tools to implement sweeping, high-quality refactoring changes.
-    ${dev_agent_payload}=    Create Dictionary    name=SeniorDeveloperAgent    owner_id=00000000-0000-0000-0000-000000000000    description=An expert developer agent capable of autonomous code review, Git operations, and large-scale codebase refactoring to meet enterprise standards.    agent_definition=${dev_agent_def}    tags=${dev_agent_tags}    implements_traits=${dev_agent_traits}    skill_dependencies=${dev_agent_skills}    tool_dependencies=${dev_agent_tools}    model=claude-3-5-sonnet-v2    guardrails=${empty_guardrails}
+    ${dev_agent_payload}=    Create Dictionary    name=SeniorDeveloperAgent    owner_id=00000000-0000-0000-0000-000000000000    description=An expert developer agent capable of autonomous code review, Git operations, and large-scale codebase refactoring to meet enterprise standards.    agent_definition=${dev_agent_def}    tags=${dev_agent_tags}    implements_traits=${dev_agent_traits}    skill_dependencies=${dev_agent_skills}    tool_dependencies=${dev_agent_tools}    model=qwen2.5-coder:14b    guardrails=${empty_guardrails}
     ${dev_agent}=    Create Agent    ${dev_agent_payload}
 
     # 6. System Architecture
@@ -142,7 +142,7 @@ Seed Exemplar Data
     ${arch_agent_skills}=    Create List    ${arch_skill_id}
     ${arch_agent_tools}=    Create List    ${arch_tool_id}
     ${arch_agent_def}=    Set Variable    \# Software Architect\\n\\nYou are a software architect. Plan system boundaries, define API contracts, and evaluate the trade-offs of various technology stacks.
-    ${arch_agent_payload}=    Create Dictionary    name=SoftwareArchitectAgent    owner_id=00000000-0000-0000-0000-000000000000    description=A principal architect agent responsible for high-level system decisions, drafting technical blueprints, and evaluating framework suitability for large enterprises.    agent_definition=${arch_agent_def}    tags=${arch_agent_tags}    implements_traits=${arch_agent_traits}    skill_dependencies=${arch_agent_skills}    tool_dependencies=${arch_agent_tools}    model=claude-3-5-sonnet-v2    guardrails=${empty_guardrails}
+    ${arch_agent_payload}=    Create Dictionary    name=SoftwareArchitectAgent    owner_id=00000000-0000-0000-0000-000000000000    description=A principal architect agent responsible for high-level system decisions, drafting technical blueprints, and evaluating framework suitability for large enterprises.    agent_definition=${arch_agent_def}    tags=${arch_agent_tags}    implements_traits=${arch_agent_traits}    skill_dependencies=${arch_agent_skills}    tool_dependencies=${arch_agent_tools}    model=qwen2.5-coder:14b    guardrails=${empty_guardrails}
     ${arch_agent}=    Create Agent    ${arch_agent_payload}
 
     # 7. Business Analyst
@@ -171,7 +171,7 @@ Seed Exemplar Data
     ${ba_agent_skills}=    Create List    ${ba_skill_id}
     ${ba_agent_tools}=    Create List    ${ba_tool_id}
     ${ba_agent_def}=    Set Variable    \# Business Analyst\\n\\nYou act as a liaison between stakeholders and development teams, writing crisp user stories and maintaining the product backlog.
-    ${ba_agent_payload}=    Create Dictionary    name=BusinessAnalystAgent    owner_id=00000000-0000-0000-0000-000000000000    description=Dedicated business analyst agent skilled in Agile methodology, requirement scoping, and backlog grooming, ensuring alignment with strategic objectives.    agent_definition=${ba_agent_def}    tags=${ba_agent_tags}    implements_traits=${ba_agent_traits}    skill_dependencies=${ba_agent_skills}    tool_dependencies=${ba_agent_tools}    model=claude-3-5-sonnet-v2    guardrails=${empty_guardrails}
+    ${ba_agent_payload}=    Create Dictionary    name=BusinessAnalystAgent    owner_id=00000000-0000-0000-0000-000000000000    description=Dedicated business analyst agent skilled in Agile methodology, requirement scoping, and backlog grooming, ensuring alignment with strategic objectives.    agent_definition=${ba_agent_def}    tags=${ba_agent_tags}    implements_traits=${ba_agent_traits}    skill_dependencies=${ba_agent_skills}    tool_dependencies=${ba_agent_tools}    model=qwen2.5-coder:14b    guardrails=${empty_guardrails}
     ${ba_agent}=    Create Agent    ${ba_agent_payload}
 
     # 8. Financial Controller
@@ -200,7 +200,7 @@ Seed Exemplar Data
     ${fc_agent_skills}=    Create List    ${fc_skill_id}
     ${fc_agent_tools}=    Create List    ${fc_tool_id}
     ${fc_agent_def}=    Set Variable    \# Financial Controller\\n\\nYou are a financial controller. Ensure the fiscal health of the organization by establishing policies, analyzing ERP data, and mitigating financial risks.
-    ${fc_agent_payload}=    Create Dictionary    name=FinancialControllerAgent    owner_id=00000000-0000-0000-0000-000000000000    description=A high-level financial controller agent designed to manage corporate finance, enforce spending policies, and provide strategic fiscal insights.    agent_definition=${fc_agent_def}    tags=${fc_agent_tags}    implements_traits=${fc_agent_traits}    skill_dependencies=${fc_agent_skills}    tool_dependencies=${fc_agent_tools}    model=claude-3-5-sonnet-v2    guardrails=${empty_guardrails}
+    ${fc_agent_payload}=    Create Dictionary    name=FinancialControllerAgent    owner_id=00000000-0000-0000-0000-000000000000    description=A high-level financial controller agent designed to manage corporate finance, enforce spending policies, and provide strategic fiscal insights.    agent_definition=${fc_agent_def}    tags=${fc_agent_tags}    implements_traits=${fc_agent_traits}    skill_dependencies=${fc_agent_skills}    tool_dependencies=${fc_agent_tools}    model=qwen2.5-coder:14b    guardrails=${empty_guardrails}
     ${fc_agent}=    Create Agent    ${fc_agent_payload}
 
     # 9. Accounting and Financial Audit
@@ -229,7 +229,7 @@ Seed Exemplar Data
     ${audit_agent_skills}=    Create List    ${audit_skill_id}
     ${audit_agent_tools}=    Create List    ${audit_tool_id}
     ${audit_agent_def}=    Set Variable    \# Financial Auditor\\n\\nYou are a financial auditor. Inspect accounting books, perform independent audits, and assure stakeholders of the integrity of financial reporting.
-    ${audit_agent_payload}=    Create Dictionary    name=FinancialAuditorAgent    owner_id=00000000-0000-0000-0000-000000000000    description=A detail-oriented accounting agent specialized in financial audits, general ledger reconciliation, and strict adherence to global financial regulations.    agent_definition=${audit_agent_def}    tags=${audit_agent_tags}    implements_traits=${audit_agent_traits}    skill_dependencies=${audit_agent_skills}    tool_dependencies=${audit_agent_tools}    model=claude-3-5-sonnet-v2    guardrails=${empty_guardrails}
+    ${audit_agent_payload}=    Create Dictionary    name=FinancialAuditorAgent    owner_id=00000000-0000-0000-0000-000000000000    description=A detail-oriented accounting agent specialized in financial audits, general ledger reconciliation, and strict adherence to global financial regulations.    agent_definition=${audit_agent_def}    tags=${audit_agent_tags}    implements_traits=${audit_agent_traits}    skill_dependencies=${audit_agent_skills}    tool_dependencies=${audit_agent_tools}    model=qwen2.5-coder:14b    guardrails=${empty_guardrails}
     ${audit_agent}=    Create Agent    ${audit_agent_payload}
 
     # 10. Quality Assurance
@@ -258,7 +258,7 @@ Seed Exemplar Data
     ${qa_agent_skills}=    Create List    ${qa_skill_id}
     ${qa_agent_tools}=    Create List    ${qa_tool_id}
     ${qa_agent_def}=    Set Variable    \# QA Automation Engineer\\n\\nYou are a QA automation engineer. Your goal is to break the software through rigorous automated testing and ensure all bug fixes are accompanied by regression tests.
-    ${qa_agent_payload}=    Create Dictionary    name=QAAutomationEngineerAgent    owner_id=00000000-0000-0000-0000-000000000000    description=An agent specializing in software quality assurance, capable of writing resilient automated tests and identifying edge cases.    agent_definition=${qa_agent_def}    tags=${qa_agent_tags}    implements_traits=${qa_agent_traits}    skill_dependencies=${qa_agent_skills}    tool_dependencies=${qa_agent_tools}    model=claude-3-5-sonnet-v2    guardrails=${empty_guardrails}
+    ${qa_agent_payload}=    Create Dictionary    name=QAAutomationEngineerAgent    owner_id=00000000-0000-0000-0000-000000000000    description=An agent specializing in software quality assurance, capable of writing resilient automated tests and identifying edge cases.    agent_definition=${qa_agent_def}    tags=${qa_agent_tags}    implements_traits=${qa_agent_traits}    skill_dependencies=${qa_agent_skills}    tool_dependencies=${qa_agent_tools}    model=qwen2.5-coder:14b    guardrails=${empty_guardrails}
     ${qa_agent}=    Create Agent    ${qa_agent_payload}
 
     # 11. Data Science
@@ -287,7 +287,7 @@ Seed Exemplar Data
     ${ds_agent_skills}=    Create List    ${ds_skill_id}
     ${ds_agent_tools}=    Create List    ${ds_tool_id}
     ${ds_agent_def}=    Set Variable    \# Data Scientist\\n\\nYou are a data scientist. Clean messy datasets, perform exploratory analysis, and build robust machine learning models to solve business problems.
-    ${ds_agent_payload}=    Create Dictionary    name=DataScientistAgent    owner_id=00000000-0000-0000-0000-000000000000    description=A specialized agent for handling data science workflows, from data wrangling to model deployment and visualization.    agent_definition=${ds_agent_def}    tags=${ds_agent_tags}    implements_traits=${ds_agent_traits}    skill_dependencies=${ds_agent_skills}    tool_dependencies=${ds_agent_tools}    model=claude-3-5-sonnet-v2    guardrails=${empty_guardrails}
+    ${ds_agent_payload}=    Create Dictionary    name=DataScientistAgent    owner_id=00000000-0000-0000-0000-000000000000    description=A specialized agent for handling data science workflows, from data wrangling to model deployment and visualization.    agent_definition=${ds_agent_def}    tags=${ds_agent_tags}    implements_traits=${ds_agent_traits}    skill_dependencies=${ds_agent_skills}    tool_dependencies=${ds_agent_tools}    model=qwen2.5-coder:14b    guardrails=${empty_guardrails}
     ${ds_agent}=    Create Agent    ${ds_agent_payload}
 
     Log    Successfully seeded exemplar data!

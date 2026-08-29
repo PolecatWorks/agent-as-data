@@ -15,6 +15,9 @@ pub struct Cli {
     #[arg(short, long, default_value = "config/default.yaml")]
     pub config_path: PathBuf,
 
+    #[arg(short, long, default_value = "config")]
+    pub secrets_dir: PathBuf,
+
     #[command(subcommand)]
     pub command: Commands,
 }
@@ -37,7 +40,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     match cli.command {
         Commands::Serve => {
-            let config = AppConfig::load(&cli.config_path).unwrap_or_else(|e| {
+            let config = AppConfig::load(&cli.config_path, &cli.secrets_dir).unwrap_or_else(|e| {
                 init_logging("info");
                 panic!("Fail-Fast Error: Failed to load config: {}", e);
             });
@@ -65,7 +68,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 info!("HaMS health sidecar started on port 8079 with readiness probe.");
 
                 // Connect DB Pool & Verify pgvector (Fail-Fast)
-                let pool = match init_db_pool(&config.database.url, config.database.max_connections).await {
+                let db_url: url::Url = config.database.url.clone().into();
+                let pool = match init_db_pool(db_url.as_str(), config.database.max_connections).await {
                     Ok(p) => p,
                     Err(e) => {
                         tracing::error!("Fail-Fast Error: Database connection failed: {}", e);
@@ -151,11 +155,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             })?;
         }
         Commands::Migrate => {
-            let config = AppConfig::load(&cli.config_path)?;
+            let config = AppConfig::load(&cli.config_path, &cli.secrets_dir)?;
             init_logging(&config.debugging.log_level);
 
             run_in_tokio(&config.runtime, async move {
-                let pool = init_db_pool(&config.database.url, config.database.max_connections).await
+                let db_url: url::Url = config.database.url.into();
+                let pool = init_db_pool(db_url.as_str(), config.database.max_connections).await
                     .map_err(|e| format!("DB connection error: {}", e))?;
                 sqlx::migrate!("./migrations").run(&pool).await
                     .map_err(|e| format!("Migration error: {}", e))?;

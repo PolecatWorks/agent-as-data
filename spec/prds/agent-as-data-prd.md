@@ -144,9 +144,10 @@ Agent-As-Data (AAD) is an enterprise-grade declarative platform and specificatio
 - **Mandatory Reversible Migrations (`.up.sql` & `.down.sql`)**: Every schema migration MUST strictly consist of paired forward (`<version>_<name>.up.sql`) and reverse (`<version>_<name>.down.sql`) SQL migration files. Reverse migrations provide deterministic rollback capabilities in the event of bad updates or deployment rollbacks.
 
 
-### 21. HaMS Sidecar Health Monitoring & Fail-Fast Startup Validation
+### 21. HaMS Sidecar Health Monitoring, Fail-Fast Startup Validation & Zero Silent Fallback
 - **Out-of-Band HaMS Probes (`hams`)**: Runs dedicated sidecar health listener on port `8079` exposing `GET /hams/alive` (liveness probe), `GET /hams/ready` (readiness probe), and `GET /metrics` (Prometheus metrics).
 - **Fail-Fast Early Startup Validation**: Application configuration, YAML overrides, secret files, database connectivity, and required `pgvector` PostgreSQL extensions are validated **at process startup** before opening the main webservice port (`8080`). Invalid configurations, missing credentials, or missing database extensions abort execution immediately with error logs (failing fast).
+- **Zero Silent Fallback / Explicit Failures**: Runtime execution and discovery components must never perform silent failovers or mask failures by substituting fallback models, alternative queries, or default credentials. If a specified LLM model, resource, or execution dependency fails or is unavailable, the operation must fail immediately and return an explicit, descriptive error status.
 
 ### 22. Essential Developer Ergonomics & Build Automation Tooling
 - **Mandatory Development Features & Workflow Rules**: Developer ergonomics tooling is classified as an **essential platform requirement**, not optional scripts.
@@ -296,8 +297,20 @@ graph TD
     MCP --> Guardrails
     REST --> Guardrails
 
-    Guardrails --> ExecEngine
-    ExecEngine --> Storage
+## Configuration & Deployment Architecture (Fail-Early Standard)
+
+AAD follows strict **Fail-Early and Zero Baked-in Defaults** principles:
+- **No Baked-in Config Files in Production Containers**: Container runtime images (`Dockerfile`) MUST NOT package default environment configuration files (`config/default.yaml`).
+- **Explicit Deployment Configuration**: All configuration MUST be explicitly provided by the deployment layer (e.g. Helm values mapped to `AAD_BE__*` environment variables or mounted ConfigMaps). If configuration is absent, the container must fail fast immediately on boot.
+- **Fail-Fast Boot Validation**: Startup crashes immediately with an explicit error trace if any required configuration (`database`, `webservice`, `llm`, `debugging`) or environment variable override is missing or invalid before opening database connections or listening on network ports.
+
+```mermaid
+flowchart TD
+    A[Container Starts] --> B{Explicit Config Provided?}
+    B -->|No Config File / Missing Env Vars| C[Fail-Fast Crash on Boot]
+    B -->|Explicit Config via Helm / Env| D[AppConfig::load & validate]
+    D -->|Invalid URLs or Missing Keys| C
+    D -->|Valid| E[Initialize Tokio Runtime & Connect Services]
 ```
 
 ## Sub-PRDs & Specifications

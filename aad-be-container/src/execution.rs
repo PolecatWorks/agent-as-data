@@ -127,7 +127,7 @@ pub async fn execute_agent(
             }
         }
         Ok(Err(e)) => {
-            tracing::error!("Ollama Rig completion error: {}", e);
+            tracing::error!("Ollama Rig completion error for model '{}': {}", target_model, e);
             return Err((
                 StatusCode::BAD_GATEWAY,
                 format!("LLM Execution Error: {}", e),
@@ -195,14 +195,24 @@ pub async fn search_and_execute(
     State(state): State<AppState>,
     Json(payload): Json<SearchAndExecuteRequest>,
 ) -> Result<(StatusCode, Json<ExecuteAgentResponse>), (StatusCode, String)> {
-    // 1. Discovery top match agent
-    let agent_row = sqlx::query("SELECT id FROM agents LIMIT 1")
-        .fetch_optional(&state.pool)
-        .await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Discovery Error: {}", e)))?
-        .ok_or((StatusCode::NOT_FOUND, "No matching agents found for task".to_string()))?;
+    // 1. Discovery top match agent matching task query strictly
+    let pattern = format!("%{}%", payload.task_query.trim());
+    let agent_row = sqlx::query(
+        r#"
+        SELECT id FROM agents
+        WHERE (name ILIKE $1 OR description ILIKE $1 OR agent_definition::text ILIKE $1)
+          AND archived_at IS NULL
+        ORDER BY created_at DESC
+        LIMIT 1
+        "#,
+    )
+    .bind(pattern)
+    .fetch_optional(&state.pool)
+    .await
+    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Discovery Error: {}", e)))?
+    .ok_or((StatusCode::NOT_FOUND, format!("No matching agents found for task query '{}'", payload.task_query)))?;
 
-    let agent_id: Uuid = agent_row.get("id");
+    let agent_id = agent_row.get("id");
 
     execute_agent(
         State(state),
