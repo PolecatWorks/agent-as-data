@@ -43,6 +43,7 @@ flowchart TD
         Spec06["06-agent-test-judge-engine-spec.md<br/>(Unit Testing & LLM-as-a-Judge Engine)"]:::complete
         Spec07["07-refactoring-compiler-engine-spec.md<br/>(Refactoring & Pre-Flight Compiler)"]:::complete
         Spec08["08-developer-ui-studio-spec.md<br/>(Angular 18+ Developer UI Workbench)"]:::complete
+        Spec10["10-workbench-spec.md<br/>(Workbench File Management)"]:::complete
     end
 
     subgraph Phase5 ["Phase 5: Codebase Architecture & Refactoring"]
@@ -77,7 +78,9 @@ flowchart TD
     Spec05 --> Spec08
     Spec06 --> Spec08
     Spec07 --> Spec08
+    Spec08 --> Spec10
     Spec08 --> Spec09
+    Spec10 --> Spec09
 ```
 
 ## Index of Task Specifications
@@ -94,4 +97,5 @@ flowchart TD
 | **Phase 4** | [06-agent-test-judge-engine-spec.md](./06-agent-test-judge-engine-spec.md) | `complete` | Probabilistic Unit Testing, LLM-as-a-Judge Evaluation, & CI Quality Gates | [Agent Registry PRD](../prds/agent-registry-execution-prd.md) | Depends on [03-declarative-agent-registry-spec.md](./03-declarative-agent-registry-spec.md) & [05-execution-guardrails-engine-spec.md](./05-execution-guardrails-engine-spec.md) |
 | **Phase 4** | [07-refactoring-compiler-engine-spec.md](./07-refactoring-compiler-engine-spec.md) | `complete` | Overlap Cluster Refactoring Engine & Pre-Flight Agent Network Compiler | [Agent Registry PRD](../prds/agent-registry-execution-prd.md) | Depends on [03-declarative-agent-registry-spec.md](./03-declarative-agent-registry-spec.md) |
 | **Phase 4** | [08-developer-ui-studio-spec.md](./08-developer-ui-studio-spec.md) | `complete` | Angular 18+ Web Dashboard (`aad-fe-container`), Interactive Testing Studio (Skills Layout & Prompt Inspector), & Rig Ollama Execution | [Agent UI PRD](../prds/agent-ui-testing-kit-prd.md) | Depends on [04-mcp-server-spec.md](./04-mcp-server-spec.md), [05-execution-guardrails-engine-spec.md](./05-execution-guardrails-engine-spec.md), [06-agent-test-judge-engine-spec.md](./06-agent-test-judge-engine-spec.md), & [07-refactoring-compiler-engine-spec.md](./07-refactoring-compiler-engine-spec.md) |
+| **Phase 4** | [10-workbench-spec.md](./10-workbench-spec.md) | `complete` | Workbench Thread File Management UI | [Agent UI PRD](../prds/agent-ui-testing-kit-prd.md) | Depends on [08-developer-ui-studio-spec.md](./08-developer-ui-studio-spec.md) |
 | **Phase 5** | [09-backend-modular-architecture-spec.md](./09-backend-modular-architecture-spec.md) | `complete` | Backend Codebase Layout, CLI Separation (`main.rs`), App Runtime (`lib.rs`), Webservice Router (`webserver/`), & Domain Models (`models/`) | [Master PRD](../prds/agent-as-data-prd.md) | Depends on Phases 1-4 |

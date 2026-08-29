@@ -23,6 +23,11 @@ export class WorkbenchComponent implements OnInit {
   activeThreadMessages: Message[] = [];
   newMessageContent = '';
   searchQuery: string = '';
+  isProcessing: boolean = false;
+
+  files: string[] = [];
+  selectedFile: string | null = null;
+  selectedFileContent: string = '';
 
   isSidebarCollapsed = false;
   chatPanePercentage = 50;
@@ -146,21 +151,97 @@ export class WorkbenchComponent implements OnInit {
       next: (messages) => this.activeThreadMessages = messages,
       error: (err) => console.error('Failed to load messages', err)
     });
+    this.loadThreadFiles();
+  }
+
+  loadThreadFiles(): void {
+    if (!this.activeThread) return;
+    this.apiService.listThreadFiles(this.activeThread.id).subscribe({
+      next: (res) => {
+        this.files = res.files;
+        if (this.selectedFile && !this.files.includes(this.selectedFile)) {
+          this.selectedFile = null;
+          this.selectedFileContent = '';
+        }
+      },
+      error: (err) => console.error('Failed to load files', err)
+    });
+  }
+
+  selectFile(filename: string): void {
+    if (!this.activeThread) return;
+    this.apiService.readThreadFile(this.activeThread.id, filename).subscribe({
+      next: (res) => {
+        this.selectedFile = filename;
+        this.selectedFileContent = res.content;
+      },
+      error: (err) => console.error('Failed to read file', err)
+    });
+  }
+
+  createNewFile(): void {
+    if (!this.activeThread) return;
+    const filename = prompt('Enter new filename:');
+    if (!filename) return;
+
+    this.apiService.writeThreadFile(this.activeThread.id, filename, '').subscribe({
+      next: () => {
+        this.loadThreadFiles();
+        this.selectFile(filename);
+      },
+      error: (err) => console.error('Failed to create file', err)
+    });
+  }
+
+  saveFile(): void {
+    if (!this.activeThread || !this.selectedFile) return;
+    this.apiService.writeThreadFile(this.activeThread.id, this.selectedFile, this.selectedFileContent).subscribe({
+      next: () => {
+        // Optional: show a success toast here
+        console.log(`Saved ${this.selectedFile}`);
+      },
+      error: (err) => console.error('Failed to save file', err)
+    });
+  }
+
+  deleteFile(filename: string, event: Event): void {
+    event.stopPropagation();
+    if (!this.activeThread) return;
+
+    if (confirm(`Are you sure you want to delete ${filename}?`)) {
+      this.apiService.deleteThreadFile(this.activeThread.id, filename).subscribe({
+        next: () => {
+          if (this.selectedFile === filename) {
+            this.selectedFile = null;
+            this.selectedFileContent = '';
+          }
+          this.loadThreadFiles();
+        },
+        error: (err) => console.error('Failed to delete file', err)
+      });
+    }
   }
 
   sendMessage(): void {
-    if (!this.newMessageContent.trim() || !this.activeThread) {
+    if (!this.newMessageContent.trim() || !this.activeThread || this.isProcessing) {
       return;
     }
 
     const content = this.newMessageContent;
     this.newMessageContent = '';
+    this.isProcessing = true;
 
     this.apiService.createMessage(this.activeThread.id, 'user', content).subscribe({
       next: (message) => {
         this.activeThreadMessages.push(message);
+        this.isProcessing = false;
+        // Also reload files as the LLM might have modified them
+        this.loadThreadFiles();
       },
-      error: (err) => console.error('Failed to send message', err)
+      error: (err) => {
+        console.error('Failed to send message', err);
+        this.isProcessing = false;
+      }
     });
   }
 

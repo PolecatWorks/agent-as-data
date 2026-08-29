@@ -300,6 +300,30 @@ export class ApiService {
     });
   }
 
+  // Workbench Filesystem APIs
+  listThreadFiles(threadId: string, dirPath?: string): Observable<{ files: string[] }> {
+    return this.http.post<{ files: string[] }>(`${this.baseUrl}/threads/${threadId}/fs/list`, {
+      dir_path: dirPath || ''
+    });
+  }
+
+  readThreadFile(threadId: string, filepath: string): Observable<{ content: string }> {
+    return this.http.get<{ content: string }>(`${this.baseUrl}/threads/${threadId}/fs/read/${encodeURIComponent(filepath)}`);
+  }
+
+  writeThreadFile(threadId: string, filepath: string, content: string): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${this.baseUrl}/threads/${threadId}/fs/write`, {
+      filepath,
+      content
+    });
+  }
+
+  deleteThreadFile(threadId: string, filepath: string): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${this.baseUrl}/threads/${threadId}/fs/delete`, {
+      filepath
+    });
+  }
+
   // Trait Contract APIs
   getTraits(): Observable<ListPages> {
     return this.http.get<ListPages>(`${this.baseUrl}/traits`);
