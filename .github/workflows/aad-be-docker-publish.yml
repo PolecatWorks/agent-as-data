@@ -343,13 +343,20 @@ jobs:
       - name: Check Status
         run: |
           if [[ "${{ github.event_name }}" != 'pull_request' && "${{ needs.check-paths.outputs.backend }}" == 'true' ]]; then
-            if [[ "${{ needs.retag.result }}" != 'success' && "${{ needs.merge.result }}" != 'success' ]]; then
-               echo "Build/Merge/Retag failed!"
-               exit 1
-            fi
-            if [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" == "refs/heads/main" && "${{ needs.rollout-dev.result }}" != 'success' ]]; then
-               echo "Rollout failed!"
-               exit 1
+            if [[ "${{ github.event_name }}" == 'merge_group' ]]; then
+              if [[ "${{ needs.check-image.outputs.exists }}" != 'true' && "${{ needs.merge.result }}" != 'success' ]]; then
+                 echo "Build/Merge failed for merge_group!"
+                 exit 1
+              fi
+            else
+              if [[ "${{ needs.retag.result }}" != 'success' && "${{ needs.merge.result }}" != 'success' ]]; then
+                 echo "Build/Merge/Retag failed!"
+                 exit 1
+              fi
+              if [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" == "refs/heads/main" && "${{ needs.rollout-dev.result }}" != 'success' ]]; then
+                 echo "Rollout failed!"
+                 exit 1
+              fi
             fi
           fi
           echo "Success!"
