@@ -1,3 +1,5 @@
+use std::sync::Arc;
+use axum_prometheus::metrics_exporter_prometheus::PrometheusHandle;
 use crate::config::AppConfig;
 use sqlx::PgPool;
 
@@ -5,6 +7,7 @@ use sqlx::PgPool;
 pub struct AppState {
     pub pool: PgPool,
     pub config: AppConfig,
+    pub prometheus_handle: Arc<PrometheusHandle>,
 }
 
 impl axum::extract::FromRef<AppState> for PgPool {

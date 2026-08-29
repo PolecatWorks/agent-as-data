@@ -144,9 +144,12 @@ Agent-As-Data (AAD) is an enterprise-grade declarative platform and specificatio
 - **Mandatory Reversible Migrations (`.up.sql` & `.down.sql`)**: Every schema migration MUST strictly consist of paired forward (`<version>_<name>.up.sql`) and reverse (`<version>_<name>.down.sql`) SQL migration files. Reverse migrations provide deterministic rollback capabilities in the event of bad updates or deployment rollbacks.
 
 
-### 21. HaMS Sidecar Health Monitoring, Fail-Fast Startup Validation & Zero Silent Fallback
-- **Out-of-Band HaMS Probes (`hams`)**: Runs dedicated sidecar health listener on port `8079` exposing `GET /hams/alive` (liveness probe), `GET /hams/ready` (readiness probe), and `GET /metrics` (Prometheus metrics).
-- **Fail-Fast Early Startup Validation**: Application configuration, YAML overrides, secret files, database connectivity, and required `pgvector` PostgreSQL extensions are validated **at process startup** before opening the main webservice port (`8080`). Invalid configurations, missing credentials, or missing database extensions abort execution immediately with error logs (failing fast).
+### 21. HaMS Sidecar Health Monitoring, Lifecycle Management, Prometheus Metrics & Fail-Fast Validation
+- **Out-of-Band HaMS Probes (`hams`)**: Runs a dedicated sidecar health listener on port `8079` exposing `/ready` (readiness probe via `ProbeManual`), `/alive` (liveness probe), and Prometheus metrics scraping.
+- **Unified Graceful Shutdown Handling**: Hooks the HaMS shutdown callback (triggered by `SIGINT`/`SIGTERM` OS signals or `/shutdown` endpoint) to a Tokio `tokio_util::sync::CancellationToken`. This token triggers Axum's `.with_graceful_shutdown()`, draining active HTTP connections before cleanly stopping the HaMS agent and closing database pools.
+- **Prometheus Telemetry & C-FFI Bridge**: Instruments incoming API requests via `axum-prometheus` (`PrometheusMetricLayer`) and exports Prometheus metrics directly through the HaMS listener using C-FFI callbacks (`prometheus_response_mystate`, `prometheus_response_free`). HaMS is explicitly deregistered from Prometheus upon shutdown.
+- **Fail-Fast Early Startup Validation & Debug Delay**: Application configuration, YAML overrides, secret files, database connectivity, and required `pgvector` PostgreSQL extensions are validated **at process startup** before opening the main webservice port (`8080`). Invalid configurations, missing credentials, or missing database extensions abort execution immediately with error logs (failing fast).
+- **CrashLoop Fail Debug Delay (`fail_debug_delay`)**: Configurable duration (`debugging.fail_debug_delay`, e.g. `"30s"`, defaulting to `"0s"`) to pause before process termination on startup or server errors, preventing immediate Kubernetes `CrashLoopBackOff` restarts and allowing pod inspection via `kubectl exec`.
 - **Zero Silent Fallback / Explicit Failures**: Runtime execution and discovery components must never perform silent failovers or mask failures by substituting fallback models, alternative queries, or default credentials. If a specified LLM model, resource, or execution dependency fails or is unavailable, the operation must fail immediately and return an explicit, descriptive error status.
 
 ### 22. Essential Developer Ergonomics & Build Automation Tooling
@@ -331,6 +334,7 @@ graph TD
         Config["config.rs (AppConfig)"]
         DB["db.rs (PgPool & PgVector)"]
         Hams["hams_tools.rs (HaMS Health)"]
+        Metrics["metrics.rs (Prometheus C-FFI)"]
         TokioRt["tokio_tools.rs (Runtime Builder)"]
         Models["models/ (Domain Structs & DTOs)"]
     end
@@ -340,6 +344,7 @@ graph TD
     ServiceMain --> Config
     ServiceMain --> DB
     ServiceMain --> Hams
+    ServiceMain --> Metrics
     ServiceMain --> TokioRt
     ServiceMain --> WebMod
     WebMod --> AgentsAPI & SkillsAPI & TraitsAPI & ToolsAPI & KnowledgeAPI & ExecutionAPI & ThreadsAPI & FsAPI
@@ -350,15 +355,15 @@ graph TD
 
 1. **`src/main.rs` (Binary CLI & Command Parsing)**:
    - Dedicated exclusively to CLI parsing using `clap` (`Cli`, `Commands`).
-   - Parses flags (`--config-path`, `--secrets-dir`), initializes early logger, loads configuration fail-fast, and delegates command execution to `lib.rs` services (`service_main`, migration runners).
+   - Parses flags (`--config-path`, `--secrets-dir`), initializes early logger, loads configuration fail-fast, captures `fail_debug_delay` on error, and delegates command execution to `lib.rs` services (`service_main`, migration runners).
    - Contains no direct web routing, business logic, or database query definitions.
 
 2. **`src/lib.rs` (Application Lifecycle & Runtime Orchestration)**:
-   - Defines core application metadata (`NAME`, `VERSION`), `AppState` shared state struct, and public module exports.
-   - Houses the top-level application orchestration (`service_main` / `service_cancellable`) initializing database connection pools, executing schema migrations, initializing the HaMS health monitoring sidecar, and binding the Axum web server.
+   - Defines core application metadata (`NAME`, `VERSION`), `AppState` shared state struct (including `PrometheusHandle`), and public module exports.
+   - Houses the top-level application orchestration (`service_main`) initializing database connection pools, executing schema migrations, registering Prometheus recorder and HaMS health monitoring sidecar, linking Tokio `CancellationToken` for graceful shutdown, and binding the Axum web server.
 
 3. **`src/webserver/` (Explicit Webservice Layer & Route Handlers)**:
-   - **`src/webserver/mod.rs`**: Central router builder (`app_router`) and server listener (`start_webserver`), registering middleware (CORS, TraceLayer), health check endpoints (`/health`), and nesting modular domain route sub-routers under `config.webservice.api_prefix`.
+   - **`src/webserver/mod.rs`**: Central router builder (`app_router`) and server listener (`start_webserver`), registering middleware (CORS, TraceLayer, `PrometheusMetricLayer`), health check endpoints (`/health`), connecting `.with_graceful_shutdown()`, and nesting modular domain route sub-routers under `config.webservice.api_prefix`.
    - **Domain Handler Modules**: Structured modular route handlers organized by bounded context:
      - `webserver::agents`: Agent CRUD, search, refactor analysis, compilation, testing, and contract verification.
      - `webserver::skills`: Skill CRUD, promote, and demote handlers.
@@ -373,9 +378,10 @@ graph TD
    - Modularized domain entities, requests, responses, and serialization definitions grouped by domain (e.g. `models::agent`, `models::skill`, `models::trait_contract`, `models::tool`, `models::knowledge`, `models::thread`).
 
 5. **Core Infrastructure Modules**:
-   - `src/config.rs`: Centralized fail-fast `AppConfig` loader and validator.
+   - `src/config.rs`: Centralized fail-fast `AppConfig` loader and validator with `fail_debug_delay` support.
    - `src/db.rs`: Database connection pool initialization and `pgvector` validation.
    - `src/hams_tools.rs`: HaMS health monitoring sidecar integration and readiness probes.
+   - `src/metrics.rs`: C-FFI Prometheus response callbacks and memory management for HaMS metrics scraping.
    - `src/tokio_tools.rs`: Configurable single/multi-threaded Tokio runtime executor.
    - `src/error.rs`: Unified `AppError` type with Axum `IntoResponse` status code conversions.
 

@@ -41,28 +41,76 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     match cli.command {
         Commands::Serve => {
-            let config = AppConfig::load(&cli.config_path, &cli.secrets_dir).unwrap_or_else(|e| {
-                init_logging("info");
-                panic!("Fail-Fast Error: Failed to load config: {}", e);
-            });
+            let mut delay = None;
 
-            init_logging(&config.debugging.log_level);
+            let result = (|| -> Result<(), Box<dyn std::error::Error>> {
+                let config = AppConfig::load(&cli.config_path, &cli.secrets_dir).map_err(|e| {
+                    init_logging("info");
+                    tracing::error!("Failed to load config: {}", e);
+                    format!("Fail-Fast Error: Failed to load config: {}", e)
+                })?;
 
-            run_in_tokio(&config.runtime, async {
-                service_main(&cli.config_path, &cli.secrets_dir)
-                    .await
-                    .map_err(|e| format!("Service Error: {}", e))
-            })?;
+                init_logging(&config.debugging.log_level);
+                delay = Some(config.debugging.fail_debug_delay);
+
+                run_in_tokio(&config.runtime, async {
+                    service_main(&cli.config_path, &cli.secrets_dir)
+                        .await
+                        .map_err(|e| format!("Service Error: {}", e))
+                })?;
+
+                Ok(())
+            })();
+
+            if let Err(e) = result {
+                if let Some(d) = delay {
+                    if !d.is_zero() {
+                        tracing::error!(
+                            "Serve failed: {}. Sleeping for {:?} before exiting...",
+                            e,
+                            d
+                        );
+                        std::thread::sleep(d);
+                    }
+                }
+                return Err(e);
+            }
         }
         Commands::Migrate => {
-            let config = AppConfig::load(&cli.config_path, &cli.secrets_dir)?;
-            init_logging(&config.debugging.log_level);
+            let mut delay = None;
 
-            run_in_tokio(&config.runtime, async {
-                run_migrations(&cli.config_path, &cli.secrets_dir)
-                    .await
-                    .map_err(|e| format!("Migration error: {}", e))
-            })?;
+            let result = (|| -> Result<(), Box<dyn std::error::Error>> {
+                let config = AppConfig::load(&cli.config_path, &cli.secrets_dir).map_err(|e| {
+                    init_logging("info");
+                    tracing::error!("Failed to load config: {}", e);
+                    format!("Fail-Fast Error: Failed to load config: {}", e)
+                })?;
+
+                init_logging(&config.debugging.log_level);
+                delay = Some(config.debugging.fail_debug_delay);
+
+                run_in_tokio(&config.runtime, async {
+                    run_migrations(&cli.config_path, &cli.secrets_dir)
+                        .await
+                        .map_err(|e| format!("Migration error: {}", e))
+                })?;
+
+                Ok(())
+            })();
+
+            if let Err(e) = result {
+                if let Some(d) = delay {
+                    if !d.is_zero() {
+                        tracing::error!(
+                            "Migrate failed: {}. Sleeping for {:?} before exiting...",
+                            e,
+                            d
+                        );
+                        std::thread::sleep(d);
+                    }
+                }
+                return Err(e);
+            }
         }
         Commands::Version => {
             println!("aad-be {}", VERSION);

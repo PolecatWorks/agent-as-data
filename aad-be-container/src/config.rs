@@ -60,10 +60,18 @@ pub struct LlmConfig {
     pub timeout_secs: u64,
 }
 
+use std::time::Duration;
+
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct DebuggingConfig {
     pub environment: String,
     pub log_level: String,
+    #[serde(default = "default_fail_debug_delay", with = "humantime_serde")]
+    pub fail_debug_delay: Duration,
+}
+
+fn default_fail_debug_delay() -> Duration {
+    Duration::from_secs(0)
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
@@ -144,6 +152,7 @@ mod tests {
             debugging: DebuggingConfig {
                 environment: "development".to_string(),
                 log_level: "info".to_string(),
+                fail_debug_delay: Duration::from_secs(0),
             },
         };
 
@@ -177,6 +186,7 @@ mod tests {
             debugging: DebuggingConfig {
                 environment: "development".to_string(),
                 log_level: "info".to_string(),
+                fail_debug_delay: Duration::from_secs(0),
             },
         };
 
@@ -208,6 +218,7 @@ mod tests {
             debugging: DebuggingConfig {
                 environment: "development".to_string(),
                 log_level: "info".to_string(),
+                fail_debug_delay: Duration::from_secs(0),
             },
         };
 

@@ -24,6 +24,9 @@ reqwest = { version = "^0.12", default-features = false, features = ["json"] }
 tower-http = { version = "^0.6", features = ["trace", "cors", "timeout"] }
 tokio-util = "^0.7"
 chrono = { version = "^0.4", features = ["serde"] }
+humantime-serde = "^1.1"
+axum-prometheus = "^0.10"
+prometheus = "^0.14"
 
 hams = { git = "https://github.com/PolecatWorks/hams.git" }
 sqlx = { version = "0.8", features = ["postgres", "runtime-tokio-rustls", "chrono", "uuid"] }

@@ -117,8 +117,10 @@ The **Agent Registry & Execution Engine** in **Agent-As-Data (AAD)** treats AI a
 - **Compilation Report & Diagnostics**: Returns a detailed compilation status (`status: "clean"` or `status: "compilation_errors"`) with line-level warning diagnostic messages (e.g. `ERR_CIRCULAR_DELEGATION`, `WARN_LOW_SEMANTIC_FIT`, `ERR_SCHEMA_MISMATCH`).
 
 ### 11. Architectural Safeguards, HaMS & Fail-Fast Validation
-- **HaMS Health & Metrics Sidecar (`hams`)**: Serves out-of-band health probes (`/hams/alive` liveness, `/hams/ready` readiness) and Prometheus metrics (`/metrics`) on dedicated port `8079`.
-- **Fail-Fast Early Startup Validation**: Application configuration, YAML environment overrides, secret files, database connectivity, and required `pgvector` extensions are validated **at process startup** before opening the main webservice listener (`8080`). Invalid configs or missing database extensions abort immediately with diagnostic error logs (failing fast).
+- **HaMS Health & Metrics Sidecar (`hams`)**: Serves out-of-band health probes (`/ready` readiness via `ProbeManual`, `/alive` liveness) and Prometheus metrics (`/metrics` / `stats/prometheus`) on dedicated port `8079`.
+- **Unified Graceful Shutdown**: Links HaMS shutdown closures to Tokio `CancellationToken` and Axum's `.with_graceful_shutdown()`, cleanly draining active execution requests on `SIGINT`/`SIGTERM`.
+- **Prometheus Telemetry Instrumentation**: Records HTTP execution telemetry via `axum-prometheus` and bridges metrics to HaMS via C-FFI callbacks (`prometheus_response_mystate`, `prometheus_response_free`).
+- **Fail-Fast Early Startup Validation & Debug Delay**: Application configuration, YAML environment overrides, secret files, database connectivity, and required `pgvector` extensions are validated **at process startup** before opening the main webservice listener (`8080`). If initialization fails, an optional `fail_debug_delay` allows container inspection before exit.
 - **Decoupled Job Queue**: Asynchronous background agent runs are isolate-tracked in the `executions` table, preventing long-running agent tasks from blocking vector discovery endpoints.
 - **Deterministic Version Snapshots**: All executions bind to explicit `version` snapshots in `agent_revisions`, guaranteeing that agent behavior remains immutable even if an agent prompt is edited mid-task.
 - **Guardrail Interceptors**: Strict pre-submission (`incoming_guardrails`) and post-execution (`outgoing_guardrails`) validation steps block malformed JSON or prompt injection attacks.
