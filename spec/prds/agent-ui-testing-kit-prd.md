@@ -176,7 +176,7 @@ flowchart TD
   - **Right Workspace**: A resizable split-pane area containing the conversation and editor views, topped by a global action bar.
     - **Top Bar**: Contains the global application navigation menu, context badges, a solid blue "New Thread" button, layout view toggles, and a user profile button.
     - **Conversation Pane (Left)**: Conversational chat interface for the active thread. Features a click-to-edit thread title header and a message input area. Supports direct URL routing via `/workbench/:threadId`.
-    - **Editor Pane (Right)**: Direct content editing and review area (e.g., code diffs, files, or context modified through conversation).
+    - **Editor Pane (Right)**: Direct content editing and review area (e.g., code diffs, files, or context modified through conversation). It supports basic text file editing capabilities to create, edit, save, and delete files. Currently limited to text (`.txt`) and markdown (`.md`) files. Other file types will be supported in the future via MFE plugins to ensure extensibility.
 
 ### 10. Robot Framework Integration Testing Suite (Ref: `sward-warden/integration-tests`)
 - **Declarative User Journey Robot Tests**: `/integration-tests/tests/*.robot` test cases mapping 1-to-1 to all 12 user journeys, covering 24 tests total (all currently passing).

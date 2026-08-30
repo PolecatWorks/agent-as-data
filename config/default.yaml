@@ -1,0 +1,33 @@
+database:
+  url:
+    url: "postgres://localhost:5432/aaddb"
+    username: "postgres"
+    password: "mysecretpassword"
+  max_connections: 5
+
+webservice:
+  address: "0.0.0.0:8080"
+  api_prefix: "/api"
+
+llm:
+  # ollama_url: "http://localhost:11434"
+  ollama_url: "http://ollama.k8s:80"
+  # model: "llama3"
+  model: "qwen2.5-coder:14b"
+  timeout_secs: 180
+
+
+hams:
+  name: "aad-be"
+  version: "0.1.0"
+  port: 8079
+
+runtime:
+  threads: 4
+  stack_size: 3000000
+  name: "aad-worker"
+
+debugging:
+  environment: "development"
+  log_level: "info"
+  fail_debug_delay: "0s"

@@ -170,6 +170,12 @@ export class WorkbenchComponent implements OnInit {
 
   selectFile(filename: string): void {
     if (!this.activeThread) return;
+
+    if (!filename.endsWith('.txt') && !filename.endsWith('.md')) {
+      alert('Only .txt and .md files are supported for editing at this time.');
+      return;
+    }
+
     this.apiService.readThreadFile(this.activeThread.id, filename).subscribe({
       next: (res) => {
         this.selectedFile = filename;
@@ -183,6 +189,11 @@ export class WorkbenchComponent implements OnInit {
     if (!this.activeThread) return;
     const filename = prompt('Enter new filename:');
     if (!filename) return;
+
+    if (!filename.endsWith('.txt') && !filename.endsWith('.md')) {
+      alert('Only .txt and .md files are supported at this time.');
+      return;
+    }
 
     this.apiService.writeThreadFile(this.activeThread.id, filename, '').subscribe({
       next: () => {
