@@ -46,8 +46,9 @@ flowchart TD
         Spec10["10-workbench-spec.md<br/>(Workbench File Management)"]:::complete
     end
 
-    subgraph Phase5 ["Phase 5: Codebase Architecture & Refactoring"]
+    subgraph Phase5 ["Phase 5: Codebase Architecture & Agent Automation"]
         Spec09["09-backend-modular-architecture-spec.md<br/>(Backend Modular Layout & Webservice Routing)"]:::complete
+        Spec11["11-workspace-agent-tool-execution-spec.md<br/>(Rig Tool Trait & Autonomous Multi-Turn Execution)"]:::complete
     end
 
     classDef complete fill:#10B981,stroke:#047857,stroke-width:2px,color:#ffffff;
@@ -81,6 +82,8 @@ flowchart TD
     Spec08 --> Spec10
     Spec08 --> Spec09
     Spec10 --> Spec09
+    Spec09 --> Spec11
+    Spec10 --> Spec11
 ```
 
 ## Index of Task Specifications
@@ -99,3 +102,4 @@ flowchart TD
 | **Phase 4** | [08-developer-ui-studio-spec.md](./08-developer-ui-studio-spec.md) | `complete` | Angular 18+ Web Dashboard (`aad-fe-container`), Interactive Testing Studio (Skills Layout & Prompt Inspector), & Rig Ollama Execution | [Agent UI PRD](../prds/agent-ui-testing-kit-prd.md) | Depends on [04-mcp-server-spec.md](./04-mcp-server-spec.md), [05-execution-guardrails-engine-spec.md](./05-execution-guardrails-engine-spec.md), [06-agent-test-judge-engine-spec.md](./06-agent-test-judge-engine-spec.md), & [07-refactoring-compiler-engine-spec.md](./07-refactoring-compiler-engine-spec.md) |
 | **Phase 4** | [10-workbench-spec.md](./10-workbench-spec.md) | `complete` | Workbench Thread File Management UI | [Agent UI PRD](../prds/agent-ui-testing-kit-prd.md) | Depends on [08-developer-ui-studio-spec.md](./08-developer-ui-studio-spec.md) |
 | **Phase 5** | [09-backend-modular-architecture-spec.md](./09-backend-modular-architecture-spec.md) | `complete` | Backend Codebase Layout, CLI Separation (`main.rs`), App Runtime (`lib.rs`), Webservice Router (`webserver/`), & Domain Models (`models/`) | [Master PRD](../prds/agent-as-data-prd.md) | Depends on Phases 1-4 |
+| **Phase 5** | [11-workspace-agent-tool-execution-spec.md](./11-workspace-agent-tool-execution-spec.md) | `complete` | Rig `Tool` Trait Implementation, Autonomous Multi-Turn `AgentBuilder` Execution Loop, & Self-Correcting Tool Error Recovery | [Workspace Tools PRD](../prds/workspace-filesystem-tools-prd.md) | Depends on [09-backend-modular-architecture-spec.md](./09-backend-modular-architecture-spec.md) & [10-workbench-spec.md](./10-workbench-spec.md) |

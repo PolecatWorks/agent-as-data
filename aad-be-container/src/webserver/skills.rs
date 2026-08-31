@@ -66,10 +66,27 @@ pub async fn create_skill(
         payload.current_version.clone()
     };
 
-    sqlx::query(
+    tracing::info!("Creating skill '{}' (ID: {}, version: {})", payload.name, skill_id, current_version);
+
+    let row = sqlx::query(
         r#"
         INSERT INTO skills (id, name, description, definition, tags, current_version, owner_id, attached_skills, attached_tools, input_schema, output_schema, implementation, implements_traits, uses_traits)
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+        ON CONFLICT (name) DO UPDATE SET
+            description = EXCLUDED.description,
+            definition = EXCLUDED.definition,
+            tags = EXCLUDED.tags,
+            current_version = EXCLUDED.current_version,
+            owner_id = EXCLUDED.owner_id,
+            attached_skills = EXCLUDED.attached_skills,
+            attached_tools = EXCLUDED.attached_tools,
+            input_schema = EXCLUDED.input_schema,
+            output_schema = EXCLUDED.output_schema,
+            implementation = EXCLUDED.implementation,
+            implements_traits = EXCLUDED.implements_traits,
+            uses_traits = EXCLUDED.uses_traits,
+            updated_at = NOW()
+        RETURNING id
         "#,
     )
     .bind(skill_id)
@@ -86,13 +103,16 @@ pub async fn create_skill(
     .bind(implementation)
     .bind(&payload.implements_traits)
     .bind(&payload.uses_traits)
-    .execute(&pool)
+    .fetch_one(&pool)
     .await
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Skill DB Error: {}", e)))?;
 
+    let final_id: Uuid = row.get("id");
     let mut response_skill = payload.clone();
-    response_skill.id = Some(skill_id);
+    response_skill.id = Some(final_id);
     response_skill.current_version = current_version;
+
+    tracing::info!("Skill '{}' saved successfully (ID: {})", payload.name, final_id);
 
     Ok((StatusCode::CREATED, Json(response_skill)))
 }
@@ -102,6 +122,7 @@ pub async fn update_skill(
     Path(id): Path<Uuid>,
     Json(payload): Json<Skill>,
 ) -> Result<Json<Skill>, (StatusCode, String)> {
+    tracing::info!("Updating skill '{}' (ID: {})", payload.name, id);
     let input_schema = payload.input_schema.clone().unwrap_or_else(|| serde_json::json!({}));
     let output_schema = payload.output_schema.clone().unwrap_or_else(|| serde_json::json!({}));
     let implementation = payload.implementation.clone().unwrap_or_else(|| serde_json::json!({}));
@@ -133,6 +154,7 @@ pub async fn update_skill(
 
     let mut response_skill = payload.clone();
     response_skill.current_version = current_version;
+    tracing::info!("Skill '{}' updated successfully (ID: {})", payload.name, id);
     Ok(Json(response_skill))
 }
 
@@ -140,6 +162,7 @@ pub async fn delete_skill(
     State(pool): State<PgPool>,
     Path(id): Path<Uuid>,
 ) -> Result<StatusCode, (StatusCode, String)> {
+    tracing::info!("Deleting skill (ID: {})", id);
     sqlx::query("DELETE FROM skills WHERE id = $1")
         .bind(id)
         .execute(&pool)

@@ -1,5 +1,9 @@
 # Agent Workspace Guidance & Specification Rules
 
+> [!IMPORTANT]
+> **Core Workflow Rule**: **Update PRDs First** (`spec/prds/`) $\rightarrow$ **Derive Spec** (`spec/specs/`) $\rightarrow$ **Build Out** (Strict TDD Implementation).
+> Never jump directly into source code implementation without completing and validating the PRD and Spec phases first.
+
 ## Communication & Diagramming Standards
 - **Relative Markdown Links**: Use relative Markdown links for file cross-references (e.g. `[agent-schema-spec.md](./spec/specs/agent-schema-spec.md)` or `[Master PRD](./spec/prds/agent-as-data-prd.md)`). Do NOT use `file:///` URLs inside Markdown files as IDE previewers cannot click them.
 - **Mermaid Diagrams**: When describing domain concepts, system architectures, data flows, sequence flows, or process lifecycles, **always use Mermaid diagrams** (`mermaid` code blocks).

@@ -45,6 +45,8 @@ pub async fn create_agent(
         payload.current_version.clone()
     };
 
+    tracing::info!("Creating agent '{}' (ID: {}, version: {})", payload.name, agent_id, current_version);
+
     let incoming_json =
         serde_json::to_value(&payload.input_guardrails).unwrap_or_else(|_| serde_json::json!([]));
     let outgoing_json =
@@ -106,6 +108,8 @@ pub async fn create_agent(
     response_agent.id = Some(agent_id);
     response_agent.current_version = current_version;
 
+    tracing::info!("Agent '{}' created successfully (ID: {})", payload.name, agent_id);
+
     Ok((StatusCode::CREATED, Json(response_agent)))
 }
 
@@ -114,6 +118,7 @@ pub async fn update_agent(
     Path(id): Path<Uuid>,
     Json(payload): Json<Agent>,
 ) -> Result<Json<Agent>, (StatusCode, String)> {
+    tracing::info!("Updating agent '{}' (ID: {})", payload.name, id);
     let row = sqlx::query("SELECT id FROM agents WHERE id = $1 AND archived_at IS NULL")
         .bind(id)
         .fetch_optional(&pool)
@@ -162,6 +167,7 @@ pub async fn update_agent(
 
         let mut response_agent = payload.clone();
         response_agent.id = Some(id);
+        tracing::info!("Agent '{}' updated successfully (ID: {})", payload.name, id);
         Ok(Json(response_agent))
     } else {
         Err((StatusCode::NOT_FOUND, "Agent not found".to_string()))
@@ -249,6 +255,7 @@ pub async fn delete_agent(
     Path(id): Path<Uuid>,
     Query(params): Query<DeleteAgentParams>,
 ) -> Result<Json<Agent>, (StatusCode, String)> {
+    tracing::info!("Deleting agent (ID: {}, hard: {})", id, params.hard.unwrap_or(false));
     let mut agent_res = get_agent(State(pool.clone()), Path(id)).await?;
 
     if params.hard.unwrap_or(false) {

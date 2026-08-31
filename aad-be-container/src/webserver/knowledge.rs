@@ -36,6 +36,7 @@ pub async fn ingest_knowledge(
     Json(payload): Json<IngestKnowledgeRequest>,
 ) -> Result<(StatusCode, Json<IngestKnowledgeResponse>), (StatusCode, String)> {
     let node_id = Uuid::new_v4();
+    tracing::info!("Ingesting/Saving knowledge node '{:?}' (topic: '{}', ID: {})", payload.title, payload.topic, node_id);
     let metadata = payload.metadata.unwrap_or_else(|| serde_json::json!({}));
 
     // 1. Insert Node
@@ -84,7 +85,7 @@ pub async fn ingest_knowledge(
             let confidence = tuple.confidence.unwrap_or(1.0);
             sqlx::query(
                 r#"
-                INSERT INTO knowledge_tuples (id, node_id, subject, predicate, object, confidence)
+                INSERT INTO knowledge_tuples (id, source_node_id, subject, predicate, object, confidence)
                 VALUES ($1, $2, $3, $4, $5, $6)
                 "#,
             )
