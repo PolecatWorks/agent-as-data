@@ -16,6 +16,7 @@ use crate::{
 pub fn router() -> Router<AppState> {
     Router::new()
         .route("/search-and-execute", post(search_and_execute))
+        .route("/agents/search-and-execute", post(search_and_execute))
         .route("/agents/{id}/execute", post(execute_agent))
         .route("/executions/{id}", get(get_execution))
 }
@@ -115,6 +116,11 @@ pub async fn execute_agent(
     } else {
         format!("System: {}\nUser: {}", system_prompt, payload.prompt)
     };
+
+    tracing::info!(
+        "LLM Agent Execution Prompt dispatched [Agent ID: {} | Model: {} | Endpoint: {}]:\n--- FULL PROMPT START ---\n{}\n--- FULL PROMPT END ---",
+        agent_id, target_model, state.config.llm.ollama_url, full_prompt
+    );
 
     let mut req_builder = model.completion_request(&full_prompt);
 

@@ -528,4 +528,33 @@ mod tests {
         // Cleanup
         let _ = std::fs::remove_dir_all(&workspace_root);
     }
+
+    #[tokio::test]
+    async fn test_portable_fs_tools_path_traversal() {
+        let thread_id = Uuid::new_v4();
+        let workspace_root = get_workspace_root(thread_id);
+        let _ = std::fs::remove_dir_all(&workspace_root);
+
+        let write_tool = WriteFileTool { thread_id };
+        let read_tool = ReadFileTool { thread_id };
+
+        // Attempt path traversal via write
+        let write_res = write_tool
+            .call(WriteFileArgs {
+                filepath: "../../etc/shadow".to_string(),
+                content: "malicious".to_string(),
+            })
+            .await;
+        assert!(write_res.is_err());
+
+        // Attempt path traversal via read
+        let read_res = read_tool
+            .call(ReadFileArgs {
+                filepath: "../../../etc/passwd".to_string(),
+            })
+            .await;
+        assert!(read_res.is_err());
+
+        let _ = std::fs::remove_dir_all(&workspace_root);
+    }
 }

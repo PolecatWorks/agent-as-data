@@ -1,61 +1,118 @@
-# Workspace Filesystem Tools PRD
+# Workspace Filesystem Tools & Agent Tool Execution PRD
 
 ## Overview
-This document defines the requirements for isolated workspace filesystem tools within **Agent-As-Data (AAD)**. When a multiuser conversational thread is created, it requires a dedicated, isolated filesystem directory. This enables AI agents and tools to perform safe filesystem operations (read, write, list, delete) bounded strictly to that thread's contextual workspace.
+This document defines the requirements and architectural standards for workspace filesystem tools and agent tool execution within **Agent-As-Data (AAD)**. When a multiuser conversational thread is created in the Workbench, it establishes a dedicated, isolated workspace directory (`/tmp/workspace/<thread_id>`). This PRD formalizes how native Rust tools and external MCP tools are defined, bound to Rig agents via the `Tool` trait and `AgentBuilder`, and executed in an autonomous multi-turn loop.
 
 ## Objectives
-1. **Thread Isolation**: Each thread must have its own isolated filesystem directory located at `/tmp/workspace/<thread_id>`.
-2. **Filesystem Tools**: Expose specific tools (`read_file`, `write_file`, `replace_in_file`, `list_files`, `delete_file`, `rename_file`) that operate exclusively within a thread's workspace.
-3. **Security & Path Constraints**: Strictly prevent path traversal vulnerabilities. No operation should be able to access, read, or modify files outside of its designated `/tmp/workspace/<thread_id>` directory.
+1. **Thread Isolation**: Each thread must maintain an isolated filesystem directory located at `/tmp/workspace/<thread_id>`.
+2. **Standardized Rig Tool Implementations**: Expose safe workspace filesystem tools (`read_file`, `write_file`, `replace_in_file`, `list_files`, `delete_file`, `rename_file`) implemented in accordance with Rig's `Tool` trait architecture and JSON schema definitions.
+3. **Autonomous Multi-Turn Execution**: Leverage Rig's `AgentBuilder` multi-turn agent loop (`.tool(...)`, `.max_turns(...)`) so the model autonomously selects tools, executes functions, receives structured outputs or errors, self-corrects, and formulates final user responses.
+4. **Self-Correcting Error Recovery**: Format all tool execution errors as informative, instructive feedback for the LLM rather than failing the prompt.
+5. **Path Traversal Security**: Strictly enforce workspace containment to prevent any access outside `/tmp/workspace/<thread_id>`.
 
-## Core Features
+---
 
-### 1. Workspace Initialization
-- Upon successful creation of a `Thread` (via the `POST /{{api_prefix}}/v1/threads/create` endpoint or equivalent backend logic), the system must automatically create a physical directory at `/tmp/workspace/<thread_id>`.
-- If the directory already exists, it should not fail, ensuring idempotency.
-- Proper filesystem permissions should be enforced such that only the AAD backend process can access these directories.
+## Agent Tool Execution Architecture
 
-### 2. Filesystem Tool Interfaces
-The following operations will be provided as tools. They accept a `thread_id` and a `filepath` (which is always treated as relative to the thread's workspace root).
+```mermaid
+sequenceDiagram
+    autonumber
+    actor User as Workbench UI / Developer
+    participant BE as AAD Webserver (threads.rs)
+    participant RigAgent as Rig Agent Loop (AgentBuilder)
+    participant LLM as Ollama / Model Provider
+    participant Tools as Rig Workspace Tools (Tool Trait)
+    participant FS as Local Workspace (/tmp/workspace/thread_id)
 
-- **`write_file(thread_id, filepath, content)`**:
-  - Writes the provided `content` (string/bytes) to the specified `filepath`.
-  - Automatically creates any missing parent directories within the workspace to fulfill the `filepath`.
-  - Overwrites existing files.
+    User->>BE: POST /api/v1/threads/{id}/messages (user message)
+    BE->>BE: Insert user message into DB
+    BE->>RigAgent: agent.prompt(user_content)
+    RigAgent->>LLM: Dispatches Prompt + Tool Schemas (JSON Schema)
+    
+    loop Multi-Turn Tool Execution Loop (up to max_turns)
+        LLM-->>RigAgent: Tool Call Request (e.g. list_files, read_file)
+        RigAgent->>Tools: Tool::call(args)
+        Tools->>FS: Safe Path Sanitization & File I/O
+        FS-->>Tools: File Content / Directory Listing / Error
+        Tools-->>RigAgent: Tool Result Payload / Instructive Error String
+        RigAgent->>LLM: Tool Result Feedback
+    end
 
-- **`read_file(thread_id, filepath)`**:
-  - Reads the content of the file at `filepath`.
-  - Returns an error if the file does not exist or is a directory.
+    LLM-->>RigAgent: Final Response Text
+    RigAgent-->>BE: Returns Assistant Message
+    BE->>BE: Insert assistant message into DB
+    BE-->>User: 201 Created (User Message) & Real-time Assistant Update
+```
 
-- **`replace_in_file(thread_id, filepath, search_string, replace_string)`**:
-  - Searches for an exact `search_string` block in the file and replaces it with `replace_string`.
-  - Returns an error if the `search_string` is not found or the file does not exist.
+---
 
-- **`list_files(thread_id, dir_path)`**:
-  - Lists the contents of `dir_path` (defaults to the root of the workspace if empty).
-  - Returns a list of filenames/directory names.
+## Core Features & Tool Specifications
 
-- **`delete_file(thread_id, filepath)`**:
-  - Deletes the file or directory at `filepath`.
+### 1. Workspace Lifecycle & Isolation
+- **Directory Scaffolding**: Upon creation of a `Thread` (via `POST /{{api_prefix}}/v1/threads/create` or lazy access), the system automatically provisions `/tmp/workspace/<thread_id>`.
+- **Idempotency**: Directory creation must be idempotent (`create_dir_all`).
+- **Security Boundary**: All file operations must be validated against `resolve_safe_path` to guarantee canonical paths strictly begin with `/tmp/workspace/<thread_id>/`. Path traversal attempts (`..`, symlink escapes, absolute paths) must be rejected with `PermissionDenied`.
 
-- **`rename_file(thread_id, filepath, new_filepath)`**:
-  - Renames or moves a file or directory from `filepath` to `new_filepath`.
+### 2. Filesystem Tool Interfaces (`Tool` Trait)
 
-### 3. LLM Integration
-- The tools mentioned above will be implemented as `rig_core::tool::PortableTool` tools.
-- They will be dynamically added to the `CompletionModel` builder if a `thread_id` is supplied in the context payload during agent execution.
+All workspace tools must implement Rig's `rig_core::tool::Tool` trait with typed arguments, JSON schema definitions, and model-oriented descriptions.
 
-### 4. Security & Path Traversal Prevention
-- **Strict Canonicalization**: All input paths must be resolved and canonicalized.
-- **Boundary Check**: After resolving an absolute path, the system must verify that the resulting path starts with exactly `/tmp/workspace/<thread_id>/`.
-- Any attempt to use `../` or absolute paths like `/etc/passwd` that resolve outside the workspace root must be immediately rejected with a definitive security error.
+| Tool Name | Arguments | Description | Output |
+|---|---|---|---|
+| `list_files` | `dir_path: Option<String>` | Lists files and subdirectories under the workspace path. | `ListFilesOutput { files: Vec<String> }` |
+| `read_file` | `filepath: String` | Reads text content of a file relative to workspace root. | `ReadFileOutput { content: String }` |
+| `write_file` | `filepath: String, content: String` | Creates or overwrites a file; automatically scaffolds parent folders. | `WriteFileOutput { success: bool, message: String }` |
+| `replace_in_file` | `filepath: String, search_string: String, replace_string: String` | Targeted search-and-replace for modifying specific blocks. | `ReplaceInFileOutput { success: bool, message: String }` |
+| `delete_file` | `filepath: String` | Deletes a specified file or directory. | `DeleteFileOutput { success: bool, message: String }` |
+| `rename_file` | `filepath: String, new_filepath: String` | Renames or moves a file/directory within workspace. | `RenameFileOutput { success: bool, message: String }` |
 
-## Architecture Integration
-- **Backend Container**: The Rust backend (`aad-be-container`) will expose these capabilities. The tools can be invoked programmatically during agent execution.
-- **Directory**: `/tmp/workspace/` is ephemeral. This aligns with containerized deployments where persistent data lives in the database, and local thread workspaces are treated as temporary scratchpads.
+### 3. Agent Integration & Execution Loop
 
-## Implementation Phases
-1. Update thread creation logic to scaffold `/tmp/workspace/<thread_id>`.
-2. Implement robust path sanitization and boundary checking utility in Rust.
-3. Implement the tool functions (`read_file`, `write_file`, `replace_in_file`, `list_files`, `delete_file`, `rename_file`) as `rig_core` PortableTools.
-4. Expose these functions to the internal agent execution context or via REST API endpoints as needed.
+```mermaid
+flowchart TD
+    A[Incoming User Thread Message] --> B[Initialize Ollama / LLM Client]
+    B --> C[Scaffold Rig Agent with Preamble]
+    C --> D[Attach Workspace Tools via .tool]
+    D --> E[Configure Turn Budget via .max_turns]
+    E --> F[Execute agent.prompt]
+    F --> G{Model Requests Tool?}
+    G -->|Yes| H[Execute Tool Function]
+    H --> I{Execution Success?}
+    I -->|Success| J[Feed Serialized Output to Model]
+    I -->|Failure / Invalid Input| K[Feed Instructive Error Message to Model for Self-Correction]
+    J --> F
+    K --> F
+    G -->|No / Complete| L[Persist Assistant Message to Database]
+    L --> M[Refresh Workbench UI State]
+```
+
+#### Best Practices for Rig Tool Attachment:
+1. **`AgentBuilder` Attachment**:
+   ```rust
+   let agent = client
+       .agent(&config.llm.model)
+       .preamble("You are a workspace assistant operating within an isolated directory.")
+       .tool(ListFilesTool { thread_id })
+       .tool(ReadFileTool { thread_id })
+       .tool(WriteFileTool { thread_id })
+       .tool(ReplaceInFileTool { thread_id })
+       .tool(DeleteFileTool { thread_id })
+       .tool(RenameFileTool { thread_id })
+       .max_turns(5)
+       .build();
+   ```
+2. **Turn Budgeting**: Always configure `.max_turns(5)` (or higher) to give the model headroom to call multiple tools sequentially and self-correct when necessary.
+3. **Instructive Error Feedback**: When a tool fails (e.g. file does not exist), return clear contextual guidance (e.g. `File 'notes.txt' not found. Available workspace files are: ['todo.md', 'draft.txt']`) so the model can adjust arguments on the next turn.
+
+### 4. Advanced Tool Capabilities (Roadmap)
+- **Tool-RAG (`ToolEmbedding`)**: For agents with large tool catalogs (e.g. tools, skills, database queries), implement `ToolEmbedding` to retrieve only the top `N` relevant tools via vector similarity (`.dynamic_tools(n, index, toolset)`).
+- **Model Context Protocol (MCP)**: Attach external tool servers dynamically using `AgentBuilder::rmcp_tool(...)` / `ToolServerHandle`.
+- **Tool Servers**: Run high-throughput or shared mutable tools in isolated Tokio tasks via `ToolServer`.
+
+---
+
+## Related Specifications
+- [09-backend-modular-architecture-spec.md](../specs/09-backend-modular-architecture-spec.md): Modular router and webserver architecture.
+- [10-workbench-spec.md](../specs/10-workbench-spec.md): Workbench UI file management and chat integration.
+- [Master PRD](./agent-as-data-prd.md): Core platform capabilities and execution engine.
+

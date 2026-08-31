@@ -69,6 +69,8 @@ pub async fn create_trait(
         payload.version
     };
 
+    tracing::info!("Creating/Saving trait contract '{}' (ID: {}, version: {})", payload.name, id, version);
+
     let new_trait = sqlx::query_as::<_, TraitContract>(
         r#"
         INSERT INTO trait_contracts (id, name, description, version, capability_requirements, behavioral_invariants, evaluation_criteria, tags, guardrails, owner_id)
@@ -96,6 +98,8 @@ pub async fn create_trait(
     .await
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Insert Trait Error: {}", e)))?;
 
+    tracing::info!("Trait contract '{}' saved successfully (ID: {})", payload.name, id);
+
     Ok((StatusCode::CREATED, Json(new_trait)))
 }
 
@@ -104,6 +108,7 @@ pub async fn update_trait(
     Path(id): Path<Uuid>,
     Json(payload): Json<TraitContract>,
 ) -> Result<Json<TraitContract>, (StatusCode, String)> {
+    tracing::info!("Updating trait contract '{}' (ID: {})", payload.name, id);
     let current_version = crate::models::bump_minor_version(&payload.version);
 
     let updated_trait = sqlx::query_as::<_, TraitContract>(
@@ -129,22 +134,30 @@ pub async fn update_trait(
     .await
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Update Trait Error: {}", e)))?;
 
+    tracing::info!("Trait contract '{}' updated successfully (ID: {})", payload.name, id);
+
     Ok(Json(updated_trait))
 }
 
 pub async fn delete_trait(
     State(pool): State<PgPool>,
     Path(id): Path<Uuid>,
-) -> Result<StatusCode, (StatusCode, String)> {
-    let result = sqlx::query("DELETE FROM trait_contracts WHERE id = $1")
-        .bind(id)
-        .execute(&pool)
-        .await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Delete Trait Error: {}", e)))?;
+) -> Result<Json<TraitContract>, (StatusCode, String)> {
+    tracing::info!("Deleting trait contract (ID: {})", id);
+    let deleted = sqlx::query_as::<_, TraitContract>(
+        r#"
+        DELETE FROM trait_contracts
+        WHERE id = $1
+        RETURNING id, name, description, version, capability_requirements, behavioral_invariants, evaluation_criteria, tags, guardrails, owner_id, created_at, updated_at
+        "#
+    )
+    .bind(id)
+    .fetch_optional(&pool)
+    .await
+    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Delete Trait Error: {}", e)))?;
 
-    if result.rows_affected() == 0 {
-        return Err((StatusCode::NOT_FOUND, "Trait not found".to_string()));
+    match deleted {
+        Some(t) => Ok(Json(t)),
+        None => Err((StatusCode::NOT_FOUND, "Trait not found".to_string())),
     }
-
-    Ok(StatusCode::NO_CONTENT)
 }

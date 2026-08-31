@@ -96,6 +96,7 @@ pub async fn write_file(
     Path(thread_id): Path<Uuid>,
     Json(payload): Json<WriteFileRequest>,
 ) -> Result<(StatusCode, Json<FileOperationResponse>), (StatusCode, String)> {
+    tracing::info!("Saving file '{}' in thread workspace {}", payload.filepath, thread_id);
     let workspace_root = get_workspace_root(thread_id);
 
     if !workspace_root.exists() {
@@ -123,6 +124,8 @@ pub async fn write_file(
 
     std::fs::write(&safe_path, payload.content)
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to write file: {}", e)))?;
+
+    tracing::info!("Successfully saved file '{}' in workspace {}", payload.filepath, thread_id);
 
     Ok((
         StatusCode::OK,
@@ -211,6 +214,7 @@ pub async fn delete_file(
     Path(thread_id): Path<Uuid>,
     Json(payload): Json<DeleteFileRequest>,
 ) -> Result<(StatusCode, Json<FileOperationResponse>), (StatusCode, String)> {
+    tracing::info!("Deleting file '{}' in thread workspace {}", payload.filepath, thread_id);
     let workspace_root = get_workspace_root(thread_id);
 
     if !workspace_root.exists() {
@@ -231,6 +235,8 @@ pub async fn delete_file(
         std::fs::remove_file(&safe_path)
             .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to delete file: {}", e)))?;
     }
+
+    tracing::info!("Successfully deleted file '{}' in workspace {}", payload.filepath, thread_id);
 
     Ok((
         StatusCode::OK,

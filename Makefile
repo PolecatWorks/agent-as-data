@@ -70,7 +70,6 @@ aad-be-dev:
 	-@lsof -t -i :$(aad-be_HEALTH_PORT) | xargs kill -9 2>/dev/null || true
 	cd aad-be-container && \
 	DATABASE_URL="$(DATABASE_URL)" \
-	AAD_BE__DATABASE__URL="$(DATABASE_URL)" \
 	cargo run -- serve
 
 aad-be-watch:
@@ -78,7 +77,6 @@ aad-be-watch:
 	-@lsof -t -i :$(aad-be_HEALTH_PORT) | xargs kill -9 2>/dev/null || true
 	cd aad-be-container && \
 	DATABASE_URL="$(DATABASE_URL)" \
-	AAD_BE__DATABASE__URL="$(DATABASE_URL)" \
 	AAD_BE__DEBUGGING__LOG_LEVEL="debug" \
 	RUST_LOG="debug" \
 	cargo watch -x 'run -- serve'

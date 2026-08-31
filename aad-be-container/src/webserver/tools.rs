@@ -25,6 +25,7 @@ pub async fn register_tool(
     Json(payload): Json<RegisterToolRequest>,
 ) -> Result<(StatusCode, Json<RegisterToolResponse>), (StatusCode, String)> {
     let server_id = payload.id.unwrap_or_else(Uuid::new_v4);
+    tracing::info!("Registering/Saving tool server '{}' (ID: {})", payload.server_name, server_id);
 
     let cached_capabilities = serde_json::json!({
         "tools": [
@@ -41,9 +42,9 @@ pub async fn register_tool(
         VALUES ($1, $2, $3, $4, $5, $6)
         ON CONFLICT (server_name) DO UPDATE 
         SET transport_type = EXCLUDED.transport_type, 
-            endpoint_config = EXCLUDED.endpoint_config,
-            owner_id = EXCLUDED.owner_id,
-            last_synced_at = NOW()
+        endpoint_config = EXCLUDED.endpoint_config,
+        owner_id = EXCLUDED.owner_id,
+        last_synced_at = NOW()
         RETURNING id
         "#,
     )
@@ -58,6 +59,7 @@ pub async fn register_tool(
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("MCP Register Error: {}", e)))?;
 
     let final_id: Uuid = row.get("id");
+    tracing::info!("Tool server '{}' registered/saved successfully (ID: {})", payload.server_name, final_id);
 
     Ok((
         StatusCode::CREATED,
@@ -87,6 +89,7 @@ pub async fn delete_tool(
     State(pool): State<PgPool>,
     Path(id): Path<Uuid>,
 ) -> Result<StatusCode, (StatusCode, String)> {
+    tracing::info!("Deleting tool server (ID: {})", id);
     sqlx::query("DELETE FROM tools WHERE id = $1")
         .bind(id)
         .execute(&pool)

@@ -11,7 +11,8 @@ pub mod traits;
 
 use axum::{routing::get, Router};
 use axum_prometheus::PrometheusMetricLayer;
-use tracing::info;
+use tower_http::trace::{DefaultMakeSpan, DefaultOnRequest, DefaultOnResponse, TraceLayer};
+use tracing::{info, Level};
 
 use crate::config::WebServiceConfig;
 use crate::state::AppState;
@@ -33,6 +34,12 @@ pub fn app_router(state: AppState) -> Router {
         .route("/health", get(|| async { "OK" }))
         .nest(&state.config.webservice.api_prefix, api_routes)
         .layer(metric_layer)
+        .layer(
+            TraceLayer::new_for_http()
+                .make_span_with(DefaultMakeSpan::new().level(Level::INFO))
+                .on_request(DefaultOnRequest::new().level(Level::INFO))
+                .on_response(DefaultOnResponse::new().level(Level::INFO)),
+        )
 }
 
 pub async fn start_webserver(

@@ -1,4 +1,4 @@
-import { Component, OnInit, HostListener } from '@angular/core';
+import { Component, OnInit, HostListener, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
@@ -18,6 +18,8 @@ import { APP_NAV_MENU_ITEMS } from '../../models/navigation';
   styleUrl: './workbench.component.scss'
 })
 export class WorkbenchComponent implements OnInit {
+  @ViewChild('messageInput') messageInput?: ElementRef<HTMLTextAreaElement>;
+
   threads: Thread[] = [];
   activeThread: Thread | null = null;
   activeThreadMessages: Message[] = [];
@@ -238,22 +240,55 @@ export class WorkbenchComponent implements OnInit {
       return;
     }
 
-    const content = this.newMessageContent;
+    const content = this.newMessageContent.trim();
+    const threadId = this.activeThread.id;
     this.newMessageContent = '';
     this.isProcessing = true;
 
-    this.apiService.createMessage(this.activeThread.id, 'user', content).subscribe({
-      next: (message) => {
-        this.activeThreadMessages.push(message);
-        this.isProcessing = false;
-        // Also reload files as the LLM might have modified them
-        this.loadThreadFiles();
+    // Immediately show the user's message in the conversation thread
+    const tempUserMessage: Message = {
+      id: 'temp-' + Date.now(),
+      thread_id: threadId,
+      role: 'user',
+      content: content,
+      created_at: new Date().toISOString()
+    };
+    this.activeThreadMessages.push(tempUserMessage);
+
+    this.apiService.createMessage(threadId, 'user', content).subscribe({
+      next: () => {
+        this.apiService.getMessages(threadId).subscribe({
+          next: (messages) => {
+            if (this.activeThread && this.activeThread.id === threadId) {
+              this.activeThreadMessages = messages;
+            }
+            this.isProcessing = false;
+            this.loadThreadFiles();
+            this.focusMessageInput();
+          },
+          error: (err) => {
+            console.error('Failed to reload thread messages', err);
+            this.isProcessing = false;
+            this.loadThreadFiles();
+            this.focusMessageInput();
+          }
+        });
       },
       error: (err) => {
         console.error('Failed to send message', err);
         this.isProcessing = false;
+        this.focusMessageInput();
       }
     });
+  }
+
+  focusMessageInput(): void {
+    requestAnimationFrame(() => {
+      this.messageInput?.nativeElement?.focus();
+    });
+    setTimeout(() => {
+      this.messageInput?.nativeElement?.focus();
+    }, 50);
   }
 
   startEditingTitle(): void {

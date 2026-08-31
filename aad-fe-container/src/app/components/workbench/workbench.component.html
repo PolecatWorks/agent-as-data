@@ -200,10 +200,11 @@
         <!-- Input Area -->
         <div class="p-4 border-t border-slate-100 bg-white shrink-0">
           <div class="relative flex items-end shadow-sm border border-slate-200 rounded-xl bg-slate-50 focus-within:ring-2 focus-within:ring-indigo-500/20 focus-within:border-indigo-500 focus-within:bg-white transition-all" [ngClass]="{'opacity-50 cursor-not-allowed': isProcessing}">
-            <textarea class="flex-1 px-4 py-3 bg-transparent border-none text-sm focus:outline-none focus:ring-0 resize-none min-h-[44px]"
+            <textarea #messageInput class="flex-1 px-4 py-3 bg-transparent border-none text-sm focus:outline-none focus:ring-0 resize-none min-h-[44px]"
                       rows="1" [placeholder]="isProcessing ? 'Waiting for agent...' : 'Type a message...'"
                       [(ngModel)]="newMessageContent"
-                      [disabled]="!activeThread || isProcessing"
+                      [disabled]="!activeThread"
+                      [readonly]="isProcessing"
                       (keydown.enter)="$event.preventDefault(); sendMessage()">
             </textarea>
             <button mat-icon-button color="primary" class="m-1 shrink-0"
