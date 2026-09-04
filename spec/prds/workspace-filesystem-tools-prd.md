@@ -5,10 +5,11 @@ This document defines the requirements and architectural standards for workspace
 
 ## Objectives
 1. **Thread Isolation**: Each thread must maintain an isolated filesystem directory located at `/tmp/workspace/<thread_id>`.
-2. **Standardized Rig Tool Implementations**: Expose safe workspace filesystem tools (`read_file`, `write_file`, `replace_in_file`, `list_files`, `delete_file`, `rename_file`) implemented in accordance with Rig's `Tool` trait architecture and JSON schema definitions.
-3. **Autonomous Multi-Turn Execution**: Leverage Rig's `AgentBuilder` multi-turn agent loop (`.tool(...)`, `.max_turns(...)`) so the model autonomously selects tools, executes functions, receives structured outputs or errors, self-corrects, and formulates final user responses.
-4. **Self-Correcting Error Recovery**: Format all tool execution errors as informative, instructive feedback for the LLM rather than failing the prompt.
-5. **Path Traversal Security**: Strictly enforce workspace containment to prevent any access outside `/tmp/workspace/<thread_id>`.
+2. **Conversational History & Thread Continuity**: Every message sent to an agent within a thread must provide the agent with the chronological conversational history of that thread. The agent must respond directly to the ongoing thread of conversation, interpreting and addressing the latest question in the context of prior messages, instructions, and tool outputs.
+3. **Standardized Rig Tool Implementations**: Expose safe workspace filesystem tools (`read_file`, `write_file`, `replace_in_file`, `list_files`, `delete_file`, `rename_file`) implemented in accordance with Rig's `Tool` trait architecture and JSON schema definitions.
+4. **Autonomous Multi-Turn Execution**: Leverage Rig's `AgentBuilder` multi-turn agent loop (`.tool(...)`, `.max_turns(...)`) so the model autonomously selects tools, executes functions, receives structured outputs or errors, self-corrects, and formulates final user responses.
+5. **Self-Correcting Error Recovery**: Format all tool execution errors as informative, instructive feedback for the LLM rather than failing the prompt.
+6. **Path Traversal Security**: Strictly enforce workspace containment to prevent any access outside `/tmp/workspace/<thread_id>`.
 
 ---
 
@@ -19,15 +20,18 @@ sequenceDiagram
     autonumber
     actor User as Workbench UI / Developer
     participant BE as AAD Webserver (threads.rs)
+    participant DB as PostgreSQL (messages table)
     participant RigAgent as Rig Agent Loop (AgentBuilder)
     participant LLM as Ollama / Model Provider
     participant Tools as Rig Workspace Tools (Tool Trait)
     participant FS as Local Workspace (/tmp/workspace/thread_id)
 
     User->>BE: POST /api/v1/threads/{id}/messages (user message)
-    BE->>BE: Insert user message into DB
-    BE->>RigAgent: agent.prompt(user_content)
-    RigAgent->>LLM: Dispatches Prompt + Tool Schemas (JSON Schema)
+    BE->>DB: Insert user message into DB
+    BE->>DB: Query previous thread messages (ORDER BY created_at ASC)
+    DB-->>BE: Return conversation history
+    BE->>RigAgent: Build agent with history context & dispatch prompt(user_content)
+    RigAgent->>LLM: Dispatches Preamble + Full Conversational History + Tool Schemas
     
     loop Multi-Turn Tool Execution Loop (up to max_turns)
         LLM-->>RigAgent: Tool Call Request (e.g. list_files, read_file)
@@ -38,9 +42,9 @@ sequenceDiagram
         RigAgent->>LLM: Tool Result Feedback
     end
 
-    LLM-->>RigAgent: Final Response Text
+    LLM-->>RigAgent: Final Response Text answering the thread of conversation
     RigAgent-->>BE: Returns Assistant Message
-    BE->>BE: Insert assistant message into DB
+    BE->>DB: Insert assistant message into DB
     BE-->>User: 201 Created (User Message) & Real-time Assistant Update
 ```
 
@@ -70,28 +74,29 @@ All workspace tools must implement Rig's `rig_core::tool::Tool` trait with typed
 
 ```mermaid
 flowchart TD
-    A[Incoming User Thread Message] --> B[Initialize Ollama / LLM Client]
-    B --> C[Scaffold Rig Agent with Preamble]
-    C --> D[Attach Workspace Tools via .tool]
-    D --> E[Configure Turn Budget via .max_turns]
-    E --> F[Execute agent.prompt]
-    F --> G{Model Requests Tool?}
-    G -->|Yes| H[Execute Tool Function]
-    H --> I{Execution Success?}
-    I -->|Success| J[Feed Serialized Output to Model]
-    I -->|Failure / Invalid Input| K[Feed Instructive Error Message to Model for Self-Correction]
-    J --> F
-    K --> F
-    G -->|No / Complete| L[Persist Assistant Message to Database]
-    L --> M[Refresh Workbench UI State]
+    A[Incoming User Thread Message] --> B[Fetch Prior Thread Message History]
+    B --> C[Initialize Ollama / LLM Client]
+    C --> D[Scaffold Rig Agent with Preamble]
+    D --> E[Attach Workspace Tools via .tool]
+    E --> F[Configure Turn Budget via .max_turns]
+    F --> G[Dispatch Multi-Turn Prompt with Conversation History]
+    G --> H{Model Requests Tool?}
+    H -->|Yes| I[Execute Tool Function]
+    I --> J{Execution Success?}
+    J -->|Success| K[Feed Serialized Output to Model]
+    J -->|Failure / Invalid Input| L[Feed Instructive Error Message to Model for Self-Correction]
+    K --> G
+    L --> G
+    H -->|No / Complete| M[Persist Assistant Message to Database]
+    M --> N[Refresh Workbench UI State]
 ```
 
-#### Best Practices for Rig Tool Attachment:
+#### Best Practices for Rig Tool Attachment & Prompting:
 1. **`AgentBuilder` Attachment**:
    ```rust
    let agent = client
        .agent(&config.llm.model)
-       .preamble("You are a workspace assistant operating within an isolated directory.")
+       .preamble("You are a workspace assistant operating within an isolated developer workspace directory.")
        .tool(ListFilesTool { thread_id })
        .tool(ReadFileTool { thread_id })
        .tool(WriteFileTool { thread_id })
@@ -101,8 +106,16 @@ flowchart TD
        .max_turns(5)
        .build();
    ```
-2. **Turn Budgeting**: Always configure `.max_turns(5)` (or higher) to give the model headroom to call multiple tools sequentially and self-correct when necessary.
-3. **Instructive Error Feedback**: When a tool fails (e.g. file does not exist), return clear contextual guidance (e.g. `File 'notes.txt' not found. Available workspace files are: ['todo.md', 'draft.txt']`) so the model can adjust arguments on the next turn.
+2. **Multi-Turn Conversational Context & Thread Interpretation**:
+   - For every incoming user message, retrieve previous thread messages (`ORDER BY created_at ASC`) from the database.
+   - Format complete conversational history (`User: <msg>`, `Assistant: <msg>`) into the prompt context so the agent maintains thread continuity.
+   - The agent must interpret and respond to the specific thread of conversation, answering questions, addressing instructions, and adapting its actions based on the cumulative context rather than treating each prompt as an isolated query.
+3. **Turn Budgeting & Adaptive Timeout**:
+   - Configure `.max_turns(5)` (or higher) to give the model headroom to call multiple tools sequentially.
+   - Configure execution timeouts respecting `config.llm.timeout_secs` without artificial clamps that prematurely abort live model inference.
+4. **Instructive Error Feedback & Dynamic Fallback**:
+   - When a tool fails (e.g. file does not exist), return clear contextual guidance (e.g. `File 'notes.txt' not found. Available workspace files are: ['todo.md', 'draft.txt']`) so the model can adjust arguments on the next turn.
+   - If the LLM service is temporarily offline, fallback processing must dynamically interpret the specific user question and workspace state rather than echoing static strings.
 
 ### 4. Advanced Tool Capabilities (Roadmap)
 - **Tool-RAG (`ToolEmbedding`)**: For agents with large tool catalogs (e.g. tools, skills, database queries), implement `ToolEmbedding` to retrieve only the top `N` relevant tools via vector similarity (`.dynamic_tools(n, index, toolset)`).

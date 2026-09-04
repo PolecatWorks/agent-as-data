@@ -143,7 +143,12 @@ pub async fn list_messages(
     Ok(Json(messages))
 }
 
-async fn process_thread_message(state: &AppState, thread_id: Uuid, user_content: &str) -> String {
+async fn process_thread_message(
+    state: &AppState,
+    thread_id: Uuid,
+    user_content: &str,
+    history: &[Message],
+) -> String {
     let workspace_root = crate::webserver::fs::get_workspace_root(thread_id);
     let mut files = Vec::new();
     if let Ok(entries) = std::fs::read_dir(&workspace_root) {
@@ -162,11 +167,20 @@ async fn process_thread_message(state: &AppState, thread_id: Uuid, user_content:
     };
 
     let system_prompt = format!(
-        "You are an AI assistant in an isolated developer workspace (thread {}). {}\nYou have filesystem tools available (list_files, read_file, write_file, replace_in_file, rename_file, delete_file).",
+        "You are an AI assistant collaborating with a developer in an isolated workspace (thread {}).\n{}\nYou have filesystem tools available (list_files, read_file, write_file, replace_in_file, rename_file, delete_file).\nPlease interpret questions and instructions in the context of the ongoing conversation, and respond helpfully.",
         thread_id, files_summary
     );
 
-    let full_prompt = format!("System: {}\nUser: {}", system_prompt, user_content);
+    let mut conversation_context = String::new();
+    if !history.is_empty() {
+        conversation_context.push_str("\n\nConversation History:\n");
+        for msg in history {
+            let role_label = if msg.role == "user" { "User" } else { "Assistant" };
+            conversation_context.push_str(&format!("{}: {}\n", role_label, msg.content));
+        }
+    }
+
+    let full_prompt = format!("System: {}{}\n\nCurrent Request:\nUser: {}", system_prompt, conversation_context, user_content);
     tracing::info!(
         "LLM Prompt dispatched [Thread: {} | Model: {} | Endpoint: {}]:\n--- FULL PROMPT START ---\n{}\n--- FULL PROMPT END ---",
         thread_id, state.config.llm.model, state.config.llm.ollama_url, full_prompt
@@ -192,7 +206,7 @@ async fn process_thread_message(state: &AppState, thread_id: Uuid, user_content:
             .tool(portable_tool_definition(&crate::llm_tools::RenameFileTool { thread_id }))
             .build();
 
-        let timeout_secs = std::cmp::min(state.config.llm.timeout_secs, 5);
+        let timeout_secs = state.config.llm.timeout_secs;
         let timeout_duration = std::time::Duration::from_secs(timeout_secs);
         match tokio::time::timeout(timeout_duration, model.completion(req)).await {
             Ok(Ok(response)) => {
@@ -250,6 +264,16 @@ pub async fn create_message(
     Json(payload): Json<CreateMessageRequest>,
 ) -> Result<(StatusCode, Json<Message>), (StatusCode, String)> {
     tracing::info!("Creating message in thread {} (role: {})", thread_id, payload.role);
+
+    // Retrieve previous conversation history before storing new message
+    let prior_messages = sqlx::query_as::<_, Message>(
+        "SELECT * FROM messages WHERE thread_id = $1 ORDER BY created_at ASC"
+    )
+    .bind(thread_id)
+    .fetch_all(&state.pool)
+    .await
+    .unwrap_or_default();
+
     let message = sqlx::query_as::<_, Message>(
         "INSERT INTO messages (thread_id, role, content) VALUES ($1, $2, $3) RETURNING *"
     )
@@ -261,7 +285,7 @@ pub async fn create_message(
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to create message: {}", e)))?;
 
     if payload.role == "user" {
-        let assistant_reply = process_thread_message(&state, thread_id, &payload.content).await;
+        let assistant_reply = process_thread_message(&state, thread_id, &payload.content, &prior_messages).await;
         tracing::info!("Agent response generated for thread {}: {}", thread_id, assistant_reply);
 
         let _ = sqlx::query(
