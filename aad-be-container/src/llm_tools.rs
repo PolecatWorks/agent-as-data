@@ -442,6 +442,54 @@ impl PortableTool for RenameFileTool {
     }
 }
 
+pub async fn execute_workspace_tool(thread_id: Uuid, tool_name: &str, args_json: &serde_json::Value) -> Result<String, String> {
+    match tool_name {
+        ReadFileTool::NAME => {
+            let args: ReadFileArgs = serde_json::from_value(args_json.clone())
+                .map_err(|e| format!("Invalid arguments for {}: {}", tool_name, e))?;
+            let tool = ReadFileTool { thread_id };
+            let res = tool.call(args).await.map_err(|e| e.to_string())?;
+            serde_json::to_string(&res).map_err(|e| e.to_string())
+        }
+        WriteFileTool::NAME => {
+            let args: WriteFileArgs = serde_json::from_value(args_json.clone())
+                .map_err(|e| format!("Invalid arguments for {}: {}", tool_name, e))?;
+            let tool = WriteFileTool { thread_id };
+            let res = tool.call(args).await.map_err(|e| e.to_string())?;
+            serde_json::to_string(&res).map_err(|e| e.to_string())
+        }
+        ReplaceInFileTool::NAME => {
+            let args: ReplaceInFileArgs = serde_json::from_value(args_json.clone())
+                .map_err(|e| format!("Invalid arguments for {}: {}", tool_name, e))?;
+            let tool = ReplaceInFileTool { thread_id };
+            let res = tool.call(args).await.map_err(|e| e.to_string())?;
+            serde_json::to_string(&res).map_err(|e| e.to_string())
+        }
+        ListFilesTool::NAME => {
+            let args: ListFilesArgs = serde_json::from_value(args_json.clone())
+                .unwrap_or(ListFilesArgs { dir_path: None });
+            let tool = ListFilesTool { thread_id };
+            let res = tool.call(args).await.map_err(|e| e.to_string())?;
+            serde_json::to_string(&res).map_err(|e| e.to_string())
+        }
+        DeleteFileTool::NAME => {
+            let args: DeleteFileArgs = serde_json::from_value(args_json.clone())
+                .map_err(|e| format!("Invalid arguments for {}: {}", tool_name, e))?;
+            let tool = DeleteFileTool { thread_id };
+            let res = tool.call(args).await.map_err(|e| e.to_string())?;
+            serde_json::to_string(&res).map_err(|e| e.to_string())
+        }
+        RenameFileTool::NAME => {
+            let args: RenameFileArgs = serde_json::from_value(args_json.clone())
+                .map_err(|e| format!("Invalid arguments for {}: {}", tool_name, e))?;
+            let tool = RenameFileTool { thread_id };
+            let res = tool.call(args).await.map_err(|e| e.to_string())?;
+            serde_json::to_string(&res).map_err(|e| e.to_string())
+        }
+        _ => Err(format!("Unknown workspace tool: {}", tool_name)),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -554,6 +602,41 @@ mod tests {
             })
             .await;
         assert!(read_res.is_err());
+
+        let _ = std::fs::remove_dir_all(&workspace_root);
+    }
+
+    #[tokio::test]
+    async fn test_execute_workspace_tool_dispatch() {
+        let thread_id = Uuid::new_v4();
+        let workspace_root = get_workspace_root(thread_id);
+        let _ = std::fs::remove_dir_all(&workspace_root);
+
+        // 1. Dispatch write_file
+        let write_args = json!({
+            "filepath": "sample.txt",
+            "content": "Hello via dispatcher!"
+        });
+        let write_out = execute_workspace_tool(thread_id, "write_file", &write_args).await;
+        assert!(write_out.is_ok());
+
+        // 2. Dispatch list_files
+        let list_args = json!({});
+        let list_out = execute_workspace_tool(thread_id, "list_files", &list_args).await;
+        assert!(list_out.is_ok());
+        assert!(list_out.unwrap().contains("sample.txt"));
+
+        // 3. Dispatch read_file
+        let read_args = json!({
+            "filepath": "sample.txt"
+        });
+        let read_out = execute_workspace_tool(thread_id, "read_file", &read_args).await;
+        assert!(read_out.is_ok());
+        assert!(read_out.unwrap().contains("Hello via dispatcher!"));
+
+        // 4. Dispatch unknown tool
+        let unknown_out = execute_workspace_tool(thread_id, "nonexistent_tool", &json!({})).await;
+        assert!(unknown_out.is_err());
 
         let _ = std::fs::remove_dir_all(&workspace_root);
     }

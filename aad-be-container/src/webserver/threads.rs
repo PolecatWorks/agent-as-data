@@ -14,6 +14,8 @@ use crate::{
     },
     state::AppState,
 };
+use rig::client::AgentClientExt;
+use rig::completion::Prompt;
 
 pub fn router() -> Router<AppState> {
     Router::new()
@@ -171,57 +173,121 @@ async fn process_thread_message(
         thread_id, files_summary
     );
 
-    let mut conversation_context = String::new();
-    if !history.is_empty() {
-        conversation_context.push_str("\n\nConversation History:\n");
-        for msg in history {
-            let role_label = if msg.role == "user" { "User" } else { "Assistant" };
-            conversation_context.push_str(&format!("{}: {}\n", role_label, msg.content));
+    let mut rig_history = Vec::new();
+    for msg in history {
+        if msg.role == "user" {
+            rig_history.push(rig::completion::Message::user(&msg.content));
+        } else {
+            rig_history.push(rig::completion::Message::assistant(&msg.content));
         }
     }
 
-    let full_prompt = format!("System: {}{}\n\nCurrent Request:\nUser: {}", system_prompt, conversation_context, user_content);
     tracing::info!(
-        "LLM Prompt dispatched [Thread: {} | Model: {} | Endpoint: {}]:\n--- FULL PROMPT START ---\n{}\n--- FULL PROMPT END ---",
-        thread_id, state.config.llm.model, state.config.llm.ollama_url, full_prompt
+        "LLM Prompt dispatched [Thread: {} | Model: {} | Endpoint: {} | Prior turns: {}]:\n--- PREAMBLE ---\n{}\n--- CURRENT PROMPT ---\n{}",
+        thread_id, state.config.llm.model, state.config.llm.ollama_url, rig_history.len(), system_prompt, user_content
     );
 
-    let builder = rig_core::providers::ollama::Client::builder()
+    let client_builder = rig::providers::ollama::Client::builder()
         .base_url(&state.config.llm.ollama_url)
         .api_key(rig_core::client::Nothing);
 
-    let llm_res = if let Ok(client) = builder.build() {
-        use rig_core::client::CompletionClient;
-        use rig_core::completion::CompletionModel;
-        use rig_core::tool::portable_tool_definition;
-
-        let model = client.completion_model(&state.config.llm.model);
-        let req = model
-            .completion_request(&full_prompt)
-            .tool(portable_tool_definition(&crate::llm_tools::ReadFileTool { thread_id }))
-            .tool(portable_tool_definition(&crate::llm_tools::WriteFileTool { thread_id }))
-            .tool(portable_tool_definition(&crate::llm_tools::ReplaceInFileTool { thread_id }))
-            .tool(portable_tool_definition(&crate::llm_tools::ListFilesTool { thread_id }))
-            .tool(portable_tool_definition(&crate::llm_tools::DeleteFileTool { thread_id }))
-            .tool(portable_tool_definition(&crate::llm_tools::RenameFileTool { thread_id }))
+    let llm_res = if let Ok(client) = client_builder.build() {
+        let agent = client.agent(&state.config.llm.model)
+            .preamble(&system_prompt)
+            .tool(crate::llm_tools::ReadFileTool { thread_id })
+            .tool(crate::llm_tools::WriteFileTool { thread_id })
+            .tool(crate::llm_tools::ReplaceInFileTool { thread_id })
+            .tool(crate::llm_tools::ListFilesTool { thread_id })
+            .tool(crate::llm_tools::DeleteFileTool { thread_id })
+            .tool(crate::llm_tools::RenameFileTool { thread_id })
+            .default_max_turns(5)
             .build();
 
         let timeout_secs = state.config.llm.timeout_secs;
         let timeout_duration = std::time::Duration::from_secs(timeout_secs);
-        match tokio::time::timeout(timeout_duration, model.completion(req)).await {
+        let prompt_future = agent.prompt(user_content).history(rig_history.clone());
+
+        match tokio::time::timeout(timeout_duration, prompt_future).await {
             Ok(Ok(response)) => {
-                if let rig_core::completion::message::AssistantContent::Text(text) = &response.choice[0] {
-                    Some(text.text.clone())
+                // Check if the response contains a raw tool call emitted as text (common with open-weight models like Qwen)
+                let trimmed = response.trim();
+                let tool_call_json: Option<serde_json::Value> = if trimmed.starts_with('{') && trimmed.ends_with('}') {
+                    serde_json::from_str(trimmed).ok()
+                } else if let Some(start) = trimmed.find("```json") {
+                    let after = &trimmed[start + 7..];
+                    if let Some(end) = after.find("```") {
+                        serde_json::from_str(after[..end].trim()).ok()
+                    } else {
+                        None
+                    }
+                } else if let Some(start) = trimmed.find('{') {
+                    if let Some(end) = trimmed.rfind('}') {
+                        serde_json::from_str(&trimmed[start..=end]).ok()
+                    } else {
+                        None
+                    }
+                } else if let Some(start) = trimmed.find("<tool_call>") {
+                    if let Some(end) = trimmed.find("</tool_call>") {
+                        let json_slice = &trimmed[start + 11..end].trim();
+                        serde_json::from_str(json_slice).ok()
+                    } else {
+                        None
+                    }
                 } else {
                     None
+                };
+
+                if let Some(call_obj) = tool_call_json {
+                    if let Some(tool_name) = call_obj.get("name").and_then(|v| v.as_str()) {
+                        let default_args = serde_json::json!({});
+                        let args = call_obj.get("arguments").unwrap_or(&default_args);
+
+                        tracing::info!("Detected raw tool call for '{}' in agent output, executing against thread workspace {}", tool_name, thread_id);
+                        let tool_result = crate::llm_tools::execute_workspace_tool(thread_id, tool_name, args).await;
+
+                        match tool_result {
+                            Ok(output) => {
+                                tracing::info!("Tool '{}' executed successfully: {}", tool_name, output);
+                                // Append assistant tool call and tool result to conversation turns, then prompt agent for final answer
+                                let mut followup_history = rig_history;
+                                followup_history.push(rig::completion::Message::user(user_content));
+                                followup_history.push(rig::completion::Message::assistant(&response));
+                                followup_history.push(rig::completion::Message::user(&format!(
+                                    "Tool '{}' executed successfully with output: {}. Please provide a helpful response to the user based on this result.",
+                                    tool_name, output
+                                )));
+
+                                let second_prompt_future = agent.prompt("Summarize the result for the user.").history(followup_history);
+                                match tokio::time::timeout(timeout_duration, second_prompt_future).await {
+                                    Ok(Ok(final_answer)) => Some(final_answer),
+                                    Ok(Err(e)) => {
+                                        tracing::warn!("Agent follow-up after tool execution failed: {}", e);
+                                        Some(format!("Executed `{}`:\n```json\n{}\n```", tool_name, output))
+                                    }
+                                    Err(_) => {
+                                        tracing::warn!("Agent follow-up after tool execution timed out");
+                                        Some(format!("Executed `{}`:\n```json\n{}\n```", tool_name, output))
+                                    }
+                                }
+                            }
+                            Err(err_msg) => {
+                                tracing::warn!("Tool '{}' execution failed: {}", tool_name, err_msg);
+                                Some(format!("Attempted to execute tool `{}` but encountered an error: {}", tool_name, err_msg))
+                            }
+                        }
+                    } else {
+                        Some(response)
+                    }
+                } else {
+                    Some(response)
                 }
             }
             Ok(Err(e)) => {
-                tracing::warn!("Ollama completion failed: {}", e);
+                tracing::warn!("Rig Agent execution failed: {}", e);
                 None
             }
             Err(_) => {
-                tracing::warn!("Ollama completion timed out after {}s", timeout_secs);
+                tracing::warn!("Rig Agent execution timed out after {}s", timeout_secs);
                 None
             }
         }
