@@ -19,6 +19,7 @@ import { APP_NAV_MENU_ITEMS } from '../../models/navigation';
 })
 export class WorkbenchComponent implements OnInit {
   @ViewChild('messageInput') messageInput?: ElementRef<HTMLTextAreaElement>;
+  @ViewChild('messagesContainer') messagesContainer?: ElementRef<HTMLDivElement>;
 
   threads: Thread[] = [];
   activeThread: Thread | null = null;
@@ -150,7 +151,10 @@ export class WorkbenchComponent implements OnInit {
     this.activeThread = thread;
     this.activeThreadMessages = [];
     this.apiService.getMessages(thread.id).subscribe({
-      next: (messages) => this.activeThreadMessages = messages,
+      next: (messages) => {
+        this.activeThreadMessages = messages;
+        this.scrollToBottom();
+      },
       error: (err) => console.error('Failed to load messages', err)
     });
     this.loadThreadFiles();
@@ -254,6 +258,7 @@ export class WorkbenchComponent implements OnInit {
       created_at: new Date().toISOString()
     };
     this.activeThreadMessages.push(tempUserMessage);
+    this.scrollToBottom();
 
     this.apiService.createMessage(threadId, 'user', content).subscribe({
       next: () => {
@@ -264,12 +269,14 @@ export class WorkbenchComponent implements OnInit {
             }
             this.isProcessing = false;
             this.loadThreadFiles();
+            this.scrollToBottom();
             this.focusMessageInput();
           },
           error: (err) => {
             console.error('Failed to reload thread messages', err);
             this.isProcessing = false;
             this.loadThreadFiles();
+            this.scrollToBottom();
             this.focusMessageInput();
           }
         });
@@ -277,9 +284,23 @@ export class WorkbenchComponent implements OnInit {
       error: (err) => {
         console.error('Failed to send message', err);
         this.isProcessing = false;
+        this.scrollToBottom();
         this.focusMessageInput();
       }
     });
+  }
+
+  scrollToBottom(): void {
+    requestAnimationFrame(() => {
+      if (this.messagesContainer?.nativeElement) {
+        this.messagesContainer.nativeElement.scrollTop = this.messagesContainer.nativeElement.scrollHeight;
+      }
+    });
+    setTimeout(() => {
+      if (this.messagesContainer?.nativeElement) {
+        this.messagesContainer.nativeElement.scrollTop = this.messagesContainer.nativeElement.scrollHeight;
+      }
+    }, 50);
   }
 
   focusMessageInput(): void {
