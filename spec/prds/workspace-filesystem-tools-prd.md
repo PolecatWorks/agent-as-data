@@ -106,14 +106,19 @@ flowchart TD
        .max_turns(5)
        .build();
    ```
-2. **Multi-Turn Conversational Context & Thread Interpretation**:
+2. **Multi-Turn Conversational History & Rig `with_history` Pattern**:
    - For every incoming user message, retrieve previous thread messages (`ORDER BY created_at ASC`) from the database.
-   - Format complete conversational history (`User: <msg>`, `Assistant: <msg>`) into the prompt context so the agent maintains thread continuity.
-   - The agent must interpret and respond to the specific thread of conversation, answering questions, addressing instructions, and adapting its actions based on the cumulative context rather than treating each prompt as an isolated query.
-3. **Turn Budgeting & Adaptive Timeout**:
+   - Construct structured `rig::completion::Message` turns (`Message::user(...)`, `Message::assistant(...)`).
+   - Dispatch the conversational turn using Rig's first-class `agent.prompt(user_content).with_history(history).await?` pattern rather than packing unstructured string transcripts into a single completion prompt.
+   - The agent must interpret and respond to the specific thread of conversation, answering questions, addressing instructions, and adapting its actions based on cumulative context.
+3. **Autonomous Tool Execution Loop via Rig `Agent`**:
+   - The agent must be constructed via Rig's `AgentBuilder` (`client.agent(model).preamble(...).tool(...).build()`).
+   - The agent must autonomously execute the tool call loop: when the LLM outputs a tool call (e.g. `list_files`, `read_file`), Rig automatically invokes the tool, captures the output, appends the tool result to the prompt context, and prompts the model again until the model returns a final textual answer to the user. Raw JSON tool-call representations must never be sent to the user as final assistant messages.
+   - **Model Output Normalization**: When open-weight models (e.g. Qwen2.5-Coder via Ollama) emit tool invocations formatted as JSON or XML tags (e.g. `{"name": "list_files", "arguments": {...}}`) in the assistant message content rather than through native provider tool call envelopes, the execution pipeline must normalize and detect this payload, execute the corresponding tool against the workspace, append the tool result to the conversation context, and prompt the model for the final human-readable response.
+4. **Turn Budgeting & Adaptive Timeout**:
    - Configure `.max_turns(5)` (or higher) to give the model headroom to call multiple tools sequentially.
    - Configure execution timeouts respecting `config.llm.timeout_secs` without artificial clamps that prematurely abort live model inference.
-4. **Instructive Error Feedback & Dynamic Fallback**:
+5. **Instructive Error Feedback & Dynamic Fallback**:
    - When a tool fails (e.g. file does not exist), return clear contextual guidance (e.g. `File 'notes.txt' not found. Available workspace files are: ['todo.md', 'draft.txt']`) so the model can adjust arguments on the next turn.
    - If the LLM service is temporarily offline, fallback processing must dynamically interpret the specific user question and workspace state rather than echoing static strings.
 

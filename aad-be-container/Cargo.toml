@@ -32,6 +32,7 @@ hams = { git = "https://github.com/PolecatWorks/hams.git" }
 sqlx = { version = "0.8", features = ["postgres", "runtime-tokio-rustls", "chrono", "uuid"] }
 uuid = { version = "1.11", features = ["serde", "v4"] }
 rig-core = "0.42.0"
+rig = { version = "0.42.0", features = ["agent"] }
 
 [dev-dependencies]
 tower = { version = "0.5", features = ["util"] }
