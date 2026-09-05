@@ -1,15 +1,15 @@
 # Workspace Filesystem Tools & Agent Tool Execution PRD
 
 ## Overview
-This document defines the requirements and architectural standards for workspace filesystem tools and agent tool execution within **Agent-As-Data (AAD)**. When a multiuser conversational thread is created in the Workbench, it establishes a dedicated, isolated workspace directory (`/tmp/workspace/<thread_id>`). This PRD formalizes how native Rust tools and external MCP tools are defined, bound to Rig agents via the `Tool` trait and `AgentBuilder`, and executed in an autonomous multi-turn loop.
+This document defines the requirements and architectural standards for workspace filesystem tools and agent tool execution within **Agent-As-Data (AAD)**. Workspace files are scoped and isolated at the **Bench** level (`/tmp/workspace/benches/<bench_id>`), allowing all threads in that bench to share and manipulate the same file tree. This PRD formalizes how native Rust tools and external MCP tools are defined, bound to Rig agents via the `Tool` trait and `AgentBuilder`, and executed in an autonomous multi-turn loop.
 
 ## Objectives
-1. **Thread Isolation**: Each thread must maintain an isolated filesystem directory located at `/tmp/workspace/<thread_id>`.
+1. **Bench Workspace Scoping**: Filesystem directories are isolated per Bench at `/tmp/workspace/benches/<bench_id>`, providing a shared workspace for all threads operating within that bench.
 2. **Conversational History & Thread Continuity**: Every message sent to an agent within a thread must provide the agent with the chronological conversational history of that thread. The agent must respond directly to the ongoing thread of conversation, interpreting and addressing the latest question in the context of prior messages, instructions, and tool outputs.
 3. **Standardized Rig Tool Implementations**: Expose safe workspace filesystem tools (`read_file`, `write_file`, `replace_in_file`, `list_files`, `delete_file`, `rename_file`) implemented in accordance with Rig's `Tool` trait architecture and JSON schema definitions.
 4. **Autonomous Multi-Turn Execution**: Leverage Rig's `AgentBuilder` multi-turn agent loop (`.tool(...)`, `.max_turns(...)`) so the model autonomously selects tools, executes functions, receives structured outputs or errors, self-corrects, and formulates final user responses.
 5. **Self-Correcting Error Recovery**: Format all tool execution errors as informative, instructive feedback for the LLM rather than failing the prompt.
-6. **Path Traversal Security**: Strictly enforce workspace containment to prevent any access outside `/tmp/workspace/<thread_id>`.
+6. **Path Traversal Security**: Strictly enforce workspace containment to prevent any access outside `/tmp/workspace/benches/<bench_id>`.
 
 ---
 
