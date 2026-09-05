@@ -61,7 +61,7 @@ Test Bench Memory Lifecycle and Retrieval
     ${u_content}=    Get From Dictionary    ${user_msg}    content
     Should Be Equal    ${u_content}    What is the primary architectural decision for the database in our memory?
 
-    ${all_msgs}=    Get Thread Messages    ${thread_id}
+    ${all_msgs}=    Wait For Assistant Message    ${thread_id}    timeout=180
     ${msg_count}=    Get Length    ${all_msgs}
     Should Be True    ${msg_count} >= 2
     ${last_msg}=    Get From List    ${all_msgs}    -1

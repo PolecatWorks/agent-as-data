@@ -1,6 +1,6 @@
 # Spec 16: Workbench Persistent Action Tracking & Distributed Cancellation Backend
 
-**Status**: `draft`
+**Status**: `complete`
 
 ## Overview & Scope
 This specification defines the backend domain models, database schema migrations, and REST APIs for **Persistent Action Tracking** and **Distributed Pre-Tool Cancellation** within **Agent-As-Data (AAD)** (`aad-be-container`).
