@@ -305,8 +305,20 @@
           <ng-container *ngIf="activeThreadMessages.length > 0">
             <div *ngFor="let msg of activeThreadMessages"
                  class="flex"
-                 [ngClass]="{'justify-end': msg.role === 'user', 'justify-start': msg.role !== 'user'}">
-              <div class="p-3 rounded-2xl max-w-[85%] text-sm shadow-sm whitespace-pre-wrap"
+                 [ngClass]="{
+                   'justify-center my-1': msg.role === 'system',
+                   'justify-end': msg.role === 'user',
+                   'justify-start': msg.role !== 'user' && msg.role !== 'system'
+                 }">
+              <!-- System / Cancellation Notice -->
+              <div *ngIf="msg.role === 'system'"
+                   class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100 text-slate-500 text-xs font-medium border border-slate-200 shadow-sm">
+                <mat-icon class="!w-3.5 !h-3.5 !text-sm text-slate-400">info</mat-icon>
+                <span>{{ msg.content }}</span>
+              </div>
+              <!-- Standard Message -->
+              <div *ngIf="msg.role !== 'system'"
+                   class="p-3 rounded-2xl max-w-[85%] text-sm shadow-sm whitespace-pre-wrap"
                    [ngClass]="{
                      'bg-indigo-600 text-white rounded-br-sm': msg.role === 'user',
                      'bg-slate-100 text-slate-800 rounded-bl-sm border border-slate-200': msg.role !== 'user'
@@ -316,15 +328,27 @@
             </div>
           </ng-container>
 
-          <div *ngIf="isProcessing" class="flex justify-start">
-            <div class="p-3 rounded-2xl max-w-[85%] text-sm shadow-sm bg-slate-100 text-slate-800 rounded-bl-sm border border-slate-200 flex items-center gap-2">
-              <div class="flex space-x-1">
-                <div class="w-2 h-2 bg-slate-400 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
-                <div class="w-2 h-2 bg-slate-400 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
-                <div class="w-2 h-2 bg-slate-400 rounded-full animate-bounce"></div>
+          <!-- In-Progress Phase Banner & Cancel Action -->
+          <div *ngIf="isProcessing" class="flex items-center justify-between p-3 rounded-xl bg-gradient-to-r from-indigo-50/80 via-slate-50 to-amber-50/50 border border-indigo-100/80 shadow-sm">
+            <div class="flex items-center gap-2.5 min-w-0">
+              <div class="flex space-x-1 shrink-0">
+                <div class="w-2 h-2 bg-indigo-500 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+                <div class="w-2 h-2 bg-indigo-500 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+                <div class="w-2 h-2 bg-indigo-500 rounded-full animate-bounce"></div>
               </div>
-              <span class="text-xs text-slate-500 font-medium">Agent is thinking...</span>
+              <span class="text-xs text-slate-700 font-medium truncate">
+                <ng-container *ngIf="activeRun?.current_phase === 'executing_tool'">
+                  Executing tool: <code class="px-1 py-0.5 bg-slate-200/80 rounded text-indigo-700 font-mono text-[11px]">{{ activeRun?.active_tool_name || 'tool' }}</code>...
+                </ng-container>
+                <ng-container *ngIf="activeRun?.current_phase !== 'executing_tool'">
+                  Assistant is thinking...
+                </ng-container>
+              </span>
             </div>
+            <button mat-stroked-button color="warn" (click)="cancelCurrentAction()" class="!text-xs !h-7 !px-2.5 shrink-0 ml-2 !border-red-200 hover:!bg-red-50 text-red-600 font-medium flex items-center">
+              <mat-icon class="!w-3.5 !h-3.5 !text-sm mr-1">stop_circle</mat-icon>
+              Cancel Action
+            </button>
           </div>
 
           <div *ngIf="activeThread && activeThreadMessages.length === 0 && !isProcessing" class="flex flex-col items-center justify-center h-full text-slate-400">

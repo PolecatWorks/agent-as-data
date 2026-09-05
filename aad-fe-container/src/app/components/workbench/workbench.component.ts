@@ -1,4 +1,4 @@
-import { Component, OnInit, HostListener, ViewChild, ElementRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, HostListener, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
@@ -7,7 +7,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { RouterModule, ActivatedRoute, Router } from '@angular/router';
-import { ApiService, Bench, Thread, Message } from '../../services/api.service';
+import { ApiService, Bench, Thread, Message, ThreadRun } from '../../services/api.service';
 import { APP_NAV_MENU_ITEMS } from '../../models/navigation';
 
 @Component({
@@ -17,7 +17,7 @@ import { APP_NAV_MENU_ITEMS } from '../../models/navigation';
   templateUrl: './workbench.component.html',
   styleUrl: './workbench.component.scss'
 })
-export class WorkbenchComponent implements OnInit {
+export class WorkbenchComponent implements OnInit, OnDestroy {
   @ViewChild('messageInput') messageInput?: ElementRef<HTMLTextAreaElement>;
   @ViewChild('messagesContainer') messagesContainer?: ElementRef<HTMLDivElement>;
 
@@ -36,6 +36,8 @@ export class WorkbenchComponent implements OnInit {
   newMessageContent = '';
   searchQuery: string = '';
   isProcessing: boolean = false;
+  activeRun: ThreadRun | null = null;
+  private pollIntervalId: any = null;
 
   isConfirmingDeleteThreadId: string | null = null;
   editingThreadId: string | null = null;
@@ -67,6 +69,10 @@ export class WorkbenchComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadBenches();
+  }
+
+  ngOnDestroy(): void {
+    this.stopRunPolling();
   }
 
   toggleSidebar(): void {
@@ -288,6 +294,7 @@ export class WorkbenchComponent implements OnInit {
   }
 
   loadThreadContent(thread: Thread): void {
+    this.stopRunPolling();
     this.activeThread = thread;
     this.activeThreadMessages = [];
     this.apiService.getMessages(thread.id).subscribe({
@@ -299,7 +306,99 @@ export class WorkbenchComponent implements OnInit {
       error: (err) => console.error('Failed to load messages', err)
     });
     this.loadBenchFiles();
+    this.checkActiveRun(thread.id);
     this.focusMessageInput();
+  }
+
+  checkActiveRun(threadId: string): void {
+    this.apiService.getActiveThreadRun(threadId).subscribe({
+      next: (run) => {
+        if (run && (run.status === 'running' || run.status === 'pending' || run.status === 'cancelling')) {
+          this.activeRun = run;
+          this.isProcessing = true;
+          this.startRunPolling(threadId);
+        } else {
+          this.activeRun = null;
+          this.isProcessing = false;
+        }
+      },
+      error: (err) => {
+        console.error('Failed to query active thread run', err);
+        this.activeRun = null;
+        this.isProcessing = false;
+      }
+    });
+  }
+
+  startRunPolling(threadId: string): void {
+    this.stopRunPolling();
+    this.pollIntervalId = setInterval(() => {
+      if (!this.activeThread || this.activeThread.id !== threadId) {
+        this.stopRunPolling();
+        return;
+      }
+      this.apiService.getActiveThreadRun(threadId).subscribe({
+        next: (run) => {
+          if (!run || run.status === 'completed' || run.status === 'cancelled' || run.status === 'failed') {
+            this.stopRunPolling();
+            this.activeRun = null;
+            this.isProcessing = false;
+            this.apiService.getMessages(threadId).subscribe({
+              next: (messages) => {
+                this.activeThreadMessages = messages;
+                this.scrollToBottom();
+                this.loadBenchFiles();
+                this.focusMessageInput();
+              },
+              error: (err) => console.error('Failed to refresh messages after run completion', err)
+            });
+          } else {
+            this.activeRun = run;
+            this.isProcessing = true;
+          }
+        },
+        error: (err) => {
+          console.error('Error polling active run', err);
+          this.stopRunPolling();
+          this.activeRun = null;
+          this.isProcessing = false;
+        }
+      });
+    }, 1500);
+  }
+
+  stopRunPolling(): void {
+    if (this.pollIntervalId) {
+      clearInterval(this.pollIntervalId);
+      this.pollIntervalId = null;
+    }
+  }
+
+  cancelCurrentAction(): void {
+    if (!this.activeThread) return;
+    const threadId = this.activeThread.id;
+    this.stopRunPolling();
+
+    this.apiService.cancelActiveThreadRun(threadId).subscribe({
+      next: () => {
+        this.isProcessing = false;
+        this.activeRun = null;
+        this.apiService.getMessages(threadId).subscribe({
+          next: (messages) => {
+            this.activeThreadMessages = messages;
+            this.scrollToBottom();
+            this.loadBenchFiles();
+            this.focusMessageInput();
+          },
+          error: (err) => console.error('Failed to refresh messages after cancellation', err)
+        });
+      },
+      error: (err) => {
+        console.error('Failed to cancel active run', err);
+        this.isProcessing = false;
+        this.activeRun = null;
+      }
+    });
   }
 
   startEditingThreadInline(thread: Thread, event: Event): void {
@@ -507,19 +606,7 @@ export class WorkbenchComponent implements OnInit {
 
     this.apiService.createMessage(threadId, 'user', content).subscribe({
       next: () => {
-        this.apiService.getMessages(threadId).subscribe({
-          next: (messages) => {
-            this.activeThreadMessages = messages;
-            this.isProcessing = false;
-            this.scrollToBottom();
-            this.loadBenchFiles();
-            this.focusMessageInput();
-          },
-          error: (err) => {
-            console.error('Failed to refresh messages after reply', err);
-            this.isProcessing = false;
-          }
-        });
+        this.startRunPolling(threadId);
       },
       error: (err) => {
         console.error('Failed to send message', err);

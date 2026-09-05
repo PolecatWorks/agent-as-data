@@ -118,6 +118,19 @@ export interface Message {
   role: string;
   content: string;
   created_at: string;
+  run_id?: string;
+}
+
+export interface ThreadRun {
+  id: string;
+  thread_id: string;
+  bench_id: string;
+  status: 'pending' | 'running' | 'cancelling' | 'cancelled' | 'completed' | 'failed';
+  current_phase: 'thinking' | 'executing_tool' | 'completed' | 'cancelled' | 'failed';
+  active_tool_name?: string | null;
+  error?: string | null;
+  created_at?: string;
+  updated_at?: string;
 }
 
 
@@ -385,6 +398,19 @@ export class ApiService {
       role,
       content
     });
+  }
+
+  // Thread Runs & Action Lifecycle APIs
+  getActiveThreadRun(threadId: string): Observable<ThreadRun | null> {
+    return this.http.get<ThreadRun | null>(`${this.baseUrl}/threads/${threadId}/runs/active`);
+  }
+
+  cancelActiveThreadRun(threadId: string): Observable<{ message: string; status: string }> {
+    return this.http.post<{ message: string; status: string }>(`${this.baseUrl}/threads/${threadId}/runs/active/cancel`, {});
+  }
+
+  getThreadRuns(threadId: string): Observable<ThreadRun[]> {
+    return this.http.get<ThreadRun[]>(`${this.baseUrl}/threads/${threadId}/runs`);
   }
 
   // Workbench Filesystem APIs (Scoped to Bench)

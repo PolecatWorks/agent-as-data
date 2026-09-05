@@ -60,7 +60,7 @@ flowchart TD
 
     subgraph Phase7 ["Phase 7: Action Lifecycle & Distributed Cancellation"]
         Spec16["16-workbench-persistent-action-tracking-and-cancellation-spec.md<br/>(Persistent Action Tracking & Pre-Tool Cancellation Backend)"]:::complete
-        Spec17["17-workbench-action-in-progress-reload-and-cancellation-ui-spec.md<br/>(In-Progress Reload State & Cancellation UI)"]:::draft
+        Spec17["17-workbench-action-in-progress-reload-and-cancellation-ui-spec.md<br/>(In-Progress Reload State & Cancellation UI)"]:::complete
     end
 
     classDef complete fill:#10B981,stroke:#047857,stroke-width:2px,color:#ffffff;
@@ -126,4 +126,4 @@ flowchart TD
 | **Phase 6** | [14-workbench-benches-and-threads-ui-navigation-spec.md](./14-workbench-benches-and-threads-ui-navigation-spec.md) | `complete` | Scoped Bench Switcher Dropdown, Inline Non-Modal Management, Offset Deletion Confirmation, Top Bar Breadcrumbs & Smart Routing | [Workbench Bench & Thread PRD](../prds/workbench-bench-thread-prd.md) | Step 2 of Phase 6 (Depends on Spec 13) |
 | **Phase 6** | [15-workbench-bench-working-memory-spec.md](./15-workbench-bench-working-memory-spec.md) | `complete` | Bench Working Memory Schema (`bench_memory`), UI Scratchpad Editor Tab, and Rig Memory Tools (`read_bench_memory`, `update_bench_memory`) | [Workbench Bench & Thread PRD](../prds/workbench-bench-thread-prd.md) | Step 3 of Phase 6 (Depends on Spec 13 & 14) |
 | **Phase 7** | [16-workbench-persistent-action-tracking-and-cancellation-spec.md](./16-workbench-persistent-action-tracking-and-cancellation-spec.md) | `complete` | Thread Runs Persistence Schema (`thread_runs`), Async Worker Dispatch (`202 Accepted`), Active Run Query, & Distributed Pre-Tool Cancellation | [Workbench Bench & Thread PRD](../prds/workbench-bench-thread-prd.md) | Step 1 of Phase 7 (Depends on Spec 13 & 15) |
-| **Phase 7** | [17-workbench-action-in-progress-reload-and-cancellation-ui-spec.md](./17-workbench-action-in-progress-reload-and-cancellation-ui-spec.md) | `draft` | Active Run Screen Reload State Restoration, Animated Phase Banner, Interactive Cancel Action, & System Badge Formatting | [Workbench Bench & Thread PRD](../prds/workbench-bench-thread-prd.md) | Step 2 of Phase 7 (Depends on Spec 14 & 16) |
+| **Phase 7** | [17-workbench-action-in-progress-reload-and-cancellation-ui-spec.md](./17-workbench-action-in-progress-reload-and-cancellation-ui-spec.md) | `complete` | Active Run Screen Reload State Restoration, Animated Phase Banner, Interactive Cancel Action, & System Badge Formatting | [Workbench Bench & Thread PRD](../prds/workbench-bench-thread-prd.md) | Step 2 of Phase 7 (Depends on Spec 14 & 16) |

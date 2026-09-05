@@ -1,6 +1,6 @@
 # Spec 17: Workbench Action In-Progress Reload State & Cancellation UI
 
-**Status**: `draft`
+**Status**: `complete`
 
 ## Overview & Scope
 This specification defines the frontend user experience and component architecture for **Action In-Progress Discovery on Page Reload** and **Interactive Action Cancellation** within the **Agent-As-Data (AAD)** Workbench (`aad-fe-container`).
