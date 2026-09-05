@@ -168,6 +168,11 @@ class AADRequests:
         resp.raise_for_status()
         return resp.json()
 
+    def delete_thread(self, thread_id):
+        resp = requests.delete(f"{self.base_url}/api/v1/threads/{thread_id}", timeout=5)
+        resp.raise_for_status()
+        return resp.status_code == 204
+
     def list_bench_files(self, bench_id, dir_path=""):
         resp = requests.post(f"{self.base_url}/api/v1/benches/{bench_id}/fs/list", json={"dir_path": dir_path}, timeout=5)
         resp.raise_for_status()
