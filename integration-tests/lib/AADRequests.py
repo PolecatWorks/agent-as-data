@@ -1,5 +1,6 @@
 import os
 import requests
+import time
 
 class AADRequests:
     """Robot Framework Library for Agent-As-Data REST & MCP HTTP Requests."""
@@ -131,3 +132,115 @@ class AADRequests:
         resp = requests.post(f"{self.base_url}/api/v1/agents/verify-contract", json=payload, timeout=2)
         resp.raise_for_status()
         return resp.json()
+
+    # Benches & Threads APIs
+    def list_benches(self):
+        resp = requests.get(f"{self.base_url}/api/v1/benches", timeout=5)
+        resp.raise_for_status()
+        return resp.json()
+
+    def create_bench(self, payload):
+        resp = requests.post(f"{self.base_url}/api/v1/benches/create", json=payload, timeout=5)
+        resp.raise_for_status()
+        return resp.json()
+
+    def get_bench(self, bench_id):
+        resp = requests.get(f"{self.base_url}/api/v1/benches/{bench_id}", timeout=5)
+        resp.raise_for_status()
+        return resp.json()
+
+    def update_bench(self, bench_id, payload):
+        resp = requests.put(f"{self.base_url}/api/v1/benches/{bench_id}", json=payload, timeout=5)
+        resp.raise_for_status()
+        return resp.json()
+
+    def delete_bench(self, bench_id):
+        resp = requests.delete(f"{self.base_url}/api/v1/benches/{bench_id}", timeout=5)
+        resp.raise_for_status()
+        return resp.status_code == 204
+
+    def list_bench_threads(self, bench_id):
+        resp = requests.get(f"{self.base_url}/api/v1/benches/{bench_id}/threads", timeout=5)
+        resp.raise_for_status()
+        return resp.json()
+
+    def create_bench_thread(self, bench_id, payload):
+        resp = requests.post(f"{self.base_url}/api/v1/benches/{bench_id}/threads", json=payload, timeout=5)
+        resp.raise_for_status()
+        return resp.json()
+
+    def delete_thread(self, thread_id):
+        resp = requests.delete(f"{self.base_url}/api/v1/threads/{thread_id}", timeout=5)
+        resp.raise_for_status()
+        return resp.status_code == 204
+
+    def list_bench_files(self, bench_id, dir_path=""):
+        resp = requests.post(f"{self.base_url}/api/v1/benches/{bench_id}/fs/list", json={"dir_path": dir_path}, timeout=5)
+        resp.raise_for_status()
+        return resp.json()
+
+    def write_bench_file(self, bench_id, filepath, content):
+        resp = requests.post(f"{self.base_url}/api/v1/benches/{bench_id}/fs/write", json={"filepath": filepath, "content": content}, timeout=5)
+        resp.raise_for_status()
+        return resp.json()
+
+    def read_bench_file(self, bench_id, filepath):
+        resp = requests.get(f"{self.base_url}/api/v1/benches/{bench_id}/fs/read/{filepath}", timeout=5)
+        resp.raise_for_status()
+        return resp.json()
+
+    def delete_bench_file(self, bench_id, filepath):
+        resp = requests.post(f"{self.base_url}/api/v1/benches/{bench_id}/fs/delete", json={"filepath": filepath}, timeout=5)
+        resp.raise_for_status()
+        return resp.json()
+
+    def get_bench_memory(self, bench_id):
+        resp = requests.get(f"{self.base_url}/api/v1/benches/{bench_id}/memory", timeout=5)
+        resp.raise_for_status()
+        return resp.json()
+
+    def upsert_bench_memory(self, bench_id, payload):
+        resp = requests.put(f"{self.base_url}/api/v1/benches/{bench_id}/memory", json=payload, timeout=5)
+        resp.raise_for_status()
+        return resp.json()
+
+    def append_bench_decision(self, bench_id, payload):
+        resp = requests.post(f"{self.base_url}/api/v1/benches/{bench_id}/memory/decision", json=payload, timeout=5)
+        resp.raise_for_status()
+        return resp.json()
+
+    def create_thread_message(self, thread_id, payload):
+        resp = requests.post(f"{self.base_url}/api/v1/threads/{thread_id}/messages", json=payload, timeout=180)
+        resp.raise_for_status()
+        return resp.json()
+
+    def get_thread_messages(self, thread_id):
+        resp = requests.get(f"{self.base_url}/api/v1/threads/{thread_id}/messages", timeout=5)
+        resp.raise_for_status()
+        return resp.json()
+
+    def get_active_thread_run(self, thread_id):
+        resp = requests.get(f"{self.base_url}/api/v1/threads/{thread_id}/runs/active", timeout=5)
+        if resp.status_code == 204:
+            return None
+        resp.raise_for_status()
+        return resp.json()
+
+    def cancel_active_thread_run(self, thread_id):
+        resp = requests.post(f"{self.base_url}/api/v1/threads/{thread_id}/runs/active/cancel", timeout=5)
+        resp.raise_for_status()
+        return resp.json()
+
+    def list_thread_runs(self, thread_id):
+        resp = requests.get(f"{self.base_url}/api/v1/threads/{thread_id}/runs", timeout=5)
+        resp.raise_for_status()
+        return resp.json()
+
+    def wait_for_assistant_message(self, thread_id, timeout=30):
+        start = time.time()
+        while time.time() - start < timeout:
+            msgs = self.get_thread_messages(thread_id)
+            if any(m.get("role") in ("assistant", "system") for m in msgs):
+                return msgs
+            time.sleep(0.5)
+        raise TimeoutError(f"Assistant message was not generated within {timeout} seconds")

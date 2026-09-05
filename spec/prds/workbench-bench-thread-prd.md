@@ -14,6 +14,7 @@ A **Bench** represents an isolated, persistent project workspace containing a sh
 3. **Modal-Free, Inline UX**: Creating, editing, and renaming Benches and Threads occurs entirely inline without disruptive modal popups. Destructive operations (deletion) require an intentional two-step inline confirmation where the confirmation button is offset from the trigger button to prevent accidental clicks.
 4. **Transparent Working & Episodic Memory**: Benches provide shared memory to preserve project decisions, invariants, and guidelines across threads. This begins with an explicit, developer-editable and tool-accessible **Working Memory** (Phase 1) and progresses to a **Hierarchical Hybrid Memory System** incorporating episodic milestone extractions and vector-indexed retrieval (Phase 2 & 3).
 5. **Clear Visual Context & Smart URL Routing**: Users must always have immediate visual clarity over which Bench and Thread are active. The URL schema supports deep linking (`/workbench/:benchId/:threadId`) with intelligent fallback forwarding to the most recent active Bench and Thread.
+6. **Persistent Action Tracking & Distributed Cancellation**: All LLM generation cycles and tool execution actions are explicitly tracked in PostgreSQL (`thread_runs`). When an action is initiated, refreshing the browser or switching tabs retrieves the live action status (`thinking`, `executing_tool`, etc.). Users can cancel running actions at any time; cancellation is recorded directly in the persistence layer, enabling horizontally scaled worker pods to safely halt execution before running mutating tools without needing pod-affinity or cross-pod process killing.
 
 ---
 
@@ -25,6 +26,7 @@ erDiagram
     BENCH ||--o{ BENCH_MEMORY : retains
     BENCH ||--|| WORKSPACE_FS : owns
     THREAD ||--o{ MESSAGE : contains
+    THREAD ||--o{ THREAD_RUN : executes
 
     BENCH {
         uuid id PK
@@ -43,6 +45,18 @@ erDiagram
         string description
         string[] tags
         uuid owner_id
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    THREAD_RUN {
+        uuid id PK
+        uuid thread_id FK
+        uuid bench_id FK
+        string status "pending, running, cancelling, cancelled, completed, failed"
+        string current_phase "thinking, executing_tool, completed, cancelled, failed"
+        string active_tool_name "optional tool name e.g. write_file"
+        text error "optional error description"
         timestamp created_at
         timestamp updated_at
     }
@@ -95,6 +109,16 @@ erDiagram
 - **`content`**: Markdown/text body containing the memory content.
 - **`metadata`**: JSONB payload storing tags, source thread IDs, or extraction confidence scores.
 
+### 4. The Thread Run Entity (`thread_runs`)
+- **`id`**: Unique UUID primary key.
+- **`thread_id`**: Mandatory foreign key referencing `threads.id` with `ON DELETE CASCADE`.
+- **`bench_id`**: Foreign key referencing `benches.id` with `ON DELETE CASCADE`.
+- **`status`**: Lifecycle state enum (`pending`, `running`, `cancelling`, `cancelled`, `completed`, `failed`).
+- **`current_phase`**: Active operational phase (`thinking`, `executing_tool`, `completed`, `cancelled`, `failed`).
+- **`active_tool_name`**: Optional string name of tool currently running (e.g., `write_file`, `read_file`, `update_bench_memory`).
+- **`error`**: Optional error message if the run failed.
+- **Timestamps**: `created_at` and `updated_at`.
+
 ---
 
 ## Architectural Data Flow & Filesystem Scoping
@@ -106,7 +130,7 @@ sequenceDiagram
     participant UI as Workbench UI
     participant Router as Frontend Routing Guard
     participant API as Backend Webserver
-    participant DB as PostgreSQL (Benches, Threads, Memory)
+    participant DB as PostgreSQL (Benches, Threads, Memory, Runs)
     participant FS as Bench FS (/tmp/workspace/benches/bench_id)
     participant Agent as Rig Agent Execution Loop
 
@@ -125,12 +149,20 @@ sequenceDiagram
     Dev->>UI: Sends message in Thread B ("inspect main.rs and update memory")
     UI->>API: POST /api/v1/threads/{thread_id}/messages
     API->>DB: Persist user message
+    API->>DB: Insert thread_runs (status: 'running', phase: 'thinking')
+    API-->>UI: 202 Accepted { message, run_id }
+    Note over UI,API: UI polls /api/v1/threads/{thread_id}/runs/active or streams status
     API->>DB: Fetch thread history + bench working memory
     API->>Agent: Construct Rig Agent with Bench Tools (FS + Memory)
+    API->>DB: Update thread_runs (phase: 'executing_tool', active_tool: 'read_file')
     Agent->>FS: Executes read_file / write_file in Bench root
+    API->>DB: Update thread_runs (phase: 'executing_tool', active_tool: 'update_bench_memory')
     Agent->>DB: Updates bench working memory via update_bench_memory tool
     Agent-->>API: Returns final assistant response
-    API-->>UI: Streams response and emits memory/filesystem sync event
+    API->>DB: Insert assistant message into messages
+    API->>DB: Update thread_runs (status: 'completed', phase: 'completed')
+    UI->>API: GET /api/v1/threads/{thread_id}/messages
+    API-->>UI: Returns updated messages timeline
 ```
 
 ---
@@ -275,13 +307,64 @@ flowchart LR
 - `PUT /api/v1/benches/:benchId/memory`: Update the working memory content.
 - `POST /api/v1/benches/:benchId/memory/decision`: Append an episodic decision entry.
 
+### 5. Thread Run & Action Tracking Endpoints (`/api/v1/threads/:threadId/runs`)
+- `GET /api/v1/threads/:threadId/runs/active`: Retrieve the currently active in-progress run for the thread (returns `200 OK` with run state `{ id, status, current_phase, active_tool_name }` or `204 No Content` if idle). Used by frontend on initial render and screen refresh to restore in-progress state.
+- `POST /api/v1/threads/:threadId/runs/active/cancel`: Request immediate cancellation of the active run. Updates the persistence record in PostgreSQL (`status = 'cancelled'`).
+- `GET /api/v1/threads/:threadId/runs`: List historical runs and latencies for the thread.
+
+---
+
+## Persistent Action Tracking & Distributed Cancellation Architecture
+
+Across horizontally scaled Kubernetes pods, the HTTP request initiating an action and subsequent client requests (such as page reloads or cancellation clicks) may be routed to entirely different pods. To guarantee consistent state without inter-pod socket signaling, the system uses **PostgreSQL as the authoritative state coordinator**.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Dev as Developer (Pod B / Tab Reload)
+    participant UI as Workbench UI
+    participant PodB as Webserver Pod B (HTTP Ingress)
+    participant DB as PostgreSQL (thread_runs table)
+    participant PodA as Worker Pod A (Running Rig Loop)
+    participant LLM as LLM Model Provider
+    participant Tools as Bench Workspace Tools
+
+    Note over PodA,DB: Pod A is executing Rig prompt loop for thread_id
+    PodA->>LLM: Dispatches Prompt / History
+    LLM-->>PodA: Tool Call Request (e.g. write_file)
+
+    Dev->>UI: Clicks [Cancel Action] (or reloads screen & clicks Cancel)
+    UI->>PodB: POST /api/v1/threads/{id}/runs/active/cancel
+    PodB->>DB: UPDATE thread_runs SET status = 'cancelled', updated_at = NOW() WHERE thread_id = $1 AND status = 'running'
+    PodB-->>UI: 200 OK { status: 'cancelled' }
+
+    Note over PodA: Pre-Tool Checkpoint
+    PodA->>DB: SELECT status FROM thread_runs WHERE id = $run_id
+    DB-->>PodA: Returns status == 'cancelled'
+    
+    Note over PodA: Pod A halts immediately! Does NOT call Tools.write_file!
+    PodA->>DB: INSERT INTO messages (thread_id, role, content) VALUES ($id, 'system', '[Action cancelled by user]')
+    PodA->>DB: UPDATE thread_runs SET current_phase = 'cancelled', updated_at = NOW()
+    Note over PodA: Drops LLM response and exits loop cleanly
+    
+    UI->>PodB: GET /api/v1/threads/{id}/messages
+    PodB-->>UI: Returns messages with '[Action cancelled by user]'
+    UI->>UI: Restores input prompt area for new user input
+```
+
+### Key Lifecycle Principles:
+1. **Screen Refresh Resilience**: When the user refreshes their browser or returns to an existing thread, the frontend invokes `GET /api/v1/threads/:threadId/runs/active`. If a run is in progress, the UI renders the active status indicator (e.g. *"Assistant is thinking..."* or *"Assistant is executing `write_file`..."*) along with an active **Cancel** button, instead of showing a static, dead timeline.
+2. **Pre-Tool Mutating Guard**: Before executing *any* mutating workspace tool (`write_file`, `delete_file`, `replace_in_file`, `update_bench_memory`), the execution worker queries `thread_runs.status`. If marked `cancelled`, tool execution is skipped completely, preserving filesystem and memory integrity.
+3. **Auditability & UI Notification**: When cancelled, the assistant reply is dropped, and a standardized system message `[Action cancelled by user]` is written to `messages` so the developer has explicit context in the conversation timeline.
+4. **Stale Run Garbage Collection**: If a worker pod crashes ungracefully, runs remaining in `running` status without heartbeat updates beyond a configurable threshold (e.g. 5 minutes) are marked as `failed` with error `Worker timed out / terminated`.
+
 ---
 
 ## Security & Path Traversal Safeguards
 
 1. **Bench Directory Containment**: All filesystem operations executed by users or agents must be strictly validated via `resolve_safe_path` against `/tmp/workspace/benches/<bench_id>`.
 2. **Cross-Bench Isolation**: An agent running in `Bench A` has no access to `/tmp/workspace/benches/<bench_id_b>`. Path traversal attempts (`..`, symlinks pointing outside the bench root) must immediately fail with `PermissionDenied`.
-3. **Database Consistency**: Deleting a Bench cascades to associated `threads`, `messages`, and `bench_memory` records within an atomic database transaction.
+3. **Database Consistency**: Deleting a Bench cascades to associated `threads`, `messages`, `thread_runs`, and `bench_memory` records within an atomic database transaction.
 
 ---
 

@@ -1,4 +1,4 @@
-import { Component, OnInit, HostListener, ViewChild, ElementRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, HostListener, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
@@ -7,7 +7,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { RouterModule, ActivatedRoute, Router } from '@angular/router';
-import { ApiService, Thread, Message } from '../../services/api.service';
+import { ApiService, Bench, Thread, Message, ThreadRun } from '../../services/api.service';
 import { APP_NAV_MENU_ITEMS } from '../../models/navigation';
 
 @Component({
@@ -17,9 +17,18 @@ import { APP_NAV_MENU_ITEMS } from '../../models/navigation';
   templateUrl: './workbench.component.html',
   styleUrl: './workbench.component.scss'
 })
-export class WorkbenchComponent implements OnInit {
+export class WorkbenchComponent implements OnInit, OnDestroy {
   @ViewChild('messageInput') messageInput?: ElementRef<HTMLTextAreaElement>;
   @ViewChild('messagesContainer') messagesContainer?: ElementRef<HTMLDivElement>;
+
+  benches: Bench[] = [];
+  activeBench: Bench | null = null;
+  isBenchDropdownOpen: boolean = false;
+  isCreatingBenchInline: boolean = false;
+  newBenchName: string = '';
+  isEditingBenchName: boolean = false;
+  editingBenchNameContent: string = '';
+  isConfirmingDeleteBench: boolean = false;
 
   threads: Thread[] = [];
   activeThread: Thread | null = null;
@@ -27,10 +36,21 @@ export class WorkbenchComponent implements OnInit {
   newMessageContent = '';
   searchQuery: string = '';
   isProcessing: boolean = false;
+  activeRun: ThreadRun | null = null;
+  private pollIntervalId: any = null;
+
+  isConfirmingDeleteThreadId: string | null = null;
+  editingThreadId: string | null = null;
+  editingThreadTitleContent: string = '';
 
   files: string[] = [];
   selectedFile: string | null = null;
   selectedFileContent: string = '';
+
+  activeRightTab: 'files' | 'memory' = 'files';
+  benchWorkingMemoryContent: string = '';
+  isSavingMemory: boolean = false;
+  memorySaveStatus: string = '';
 
   isSidebarCollapsed = false;
   chatPanePercentage = 50;
@@ -48,7 +68,11 @@ export class WorkbenchComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.loadThreads();
+    this.loadBenches();
+  }
+
+  ngOnDestroy(): void {
+    this.stopRunPolling();
   }
 
   toggleSidebar(): void {
@@ -64,7 +88,7 @@ export class WorkbenchComponent implements OnInit {
   onMouseMove(event: MouseEvent): void {
     if (!this.isResizing) return;
 
-    const sidebarWidth = this.isSidebarCollapsed ? 64 : 256;
+    const sidebarWidth = this.isSidebarCollapsed ? 64 : 288;
     const rightWorkspaceWidth = window.innerWidth - sidebarWidth;
     const mouseXInWorkspace = event.clientX - sidebarWidth;
 
@@ -81,36 +105,181 @@ export class WorkbenchComponent implements OnInit {
     this.isResizing = false;
   }
 
+  loadBenches(): void {
+    this.apiService.getBenches().subscribe({
+      next: (benches) => {
+        this.benches = benches;
+        if (this.benches.length === 0) {
+          this.apiService.createBench('Default Bench', undefined, 'Initial default workspace').subscribe({
+            next: (newBench) => {
+              this.benches = [newBench];
+              this.resolveRouting();
+            },
+            error: (err) => console.error('Failed to scaffold initial bench', err)
+          });
+        } else {
+          this.resolveRouting();
+        }
+      },
+      error: (err) => console.error('Failed to load benches', err)
+    });
+  }
+
+  resolveRouting(): void {
+    this.route.paramMap.subscribe(params => {
+      const benchId = params.get('benchId');
+      const threadId = params.get('threadId');
+
+      if (!benchId) {
+        if (this.benches.length > 0) {
+          const targetBench = this.benches[0];
+          this.router.navigate(['/workbench', targetBench.id], { replaceUrl: true });
+        }
+        return;
+      }
+
+      const foundBench = this.benches.find(b => b.id === benchId);
+      if (foundBench) {
+        this.activeBench = foundBench;
+        this.loadBenchThreads(foundBench.id, threadId);
+      } else if (this.benches.length > 0) {
+        this.router.navigate(['/workbench', this.benches[0].id], { replaceUrl: true });
+      }
+    });
+  }
+
+  loadBenchThreads(benchId: string, targetThreadId?: string | null): void {
+    this.apiService.getBenchThreads(benchId).subscribe({
+      next: (threads) => {
+        this.threads = threads;
+        if (targetThreadId) {
+          const toSelect = this.threads.find(t => t.id === targetThreadId);
+          if (toSelect) {
+            this.loadThreadContent(toSelect);
+          } else if (this.threads.length > 0) {
+            this.router.navigate(['/workbench', benchId, this.threads[0].id], { replaceUrl: true });
+          }
+        } else if (this.threads.length > 0) {
+          this.router.navigate(['/workbench', benchId, this.threads[0].id], { replaceUrl: true });
+        } else {
+          this.activeThread = null;
+          this.activeThreadMessages = [];
+          this.loadBenchFiles();
+        }
+      },
+      error: (err) => console.error('Failed to load bench threads', err)
+    });
+  }
+
+  toggleBenchDropdown(): void {
+    this.isBenchDropdownOpen = !this.isBenchDropdownOpen;
+    this.isCreatingBenchInline = false;
+    this.isConfirmingDeleteBench = false;
+  }
+
+  selectBench(bench: Bench): void {
+    this.activeBench = bench;
+    this.isBenchDropdownOpen = false;
+    this.isConfirmingDeleteBench = false;
+    this.router.navigate(['/workbench', bench.id]);
+  }
+
+  startCreatingBenchInline(): void {
+    this.isCreatingBenchInline = true;
+    this.newBenchName = '';
+  }
+
+  cancelCreatingBenchInline(): void {
+    this.isCreatingBenchInline = false;
+    this.newBenchName = '';
+  }
+
+  commitCreateBench(): void {
+    const name = this.newBenchName.trim();
+    if (!name) return;
+
+    this.apiService.createBench(name).subscribe({
+      next: (bench) => {
+        this.benches.unshift(bench);
+        this.isCreatingBenchInline = false;
+        this.isBenchDropdownOpen = false;
+        this.selectBench(bench);
+      },
+      error: (err) => console.error('Failed to create bench', err)
+    });
+  }
+
+  startEditingBenchName(): void {
+    if (!this.activeBench) return;
+    this.isEditingBenchName = true;
+    this.editingBenchNameContent = this.activeBench.name;
+  }
+
+  saveBenchName(): void {
+    if (!this.activeBench || !this.isEditingBenchName) return;
+    const name = this.editingBenchNameContent.trim();
+    if (!name || name === this.activeBench.name) {
+      this.isEditingBenchName = false;
+      return;
+    }
+
+    this.apiService.updateBench(this.activeBench.id, name).subscribe({
+      next: (updated) => {
+        if (this.activeBench) {
+          this.activeBench.name = updated.name;
+        }
+        const b = this.benches.find(x => x.id === updated.id);
+        if (b) b.name = updated.name;
+        this.isEditingBenchName = false;
+      },
+      error: (err) => {
+        console.error('Failed to rename bench', err);
+        this.isEditingBenchName = false;
+      }
+    });
+  }
+
+  cancelEditingBenchName(): void {
+    this.isEditingBenchName = false;
+  }
+
+  promptDeleteBench(): void {
+    this.isConfirmingDeleteBench = true;
+  }
+
+  cancelDeleteBench(): void {
+    this.isConfirmingDeleteBench = false;
+  }
+
+  confirmDeleteBench(): void {
+    if (!this.activeBench) return;
+    const benchId = this.activeBench.id;
+
+    this.apiService.deleteBench(benchId).subscribe({
+      next: () => {
+        this.benches = this.benches.filter(b => b.id !== benchId);
+        this.isConfirmingDeleteBench = false;
+        this.isBenchDropdownOpen = false;
+        if (this.benches.length > 0) {
+          this.selectBench(this.benches[0]);
+        } else {
+          this.loadBenches();
+        }
+      },
+      error: (err) => console.error('Failed to delete bench', err)
+    });
+  }
+
   getFilteredThreads(): Thread[] {
     const query = this.searchQuery.toLowerCase().trim();
     if (!query) return this.threads;
     return this.threads.filter(t => t.title.toLowerCase().includes(query));
   }
 
-  loadThreads(): void {
-    this.apiService.getThreads().subscribe({
-      next: (threads) => {
-        this.threads = threads;
-
-        this.route.paramMap.subscribe(params => {
-          const threadId = params.get('id');
-          if (threadId) {
-            const threadToSelect = this.threads.find(t => t.id === threadId);
-            if (threadToSelect && this.activeThread?.id !== threadId) {
-              this.loadThreadContent(threadToSelect);
-            }
-          } else if (this.threads.length > 0) {
-             this.router.navigate(['/workbench', this.threads[0].id], { replaceUrl: true });
-          }
-        });
-      },
-      error: (err) => console.error('Failed to load threads', err)
-    });
-  }
-
   createNewThread(): void {
-    const title = `New Conversation ${this.threads.length + 1}`;
-    this.apiService.createThread(title).subscribe({
+    if (!this.activeBench) return;
+    const title = `Thread ${this.threads.length + 1}`;
+    this.apiService.createBenchThread(this.activeBench.id, title).subscribe({
       next: (thread) => {
         this.threads.unshift(thread);
         this.selectThread(thread);
@@ -119,50 +288,186 @@ export class WorkbenchComponent implements OnInit {
     });
   }
 
-  deleteThread(threadId: string, event?: Event): void {
-    if (event) {
-      event.stopPropagation();
-    }
-
-    if (confirm('Are you sure you want to delete this thread?')) {
-      this.apiService.deleteThread(threadId).subscribe({
-        next: () => {
-          this.threads = this.threads.filter(t => t.id !== threadId);
-          if (this.activeThread?.id === threadId) {
-            this.activeThread = null;
-            this.activeThreadMessages = [];
-            if (this.threads.length > 0) {
-              this.selectThread(this.threads[0]);
-            } else {
-              this.router.navigate(['/workbench']);
-            }
-          }
-        },
-        error: (err) => console.error('Failed to delete thread', err)
-      });
-    }
-  }
-
   selectThread(thread: Thread): void {
-    this.router.navigate(['/workbench', thread.id]);
+    if (!this.activeBench) return;
+    this.router.navigate(['/workbench', this.activeBench.id, thread.id]);
   }
 
   loadThreadContent(thread: Thread): void {
+    this.stopRunPolling();
     this.activeThread = thread;
     this.activeThreadMessages = [];
     this.apiService.getMessages(thread.id).subscribe({
       next: (messages) => {
         this.activeThreadMessages = messages;
         this.scrollToBottom();
+        this.focusMessageInput();
       },
       error: (err) => console.error('Failed to load messages', err)
     });
-    this.loadThreadFiles();
+    this.loadBenchFiles();
+    this.checkActiveRun(thread.id);
+    this.focusMessageInput();
   }
 
-  loadThreadFiles(): void {
+  checkActiveRun(threadId: string): void {
+    this.apiService.getActiveThreadRun(threadId).subscribe({
+      next: (run) => {
+        if (run && (run.status === 'running' || run.status === 'pending' || run.status === 'cancelling')) {
+          this.activeRun = run;
+          this.isProcessing = true;
+          this.startRunPolling(threadId);
+        } else {
+          this.activeRun = null;
+          this.isProcessing = false;
+        }
+      },
+      error: (err) => {
+        console.error('Failed to query active thread run', err);
+        this.activeRun = null;
+        this.isProcessing = false;
+      }
+    });
+  }
+
+  startRunPolling(threadId: string): void {
+    this.stopRunPolling();
+    this.pollIntervalId = setInterval(() => {
+      if (!this.activeThread || this.activeThread.id !== threadId) {
+        this.stopRunPolling();
+        return;
+      }
+      this.apiService.getActiveThreadRun(threadId).subscribe({
+        next: (run) => {
+          if (!run || run.status === 'completed' || run.status === 'cancelled' || run.status === 'failed') {
+            this.stopRunPolling();
+            this.activeRun = null;
+            this.isProcessing = false;
+            this.apiService.getMessages(threadId).subscribe({
+              next: (messages) => {
+                this.activeThreadMessages = messages;
+                this.scrollToBottom();
+                this.loadBenchFiles();
+                this.focusMessageInput();
+              },
+              error: (err) => console.error('Failed to refresh messages after run completion', err)
+            });
+          } else {
+            this.activeRun = run;
+            this.isProcessing = true;
+          }
+        },
+        error: (err) => {
+          console.error('Error polling active run', err);
+          this.stopRunPolling();
+          this.activeRun = null;
+          this.isProcessing = false;
+        }
+      });
+    }, 1500);
+  }
+
+  stopRunPolling(): void {
+    if (this.pollIntervalId) {
+      clearInterval(this.pollIntervalId);
+      this.pollIntervalId = null;
+    }
+  }
+
+  cancelCurrentAction(): void {
     if (!this.activeThread) return;
-    this.apiService.listThreadFiles(this.activeThread.id).subscribe({
+    const threadId = this.activeThread.id;
+    this.stopRunPolling();
+
+    this.apiService.cancelActiveThreadRun(threadId).subscribe({
+      next: () => {
+        this.isProcessing = false;
+        this.activeRun = null;
+        this.apiService.getMessages(threadId).subscribe({
+          next: (messages) => {
+            this.activeThreadMessages = messages;
+            this.scrollToBottom();
+            this.loadBenchFiles();
+            this.focusMessageInput();
+          },
+          error: (err) => console.error('Failed to refresh messages after cancellation', err)
+        });
+      },
+      error: (err) => {
+        console.error('Failed to cancel active run', err);
+        this.isProcessing = false;
+        this.activeRun = null;
+      }
+    });
+  }
+
+  startEditingThreadInline(thread: Thread, event: Event): void {
+    event.stopPropagation();
+    this.editingThreadId = thread.id;
+    this.editingThreadTitleContent = thread.title;
+  }
+
+  saveThreadTitleInline(thread: Thread): void {
+    if (this.editingThreadId !== thread.id) return;
+    const title = this.editingThreadTitleContent.trim();
+    if (!title || title === thread.title) {
+      this.editingThreadId = null;
+      return;
+    }
+
+    this.apiService.updateThread(thread.id, title).subscribe({
+      next: (updated) => {
+        thread.title = updated.title;
+        if (this.activeThread?.id === thread.id) {
+          this.activeThread.title = updated.title;
+        }
+        this.editingThreadId = null;
+      },
+      error: (err) => {
+        console.error('Failed to update thread title', err);
+        this.editingThreadId = null;
+      }
+    });
+  }
+
+  cancelEditingThreadInline(): void {
+    this.editingThreadId = null;
+  }
+
+  promptDeleteThread(threadId: string, event: Event): void {
+    event.stopPropagation();
+    this.isConfirmingDeleteThreadId = threadId;
+  }
+
+  cancelDeleteThread(event?: Event): void {
+    if (event) event.stopPropagation();
+    this.isConfirmingDeleteThreadId = null;
+  }
+
+  confirmDeleteThread(threadId: string, event?: Event): void {
+    if (event) event.stopPropagation();
+
+    this.apiService.deleteThread(threadId).subscribe({
+      next: () => {
+        this.threads = this.threads.filter(t => t.id !== threadId);
+        this.isConfirmingDeleteThreadId = null;
+        if (this.activeThread?.id === threadId) {
+          this.activeThread = null;
+          this.activeThreadMessages = [];
+          if (this.threads.length > 0 && this.activeBench) {
+            this.selectThread(this.threads[0]);
+          } else if (this.activeBench) {
+            this.router.navigate(['/workbench', this.activeBench.id]);
+          }
+        }
+      },
+      error: (err) => console.error('Failed to delete thread', err)
+    });
+  }
+
+  loadBenchFiles(): void {
+    if (!this.activeBench) return;
+    this.apiService.listBenchFiles(this.activeBench.id).subscribe({
       next: (res) => {
         this.files = res.files;
         if (this.selectedFile && !this.files.includes(this.selectedFile)) {
@@ -170,19 +475,60 @@ export class WorkbenchComponent implements OnInit {
           this.selectedFileContent = '';
         }
       },
-      error: (err) => console.error('Failed to load files', err)
+      error: (err) => console.error('Failed to load bench files', err)
+    });
+    this.loadBenchMemory();
+  }
+
+  loadBenchMemory(): void {
+    if (!this.activeBench) return;
+    this.apiService.getBenchMemory(this.activeBench.id).subscribe({
+      next: (memories) => {
+        const working = memories.find(m => m.memory_type === 'working');
+        this.benchWorkingMemoryContent = working ? working.content : '';
+      },
+      error: (err) => console.error('Failed to load bench memory', err)
     });
   }
 
+  saveBenchMemory(): void {
+    if (!this.activeBench) return;
+    this.isSavingMemory = true;
+    this.memorySaveStatus = 'Saving...';
+    this.apiService.upsertBenchWorkingMemory(this.activeBench.id, this.benchWorkingMemoryContent).subscribe({
+      next: () => {
+        this.isSavingMemory = false;
+        this.memorySaveStatus = 'Memory saved';
+        setTimeout(() => {
+          if (this.memorySaveStatus === 'Memory saved') {
+            this.memorySaveStatus = '';
+          }
+        }, 3000);
+      },
+      error: (err) => {
+        this.isSavingMemory = false;
+        this.memorySaveStatus = 'Save failed';
+        console.error('Failed to save bench memory', err);
+      }
+    });
+  }
+
+  setRightTab(tab: 'files' | 'memory'): void {
+    this.activeRightTab = tab;
+    if (tab === 'memory') {
+      this.loadBenchMemory();
+    }
+  }
+
   selectFile(filename: string): void {
-    if (!this.activeThread) return;
+    if (!this.activeBench) return;
 
     if (!filename.endsWith('.txt') && !filename.endsWith('.md')) {
       alert('Only .txt and .md files are supported for editing at this time.');
       return;
     }
 
-    this.apiService.readThreadFile(this.activeThread.id, filename).subscribe({
+    this.apiService.readBenchFile(this.activeBench.id, filename).subscribe({
       next: (res) => {
         this.selectedFile = filename;
         this.selectedFileContent = res.content;
@@ -192,7 +538,7 @@ export class WorkbenchComponent implements OnInit {
   }
 
   createNewFile(): void {
-    if (!this.activeThread) return;
+    if (!this.activeBench) return;
     const filename = prompt('Enter new filename:');
     if (!filename) return;
 
@@ -201,9 +547,9 @@ export class WorkbenchComponent implements OnInit {
       return;
     }
 
-    this.apiService.writeThreadFile(this.activeThread.id, filename, '').subscribe({
+    this.apiService.writeBenchFile(this.activeBench.id, filename, '').subscribe({
       next: () => {
-        this.loadThreadFiles();
+        this.loadBenchFiles();
         this.selectFile(filename);
       },
       error: (err) => console.error('Failed to create file', err)
@@ -211,10 +557,9 @@ export class WorkbenchComponent implements OnInit {
   }
 
   saveFile(): void {
-    if (!this.activeThread || !this.selectedFile) return;
-    this.apiService.writeThreadFile(this.activeThread.id, this.selectedFile, this.selectedFileContent).subscribe({
+    if (!this.activeBench || !this.selectedFile) return;
+    this.apiService.writeBenchFile(this.activeBench.id, this.selectedFile, this.selectedFileContent).subscribe({
       next: () => {
-        // Optional: show a success toast here
         console.log(`Saved ${this.selectedFile}`);
       },
       error: (err) => console.error('Failed to save file', err)
@@ -223,16 +568,16 @@ export class WorkbenchComponent implements OnInit {
 
   deleteFile(filename: string, event: Event): void {
     event.stopPropagation();
-    if (!this.activeThread) return;
+    if (!this.activeBench) return;
 
     if (confirm(`Are you sure you want to delete ${filename}?`)) {
-      this.apiService.deleteThreadFile(this.activeThread.id, filename).subscribe({
+      this.apiService.deleteBenchFile(this.activeBench.id, filename).subscribe({
         next: () => {
           if (this.selectedFile === filename) {
             this.selectedFile = null;
             this.selectedFileContent = '';
           }
-          this.loadThreadFiles();
+          this.loadBenchFiles();
         },
         error: (err) => console.error('Failed to delete file', err)
       });
@@ -249,97 +594,74 @@ export class WorkbenchComponent implements OnInit {
     this.newMessageContent = '';
     this.isProcessing = true;
 
-    // Immediately show the user's message in the conversation thread
-    const tempUserMessage: Message = {
+    const tempUserMsg: Message = {
       id: 'temp-' + Date.now(),
       thread_id: threadId,
       role: 'user',
-      content: content,
+      content,
       created_at: new Date().toISOString()
     };
-    this.activeThreadMessages.push(tempUserMessage);
+    this.activeThreadMessages.push(tempUserMsg);
     this.scrollToBottom();
 
     this.apiService.createMessage(threadId, 'user', content).subscribe({
       next: () => {
-        this.apiService.getMessages(threadId).subscribe({
-          next: (messages) => {
-            if (this.activeThread && this.activeThread.id === threadId) {
-              this.activeThreadMessages = messages;
-            }
-            this.isProcessing = false;
-            this.loadThreadFiles();
-            this.scrollToBottom();
-            this.focusMessageInput();
-          },
-          error: (err) => {
-            console.error('Failed to reload thread messages', err);
-            this.isProcessing = false;
-            this.loadThreadFiles();
-            this.scrollToBottom();
-            this.focusMessageInput();
-          }
-        });
+        this.startRunPolling(threadId);
       },
       error: (err) => {
         console.error('Failed to send message', err);
         this.isProcessing = false;
-        this.scrollToBottom();
-        this.focusMessageInput();
       }
     });
   }
 
   scrollToBottom(): void {
-    requestAnimationFrame(() => {
-      if (this.messagesContainer?.nativeElement) {
+    setTimeout(() => {
+      if (this.messagesContainer) {
         this.messagesContainer.nativeElement.scrollTop = this.messagesContainer.nativeElement.scrollHeight;
       }
-    });
-    setTimeout(() => {
-      if (this.messagesContainer?.nativeElement) {
-        this.messagesContainer.nativeElement.scrollTop = this.messagesContainer.nativeElement.scrollHeight;
-      }
-    }, 50);
-  }
-
-  focusMessageInput(): void {
-    requestAnimationFrame(() => {
-      this.messageInput?.nativeElement?.focus();
-    });
-    setTimeout(() => {
-      this.messageInput?.nativeElement?.focus();
     }, 50);
   }
 
   startEditingTitle(): void {
-    if (this.activeThread) {
-      this.isEditingTitle = true;
-      this.editingTitleContent = this.activeThread.title;
-    }
+    if (!this.activeThread) return;
+    this.isEditingTitle = true;
+    this.editingTitleContent = this.activeThread.title;
   }
 
   saveThreadTitle(): void {
     if (!this.activeThread || !this.isEditingTitle) return;
-
-    const newTitle = this.editingTitleContent.trim();
-    if (newTitle && newTitle !== this.activeThread.title) {
-      this.activeThread.title = newTitle;
-      this.apiService.updateThread(this.activeThread.id, newTitle).subscribe({
-        next: (updatedThread) => {
-          if (this.activeThread && this.activeThread.id === updatedThread.id) {
-             this.activeThread.title = updatedThread.title;
-             const t = this.threads.find(x => x.id === updatedThread.id);
-             if (t) t.title = updatedThread.title;
-          }
-        },
-        error: (err) => console.error('Failed to update thread title', err)
-      });
+    const title = this.editingTitleContent.trim();
+    if (!title || title === this.activeThread.title) {
+      this.isEditingTitle = false;
+      return;
     }
-    this.isEditingTitle = false;
+
+    this.apiService.updateThread(this.activeThread.id, title).subscribe({
+      next: (updated) => {
+        if (this.activeThread) {
+          this.activeThread.title = updated.title;
+        }
+        const found = this.threads.find(t => t.id === updated.id);
+        if (found) found.title = updated.title;
+        this.isEditingTitle = false;
+      },
+      error: (err) => {
+        console.error('Failed to update thread title', err);
+        this.isEditingTitle = false;
+      }
+    });
   }
 
   cancelEditingTitle(): void {
     this.isEditingTitle = false;
+  }
+
+  focusMessageInput(): void {
+    setTimeout(() => {
+      if (this.messageInput && this.messageInput.nativeElement) {
+        this.messageInput.nativeElement.focus();
+      }
+    }, 100);
   }
 }

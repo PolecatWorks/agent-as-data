@@ -88,16 +88,16 @@ pub(crate) fn resolve_safe_path(workspace_root: &StdPath, relative_path: &str) -
     Ok(final_path)
 }
 
-pub(crate) fn get_workspace_root(thread_id: Uuid) -> PathBuf {
-    PathBuf::from(format!("/tmp/workspace/{}", thread_id))
+pub(crate) fn get_workspace_root(bench_id: Uuid) -> PathBuf {
+    PathBuf::from(format!("/tmp/workspace/benches/{}", bench_id))
 }
 
 pub async fn write_file(
-    Path(thread_id): Path<Uuid>,
+    Path(entity_id): Path<Uuid>,
     Json(payload): Json<WriteFileRequest>,
 ) -> Result<(StatusCode, Json<FileOperationResponse>), (StatusCode, String)> {
-    tracing::info!("Saving file '{}' in thread workspace {}", payload.filepath, thread_id);
-    let workspace_root = get_workspace_root(thread_id);
+    tracing::info!("Saving file '{}' in workspace {}", payload.filepath, entity_id);
+    let workspace_root = get_workspace_root(entity_id);
 
     if !workspace_root.exists() {
         if let Err(e) = std::fs::create_dir_all(&workspace_root) {
@@ -125,7 +125,7 @@ pub async fn write_file(
     std::fs::write(&safe_path, payload.content)
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to write file: {}", e)))?;
 
-    tracing::info!("Successfully saved file '{}' in workspace {}", payload.filepath, thread_id);
+    tracing::info!("Successfully saved file '{}' in workspace {}", payload.filepath, entity_id);
 
     Ok((
         StatusCode::OK,
@@ -136,9 +136,9 @@ pub async fn write_file(
 }
 
 pub async fn read_file(
-    Path((thread_id, filepath)): Path<(Uuid, String)>,
+    Path((entity_id, filepath)): Path<(Uuid, String)>,
 ) -> Result<(StatusCode, Json<ReadFileResponse>), (StatusCode, String)> {
-    let workspace_root = get_workspace_root(thread_id);
+    let workspace_root = get_workspace_root(entity_id);
 
     if !workspace_root.exists() {
         return Err((StatusCode::NOT_FOUND, "Workspace not found".to_string()));
@@ -162,10 +162,10 @@ pub async fn read_file(
 }
 
 pub async fn list_files(
-    Path(thread_id): Path<Uuid>,
+    Path(entity_id): Path<Uuid>,
     Json(payload): Json<ListFilesRequest>,
 ) -> Result<(StatusCode, Json<ListFilesResponse>), (StatusCode, String)> {
-    let workspace_root = get_workspace_root(thread_id);
+    let workspace_root = get_workspace_root(entity_id);
 
     if !workspace_root.exists() {
         return Err((StatusCode::NOT_FOUND, "Workspace not found".to_string()));
@@ -211,11 +211,11 @@ pub async fn list_files(
 }
 
 pub async fn delete_file(
-    Path(thread_id): Path<Uuid>,
+    Path(entity_id): Path<Uuid>,
     Json(payload): Json<DeleteFileRequest>,
 ) -> Result<(StatusCode, Json<FileOperationResponse>), (StatusCode, String)> {
-    tracing::info!("Deleting file '{}' in thread workspace {}", payload.filepath, thread_id);
-    let workspace_root = get_workspace_root(thread_id);
+    tracing::info!("Deleting file '{}' in workspace {}", payload.filepath, entity_id);
+    let workspace_root = get_workspace_root(entity_id);
 
     if !workspace_root.exists() {
         return Err((StatusCode::NOT_FOUND, "Workspace not found".to_string()));
@@ -236,7 +236,7 @@ pub async fn delete_file(
             .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to delete file: {}", e)))?;
     }
 
-    tracing::info!("Successfully deleted file '{}' in workspace {}", payload.filepath, thread_id);
+    tracing::info!("Successfully deleted file '{}' in workspace {}", payload.filepath, entity_id);
 
     Ok((
         StatusCode::OK,

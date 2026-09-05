@@ -10,6 +10,7 @@ This document defines the requirements and architectural standards for workspace
 4. **Autonomous Multi-Turn Execution**: Leverage Rig's `AgentBuilder` multi-turn agent loop (`.tool(...)`, `.max_turns(...)`) so the model autonomously selects tools, executes functions, receives structured outputs or errors, self-corrects, and formulates final user responses.
 5. **Self-Correcting Error Recovery**: Format all tool execution errors as informative, instructive feedback for the LLM rather than failing the prompt.
 6. **Path Traversal Security**: Strictly enforce workspace containment to prevent any access outside `/tmp/workspace/benches/<bench_id>`.
+7. **Persistent Action Tracking & Pre-Tool Cancellation**: Persist every run and its active phase (`thinking`, `executing_tool`) in PostgreSQL (`thread_runs`). Check cancellation status before dispatching any mutating tools and before persisting the final assistant response to prevent unwanted filesystem changes when cancelled by a user from another tab or pod.
 
 ---
 
@@ -20,32 +21,51 @@ sequenceDiagram
     autonumber
     actor User as Workbench UI / Developer
     participant BE as AAD Webserver (threads.rs)
-    participant DB as PostgreSQL (messages table)
+    participant DB as PostgreSQL (messages & thread_runs)
+    participant Worker as Background Task (Tokio Worker)
     participant RigAgent as Rig Agent Loop (AgentBuilder)
     participant LLM as Ollama / Model Provider
     participant Tools as Rig Workspace Tools (Tool Trait)
-    participant FS as Local Workspace (/tmp/workspace/thread_id)
+    participant FS as Bench Workspace (/tmp/workspace/benches/bench_id)
 
     User->>BE: POST /api/v1/threads/{id}/messages (user message)
-    BE->>DB: Insert user message into DB
-    BE->>DB: Query previous thread messages (ORDER BY created_at ASC)
-    DB-->>BE: Return conversation history
-    BE->>RigAgent: Build agent with history context & dispatch prompt(user_content)
-    RigAgent->>LLM: Dispatches Preamble + Full Conversational History + Tool Schemas
+    BE->>DB: Insert user message into messages table
+    BE->>DB: Insert active run into thread_runs (status: 'running', phase: 'thinking')
+    BE->>Worker: Spawn background execution task (tokio::spawn)
+    BE-->>User: 202 Accepted { message, run_id }
+    Note over User,BE: Frontend tracks status via GET /threads/{id}/runs/active or SSE
+
+    Worker->>DB: Query thread conversation history & bench working memory
+    DB-->>Worker: Return history and context
+    Worker->>RigAgent: Build agent with history context & dispatch prompt(user_content)
+    RigAgent->>LLM: Dispatches Preamble + Conversational History + Tool Schemas
     
     loop Multi-Turn Tool Execution Loop (up to max_turns)
-        LLM-->>RigAgent: Tool Call Request (e.g. list_files, read_file)
-        RigAgent->>Tools: Tool::call(args)
-        Tools->>FS: Safe Path Sanitization & File I/O
-        FS-->>Tools: File Content / Directory Listing / Error
-        Tools-->>RigAgent: Tool Result Payload / Instructive Error String
-        RigAgent->>LLM: Tool Result Feedback
+        LLM-->>RigAgent: Tool Call Request (e.g. write_file, read_file)
+        
+        Note over Worker,DB: Pre-Tool Cancellation Checkpoint
+        Worker->>DB: SELECT status FROM thread_runs WHERE id = $run_id
+        alt Status is 'cancelled'
+            Worker->>DB: INSERT INTO messages (thread_id, role, content) VALUES ($id, 'system', '[Action cancelled by user]')
+            Worker->>DB: UPDATE thread_runs SET current_phase = 'cancelled', updated_at = NOW()
+            Note over Worker: Abort immediately without invoking Tool::call!
+        else Status is 'running'
+            Worker->>DB: UPDATE thread_runs SET current_phase = 'executing_tool', active_tool_name = 'write_file'
+            RigAgent->>Tools: Tool::call(args)
+            Tools->>FS: Safe Path Sanitization & File I/O
+            FS-->>Tools: File Content / Directory Listing / Error
+            Tools-->>RigAgent: Tool Result Payload / Feedback
+            RigAgent->>LLM: Tool Result Feedback
+            Worker->>DB: UPDATE thread_runs SET current_phase = 'thinking', active_tool_name = NULL
+        end
     end
 
-    LLM-->>RigAgent: Final Response Text answering the thread of conversation
-    RigAgent-->>BE: Returns Assistant Message
-    BE->>DB: Insert assistant message into DB
-    BE-->>User: 201 Created (User Message) & Real-time Assistant Update
+    alt Run was not cancelled
+        LLM-->>RigAgent: Final Response Text answering conversation
+        RigAgent-->>Worker: Returns Assistant Message
+        Worker->>DB: Insert assistant message into messages
+        Worker->>DB: Update thread_runs (status: 'completed', phase: 'completed')
+    end
 ```
 
 ---
@@ -121,6 +141,10 @@ flowchart TD
 5. **Instructive Error Feedback & Dynamic Fallback**:
    - When a tool fails (e.g. file does not exist), return clear contextual guidance (e.g. `File 'notes.txt' not found. Available workspace files are: ['todo.md', 'draft.txt']`) so the model can adjust arguments on the next turn.
    - If the LLM service is temporarily offline, fallback processing must dynamically interpret the specific user question and workspace state rather than echoing static strings.
+6. **Distributed Cancellation & Mutating Tool Safeguards**:
+   - Before executing *any* mutating workspace tool (`write_file`, `replace_in_file`, `delete_file`, `rename_file`) and before committing the assistant's final response, check `SELECT status FROM thread_runs WHERE id = $run_id`.
+   - If `status == 'cancelled'`, immediately abort execution without modifying the filesystem or memory, append a standardized system message `[Action cancelled by user]` to `messages`, set `thread_runs.current_phase = 'cancelled'`, and terminate the loop cleanly.
+   - This database-coordinated cancellation model enables horizontally scaled pods to stop in-flight actions reliably without pod-affinity or cross-pod signal handling.
 
 ### 4. Advanced Tool Capabilities (Roadmap)
 - **Tool-RAG (`ToolEmbedding`)**: For agents with large tool catalogs (e.g. tools, skills, database queries), implement `ToolEmbedding` to retrieve only the top `N` relevant tools via vector similarity (`.dynamic_tools(n, index, toolset)`).

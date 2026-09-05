@@ -124,21 +124,34 @@ pub async fn execute_agent(
 
     let mut req_builder = model.completion_request(&full_prompt);
 
-    // Inject filesystem tools if thread_id is available in context
+    // Inject filesystem tools if bench_id or thread_id is available in context
     if let Some(ctx) = &payload.context {
-        if let Some(thread_id_val) = ctx.get("thread_id") {
-            if let Some(thread_id_str) = thread_id_val.as_str() {
-                if let Ok(thread_id) = uuid::Uuid::parse_str(thread_id_str) {
-                    use rig_core::tool::portable_tool_definition;
-                    req_builder = req_builder
-                        .tool(portable_tool_definition(&crate::llm_tools::ReadFileTool { thread_id }))
-                        .tool(portable_tool_definition(&crate::llm_tools::WriteFileTool { thread_id }))
-                        .tool(portable_tool_definition(&crate::llm_tools::ReplaceInFileTool { thread_id }))
-                        .tool(portable_tool_definition(&crate::llm_tools::ListFilesTool { thread_id }))
-                        .tool(portable_tool_definition(&crate::llm_tools::DeleteFileTool { thread_id }))
-                        .tool(portable_tool_definition(&crate::llm_tools::RenameFileTool { thread_id }));
-                }
+        let bench_id_opt = if let Some(bid_val) = ctx.get("bench_id").and_then(|v| v.as_str()) {
+            uuid::Uuid::parse_str(bid_val).ok()
+        } else if let Some(tid_val) = ctx.get("thread_id").and_then(|v| v.as_str()) {
+            if let Ok(tid) = uuid::Uuid::parse_str(tid_val) {
+                sqlx::query_scalar::<_, Uuid>("SELECT bench_id FROM threads WHERE id = $1")
+                    .bind(tid)
+                    .fetch_optional(&state.pool)
+                    .await
+                    .unwrap_or(None)
+                    .or(Some(tid))
+            } else {
+                None
             }
+        } else {
+            None
+        };
+
+        if let Some(bench_id) = bench_id_opt {
+            use rig_core::tool::portable_tool_definition;
+            req_builder = req_builder
+                .tool(portable_tool_definition(&crate::llm_tools::ReadFileTool { bench_id }))
+                .tool(portable_tool_definition(&crate::llm_tools::WriteFileTool { bench_id }))
+                .tool(portable_tool_definition(&crate::llm_tools::ReplaceInFileTool { bench_id }))
+                .tool(portable_tool_definition(&crate::llm_tools::ListFilesTool { bench_id }))
+                .tool(portable_tool_definition(&crate::llm_tools::DeleteFileTool { bench_id }))
+                .tool(portable_tool_definition(&crate::llm_tools::RenameFileTool { bench_id }));
         }
     }
 

@@ -9,8 +9,8 @@ use uuid::Uuid;
 
 use crate::{
     models::{
-        CreateMessageRequest, CreateThreadRequest, ListThreadsRequest, Message, PageOptions,
-        Thread, UpdateThreadRequest,
+        CancelRunResponse, CreateMessageRequest, CreateMessageResponse, CreateThreadRequest,
+        ListThreadsRequest, Message, PageOptions, Thread, ThreadRun, UpdateThreadRequest,
     },
     state::AppState,
 };
@@ -21,8 +21,11 @@ pub fn router() -> Router<AppState> {
     Router::new()
         .route("/", post(list_threads))
         .route("/create", post(create_thread))
-        .route("/{id}", get(get_thread).put(update_thread))
+        .route("/{id}", get(get_thread).put(update_thread).delete(delete_thread))
         .route("/{id}/messages", get(list_messages).post(create_message))
+        .route("/{id}/runs/active", get(get_active_run))
+        .route("/{id}/runs/active/cancel", post(cancel_active_run))
+        .route("/{id}/runs", get(list_thread_runs))
 }
 
 pub async fn list_threads(
@@ -61,10 +64,45 @@ pub async fn create_thread(
     tracing::info!("Creating thread '{}'", payload.title);
     let tags_json = payload.tags.map(|t| sqlx::types::Json(t));
 
+    // If bench_id not provided, find or create default bench for this owner
+    let bench_id = match payload.bench_id {
+        Some(bid) => bid,
+        None => {
+            let default_bench = sqlx::query_as::<_, crate::models::Bench>(
+                "SELECT * FROM benches WHERE owner_id = $1 ORDER BY created_at ASC LIMIT 1"
+            )
+            .bind(payload.owner_id)
+            .fetch_optional(&state.pool)
+            .await
+            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to lookup bench: {}", e)))?;
+
+            match default_bench {
+                Some(b) => b.id,
+                None => {
+                    let new_bench_id = Uuid::new_v4();
+                    let fs_path = format!("/tmp/workspace/benches/{}", new_bench_id);
+                    let b = sqlx::query_as::<_, crate::models::Bench>(
+                        "INSERT INTO benches (id, owner_id, name, description, filesystem_path) VALUES ($1, $2, $3, $4, $5) RETURNING *"
+                    )
+                    .bind(new_bench_id)
+                    .bind(payload.owner_id)
+                    .bind("Default Bench")
+                    .bind("Auto-created default bench")
+                    .bind(&fs_path)
+                    .fetch_one(&state.pool)
+                    .await
+                    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to create default bench: {}", e)))?;
+                    b.id
+                }
+            }
+        }
+    };
+
     let thread = sqlx::query_as::<_, Thread>(
-        "INSERT INTO threads (owner_id, title, description, tags) VALUES ($1, $2, $3, $4) RETURNING *"
+        "INSERT INTO threads (owner_id, bench_id, title, description, tags) VALUES ($1, $2, $3, $4, $5) RETURNING *"
     )
     .bind(payload.owner_id)
+    .bind(bench_id)
     .bind(&payload.title)
     .bind(&payload.description)
     .bind(tags_json)
@@ -72,16 +110,16 @@ pub async fn create_thread(
     .await
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to create thread: {}", e)))?;
 
-    // Create the isolated workspace directory for this thread
-    let workspace_path = format!("/tmp/workspace/{}", thread.id);
+    // Ensure the bench workspace directory exists
+    let workspace_path = crate::webserver::fs::get_workspace_root(bench_id);
     if let Err(e) = std::fs::create_dir_all(&workspace_path) {
         return Err((
             StatusCode::INTERNAL_SERVER_ERROR,
-            format!("Failed to create workspace directory: {}", e),
+            format!("Failed to create bench workspace directory: {}", e),
         ));
     }
 
-    tracing::info!("Thread '{}' created successfully (ID: {})", thread.title, thread.id);
+    tracing::info!("Thread '{}' created successfully (ID: {}, Bench: {})", thread.title, thread.id, bench_id);
 
     Ok((StatusCode::CREATED, Json(thread)))
 }
@@ -130,6 +168,26 @@ pub async fn update_thread(
     }
 }
 
+pub async fn delete_thread(
+    State(state): State<AppState>,
+    Path(id): Path<Uuid>,
+) -> Result<StatusCode, (StatusCode, String)> {
+    tracing::info!("Deleting thread ID: {}", id);
+
+    let res = sqlx::query("DELETE FROM threads WHERE id = $1")
+        .bind(id)
+        .execute(&state.pool)
+        .await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to delete thread: {}", e)))?;
+
+    if res.rows_affected() == 0 {
+        return Err((StatusCode::NOT_FOUND, "Thread not found".to_string()));
+    }
+
+    tracing::info!("Thread deleted successfully (ID: {})", id);
+    Ok(StatusCode::NO_CONTENT)
+}
+
 pub async fn list_messages(
     State(state): State<AppState>,
     Path(thread_id): Path<Uuid>,
@@ -148,10 +206,12 @@ pub async fn list_messages(
 async fn process_thread_message(
     state: &AppState,
     thread_id: Uuid,
+    bench_id: Uuid,
+    run_id: Option<Uuid>,
     user_content: &str,
     history: &[Message],
-) -> String {
-    let workspace_root = crate::webserver::fs::get_workspace_root(thread_id);
+) -> Option<String> {
+    let workspace_root = crate::webserver::fs::get_workspace_root(bench_id);
     let mut files = Vec::new();
     if let Ok(entries) = std::fs::read_dir(&workspace_root) {
         for entry in entries.flatten() {
@@ -168,9 +228,26 @@ async fn process_thread_message(
         format!("Current files in workspace: {}", files.join(", "))
     };
 
+    // Fetch bench working memory to include in baseline prompt preamble
+    let bench_memory = sqlx::query_scalar::<_, String>(
+        "SELECT content FROM bench_memory WHERE bench_id = $1 AND memory_type = 'working' LIMIT 1"
+    )
+    .bind(bench_id)
+    .fetch_optional(&state.pool)
+    .await
+    .ok()
+    .flatten()
+    .unwrap_or_default();
+
+    let memory_summary = if bench_memory.trim().is_empty() {
+        "No shared bench memory recorded yet.".to_string()
+    } else {
+        format!("Shared Bench Working Memory:\n\"\"\"\n{}\n\"\"\"", bench_memory.trim())
+    };
+
     let system_prompt = format!(
-        "You are an AI assistant collaborating with a developer in an isolated workspace (thread {}).\n{}\nYou have filesystem tools available (list_files, read_file, write_file, replace_in_file, rename_file, delete_file).\nPlease interpret questions and instructions in the context of the ongoing conversation, and respond helpfully.",
-        thread_id, files_summary
+        "You are an AI assistant collaborating with a developer in an isolated workspace (bench {}, thread {}).\n{}\n{}\nYou have filesystem tools (list_files, read_file, write_file, replace_in_file, rename_file, delete_file) and shared memory tools (read_bench_memory, update_bench_memory).\nPlease interpret questions and instructions in the context of the ongoing conversation, and respond helpfully.",
+        bench_id, thread_id, files_summary, memory_summary
     );
 
     let mut rig_history = Vec::new();
@@ -183,8 +260,8 @@ async fn process_thread_message(
     }
 
     tracing::info!(
-        "LLM Prompt dispatched [Thread: {} | Model: {} | Endpoint: {} | Prior turns: {}]:\n--- PREAMBLE ---\n{}\n--- CURRENT PROMPT ---\n{}",
-        thread_id, state.config.llm.model, state.config.llm.ollama_url, rig_history.len(), system_prompt, user_content
+        "LLM Prompt dispatched [Bench: {} | Thread: {} | Model: {} | Endpoint: {} | Prior turns: {}]:\n--- PREAMBLE ---\n{}\n--- CURRENT PROMPT ---\n{}",
+        bench_id, thread_id, state.config.llm.model, state.config.llm.ollama_url, rig_history.len(), system_prompt, user_content
     );
 
     let client_builder = rig::providers::ollama::Client::builder()
@@ -194,12 +271,14 @@ async fn process_thread_message(
     let llm_res = if let Ok(client) = client_builder.build() {
         let agent = client.agent(&state.config.llm.model)
             .preamble(&system_prompt)
-            .tool(crate::llm_tools::ReadFileTool { thread_id })
-            .tool(crate::llm_tools::WriteFileTool { thread_id })
-            .tool(crate::llm_tools::ReplaceInFileTool { thread_id })
-            .tool(crate::llm_tools::ListFilesTool { thread_id })
-            .tool(crate::llm_tools::DeleteFileTool { thread_id })
-            .tool(crate::llm_tools::RenameFileTool { thread_id })
+            .tool(crate::llm_tools::ReadFileTool { bench_id })
+            .tool(crate::llm_tools::WriteFileTool { bench_id })
+            .tool(crate::llm_tools::ReplaceInFileTool { bench_id })
+            .tool(crate::llm_tools::ListFilesTool { bench_id })
+            .tool(crate::llm_tools::DeleteFileTool { bench_id })
+            .tool(crate::llm_tools::RenameFileTool { bench_id })
+            .tool(crate::llm_tools::ReadBenchMemoryTool { bench_id, pool: state.pool.clone() })
+            .tool(crate::llm_tools::UpdateBenchMemoryTool { bench_id, pool: state.pool.clone() })
             .default_max_turns(5)
             .build();
 
@@ -242,8 +321,21 @@ async fn process_thread_message(
                         let default_args = serde_json::json!({});
                         let args = call_obj.get("arguments").unwrap_or(&default_args);
 
-                        tracing::info!("Detected raw tool call for '{}' in agent output, executing against thread workspace {}", tool_name, thread_id);
-                        let tool_result = crate::llm_tools::execute_workspace_tool(thread_id, tool_name, args).await;
+                        if let Some(rid) = run_id {
+                            if is_run_cancelled(&state.pool, rid).await {
+                                tracing::info!("Run {} was cancelled before executing tool '{}'", rid, tool_name);
+                                record_cancellation_message(&state.pool, thread_id, rid).await;
+                                return None;
+                            }
+                            set_run_phase(&state.pool, rid, "executing_tool", Some(tool_name)).await;
+                        }
+
+                        tracing::info!("Detected raw tool call for '{}' in agent output, executing against bench workspace {}", tool_name, bench_id);
+                        let tool_result = crate::llm_tools::execute_workspace_tool(bench_id, tool_name, args, Some(&state.pool)).await;
+
+                        if let Some(rid) = run_id {
+                            set_run_phase(&state.pool, rid, "thinking", None).await;
+                        }
 
                         match tool_result {
                             Ok(output) => {
@@ -296,10 +388,17 @@ async fn process_thread_message(
     };
 
     if let Some(text) = llm_res {
-        text
+        Some(text)
     } else {
+        if let Some(rid) = run_id {
+            if is_run_cancelled(&state.pool, rid).await {
+                return None;
+            }
+        }
         let lower = user_content.to_lowercase();
-        if lower.contains("file") && (lower.contains("what") || lower.contains("list") || lower.contains("show") || lower.contains("which") || lower.contains("are")) {
+        let fallback_text = if (lower.contains("memory") || lower.contains("constraint") || lower.contains("tech stack") || lower.contains("decision")) && !bench_memory.trim().is_empty() {
+            format!("According to the bench memory:\n{}", bench_memory.trim())
+        } else if lower.contains("file") && (lower.contains("what") || lower.contains("list") || lower.contains("show") || lower.contains("which") || lower.contains("are")) {
             if files.is_empty() {
                 "There are currently no files in the workspace directory.".to_string()
             } else {
@@ -320,7 +419,8 @@ async fn process_thread_message(
             format!("Created file `{}` in the workspace.", safe_name)
         } else {
             format!("Processed request: \"{}\". {}", user_content, files_summary)
-        }
+        };
+        Some(fallback_text)
     }
 }
 
@@ -328,7 +428,7 @@ pub async fn create_message(
     State(state): State<AppState>,
     Path(thread_id): Path<Uuid>,
     Json(payload): Json<CreateMessageRequest>,
-) -> Result<(StatusCode, Json<Message>), (StatusCode, String)> {
+) -> Result<(StatusCode, Json<CreateMessageResponse>), (StatusCode, String)> {
     tracing::info!("Creating message in thread {} (role: {})", thread_id, payload.role);
 
     // Retrieve previous conversation history before storing new message
@@ -351,17 +451,180 @@ pub async fn create_message(
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to create message: {}", e)))?;
 
     if payload.role == "user" {
-        let assistant_reply = process_thread_message(&state, thread_id, &payload.content, &prior_messages).await;
-        tracing::info!("Agent response generated for thread {}: {}", thread_id, assistant_reply);
+        let thread_record = sqlx::query_as::<_, Thread>("SELECT * FROM threads WHERE id = $1")
+            .bind(thread_id)
+            .fetch_optional(&state.pool)
+            .await
+            .unwrap_or(None);
 
-        let _ = sqlx::query(
-            "INSERT INTO messages (thread_id, role, content) VALUES ($1, 'assistant', $2)"
+        let bench_id = thread_record.map(|t| t.bench_id).unwrap_or(thread_id);
+
+        let run = sqlx::query_as::<_, ThreadRun>(
+            "INSERT INTO thread_runs (thread_id, bench_id, status, current_phase) VALUES ($1, $2, 'running', 'thinking') RETURNING *"
         )
         .bind(thread_id)
-        .bind(&assistant_reply)
-        .execute(&state.pool)
+        .bind(bench_id)
+        .fetch_one(&state.pool)
+        .await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to create thread run: {}", e)))?;
+
+        let run_id = run.id;
+        let state_clone = state.clone();
+        let content_clone = payload.content.clone();
+
+        tokio::spawn(async move {
+            let assistant_reply = process_thread_message(&state_clone, thread_id, bench_id, Some(run_id), &content_clone, &prior_messages).await;
+            if let Some(reply) = assistant_reply {
+                if is_run_cancelled(&state_clone.pool, run_id).await {
+                    record_cancellation_message(&state_clone.pool, thread_id, run_id).await;
+                    return;
+                }
+
+                let _ = sqlx::query(
+                    "INSERT INTO messages (thread_id, role, content) VALUES ($1, 'assistant', $2)"
+                )
+                .bind(thread_id)
+                .bind(&reply)
+                .execute(&state_clone.pool)
+                .await;
+
+                let _ = sqlx::query(
+                    "UPDATE thread_runs SET status = 'completed', current_phase = 'completed', updated_at = NOW() WHERE id = $1"
+                )
+                .bind(run_id)
+                .execute(&state_clone.pool)
+                .await;
+            } else if is_run_cancelled(&state_clone.pool, run_id).await {
+                record_cancellation_message(&state_clone.pool, thread_id, run_id).await;
+            } else {
+                let _ = sqlx::query(
+                    "UPDATE thread_runs SET status = 'failed', current_phase = 'failed', error = 'Execution produced no reply', updated_at = NOW() WHERE id = $1"
+                )
+                .bind(run_id)
+                .execute(&state_clone.pool)
+                .await;
+            }
+        });
+
+        Ok((StatusCode::ACCEPTED, Json(CreateMessageResponse {
+            message,
+            run_id: Some(run_id),
+        })))
+    } else {
+        Ok((StatusCode::CREATED, Json(CreateMessageResponse {
+            message,
+            run_id: None,
+        })))
+    }
+}
+
+pub async fn get_active_run(
+    State(state): State<AppState>,
+    Path(thread_id): Path<Uuid>,
+) -> Result<(StatusCode, Json<Option<ThreadRun>>), (StatusCode, String)> {
+    let run = sqlx::query_as::<_, ThreadRun>(
+        "SELECT * FROM thread_runs WHERE thread_id = $1 AND status IN ('pending', 'running') ORDER BY created_at DESC LIMIT 1"
+    )
+    .bind(thread_id)
+    .fetch_optional(&state.pool)
+    .await
+    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to query active run: {}", e)))?;
+
+    match run {
+        Some(r) => Ok((StatusCode::OK, Json(Some(r)))),
+        None => Ok((StatusCode::NO_CONTENT, Json(None))),
+    }
+}
+
+pub async fn cancel_active_run(
+    State(state): State<AppState>,
+    Path(thread_id): Path<Uuid>,
+) -> Result<Json<CancelRunResponse>, (StatusCode, String)> {
+    tracing::info!("Cancellation requested for thread {}", thread_id);
+    let active_runs = sqlx::query_as::<_, ThreadRun>(
+        "SELECT * FROM thread_runs WHERE thread_id = $1 AND status IN ('pending', 'running') ORDER BY created_at DESC"
+    )
+    .bind(thread_id)
+    .fetch_all(&state.pool)
+    .await
+    .unwrap_or_default();
+
+    if !active_runs.is_empty() {
+        for run in active_runs {
+            record_cancellation_message(&state.pool, thread_id, run.id).await;
+        }
+
+        Ok(Json(CancelRunResponse {
+            message: "Action cancelled successfully".to_string(),
+            status: "cancelled".to_string(),
+        }))
+    } else {
+        Ok(Json(CancelRunResponse {
+            message: "No active action was in progress".to_string(),
+            status: "idle".to_string(),
+        }))
+    }
+}
+
+pub async fn list_thread_runs(
+    State(state): State<AppState>,
+    Path(thread_id): Path<Uuid>,
+) -> Result<Json<Vec<ThreadRun>>, (StatusCode, String)> {
+    let runs = sqlx::query_as::<_, ThreadRun>(
+        "SELECT * FROM thread_runs WHERE thread_id = $1 ORDER BY created_at DESC LIMIT 20"
+    )
+    .bind(thread_id)
+    .fetch_all(&state.pool)
+    .await
+    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to list thread runs: {}", e)))?;
+
+    Ok(Json(runs))
+}
+
+async fn is_run_cancelled(pool: &sqlx::PgPool, run_id: Uuid) -> bool {
+    sqlx::query_scalar::<_, String>("SELECT status FROM thread_runs WHERE id = $1")
+        .bind(run_id)
+        .fetch_optional(pool)
+        .await
+        .ok()
+        .flatten()
+        .map(|s| s == "cancelled")
+        .unwrap_or(false)
+}
+
+async fn set_run_phase(pool: &sqlx::PgPool, run_id: Uuid, phase: &str, tool_name: Option<&str>) {
+    let _ = sqlx::query(
+        "UPDATE thread_runs SET current_phase = $1, active_tool_name = $2, updated_at = NOW() WHERE id = $3"
+    )
+    .bind(phase)
+    .bind(tool_name)
+    .bind(run_id)
+    .execute(pool)
+    .await;
+}
+
+async fn record_cancellation_message(pool: &sqlx::PgPool, thread_id: Uuid, run_id: Uuid) {
+    let has_cancel_msg = sqlx::query_scalar::<_, bool>(
+        "SELECT EXISTS(SELECT 1 FROM messages WHERE thread_id = $1 AND role = 'system' AND content = '[Action cancelled by user]' AND created_at >= NOW() - INTERVAL '1 minute')"
+    )
+    .bind(thread_id)
+    .fetch_one(pool)
+    .await
+    .unwrap_or(false);
+
+    if !has_cancel_msg {
+        let _ = sqlx::query(
+            "INSERT INTO messages (thread_id, role, content) VALUES ($1, 'system', '[Action cancelled by user]')"
+        )
+        .bind(thread_id)
+        .execute(pool)
         .await;
     }
 
-    Ok((StatusCode::CREATED, Json(message)))
+    let _ = sqlx::query(
+        "UPDATE thread_runs SET status = 'cancelled', current_phase = 'cancelled', updated_at = NOW() WHERE id = $1"
+    )
+    .bind(run_id)
+    .execute(pool)
+    .await;
 }
