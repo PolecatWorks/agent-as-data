@@ -170,13 +170,19 @@ flowchart TD
 - **Tool Ingestion**: Register external MCP servers Stdio commands or SSE transport URLs (`POST /{{api_prefix}}/v1/agents/tools/register`).
 - **Cached Tool & Schema Browser**: Inspect cached tool argument schemas, descriptions, and type signatures retrieved from remote servers.
 
-### 9. Workbench (Multiuser Conversational Threads) (`/workbench`)
-- **2-Column Layout**:
-  - **Left Sidebar**: Collapsible threads list showing historical conversations (filtered by current active `userid`) with a global search filter. Each thread is rendered as a rich card displaying the thread title, short-form date badge, description (if any), and string tags.
-  - **Right Workspace**: A resizable split-pane area containing the conversation and editor views, topped by a global action bar.
-    - **Top Bar**: Contains the global application navigation menu, context badges, a solid blue "New Thread" button, layout view toggles, and a user profile button.
-    - **Conversation Pane (Left)**: Conversational chat interface for the active thread. Features a click-to-edit thread title header and a message input area. Supports direct URL routing via `/workbench/:threadId`.
-    - **Editor Pane (Right)**: Direct content editing and review area (e.g., code diffs, files, or context modified through conversation). It supports basic text file editing capabilities to create, edit, save, and delete files. Currently limited to text (`.txt`) and markdown (`.md`) files. Other file types will be supported in the future via MFE plugins to ensure extensibility.
+### 9. Workbench (Benches, Threads & Workspace Memory) (`/workbench`)
+- **Bench-Scoped Workspace Model**:
+  - The Workbench operates under a hierarchical **Bench** project structure. Each Bench owns an isolated filesystem directory (`/tmp/workspace/benches/<bench_id>`) and encapsulates multiple conversation threads and shared working memory.
+  - Detailed architecture and interactions are specified in [Workbench Benches, Threads & Workspace Memory PRD](./workbench-bench-thread-prd.md).
+- **Navigation & Layout**:
+  - **Top Bar Context & Breadcrumb**: Displays an active Bench pill badge and breadcrumb navigation (`Workbench > <Bench Name> > <Thread Title>`).
+  - **Left Sidebar**:
+    - **Header**: Scoped Bench Switcher dropdown with inline `+ New Bench` (no modals) and inline rename (`edit` pencil).
+    - **Threads List**: Searchable thread cards strictly scoped to the active Bench, supporting inline creation (`+ New Thread`), inline renaming, and safe two-step inline deletion.
+  - **Right Workspace**: Resizable split-pane area containing:
+    - **Conversation Pane (Left)**: Conversational chat interface for the active thread with click-to-edit header title.
+    - **Editor & Memory Pane (Right)**: Multi-tab workspace featuring `[ Files ]` (shared bench filesystem explorer and editor) and `[ Bench Memory ]` (developer scratchpad and project invariants editor).
+  - **Smart Routing**: URL schema `/workbench/:benchId/:threadId` with automatic forwarding to the most recent Bench and Thread when visiting `/workbench`.
 
 ### 10. Robot Framework Integration Testing Suite (Ref: `sward-warden/integration-tests`)
 - **Declarative User Journey Robot Tests**: `/integration-tests/tests/*.robot` test cases mapping 1-to-1 to all 12 user journeys, covering 24 tests total (all currently passing).

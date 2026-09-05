@@ -92,11 +92,10 @@
     <!-- Top Bar -->
     <div class="h-14 bg-white border-b border-slate-200 flex items-center justify-between px-4 shrink-0 shadow-sm z-10">
 
-      <!-- Left side of top bar (Context/Badges) -->
-      <div class="flex items-center gap-3">
-        <span class="bg-indigo-100 text-indigo-800 text-xs font-bold px-2.5 py-1 rounded-full flex items-center gap-1">
-          <mat-icon class="!w-3.5 !h-3.5 !text-sm">verified</mat-icon> Plan approved 🎉
-        </span>
+      <!-- Left side of top bar (Title) -->
+      <div class="flex items-center gap-2">
+        <mat-icon class="text-indigo-600">chat</mat-icon>
+        <h1 class="text-lg font-black text-slate-800 m-0">Workbench</h1>
       </div>
 
       <!-- Right side of top bar (Actions) -->
@@ -105,8 +104,8 @@
           <mat-icon>delete</mat-icon>
         </button>
 
-        <button class="bg-indigo-600 hover:bg-indigo-700 text-white transition-colors mr-2 w-9 h-9 flex items-center justify-center rounded-lg shadow-sm border-none cursor-pointer p-0" matTooltip="New Thread" (click)="createNewThread()">
-          <mat-icon class="!m-0 !p-0 flex items-center justify-center leading-none">add</mat-icon>
+        <button mat-flat-button color="primary" class="!rounded-lg !px-4 !font-bold h-9 mr-2" (click)="createNewThread()">
+          <mat-icon class="mr-1">add</mat-icon> New Thread
         </button>
 
         <!-- Hamburger Menu for App Navigation -->
