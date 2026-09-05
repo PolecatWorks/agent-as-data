@@ -28,7 +28,7 @@ pub struct WriteFileOutput {
 }
 
 pub struct ReadFileTool {
-    pub thread_id: Uuid,
+    pub bench_id: Uuid,
 }
 
 impl PortableTool for ReadFileTool {
@@ -55,7 +55,7 @@ impl PortableTool for ReadFileTool {
     }
 
     async fn call(&self, args: Self::Args) -> Result<Self::Output, Self::Error> {
-        let workspace_root = get_workspace_root(self.thread_id);
+        let workspace_root = get_workspace_root(self.bench_id);
 
         if !workspace_root.exists() {
             return Err(std::io::Error::new(std::io::ErrorKind::NotFound, "Workspace not found"));
@@ -79,7 +79,7 @@ impl PortableTool for ReadFileTool {
 }
 
 pub struct WriteFileTool {
-    pub thread_id: Uuid,
+    pub bench_id: Uuid,
 }
 
 impl PortableTool for WriteFileTool {
@@ -110,7 +110,7 @@ impl PortableTool for WriteFileTool {
     }
 
     async fn call(&self, args: Self::Args) -> Result<Self::Output, Self::Error> {
-        let workspace_root = get_workspace_root(self.thread_id);
+        let workspace_root = get_workspace_root(self.bench_id);
 
         if !workspace_root.exists() {
              std::fs::create_dir_all(&workspace_root)?;
@@ -148,7 +148,7 @@ pub struct ReplaceInFileOutput {
 }
 
 pub struct ReplaceInFileTool {
-    pub thread_id: Uuid,
+    pub bench_id: Uuid,
 }
 
 impl PortableTool for ReplaceInFileTool {
@@ -183,7 +183,7 @@ impl PortableTool for ReplaceInFileTool {
     }
 
     async fn call(&self, args: Self::Args) -> Result<Self::Output, Self::Error> {
-        let workspace_root = get_workspace_root(self.thread_id);
+        let workspace_root = get_workspace_root(self.bench_id);
 
         if !workspace_root.exists() {
             return Err(std::io::Error::new(std::io::ErrorKind::NotFound, "Workspace not found"));
@@ -194,6 +194,10 @@ impl PortableTool for ReplaceInFileTool {
 
         if !safe_path.exists() {
             return Err(std::io::Error::new(std::io::ErrorKind::NotFound, format!("File not found: {}", args.filepath)));
+        }
+
+        if safe_path.is_dir() {
+            return Err(std::io::Error::new(std::io::ErrorKind::InvalidInput, format!("Path is a directory: {}", args.filepath)));
         }
 
         let mut content = std::fs::read_to_string(&safe_path)?;
@@ -227,7 +231,7 @@ pub struct ListFilesOutput {
 }
 
 pub struct ListFilesTool {
-    pub thread_id: Uuid,
+    pub bench_id: Uuid,
 }
 
 impl PortableTool for ListFilesTool {
@@ -253,7 +257,7 @@ impl PortableTool for ListFilesTool {
     }
 
     async fn call(&self, args: Self::Args) -> Result<Self::Output, Self::Error> {
-        let workspace_root = get_workspace_root(self.thread_id);
+        let workspace_root = get_workspace_root(self.bench_id);
 
         if !workspace_root.exists() {
             return Err(std::io::Error::new(std::io::ErrorKind::NotFound, "Workspace not found"));
@@ -310,7 +314,7 @@ pub struct DeleteFileOutput {
 }
 
 pub struct DeleteFileTool {
-    pub thread_id: Uuid,
+    pub bench_id: Uuid,
 }
 
 impl PortableTool for DeleteFileTool {
@@ -337,7 +341,7 @@ impl PortableTool for DeleteFileTool {
     }
 
     async fn call(&self, args: Self::Args) -> Result<Self::Output, Self::Error> {
-        let workspace_root = get_workspace_root(self.thread_id);
+        let workspace_root = get_workspace_root(self.bench_id);
 
         if !workspace_root.exists() {
             return Err(std::io::Error::new(std::io::ErrorKind::NotFound, "Workspace not found"));
@@ -376,7 +380,7 @@ pub struct RenameFileOutput {
 }
 
 pub struct RenameFileTool {
-    pub thread_id: Uuid,
+    pub bench_id: Uuid,
 }
 
 impl PortableTool for RenameFileTool {
@@ -386,7 +390,7 @@ impl PortableTool for RenameFileTool {
     type Output = RenameFileOutput;
 
     fn description(&self) -> String {
-        "Renames and/or moves a file or directory in the workspace.".to_string()
+        "Renames or moves a file or directory in the workspace.".to_string()
     }
 
     fn parameters(&self) -> serde_json::Value {
@@ -395,7 +399,7 @@ impl PortableTool for RenameFileTool {
             "properties": {
                 "filepath": {
                     "type": "string",
-                    "description": "The original path of the file or directory, relative to the workspace root."
+                    "description": "The current path of the file or directory, relative to the workspace root."
                 },
                 "new_filepath": {
                     "type": "string",
@@ -407,7 +411,7 @@ impl PortableTool for RenameFileTool {
     }
 
     async fn call(&self, args: Self::Args) -> Result<Self::Output, Self::Error> {
-        let workspace_root = get_workspace_root(self.thread_id);
+        let workspace_root = get_workspace_root(self.bench_id);
 
         if !workspace_root.exists() {
             return Err(std::io::Error::new(std::io::ErrorKind::NotFound, "Workspace not found"));
@@ -442,51 +446,51 @@ impl PortableTool for RenameFileTool {
     }
 }
 
-pub async fn execute_workspace_tool(thread_id: Uuid, tool_name: &str, args_json: &serde_json::Value) -> Result<String, String> {
+pub async fn execute_workspace_tool(bench_id: Uuid, tool_name: &str, args_json: &serde_json::Value) -> Result<String, String> {
     match tool_name {
         ReadFileTool::NAME => {
             let args: ReadFileArgs = serde_json::from_value(args_json.clone())
                 .map_err(|e| format!("Invalid arguments for {}: {}", tool_name, e))?;
-            let tool = ReadFileTool { thread_id };
+            let tool = ReadFileTool { bench_id };
             let res = tool.call(args).await.map_err(|e| e.to_string())?;
             serde_json::to_string(&res).map_err(|e| e.to_string())
         }
         WriteFileTool::NAME => {
             let args: WriteFileArgs = serde_json::from_value(args_json.clone())
                 .map_err(|e| format!("Invalid arguments for {}: {}", tool_name, e))?;
-            let tool = WriteFileTool { thread_id };
+            let tool = WriteFileTool { bench_id };
             let res = tool.call(args).await.map_err(|e| e.to_string())?;
             serde_json::to_string(&res).map_err(|e| e.to_string())
         }
         ReplaceInFileTool::NAME => {
             let args: ReplaceInFileArgs = serde_json::from_value(args_json.clone())
                 .map_err(|e| format!("Invalid arguments for {}: {}", tool_name, e))?;
-            let tool = ReplaceInFileTool { thread_id };
+            let tool = ReplaceInFileTool { bench_id };
             let res = tool.call(args).await.map_err(|e| e.to_string())?;
             serde_json::to_string(&res).map_err(|e| e.to_string())
         }
         ListFilesTool::NAME => {
             let args: ListFilesArgs = serde_json::from_value(args_json.clone())
                 .unwrap_or(ListFilesArgs { dir_path: None });
-            let tool = ListFilesTool { thread_id };
+            let tool = ListFilesTool { bench_id };
             let res = tool.call(args).await.map_err(|e| e.to_string())?;
             serde_json::to_string(&res).map_err(|e| e.to_string())
         }
         DeleteFileTool::NAME => {
             let args: DeleteFileArgs = serde_json::from_value(args_json.clone())
                 .map_err(|e| format!("Invalid arguments for {}: {}", tool_name, e))?;
-            let tool = DeleteFileTool { thread_id };
+            let tool = DeleteFileTool { bench_id };
             let res = tool.call(args).await.map_err(|e| e.to_string())?;
             serde_json::to_string(&res).map_err(|e| e.to_string())
         }
         RenameFileTool::NAME => {
             let args: RenameFileArgs = serde_json::from_value(args_json.clone())
                 .map_err(|e| format!("Invalid arguments for {}: {}", tool_name, e))?;
-            let tool = RenameFileTool { thread_id };
+            let tool = RenameFileTool { bench_id };
             let res = tool.call(args).await.map_err(|e| e.to_string())?;
             serde_json::to_string(&res).map_err(|e| e.to_string())
         }
-        _ => Err(format!("Unknown workspace tool: {}", tool_name)),
+        _ => Err(format!("Unknown tool: {}", tool_name)),
     }
 }
 
@@ -496,16 +500,16 @@ mod tests {
 
     #[tokio::test]
     async fn test_portable_fs_tools() {
-        let thread_id = Uuid::new_v4();
-        let workspace_root = get_workspace_root(thread_id);
+        let bench_id = Uuid::new_v4();
+        let workspace_root = get_workspace_root(bench_id);
         let _ = std::fs::remove_dir_all(&workspace_root);
 
-        let write_tool = WriteFileTool { thread_id };
-        let read_tool = ReadFileTool { thread_id };
-        let replace_tool = ReplaceInFileTool { thread_id };
-        let list_tool = ListFilesTool { thread_id };
-        let rename_tool = RenameFileTool { thread_id };
-        let delete_tool = DeleteFileTool { thread_id };
+        let write_tool = WriteFileTool { bench_id };
+        let read_tool = ReadFileTool { bench_id };
+        let replace_tool = ReplaceInFileTool { bench_id };
+        let list_tool = ListFilesTool { bench_id };
+        let rename_tool = RenameFileTool { bench_id };
+        let delete_tool = DeleteFileTool { bench_id };
 
         // 1. Write file
         let write_res = write_tool
@@ -579,12 +583,12 @@ mod tests {
 
     #[tokio::test]
     async fn test_portable_fs_tools_path_traversal() {
-        let thread_id = Uuid::new_v4();
-        let workspace_root = get_workspace_root(thread_id);
+        let bench_id = Uuid::new_v4();
+        let workspace_root = get_workspace_root(bench_id);
         let _ = std::fs::remove_dir_all(&workspace_root);
 
-        let write_tool = WriteFileTool { thread_id };
-        let read_tool = ReadFileTool { thread_id };
+        let write_tool = WriteFileTool { bench_id };
+        let read_tool = ReadFileTool { bench_id };
 
         // Attempt path traversal via write
         let write_res = write_tool
@@ -608,8 +612,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_execute_workspace_tool_dispatch() {
-        let thread_id = Uuid::new_v4();
-        let workspace_root = get_workspace_root(thread_id);
+        let bench_id = Uuid::new_v4();
+        let workspace_root = get_workspace_root(bench_id);
         let _ = std::fs::remove_dir_all(&workspace_root);
 
         // 1. Dispatch write_file
@@ -617,12 +621,12 @@ mod tests {
             "filepath": "sample.txt",
             "content": "Hello via dispatcher!"
         });
-        let write_out = execute_workspace_tool(thread_id, "write_file", &write_args).await;
+        let write_out = execute_workspace_tool(bench_id, "write_file", &write_args).await;
         assert!(write_out.is_ok());
 
         // 2. Dispatch list_files
         let list_args = json!({});
-        let list_out = execute_workspace_tool(thread_id, "list_files", &list_args).await;
+        let list_out = execute_workspace_tool(bench_id, "list_files", &list_args).await;
         assert!(list_out.is_ok());
         assert!(list_out.unwrap().contains("sample.txt"));
 
@@ -630,12 +634,12 @@ mod tests {
         let read_args = json!({
             "filepath": "sample.txt"
         });
-        let read_out = execute_workspace_tool(thread_id, "read_file", &read_args).await;
+        let read_out = execute_workspace_tool(bench_id, "read_file", &read_args).await;
         assert!(read_out.is_ok());
         assert!(read_out.unwrap().contains("Hello via dispatcher!"));
 
         // 4. Dispatch unknown tool
-        let unknown_out = execute_workspace_tool(thread_id, "nonexistent_tool", &json!({})).await;
+        let unknown_out = execute_workspace_tool(bench_id, "nonexistent_tool", &json!({})).await;
         assert!(unknown_out.is_err());
 
         let _ = std::fs::remove_dir_all(&workspace_root);

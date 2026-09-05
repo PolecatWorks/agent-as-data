@@ -6,6 +6,7 @@ pub mod tool;
 pub mod knowledge;
 pub mod thread;
 pub mod execution;
+pub mod bench;
 
 pub use common::*;
 pub use agent::*;
@@ -15,3 +16,4 @@ pub use tool::*;
 pub use knowledge::*;
 pub use thread::*;
 pub use execution::*;
+pub use bench::*;

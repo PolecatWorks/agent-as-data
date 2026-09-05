@@ -11,6 +11,7 @@ pub struct ListThreadsRequest {
 #[derive(Deserialize, Serialize, Debug, Clone, sqlx::FromRow)]
 pub struct Thread {
     pub id: Uuid,
+    pub bench_id: Uuid,
     pub owner_id: Uuid,
     pub title: String,
     pub description: Option<String>,
@@ -23,6 +24,7 @@ pub struct Thread {
 pub struct CreateThreadRequest {
     pub title: String,
     pub owner_id: Uuid,
+    pub bench_id: Option<Uuid>,
     pub description: Option<String>,
     pub tags: Option<Vec<String>>,
 }
