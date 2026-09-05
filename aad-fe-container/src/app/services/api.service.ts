@@ -90,6 +90,17 @@ export interface Bench {
   updated_at?: string;
 }
 
+export interface BenchMemory {
+  id: string;
+  bench_id: string;
+  memory_type: string;
+  title: string;
+  content: string;
+  metadata?: any;
+  created_at?: string;
+  updated_at?: string;
+}
+
 export interface Thread {
   id: string;
   bench_id: string;
@@ -312,6 +323,26 @@ export class ApiService {
       owner_id: ownerId || this.ANONYMOUS_OWNER_ID,
       description,
       tags
+    });
+  }
+
+  // Workbench Bench Memory APIs
+  getBenchMemory(benchId: string): Observable<BenchMemory[]> {
+    return this.http.get<BenchMemory[]>(`${this.baseUrl}/benches/${benchId}/memory`);
+  }
+
+  upsertBenchWorkingMemory(benchId: string, content: string, title?: string): Observable<BenchMemory> {
+    return this.http.put<BenchMemory>(`${this.baseUrl}/benches/${benchId}/memory`, {
+      content,
+      title
+    });
+  }
+
+  appendBenchDecision(benchId: string, title: string, content: string, threadId?: string): Observable<BenchMemory> {
+    return this.http.post<BenchMemory>(`${this.baseUrl}/benches/${benchId}/memory/decision`, {
+      title,
+      content,
+      thread_id: threadId
     });
   }
 

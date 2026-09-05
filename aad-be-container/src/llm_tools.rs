@@ -446,7 +446,144 @@ impl PortableTool for RenameFileTool {
     }
 }
 
-pub async fn execute_workspace_tool(bench_id: Uuid, tool_name: &str, args_json: &serde_json::Value) -> Result<String, String> {
+#[derive(Deserialize)]
+pub struct ReadBenchMemoryArgs {}
+
+#[derive(Serialize)]
+pub struct ReadBenchMemoryOutput {
+    pub content: String,
+}
+
+pub struct ReadBenchMemoryTool {
+    pub bench_id: Uuid,
+    pub pool: sqlx::PgPool,
+}
+
+impl PortableTool for ReadBenchMemoryTool {
+    const NAME: &'static str = "read_bench_memory";
+    type Error = std::io::Error;
+    type Args = ReadBenchMemoryArgs;
+    type Output = ReadBenchMemoryOutput;
+
+    fn description(&self) -> String {
+        "Reads the shared working memory document for the current bench.".to_string()
+    }
+
+    fn parameters(&self) -> serde_json::Value {
+        json!({
+            "type": "object",
+            "properties": {}
+        })
+    }
+
+    async fn call(&self, _args: Self::Args) -> Result<Self::Output, Self::Error> {
+        let rec = sqlx::query_scalar::<_, String>(
+            "SELECT content FROM bench_memory WHERE bench_id = $1 AND memory_type = 'working' LIMIT 1"
+        )
+        .bind(self.bench_id)
+        .fetch_optional(&self.pool)
+        .await
+        .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, format!("Database error reading bench memory: {}", e)))?;
+
+        Ok(ReadBenchMemoryOutput {
+            content: rec.unwrap_or_default(),
+        })
+    }
+}
+
+#[derive(Deserialize)]
+pub struct UpdateBenchMemoryArgs {
+    pub content: String,
+    pub append: Option<bool>,
+}
+
+#[derive(Serialize)]
+pub struct UpdateBenchMemoryOutput {
+    pub success: bool,
+    pub message: String,
+}
+
+pub struct UpdateBenchMemoryTool {
+    pub bench_id: Uuid,
+    pub pool: sqlx::PgPool,
+}
+
+impl PortableTool for UpdateBenchMemoryTool {
+    const NAME: &'static str = "update_bench_memory";
+    type Error = std::io::Error;
+    type Args = UpdateBenchMemoryArgs;
+    type Output = UpdateBenchMemoryOutput;
+
+    fn description(&self) -> String {
+        "Updates or appends content to the shared working memory document for the current bench.".to_string()
+    }
+
+    fn parameters(&self) -> serde_json::Value {
+        json!({
+            "type": "object",
+            "properties": {
+                "content": {
+                    "type": "string",
+                    "description": "Content to write or append to the working memory."
+                },
+                "append": {
+                    "type": "boolean",
+                    "description": "If true, appends content to existing memory instead of replacing it. Defaults to false."
+                }
+            },
+            "required": ["content"]
+        })
+    }
+
+    async fn call(&self, args: Self::Args) -> Result<Self::Output, Self::Error> {
+        let should_append = args.append.unwrap_or(false);
+
+        if should_append {
+            sqlx::query(
+                "INSERT INTO bench_memory (bench_id, memory_type, title, content)
+                 VALUES ($1, 'working', 'Active Working Memory', $2)
+                 ON CONFLICT (bench_id) WHERE memory_type = 'working'
+                 DO UPDATE SET
+                     content = CASE 
+                         WHEN bench_memory.content = '' THEN EXCLUDED.content
+                         ELSE bench_memory.content || E'\\n\\n' || EXCLUDED.content
+                     END,
+                     updated_at = NOW()"
+            )
+            .bind(self.bench_id)
+            .bind(&args.content)
+            .execute(&self.pool)
+            .await
+            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, format!("Database error appending bench memory: {}", e)))?;
+        } else {
+            sqlx::query(
+                "INSERT INTO bench_memory (bench_id, memory_type, title, content)
+                 VALUES ($1, 'working', 'Active Working Memory', $2)
+                 ON CONFLICT (bench_id) WHERE memory_type = 'working'
+                 DO UPDATE SET
+                     content = EXCLUDED.content,
+                     updated_at = NOW()"
+            )
+            .bind(self.bench_id)
+            .bind(&args.content)
+            .execute(&self.pool)
+            .await
+            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, format!("Database error updating bench memory: {}", e)))?;
+        }
+
+        Ok(UpdateBenchMemoryOutput {
+            success: true,
+            message: "Working memory updated successfully.".to_string(),
+        })
+    }
+}
+
+pub async fn execute_workspace_tool(
+    bench_id: Uuid,
+    tool_name: &str,
+    args_json: &serde_json::Value,
+    pool: Option<&sqlx::PgPool>,
+) -> Result<String, String> {
     match tool_name {
         ReadFileTool::NAME => {
             let args: ReadFileArgs = serde_json::from_value(args_json.clone())
@@ -487,6 +624,28 @@ pub async fn execute_workspace_tool(bench_id: Uuid, tool_name: &str, args_json: 
             let args: RenameFileArgs = serde_json::from_value(args_json.clone())
                 .map_err(|e| format!("Invalid arguments for {}: {}", tool_name, e))?;
             let tool = RenameFileTool { bench_id };
+            let res = tool.call(args).await.map_err(|e| e.to_string())?;
+            serde_json::to_string(&res).map_err(|e| e.to_string())
+        }
+        ReadBenchMemoryTool::NAME => {
+            let pool = pool.ok_or_else(|| "Database pool required for read_bench_memory".to_string())?;
+            let args: ReadBenchMemoryArgs = serde_json::from_value(args_json.clone())
+                .unwrap_or(ReadBenchMemoryArgs {});
+            let tool = ReadBenchMemoryTool {
+                bench_id,
+                pool: pool.clone(),
+            };
+            let res = tool.call(args).await.map_err(|e| e.to_string())?;
+            serde_json::to_string(&res).map_err(|e| e.to_string())
+        }
+        UpdateBenchMemoryTool::NAME => {
+            let pool = pool.ok_or_else(|| "Database pool required for update_bench_memory".to_string())?;
+            let args: UpdateBenchMemoryArgs = serde_json::from_value(args_json.clone())
+                .map_err(|e| format!("Invalid arguments for {}: {}", tool_name, e))?;
+            let tool = UpdateBenchMemoryTool {
+                bench_id,
+                pool: pool.clone(),
+            };
             let res = tool.call(args).await.map_err(|e| e.to_string())?;
             serde_json::to_string(&res).map_err(|e| e.to_string())
         }
@@ -621,12 +780,12 @@ mod tests {
             "filepath": "sample.txt",
             "content": "Hello via dispatcher!"
         });
-        let write_out = execute_workspace_tool(bench_id, "write_file", &write_args).await;
+        let write_out = execute_workspace_tool(bench_id, "write_file", &write_args, None).await;
         assert!(write_out.is_ok());
 
         // 2. Dispatch list_files
         let list_args = json!({});
-        let list_out = execute_workspace_tool(bench_id, "list_files", &list_args).await;
+        let list_out = execute_workspace_tool(bench_id, "list_files", &list_args, None).await;
         assert!(list_out.is_ok());
         assert!(list_out.unwrap().contains("sample.txt"));
 
@@ -634,12 +793,12 @@ mod tests {
         let read_args = json!({
             "filepath": "sample.txt"
         });
-        let read_out = execute_workspace_tool(bench_id, "read_file", &read_args).await;
+        let read_out = execute_workspace_tool(bench_id, "read_file", &read_args, None).await;
         assert!(read_out.is_ok());
         assert!(read_out.unwrap().contains("Hello via dispatcher!"));
 
         // 4. Dispatch unknown tool
-        let unknown_out = execute_workspace_tool(bench_id, "nonexistent_tool", &json!({})).await;
+        let unknown_out = execute_workspace_tool(bench_id, "nonexistent_tool", &json!({}), None).await;
         assert!(unknown_out.is_err());
 
         let _ = std::fs::remove_dir_all(&workspace_root);

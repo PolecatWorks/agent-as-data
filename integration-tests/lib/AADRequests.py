@@ -187,3 +187,28 @@ class AADRequests:
         resp = requests.post(f"{self.base_url}/api/v1/benches/{bench_id}/fs/delete", json={"filepath": filepath}, timeout=5)
         resp.raise_for_status()
         return resp.json()
+
+    def get_bench_memory(self, bench_id):
+        resp = requests.get(f"{self.base_url}/api/v1/benches/{bench_id}/memory", timeout=5)
+        resp.raise_for_status()
+        return resp.json()
+
+    def upsert_bench_memory(self, bench_id, payload):
+        resp = requests.put(f"{self.base_url}/api/v1/benches/{bench_id}/memory", json=payload, timeout=5)
+        resp.raise_for_status()
+        return resp.json()
+
+    def append_bench_decision(self, bench_id, payload):
+        resp = requests.post(f"{self.base_url}/api/v1/benches/{bench_id}/memory/decision", json=payload, timeout=5)
+        resp.raise_for_status()
+        return resp.json()
+
+    def create_thread_message(self, thread_id, payload):
+        resp = requests.post(f"{self.base_url}/api/v1/threads/{thread_id}/messages", json=payload, timeout=180)
+        resp.raise_for_status()
+        return resp.json()
+
+    def get_thread_messages(self, thread_id):
+        resp = requests.get(f"{self.base_url}/api/v1/threads/{thread_id}/messages", timeout=5)
+        resp.raise_for_status()
+        return resp.json()

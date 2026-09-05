@@ -1,6 +1,6 @@
 # Spec 15: Workbench Bench Working Memory & Rig Tools Integration
 
-**Status**: `draft`
+**Status**: `complete`
 
 ## Overview & Scope
 This specification defines the implementation of **Phase 1: Explicit Bench Working Memory** within **Agent-As-Data (AAD)**. 
