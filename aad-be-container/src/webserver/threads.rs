@@ -61,10 +61,45 @@ pub async fn create_thread(
     tracing::info!("Creating thread '{}'", payload.title);
     let tags_json = payload.tags.map(|t| sqlx::types::Json(t));
 
+    // If bench_id not provided, find or create default bench for this owner
+    let bench_id = match payload.bench_id {
+        Some(bid) => bid,
+        None => {
+            let default_bench = sqlx::query_as::<_, crate::models::Bench>(
+                "SELECT * FROM benches WHERE owner_id = $1 ORDER BY created_at ASC LIMIT 1"
+            )
+            .bind(payload.owner_id)
+            .fetch_optional(&state.pool)
+            .await
+            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to lookup bench: {}", e)))?;
+
+            match default_bench {
+                Some(b) => b.id,
+                None => {
+                    let new_bench_id = Uuid::new_v4();
+                    let fs_path = format!("/tmp/workspace/benches/{}", new_bench_id);
+                    let b = sqlx::query_as::<_, crate::models::Bench>(
+                        "INSERT INTO benches (id, owner_id, name, description, filesystem_path) VALUES ($1, $2, $3, $4, $5) RETURNING *"
+                    )
+                    .bind(new_bench_id)
+                    .bind(payload.owner_id)
+                    .bind("Default Bench")
+                    .bind("Auto-created default bench")
+                    .bind(&fs_path)
+                    .fetch_one(&state.pool)
+                    .await
+                    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to create default bench: {}", e)))?;
+                    b.id
+                }
+            }
+        }
+    };
+
     let thread = sqlx::query_as::<_, Thread>(
-        "INSERT INTO threads (owner_id, title, description, tags) VALUES ($1, $2, $3, $4) RETURNING *"
+        "INSERT INTO threads (owner_id, bench_id, title, description, tags) VALUES ($1, $2, $3, $4, $5) RETURNING *"
     )
     .bind(payload.owner_id)
+    .bind(bench_id)
     .bind(&payload.title)
     .bind(&payload.description)
     .bind(tags_json)
@@ -72,16 +107,16 @@ pub async fn create_thread(
     .await
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to create thread: {}", e)))?;
 
-    // Create the isolated workspace directory for this thread
-    let workspace_path = format!("/tmp/workspace/{}", thread.id);
+    // Ensure the bench workspace directory exists
+    let workspace_path = crate::webserver::fs::get_workspace_root(bench_id);
     if let Err(e) = std::fs::create_dir_all(&workspace_path) {
         return Err((
             StatusCode::INTERNAL_SERVER_ERROR,
-            format!("Failed to create workspace directory: {}", e),
+            format!("Failed to create bench workspace directory: {}", e),
         ));
     }
 
-    tracing::info!("Thread '{}' created successfully (ID: {})", thread.title, thread.id);
+    tracing::info!("Thread '{}' created successfully (ID: {}, Bench: {})", thread.title, thread.id, bench_id);
 
     Ok((StatusCode::CREATED, Json(thread)))
 }
@@ -148,10 +183,11 @@ pub async fn list_messages(
 async fn process_thread_message(
     state: &AppState,
     thread_id: Uuid,
+    bench_id: Uuid,
     user_content: &str,
     history: &[Message],
 ) -> String {
-    let workspace_root = crate::webserver::fs::get_workspace_root(thread_id);
+    let workspace_root = crate::webserver::fs::get_workspace_root(bench_id);
     let mut files = Vec::new();
     if let Ok(entries) = std::fs::read_dir(&workspace_root) {
         for entry in entries.flatten() {
@@ -169,8 +205,8 @@ async fn process_thread_message(
     };
 
     let system_prompt = format!(
-        "You are an AI assistant collaborating with a developer in an isolated workspace (thread {}).\n{}\nYou have filesystem tools available (list_files, read_file, write_file, replace_in_file, rename_file, delete_file).\nPlease interpret questions and instructions in the context of the ongoing conversation, and respond helpfully.",
-        thread_id, files_summary
+        "You are an AI assistant collaborating with a developer in an isolated workspace (bench {}, thread {}).\n{}\nYou have filesystem tools available (list_files, read_file, write_file, replace_in_file, rename_file, delete_file).\nPlease interpret questions and instructions in the context of the ongoing conversation, and respond helpfully.",
+        bench_id, thread_id, files_summary
     );
 
     let mut rig_history = Vec::new();
@@ -183,8 +219,8 @@ async fn process_thread_message(
     }
 
     tracing::info!(
-        "LLM Prompt dispatched [Thread: {} | Model: {} | Endpoint: {} | Prior turns: {}]:\n--- PREAMBLE ---\n{}\n--- CURRENT PROMPT ---\n{}",
-        thread_id, state.config.llm.model, state.config.llm.ollama_url, rig_history.len(), system_prompt, user_content
+        "LLM Prompt dispatched [Bench: {} | Thread: {} | Model: {} | Endpoint: {} | Prior turns: {}]:\n--- PREAMBLE ---\n{}\n--- CURRENT PROMPT ---\n{}",
+        bench_id, thread_id, state.config.llm.model, state.config.llm.ollama_url, rig_history.len(), system_prompt, user_content
     );
 
     let client_builder = rig::providers::ollama::Client::builder()
@@ -194,12 +230,12 @@ async fn process_thread_message(
     let llm_res = if let Ok(client) = client_builder.build() {
         let agent = client.agent(&state.config.llm.model)
             .preamble(&system_prompt)
-            .tool(crate::llm_tools::ReadFileTool { thread_id })
-            .tool(crate::llm_tools::WriteFileTool { thread_id })
-            .tool(crate::llm_tools::ReplaceInFileTool { thread_id })
-            .tool(crate::llm_tools::ListFilesTool { thread_id })
-            .tool(crate::llm_tools::DeleteFileTool { thread_id })
-            .tool(crate::llm_tools::RenameFileTool { thread_id })
+            .tool(crate::llm_tools::ReadFileTool { bench_id })
+            .tool(crate::llm_tools::WriteFileTool { bench_id })
+            .tool(crate::llm_tools::ReplaceInFileTool { bench_id })
+            .tool(crate::llm_tools::ListFilesTool { bench_id })
+            .tool(crate::llm_tools::DeleteFileTool { bench_id })
+            .tool(crate::llm_tools::RenameFileTool { bench_id })
             .default_max_turns(5)
             .build();
 
@@ -242,8 +278,8 @@ async fn process_thread_message(
                         let default_args = serde_json::json!({});
                         let args = call_obj.get("arguments").unwrap_or(&default_args);
 
-                        tracing::info!("Detected raw tool call for '{}' in agent output, executing against thread workspace {}", tool_name, thread_id);
-                        let tool_result = crate::llm_tools::execute_workspace_tool(thread_id, tool_name, args).await;
+                        tracing::info!("Detected raw tool call for '{}' in agent output, executing against bench workspace {}", tool_name, bench_id);
+                        let tool_result = crate::llm_tools::execute_workspace_tool(bench_id, tool_name, args).await;
 
                         match tool_result {
                             Ok(output) => {
@@ -351,7 +387,15 @@ pub async fn create_message(
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to create message: {}", e)))?;
 
     if payload.role == "user" {
-        let assistant_reply = process_thread_message(&state, thread_id, &payload.content, &prior_messages).await;
+        let thread_record = sqlx::query_as::<_, Thread>("SELECT * FROM threads WHERE id = $1")
+            .bind(thread_id)
+            .fetch_optional(&state.pool)
+            .await
+            .unwrap_or(None);
+
+        let bench_id = thread_record.map(|t| t.bench_id).unwrap_or(thread_id);
+
+        let assistant_reply = process_thread_message(&state, thread_id, bench_id, &payload.content, &prior_messages).await;
         tracing::info!("Agent response generated for thread {}: {}", thread_id, assistant_reply);
 
         let _ = sqlx::query(

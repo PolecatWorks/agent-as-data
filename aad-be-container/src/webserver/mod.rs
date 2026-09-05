@@ -8,6 +8,7 @@ pub mod skills;
 pub mod threads;
 pub mod tools;
 pub mod traits;
+pub mod benches;
 
 use axum::{routing::get, Router};
 use axum_prometheus::PrometheusMetricLayer;
@@ -26,6 +27,8 @@ pub fn app_router(state: AppState) -> Router {
         .nest("/v1/agents/tools", tools::router())
         .nest("/v1/knowledge", knowledge::router())
         .nest("/v1", execution::router())
+        .nest("/v1/benches", benches::router())
+        .nest("/v1/benches", fs::router())
         .nest("/v1/threads", threads::router())
         .nest("/v1/threads", fs::router())
         .with_state(state.clone());
