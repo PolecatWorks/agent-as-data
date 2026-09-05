@@ -58,6 +58,11 @@ flowchart TD
         Spec15["15-workbench-bench-working-memory-spec.md<br/>(Bench Working Memory & Rig Tools)"]:::complete
     end
 
+    subgraph Phase7 ["Phase 7: Action Lifecycle & Distributed Cancellation"]
+        Spec16["16-workbench-persistent-action-tracking-and-cancellation-spec.md<br/>(Persistent Action Tracking & Pre-Tool Cancellation Backend)"]:::draft
+        Spec17["17-workbench-action-in-progress-reload-and-cancellation-ui-spec.md<br/>(In-Progress Reload State & Cancellation UI)"]:::draft
+    end
+
     classDef complete fill:#10B981,stroke:#047857,stroke-width:2px,color:#ffffff;
     classDef draft fill:#3B82F6,stroke:#1D4ED8,stroke-width:2px,color:#ffffff;
 
@@ -95,6 +100,8 @@ flowchart TD
     Spec12 --> Spec13
     Spec13 --> Spec14
     Spec14 --> Spec15
+    Spec15 --> Spec16
+    Spec16 --> Spec17
 ```
 
 ## Index of Task Specifications
@@ -118,3 +125,5 @@ flowchart TD
 | **Phase 6** | [13-workbench-benches-domain-and-scoped-execution-spec.md](./13-workbench-benches-domain-and-scoped-execution-spec.md) | `complete` | Benches Domain Models, Database Migrations, Scoped Filesystem APIs (`/tmp/workspace/benches/<id>`), and Rig Tool Scoping | [Workbench Bench & Thread PRD](../prds/workbench-bench-thread-prd.md) | Step 1 of Phase 6 (Depends on Spec 12) |
 | **Phase 6** | [14-workbench-benches-and-threads-ui-navigation-spec.md](./14-workbench-benches-and-threads-ui-navigation-spec.md) | `complete` | Scoped Bench Switcher Dropdown, Inline Non-Modal Management, Offset Deletion Confirmation, Top Bar Breadcrumbs & Smart Routing | [Workbench Bench & Thread PRD](../prds/workbench-bench-thread-prd.md) | Step 2 of Phase 6 (Depends on Spec 13) |
 | **Phase 6** | [15-workbench-bench-working-memory-spec.md](./15-workbench-bench-working-memory-spec.md) | `complete` | Bench Working Memory Schema (`bench_memory`), UI Scratchpad Editor Tab, and Rig Memory Tools (`read_bench_memory`, `update_bench_memory`) | [Workbench Bench & Thread PRD](../prds/workbench-bench-thread-prd.md) | Step 3 of Phase 6 (Depends on Spec 13 & 14) |
+| **Phase 7** | [16-workbench-persistent-action-tracking-and-cancellation-spec.md](./16-workbench-persistent-action-tracking-and-cancellation-spec.md) | `draft` | Thread Runs Persistence Schema (`thread_runs`), Async Worker Dispatch (`202 Accepted`), Active Run Query, & Distributed Pre-Tool Cancellation | [Workbench Bench & Thread PRD](../prds/workbench-bench-thread-prd.md) | Step 1 of Phase 7 (Depends on Spec 13 & 15) |
+| **Phase 7** | [17-workbench-action-in-progress-reload-and-cancellation-ui-spec.md](./17-workbench-action-in-progress-reload-and-cancellation-ui-spec.md) | `draft` | Active Run Screen Reload State Restoration, Animated Phase Banner, Interactive Cancel Action, & System Badge Formatting | [Workbench Bench & Thread PRD](../prds/workbench-bench-thread-prd.md) | Step 2 of Phase 7 (Depends on Spec 14 & 16) |
