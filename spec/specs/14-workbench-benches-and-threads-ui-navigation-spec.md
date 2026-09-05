@@ -1,6 +1,6 @@
 # Spec 14: Workbench Benches & Threads UI Navigation
 
-**Status**: `draft`
+**Status**: `complete`
 
 ## Overview & Scope
 This specification defines the frontend architecture and user experience in **`aad-fe-container`** for managing **Benches** and **Threads** within the **Workbench** view (`/workbench`).

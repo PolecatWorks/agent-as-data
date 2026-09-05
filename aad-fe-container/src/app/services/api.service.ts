@@ -80,8 +80,19 @@ export interface GuardrailConfig {
   output_guardrails: OutputGuardrails;
 }
 
+export interface Bench {
+  id: string;
+  owner_id: string;
+  name: string;
+  description?: string;
+  filesystem_path?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
 export interface Thread {
   id: string;
+  bench_id: string;
   owner_id: string;
   title: string;
   description?: string;
@@ -260,6 +271,50 @@ export class ApiService {
     return this.http.post(`${this.baseUrl}/agents/refactor/analyze`, {});
   }
 
+  // Workbench Benches APIs
+  getBenches(ownerId?: string): Observable<Bench[]> {
+    return this.http.post<Bench[]>(`${this.baseUrl}/benches`, {
+      owner_id: ownerId || this.ANONYMOUS_OWNER_ID,
+      pagination: { page: 0, size: 50 }
+    });
+  }
+
+  getBench(id: string): Observable<Bench> {
+    return this.http.get<Bench>(`${this.baseUrl}/benches/${id}`);
+  }
+
+  createBench(name: string, ownerId?: string, description?: string): Observable<Bench> {
+    return this.http.post<Bench>(`${this.baseUrl}/benches/create`, {
+      name,
+      owner_id: ownerId || this.ANONYMOUS_OWNER_ID,
+      description
+    });
+  }
+
+  updateBench(id: string, name?: string, description?: string): Observable<Bench> {
+    return this.http.put<Bench>(`${this.baseUrl}/benches/${id}`, {
+      name,
+      description
+    });
+  }
+
+  deleteBench(id: string): Observable<any> {
+    return this.http.delete(`${this.baseUrl}/benches/${id}`);
+  }
+
+  getBenchThreads(benchId: string): Observable<Thread[]> {
+    return this.http.get<Thread[]>(`${this.baseUrl}/benches/${benchId}/threads`);
+  }
+
+  createBenchThread(benchId: string, title: string, ownerId?: string, description?: string, tags?: string[]): Observable<Thread> {
+    return this.http.post<Thread>(`${this.baseUrl}/benches/${benchId}/threads`, {
+      title,
+      owner_id: ownerId || this.ANONYMOUS_OWNER_ID,
+      description,
+      tags
+    });
+  }
+
   // Workbench Threads APIs
   getThreads(ownerId?: string): Observable<Thread[]> {
     return this.http.post<Thread[]>(`${this.baseUrl}/threads`, {
@@ -268,10 +323,11 @@ export class ApiService {
     });
   }
 
-  createThread(title: string, ownerId?: string, description?: string, tags?: string[]): Observable<Thread> {
+  createThread(title: string, ownerId?: string, description?: string, tags?: string[], benchId?: string): Observable<Thread> {
     return this.http.post<Thread>(`${this.baseUrl}/threads/create`, {
       title,
       owner_id: ownerId || this.ANONYMOUS_OWNER_ID,
+      bench_id: benchId,
       description,
       tags
     });
@@ -300,7 +356,31 @@ export class ApiService {
     });
   }
 
-  // Workbench Filesystem APIs
+  // Workbench Filesystem APIs (Scoped to Bench)
+  listBenchFiles(benchId: string, dirPath?: string): Observable<{ files: string[] }> {
+    return this.http.post<{ files: string[] }>(`${this.baseUrl}/benches/${benchId}/fs/list`, {
+      dir_path: dirPath || ''
+    });
+  }
+
+  readBenchFile(benchId: string, filepath: string): Observable<{ content: string }> {
+    return this.http.get<{ content: string }>(`${this.baseUrl}/benches/${benchId}/fs/read/${encodeURIComponent(filepath)}`);
+  }
+
+  writeBenchFile(benchId: string, filepath: string, content: string): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${this.baseUrl}/benches/${benchId}/fs/write`, {
+      filepath,
+      content
+    });
+  }
+
+  deleteBenchFile(benchId: string, filepath: string): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${this.baseUrl}/benches/${benchId}/fs/delete`, {
+      filepath
+    });
+  }
+
+  // Workbench Filesystem APIs (Thread-based backwards compatibility)
   listThreadFiles(threadId: string, dirPath?: string): Observable<{ files: string[] }> {
     return this.http.post<{ files: string[] }>(`${this.baseUrl}/threads/${threadId}/fs/list`, {
       dir_path: dirPath || ''
