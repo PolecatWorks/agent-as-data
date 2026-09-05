@@ -1,8 +1,6 @@
 database:
   url:
     url: "postgres://localhost:5432/agent_as_data"
-    username: "postgres"
-    password: "postgres"
   max_connections: 5
 
 webservice:
@@ -12,7 +10,7 @@ webservice:
 llm:
   ollama_url: "http://ollama.k8s:80"
   model: "qwen2.5-coder:14b"
-  timeout_secs: 120
+  timeout_secs: 180
 
 hams:
   name: "aad-be"

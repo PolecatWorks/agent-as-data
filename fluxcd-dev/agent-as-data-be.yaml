@@ -36,7 +36,7 @@ spec:
     config:
       database:
         url:
-          url: postgresql://aad-postgres:5432/aaddb
+          url: postgresql://cnpg-db0-cluster-rw.dbs.svc.cluster.local:5432/agent_as_data
           username_file: persistence/db/connection/username
           password_file: persistence/db/connection/password
         max_connections: 5
@@ -46,7 +46,7 @@ spec:
       llm:
         ollama_url: "http://ollama.k8s:80"
         model: "qwen2.5-coder:14b"
-        timeout_secs: 120
+        timeout_secs: 180
       debugging:
         environment: "development"
         log_level: "info"

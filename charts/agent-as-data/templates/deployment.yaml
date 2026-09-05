@@ -42,13 +42,13 @@ spec:
               protocol: TCP
           livenessProbe:
             httpGet:
-              path: /alive
+              path: /hams/alive
               port: hams
             initialDelaySeconds: 5
             periodSeconds: 10
           readinessProbe:
             httpGet:
-              path: /ready
+              path: /hams/ready
               port: hams
             initialDelaySeconds: 5
             periodSeconds: 10
