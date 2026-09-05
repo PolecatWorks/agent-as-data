@@ -66,6 +66,13 @@ Test Bench Lifecycle and Filesystem Isolation
     ${up_name}=    Get From Dictionary    ${updated_bench}    name
     Should Be Equal    ${up_name}    ${bench_name}_Updated
 
-    # 8. Clean up / Delete bench
+    # 8. Delete individual thread
+    ${del_thread_res}=    Delete Thread    ${thread2_id}
+    Should Be True    ${del_thread_res}
+    ${remaining_threads}=    List Bench Threads    ${bench_id}
+    ${rem_count}=    Get Length    ${remaining_threads}
+    Should Be True    ${rem_count} >= 1
+
+    # 9. Clean up / Delete bench
     ${del_res}=    Delete Bench    ${bench_id}
     Should Be True    ${del_res}

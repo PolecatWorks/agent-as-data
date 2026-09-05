@@ -21,7 +21,7 @@ pub fn router() -> Router<AppState> {
     Router::new()
         .route("/", post(list_threads))
         .route("/create", post(create_thread))
-        .route("/{id}", get(get_thread).put(update_thread))
+        .route("/{id}", get(get_thread).put(update_thread).delete(delete_thread))
         .route("/{id}/messages", get(list_messages).post(create_message))
 }
 
@@ -163,6 +163,26 @@ pub async fn update_thread(
         }
         None => Err((StatusCode::NOT_FOUND, "Thread not found".to_string())),
     }
+}
+
+pub async fn delete_thread(
+    State(state): State<AppState>,
+    Path(id): Path<Uuid>,
+) -> Result<StatusCode, (StatusCode, String)> {
+    tracing::info!("Deleting thread ID: {}", id);
+
+    let res = sqlx::query("DELETE FROM threads WHERE id = $1")
+        .bind(id)
+        .execute(&state.pool)
+        .await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to delete thread: {}", e)))?;
+
+    if res.rows_affected() == 0 {
+        return Err((StatusCode::NOT_FOUND, "Thread not found".to_string()));
+    }
+
+    tracing::info!("Thread deleted successfully (ID: {})", id);
+    Ok(StatusCode::NO_CONTENT)
 }
 
 pub async fn list_messages(
