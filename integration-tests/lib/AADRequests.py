@@ -131,3 +131,59 @@ class AADRequests:
         resp = requests.post(f"{self.base_url}/api/v1/agents/verify-contract", json=payload, timeout=2)
         resp.raise_for_status()
         return resp.json()
+
+    # Benches & Threads APIs
+    def list_benches(self):
+        resp = requests.get(f"{self.base_url}/api/v1/benches", timeout=5)
+        resp.raise_for_status()
+        return resp.json()
+
+    def create_bench(self, payload):
+        resp = requests.post(f"{self.base_url}/api/v1/benches/create", json=payload, timeout=5)
+        resp.raise_for_status()
+        return resp.json()
+
+    def get_bench(self, bench_id):
+        resp = requests.get(f"{self.base_url}/api/v1/benches/{bench_id}", timeout=5)
+        resp.raise_for_status()
+        return resp.json()
+
+    def update_bench(self, bench_id, payload):
+        resp = requests.put(f"{self.base_url}/api/v1/benches/{bench_id}", json=payload, timeout=5)
+        resp.raise_for_status()
+        return resp.json()
+
+    def delete_bench(self, bench_id):
+        resp = requests.delete(f"{self.base_url}/api/v1/benches/{bench_id}", timeout=5)
+        resp.raise_for_status()
+        return resp.status_code == 204
+
+    def list_bench_threads(self, bench_id):
+        resp = requests.get(f"{self.base_url}/api/v1/benches/{bench_id}/threads", timeout=5)
+        resp.raise_for_status()
+        return resp.json()
+
+    def create_bench_thread(self, bench_id, payload):
+        resp = requests.post(f"{self.base_url}/api/v1/benches/{bench_id}/threads", json=payload, timeout=5)
+        resp.raise_for_status()
+        return resp.json()
+
+    def list_bench_files(self, bench_id, dir_path=""):
+        resp = requests.post(f"{self.base_url}/api/v1/benches/{bench_id}/fs/list", json={"dir_path": dir_path}, timeout=5)
+        resp.raise_for_status()
+        return resp.json()
+
+    def write_bench_file(self, bench_id, filepath, content):
+        resp = requests.post(f"{self.base_url}/api/v1/benches/{bench_id}/fs/write", json={"filepath": filepath, "content": content}, timeout=5)
+        resp.raise_for_status()
+        return resp.json()
+
+    def read_bench_file(self, bench_id, filepath):
+        resp = requests.get(f"{self.base_url}/api/v1/benches/{bench_id}/fs/read/{filepath}", timeout=5)
+        resp.raise_for_status()
+        return resp.json()
+
+    def delete_bench_file(self, bench_id, filepath):
+        resp = requests.post(f"{self.base_url}/api/v1/benches/{bench_id}/fs/delete", json={"filepath": filepath}, timeout=5)
+        resp.raise_for_status()
+        return resp.json()

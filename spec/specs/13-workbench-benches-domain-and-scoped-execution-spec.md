@@ -1,6 +1,6 @@
 # Spec 13: Workbench Benches Domain, Schema & Scoped Execution
 
-**Status**: `draft`
+**Status**: `complete`
 
 ## Overview & Scope
 This specification defines the backend domain models, database schema migrations, and REST APIs for **Benches** within **Agent-As-Data (AAD)** (`aad-be-container`), transitioning the workspace from a thread-centric root to a hierarchical **Bench** model.
