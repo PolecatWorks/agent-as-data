@@ -1,5 +1,6 @@
 import os
 import requests
+import time
 
 class AADRequests:
     """Robot Framework Library for Agent-As-Data REST & MCP HTTP Requests."""
@@ -217,3 +218,29 @@ class AADRequests:
         resp = requests.get(f"{self.base_url}/api/v1/threads/{thread_id}/messages", timeout=5)
         resp.raise_for_status()
         return resp.json()
+
+    def get_active_thread_run(self, thread_id):
+        resp = requests.get(f"{self.base_url}/api/v1/threads/{thread_id}/runs/active", timeout=5)
+        if resp.status_code == 204:
+            return None
+        resp.raise_for_status()
+        return resp.json()
+
+    def cancel_active_thread_run(self, thread_id):
+        resp = requests.post(f"{self.base_url}/api/v1/threads/{thread_id}/runs/active/cancel", timeout=5)
+        resp.raise_for_status()
+        return resp.json()
+
+    def list_thread_runs(self, thread_id):
+        resp = requests.get(f"{self.base_url}/api/v1/threads/{thread_id}/runs", timeout=5)
+        resp.raise_for_status()
+        return resp.json()
+
+    def wait_for_assistant_message(self, thread_id, timeout=30):
+        start = time.time()
+        while time.time() - start < timeout:
+            msgs = self.get_thread_messages(thread_id)
+            if any(m.get("role") in ("assistant", "system") for m in msgs):
+                return msgs
+            time.sleep(0.5)
+        raise TimeoutError(f"Assistant message was not generated within {timeout} seconds")
