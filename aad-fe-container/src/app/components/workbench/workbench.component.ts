@@ -294,10 +294,12 @@ export class WorkbenchComponent implements OnInit {
       next: (messages) => {
         this.activeThreadMessages = messages;
         this.scrollToBottom();
+        this.focusMessageInput();
       },
       error: (err) => console.error('Failed to load messages', err)
     });
     this.loadBenchFiles();
+    this.focusMessageInput();
   }
 
   startEditingThreadInline(thread: Thread, event: Event): void {
@@ -511,9 +513,7 @@ export class WorkbenchComponent implements OnInit {
             this.isProcessing = false;
             this.scrollToBottom();
             this.loadBenchFiles();
-            setTimeout(() => {
-              this.messageInput?.nativeElement.focus();
-            }, 50);
+            this.focusMessageInput();
           },
           error: (err) => {
             console.error('Failed to refresh messages after reply', err);
@@ -568,5 +568,13 @@ export class WorkbenchComponent implements OnInit {
 
   cancelEditingTitle(): void {
     this.isEditingTitle = false;
+  }
+
+  focusMessageInput(): void {
+    setTimeout(() => {
+      if (this.messageInput && this.messageInput.nativeElement) {
+        this.messageInput.nativeElement.focus();
+      }
+    }, 100);
   }
 }
