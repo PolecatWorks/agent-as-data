@@ -45,6 +45,11 @@ export class WorkbenchComponent implements OnInit {
   selectedFile: string | null = null;
   selectedFileContent: string = '';
 
+  activeRightTab: 'files' | 'memory' = 'files';
+  benchWorkingMemoryContent: string = '';
+  isSavingMemory: boolean = false;
+  memorySaveStatus: string = '';
+
   isSidebarCollapsed = false;
   chatPanePercentage = 50;
   isResizing = false;
@@ -371,6 +376,47 @@ export class WorkbenchComponent implements OnInit {
       },
       error: (err) => console.error('Failed to load bench files', err)
     });
+    this.loadBenchMemory();
+  }
+
+  loadBenchMemory(): void {
+    if (!this.activeBench) return;
+    this.apiService.getBenchMemory(this.activeBench.id).subscribe({
+      next: (memories) => {
+        const working = memories.find(m => m.memory_type === 'working');
+        this.benchWorkingMemoryContent = working ? working.content : '';
+      },
+      error: (err) => console.error('Failed to load bench memory', err)
+    });
+  }
+
+  saveBenchMemory(): void {
+    if (!this.activeBench) return;
+    this.isSavingMemory = true;
+    this.memorySaveStatus = 'Saving...';
+    this.apiService.upsertBenchWorkingMemory(this.activeBench.id, this.benchWorkingMemoryContent).subscribe({
+      next: () => {
+        this.isSavingMemory = false;
+        this.memorySaveStatus = 'Memory saved';
+        setTimeout(() => {
+          if (this.memorySaveStatus === 'Memory saved') {
+            this.memorySaveStatus = '';
+          }
+        }, 3000);
+      },
+      error: (err) => {
+        this.isSavingMemory = false;
+        this.memorySaveStatus = 'Save failed';
+        console.error('Failed to save bench memory', err);
+      }
+    });
+  }
+
+  setRightTab(tab: 'files' | 'memory'): void {
+    this.activeRightTab = tab;
+    if (tab === 'memory') {
+      this.loadBenchMemory();
+    }
   }
 
   selectFile(filename: string): void {

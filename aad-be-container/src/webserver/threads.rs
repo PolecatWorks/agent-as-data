@@ -204,9 +204,26 @@ async fn process_thread_message(
         format!("Current files in workspace: {}", files.join(", "))
     };
 
+    // Fetch bench working memory to include in baseline prompt preamble
+    let bench_memory = sqlx::query_scalar::<_, String>(
+        "SELECT content FROM bench_memory WHERE bench_id = $1 AND memory_type = 'working' LIMIT 1"
+    )
+    .bind(bench_id)
+    .fetch_optional(&state.pool)
+    .await
+    .ok()
+    .flatten()
+    .unwrap_or_default();
+
+    let memory_summary = if bench_memory.trim().is_empty() {
+        "No shared bench memory recorded yet.".to_string()
+    } else {
+        format!("Shared Bench Working Memory:\n\"\"\"\n{}\n\"\"\"", bench_memory.trim())
+    };
+
     let system_prompt = format!(
-        "You are an AI assistant collaborating with a developer in an isolated workspace (bench {}, thread {}).\n{}\nYou have filesystem tools available (list_files, read_file, write_file, replace_in_file, rename_file, delete_file).\nPlease interpret questions and instructions in the context of the ongoing conversation, and respond helpfully.",
-        bench_id, thread_id, files_summary
+        "You are an AI assistant collaborating with a developer in an isolated workspace (bench {}, thread {}).\n{}\n{}\nYou have filesystem tools (list_files, read_file, write_file, replace_in_file, rename_file, delete_file) and shared memory tools (read_bench_memory, update_bench_memory).\nPlease interpret questions and instructions in the context of the ongoing conversation, and respond helpfully.",
+        bench_id, thread_id, files_summary, memory_summary
     );
 
     let mut rig_history = Vec::new();
@@ -236,6 +253,8 @@ async fn process_thread_message(
             .tool(crate::llm_tools::ListFilesTool { bench_id })
             .tool(crate::llm_tools::DeleteFileTool { bench_id })
             .tool(crate::llm_tools::RenameFileTool { bench_id })
+            .tool(crate::llm_tools::ReadBenchMemoryTool { bench_id, pool: state.pool.clone() })
+            .tool(crate::llm_tools::UpdateBenchMemoryTool { bench_id, pool: state.pool.clone() })
             .default_max_turns(5)
             .build();
 
@@ -279,7 +298,7 @@ async fn process_thread_message(
                         let args = call_obj.get("arguments").unwrap_or(&default_args);
 
                         tracing::info!("Detected raw tool call for '{}' in agent output, executing against bench workspace {}", tool_name, bench_id);
-                        let tool_result = crate::llm_tools::execute_workspace_tool(bench_id, tool_name, args).await;
+                        let tool_result = crate::llm_tools::execute_workspace_tool(bench_id, tool_name, args, Some(&state.pool)).await;
 
                         match tool_result {
                             Ok(output) => {
@@ -335,7 +354,9 @@ async fn process_thread_message(
         text
     } else {
         let lower = user_content.to_lowercase();
-        if lower.contains("file") && (lower.contains("what") || lower.contains("list") || lower.contains("show") || lower.contains("which") || lower.contains("are")) {
+        if (lower.contains("memory") || lower.contains("constraint") || lower.contains("tech stack") || lower.contains("decision")) && !bench_memory.trim().is_empty() {
+            format!("According to the bench memory:\n{}", bench_memory.trim())
+        } else if lower.contains("file") && (lower.contains("what") || lower.contains("list") || lower.contains("show") || lower.contains("which") || lower.contains("are")) {
             if files.is_empty() {
                 "There are currently no files in the workspace directory.".to_string()
             } else {
