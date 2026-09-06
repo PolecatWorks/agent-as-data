@@ -12,6 +12,7 @@ This directory contains the long-term, persistent Product Requirements Documents
 | [agent-ui-testing-kit-prd.md](./agent-ui-testing-kit-prd.md) | **Agent UI PRD**: Developer UI container (`aad-fe-container`) built with Angular 18+, TailwindCSS, and Angular Material for agent development, live testing, SSE token streaming, Mermaid network graph visualization, and MCP server management. |
 | [workspace-filesystem-tools-prd.md](./workspace-filesystem-tools-prd.md) | **Workspace Tools & Agent Execution PRD**: Standardized Rig `Tool` trait implementations (`read_file`, `write_file`, `list_files`, etc.), autonomous multi-turn `AgentBuilder` execution loops, conversational history retention, and distributed pre-tool cancellation safeguards. |
 | [workbench-bench-thread-prd.md](./workbench-bench-thread-prd.md) | **Workbench Benches, Threads & Workspace Memory PRD**: Isolated bench project workspaces (`/tmp/workspace/benches/<bench_id>`), immutable thread-to-bench scoping, modal-free inline management, active bench visual context & smart URL routing, phased bench memory, and persistent action tracking with distributed cancellation (`thread_runs`). |
+| [cli-manifest-tool-prd.md](./cli-manifest-tool-prd.md) | **CLI Manifest Tool PRD**: Defines the CLI extension `aad-be ctl` for applying, listing, and deleting Agents and Skills via YAML definitions interacting directly through the REST API. |
 
 
 ## Governance & Lifecycle Rules
