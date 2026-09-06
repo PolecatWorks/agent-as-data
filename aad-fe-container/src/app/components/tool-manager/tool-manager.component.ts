@@ -12,6 +12,7 @@ import { MatMenuModule } from '@angular/material/menu';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { ApiService } from '../../services/api.service';
 import { APP_NAV_MENU_ITEMS } from '../../models/navigation';
+import { ConceptGuideComponent, ConceptTabMapping } from '../concept-guide/concept-guide.component';
 
 @Component({
   selector: 'app-tool-manager',
@@ -27,7 +28,8 @@ import { APP_NAV_MENU_ITEMS } from '../../models/navigation';
     MatSelectModule,
     MatSnackBarModule,
     MatMenuModule,
-    MatTooltipModule
+    MatTooltipModule,
+    ConceptGuideComponent
   ],
   templateUrl: './tool-manager.component.html',
   styleUrl: './tool-manager.component.scss'
@@ -36,6 +38,27 @@ export class ToolManagerComponent implements OnInit {
   isSidebarCollapsed = false;
 
   menuItems = APP_NAV_MENU_ITEMS;
+
+  readonly conceptGuideMappings: ConceptTabMapping[] = [
+    {
+      icon: 'build',
+      iconColor: 'text-indigo-600',
+      title: '1. Standardized Rig Tools',
+      description: 'Defines standardized tool payloads, command definitions, and JSON schemas directly consumed by agent runtimes.'
+    },
+    {
+      icon: 'cloud_sync',
+      iconColor: 'text-emerald-600',
+      title: '2. Model Context Protocol (MCP)',
+      description: 'Connects to remote Model Context Protocol tool endpoints via SSE and Stdio daemon processes.'
+    },
+    {
+      icon: 'security',
+      iconColor: 'text-blue-600',
+      title: '3. Pre-Tool Execution Safeties',
+      description: 'Enforces execution permissions, timeout constraints, and pre-tool execution validations.'
+    }
+  ];
 
   toggleSidebar() {
     this.isSidebarCollapsed = !this.isSidebarCollapsed;

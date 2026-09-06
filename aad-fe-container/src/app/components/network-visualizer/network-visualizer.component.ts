@@ -14,6 +14,7 @@ import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import mermaid from 'mermaid';
 import { ApiService, Agent, Skill, TraitContract } from '../../services/api.service';
+import { ConceptGuideComponent, ConceptTabMapping } from '../concept-guide/concept-guide.component';
 import { APP_NAV_MENU_ITEMS } from '../../models/navigation';
 
 export type EntityType = 'agent' | 'skill' | 'trait' | 'mcp';
@@ -50,13 +51,35 @@ export interface SelectableEntity {
     MatChipsModule,
     MatTooltipModule,
     MatProgressSpinnerModule,
-    MatMenuModule
+    MatMenuModule,
+    ConceptGuideComponent
   ],
   templateUrl: './network-visualizer.component.html',
   styleUrl: './network-visualizer.component.scss'
 })
 export class NetworkVisualizerComponent implements OnInit, AfterViewInit {
   @ViewChild('mermaidContainer') mermaidContainer!: ElementRef;
+
+  readonly conceptGuideMappings: ConceptTabMapping[] = [
+    {
+      icon: 'account_tree',
+      iconColor: 'text-indigo-600',
+      title: '1. Teammate Node Hierarchies',
+      description: 'Visualizes individual autonomous agent nodes and their communication links.'
+    },
+    {
+      icon: 'verified',
+      iconColor: 'text-emerald-600',
+      title: '2. Trait Contract Boundaries',
+      description: 'Highlights enforced capability boundaries, permissions, and behavioral invariants.'
+    },
+    {
+      icon: 'extension',
+      iconColor: 'text-blue-600',
+      title: '3. Skill Delegation Edges',
+      description: 'Displays tool routing paths and procedural skill delegations between agents.'
+    }
+  ];
 
   isSidebarCollapsed = false;
 

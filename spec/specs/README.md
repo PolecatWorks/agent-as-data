@@ -66,6 +66,9 @@ flowchart TD
     subgraph Phase8 ["Phase 8: Platform Overview & Developer Orientation"]
         Spec18["18-home-page-architecture-overview-spec.md<br/>(Home Page Architecture Overview & Launchpad)"]:::complete
         Spec19["19-traits-registry-concept-guide-spec.md<br/>(Trait Registry Zero-Footprint Concept Guide)"]:::complete
+        Spec20["20-global-concept-guide-component-spec.md<br/>(Global Concept Guide Reusable Component)"]:::complete
+        Spec21["21-title-view-switcher-dropdown-spec.md<br/>(Top Bar Workspace Title View Switcher Dropdown)"]:::complete
+        Spec22["22-universal-top-bar-consistency-spec.md<br/>(Universal Top Bar Consistency & Concept Guide Integration)"]:::complete
     end
 
     classDef complete fill:#10B981,stroke:#047857,stroke-width:2px,color:#ffffff;
@@ -111,6 +114,7 @@ flowchart TD
     Spec18 --> Spec19
     Spec19 --> Spec20
     Spec20 --> Spec21
+    Spec21 --> Spec22
 ```
 
 ## Index of Task Specifications
@@ -140,5 +144,7 @@ flowchart TD
 | **Phase 8** | [19-traits-registry-concept-guide-spec.md](./19-traits-registry-concept-guide-spec.md) | `complete` | Trait Registry Zero-Footprint Concept Guide (Hover/Pinned Popover & Editor Tab Mappings) | [Agent UI PRD](../prds/agent-ui-testing-kit-prd.md) | Phase 8 Spec (Depends on Spec 18) |
 | **Phase 8** | [20-global-concept-guide-component-spec.md](./20-global-concept-guide-component-spec.md) | `complete` | Global Concept Guide Reusable Component & Multi-View Top Bar Integration | [Agent UI PRD](../prds/agent-ui-testing-kit-prd.md) | Phase 8 Spec (Depends on Spec 19) |
 | **Phase 8** | [21-title-view-switcher-dropdown-spec.md](./21-title-view-switcher-dropdown-spec.md) | `complete` | Top Bar Workspace Title View Switcher Dropdown | [Agent UI PRD](../prds/agent-ui-testing-kit-prd.md) | Phase 8 Spec (Depends on Spec 20) |
+| **Phase 8** | [22-universal-top-bar-consistency-spec.md](./22-universal-top-bar-consistency-spec.md) | `complete` | Universal Top Bar Consistency & Concept Guide Integration Across All Views | [Agent UI PRD](../prds/agent-ui-testing-kit-prd.md) | Phase 8 Spec (Depends on Spec 21) |
+
 
 

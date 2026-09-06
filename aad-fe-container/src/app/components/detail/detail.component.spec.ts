@@ -41,4 +41,11 @@ describe('DetailComponent', () => {
     const tenetsSection = compiled.querySelector('[data-testid="platform-tenets"]');
     expect(tenetsSection).toBeTruthy();
   });
+
+  it('should render the workspace title view switcher dropdown trigger', () => {
+    const compiled = fixture.nativeElement as HTMLElement;
+    const titleSwitcher = compiled.querySelector('[data-testid="workspace-title-switcher"]');
+    expect(titleSwitcher).toBeTruthy();
+    expect(titleSwitcher?.textContent).toContain('System Architecture & Technical Detail');
+  });
 });
