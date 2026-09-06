@@ -110,6 +110,7 @@ flowchart TD
     Spec17 --> Spec18
     Spec18 --> Spec19
     Spec19 --> Spec20
+    Spec20 --> Spec21
 ```
 
 ## Index of Task Specifications
@@ -138,4 +139,6 @@ flowchart TD
 | **Phase 8** | [18-home-page-architecture-overview-spec.md](./18-home-page-architecture-overview-spec.md) | `complete` | Home Page Architecture Overview, 5-Stage System Lifecycle Flow, Trait Contract Deep-Dive & 10-Module Launchpad | [Agent UI PRD](../prds/agent-ui-testing-kit-prd.md) | Phase 8 Spec (Depends on Spec 17) |
 | **Phase 8** | [19-traits-registry-concept-guide-spec.md](./19-traits-registry-concept-guide-spec.md) | `complete` | Trait Registry Zero-Footprint Concept Guide (Hover/Pinned Popover & Editor Tab Mappings) | [Agent UI PRD](../prds/agent-ui-testing-kit-prd.md) | Phase 8 Spec (Depends on Spec 18) |
 | **Phase 8** | [20-global-concept-guide-component-spec.md](./20-global-concept-guide-component-spec.md) | `complete` | Global Concept Guide Reusable Component & Multi-View Top Bar Integration | [Agent UI PRD](../prds/agent-ui-testing-kit-prd.md) | Phase 8 Spec (Depends on Spec 19) |
+| **Phase 8** | [21-title-view-switcher-dropdown-spec.md](./21-title-view-switcher-dropdown-spec.md) | `complete` | Top Bar Workspace Title View Switcher Dropdown | [Agent UI PRD](../prds/agent-ui-testing-kit-prd.md) | Phase 8 Spec (Depends on Spec 20) |
+
 

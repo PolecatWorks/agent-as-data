@@ -136,5 +136,13 @@ describe('InteractiveTestingComponent', () => {
     expect(component.conceptGuideMappings[1].title).toBe('2. Real-Time Token Streaming');
     expect(component.conceptGuideMappings[2].title).toBe('3. Dynamic Sandbox Execution');
   });
+
+  it('should render the workspace title as an interactive view switcher trigger with dropdown affordance', () => {
+    const switcher = fixture.nativeElement.querySelector('[data-testid="workspace-title-switcher"]');
+    expect(switcher).toBeTruthy();
+    expect(switcher.textContent).toContain('Interactive Testing Studio');
+    expect(switcher.textContent).toContain('expand_more');
+  });
 });
+
 
