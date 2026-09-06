@@ -12,6 +12,7 @@ pub mod metrics;
 pub mod models;
 pub mod state;
 pub mod tokio_tools;
+pub mod cli;
 pub mod webserver;
 
 pub use state::AppState;
