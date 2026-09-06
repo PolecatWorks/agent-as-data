@@ -7,20 +7,15 @@
 
 ## 1. Overview & Business Context
 
-The home view (`/home`) in `aad-fe-container` serves as the primary orientation and architectural landing page for the **Agent-As-Data (AAD)** platform. Over recent development phases, the platform has expanded significantly to encompass isolated bench workspaces, multi-turn tool calling, bench working memory, distributed action cancellation, knowledge vector search, graph tuples, skills promotion, and refactoring labs.
+The platform orientation experience in `aad-fe-container` is partitioned into two complementary views:
+1. **Simple Home Landing (`/` and `/home`)**: A clean, accessible, low-cognitive-overhead entry point designed for fast developer onboarding. Communicates the high-level purpose of Agent-As-Data, showcases the 3-step workflow (Knowledge $\rightarrow$ Contracts & Agents $\rightarrow$ Autonomous Workbench), provides 4 primary action cards (Workbench, Traits & Agents, Testing Studio, Knowledge Base), and links directly to `/detail`.
+2. **Comprehensive Architecture Deep-Dive (`/detail`)**: An exhaustive technical map for architects and engineers. Contains the 5-stage system workflow lifecycle, the Trait Contracts deep-dive (4 pillars, implements vs uses, brittle vs decoupled comparison), all 10 module launchpad cards with capability tags, and platform operational guarantees.
 
-The current home page is out of date: it reflects an obsolete 4-box diagram and links to only 3 modules (`/traits`, `/agents`, `/interactive-testing`), omitting 7 major platform capabilities.
-
-This specification defines the complete redesign of `HomeComponent` to:
-1. **Explain What the App Does**: Ingest tacit enterprise knowledge, turn it into structured vector chunks and graph tuples, enforce declarative trait contracts, compose autonomous agents with guardrails, and execute reasoning agents in isolated workspaces.
-2. **Present the 5-Stage System Lifecycle Flow**: An interactive, responsive architectural flow diagram covering Knowledge $\rightarrow$ Specifications $\rightarrow$ Governance $\rightarrow$ Verification $\rightarrow$ Workbench Execution.
-3. **Clarify the Trait Contract Concept**: A dedicated visual and textual deep-dive breaking down the 4 pillars of Trait Contracts, distinguishing `implements_traits` from `uses_traits`, and explaining how abstract delegation eliminates brittle coupling in multi-agent architectures.
-4. **Provide a 10-Module Workspace Matrix**: Direct launchpad cards for all 10 platform modules with category badges, descriptions, icons, and quick-action links.
-5. **Display Platform Operational Tenets**: Highlights fail-fast configuration, zero direct runtime env vars, immutable version lineage, and isolated bench execution.
+This two-tier structure ensures new developers are not overwhelmed while retaining full access to the complete technical architecture and Trait contract mechanics.
 
 ---
 
-## 2. Architectural Flow Diagram (5 Lifecycle Phases)
+## 2. Architectural Flow Diagram (5 Lifecycle Phases - Detailed View)
 
 ```mermaid
 flowchart TD
@@ -105,48 +100,32 @@ flowchart TD
 
 ---
 
-## 4. UI Specification: `HomeComponent`
+## 4. UI Specification
 
-### 4.1 Header & Mission Banner
-- Title: **Agent-As-Data Studio** with home icon and version badge.
-- Mission subtitle: Highlighting enterprise tacit knowledge capture, declarative behavioral contracts, and autonomous bench execution.
-- Quick navigation button: `Open Workbench` (`/workbench`).
+### 4.1 Casual Business User Orientation View (`/` and `/home`)
+- **Objective**: Provide an immediately comprehensible, jargon-free landing experience for business users, executives, and product managers.
+- **Single-Occurrence Link Standard**: Every destination link (`/workbench`, `/traits`, `/knowledge-inspector`, `/interactive-testing`, `/detail`) appears **strictly once** on the page content to eliminate cognitive overload and visual clutter.
+- **Hero Welcome Banner**:
+  - Value proposition: "Enterprise Knowledge & Digital Teammates Studio".
+  - Plain-English problem & solution: Explains that scattered docs and unwritten guidelines become an active company brain powering trustworthy AI teammates who follow strict corporate rules.
+  - Zero redundant buttons in hero (letting the 4 pillars below serve as the focused gateways).
+- **The 4 Unified Sequential Gateway Pillars** (Each destination represented once):
+  1. 🧠 **Company Knowledge Base (`/knowledge-inspector`)**: Teach the AI your business. Ingest documentation, policies, and process playbooks into an interconnected organizational brain.
+  2. 🛡️ **Job Roles & Safety Rules (`/traits`)**: Establish enforceable job certifications with **Traits**. Specifies approved tools, non-negotiable company policies, and automatic data protection.
+  3. 💼 **Project Workbenches (`/workbench`)**: Dedicated project rooms where humans and AI teammates collaborate on files, documents, and multi-turn tasks in isolated environments.
+  4. 🧪 **AI Testing Studio (`/interactive-testing`)**: Live preview sandbox where teams can test prompts and observe AI responses before deploying them on active projects.
+- **Single Bridge to Technical Architecture (`/detail`)**: A single footer banner directing engineers and architects to the full technical blueprint, 5-phase data flow, and code contracts.
 
-### 4.2 Lifecycle Architecture Flow
-- 5 phase cards connected with directional flow arrows.
-- Color-coded by lifecycle stage:
-  - Stage 1: Blue (Knowledge & Context)
-  - Stage 2: Emerald (Declarative Specifications)
-  - Stage 3: Violet (Governance & Topology)
-  - Stage 4: Amber (Verification & Testing)
-  - Stage 5: Rose (Autonomous Workbench)
-- Sub-item bullet points detailing concrete features in each stage.
-
-### 4.3 Trait Contracts Deep-Dive Panel
-- Highlighted card with indigo/violet theme.
-- Clear side-by-side comparison of **Traditional Naive Agents** (hardcoded IDs, prompt drift, zero safety contracts) vs. **Agent-As-Data Traits** (abstract contracts, inherited guardrails, verifiable invariants, dynamic binding).
-- 4-pillar badge visual breakdown (Capabilities, Invariants, Rubrics, Guardrails).
-- Direct link: `Explore Trait Contracts Registry` (`/traits`).
-
-### 4.4 10-Module Workspace Matrix
-Responsive CSS grid of all 10 core workspaces:
-1. **Workbench** (`/workbench` | `chat`): Isolated bench project workspaces, multi-turn Rig threads, filesystem tools, bench memory, and active run cancellation.
-2. **Agent Registry & Builder** (`/agents` | `smart_toy`): Declarative agent definitions, model parameters, guardrail rules, and immutable version revisions (`agent_revisions`).
-3. **Trait Contracts** (`/traits` | `verified`): Abstract behavioral contracts, capability requirements, invariants, and inherited guardrails.
-4. **Skills Registry** (`/skills` | `extension`): Reusable deterministic skill routines, input/output schemas, and one-click agent promotion.
-5. **Remote Tools & MCP** (`/tools` | `dns`): External MCP server registration (Stdio/SSE), cached tool argument schemas, and tool discovery.
-6. **Interactive Testing Studio** (`/interactive-testing` | `bug_report`): Real-time SSE token streaming playground, live prompt inspector, and contract verification checks.
-7. **Delegation Network Graph** (`/network-visualizer` | `account_tree`): Interactive Mermaid topology visualizer of sub-agent and skill dependencies.
-8. **Refactoring & Compression Lab** (`/refactoring-lab` | `build_circle`): Semantic cluster overlap analyzer, harmonization diffs, and contradiction resolution.
-9. **Knowledge Base & Graph Inspector** (`/knowledge-inspector` | `library_books`): Semantic RAG chunk query engine and Subject-Predicate-Object (SPO) graph relationship explorer.
-10. **Agent Context Search** (`/agent-context` | `search`): Natural language context search scoring agents and skills using separated multi-embeddings.
-
-### 4.5 Platform Operational Guarantees
-4 pillar cards:
-- **Zero Direct Runtime Env Vars**: All config strictly loaded fail-fast via `AppConfig`.
-- **Deterministic Version Lineage**: Immutable snapshots stored in `agent_revisions`.
-- **Strict Entity Referencing**: Safe foreign-key guarantees with soft-delete archiving.
-- **Distributed Run Safety**: Background worker execution with pre-tool cancellation hooks.
+### 4.2 Comprehensive Architecture Deep-Dive View (`/detail`)
+- **Header & Mission Banner**: Detailed Agent-As-Data Studio header with back navigation link to `/home`.
+- **Lifecycle Architecture Flow**: 5-phase color-coded cards connected with directional arrows detailing Knowledge $\rightarrow$ Specs $\rightarrow$ Governance $\rightarrow$ Verification $\rightarrow$ Execution.
+- **Trait Contracts Deep-Dive Panel**:
+  - Comparison of naive hardcoded coupling vs. decoupled Trait contracts.
+  - 4-pillar badge visual breakdown (Capabilities, Invariants, Rubrics, Guardrails).
+  - Explicit syntax formula callout (`implements_traits` vs `uses_traits`).
+- **10-Module Workspace Matrix**:
+  - Comprehensive grid of all 10 core workspaces with capability tags and action links (`/workbench`, `/agents`, `/traits`, `/skills`, `/tools`, `/interactive-testing`, `/network-visualizer`, `/refactoring-lab`, `/knowledge-inspector`, `/agent-context`).
+- **Platform Operational Guarantees**: 4 tenets (Fail-Fast Config, Immutable Lineage, Strict FKs, Distributed Pre-Tool Cancellation).
 
 ---
 

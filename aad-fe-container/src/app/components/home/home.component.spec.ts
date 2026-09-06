@@ -20,61 +20,42 @@ describe('HomeComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  it('should define all 10 core workspace launchpad cards', () => {
-    expect(component.workspaceCards.length).toBe(10);
-    const paths = component.workspaceCards.map(c => c.path);
-    expect(paths).toContain('/workbench');
-    expect(paths).toContain('/agents');
-    expect(paths).toContain('/traits');
-    expect(paths).toContain('/skills');
-    expect(paths).toContain('/tools');
-    expect(paths).toContain('/interactive-testing');
-    expect(paths).toContain('/network-visualizer');
-    expect(paths).toContain('/refactoring-lab');
-    expect(paths).toContain('/knowledge-inspector');
-    expect(paths).toContain('/agent-context');
+  it('should define exactly 4 business pillars with unique destination paths', () => {
+    expect(component.pillars.length).toBe(4);
+    const paths = component.pillars.map(p => p.path);
+    expect(paths).toEqual([
+      '/knowledge-inspector',
+      '/traits',
+      '/workbench',
+      '/interactive-testing'
+    ]);
   });
 
-  it('should define the 5 lifecycle architecture flow phases', () => {
-    expect(component.lifecyclePhases.length).toBe(5);
-    expect(component.lifecyclePhases[0].title).toContain('Knowledge & Context');
-    expect(component.lifecyclePhases[1].title).toContain('Specifications & Contracts');
-    expect(component.lifecyclePhases[2].title).toContain('Governance & Topology');
-    expect(component.lifecyclePhases[3].title).toContain('Verification & Testing');
-    expect(component.lifecyclePhases[4].title).toContain('Workbench Execution');
-  });
-
-  it('should define the 4 pillars of the Trait Contract architecture', () => {
-    expect(component.traitPillars.length).toBe(4);
-    const titles = component.traitPillars.map(p => p.title);
-    expect(titles).toContain('Capability Requirements');
-    expect(titles).toContain('Behavioral Invariants');
-    expect(titles).toContain('Evaluation Rubrics');
-    expect(titles).toContain('Inherited Baseline Guardrails');
-  });
-
-  it('should render all 10 workspace cards in the DOM with valid routerLink targets', () => {
+  it('should represent each destination link strictly once in the page content', () => {
     const compiled = fixture.nativeElement as HTMLElement;
-    const cardLinks = compiled.querySelectorAll('[data-testid="workspace-card-link"]');
-    expect(cardLinks.length).toBe(10);
+    const contentArea = compiled.querySelector('.flex-1') as HTMLElement;
+    expect(contentArea).toBeTruthy();
+
+    const checkSingleLink = (path: string) => {
+      const allLinks = Array.from(contentArea.querySelectorAll('a'));
+      const matchingLinks = allLinks.filter(a => {
+        const target = a.getAttribute('routerLink') || a.getAttribute('ng-reflect-router-link') || a.getAttribute('href');
+        return target === path || target === `${path}`;
+      });
+      expect(matchingLinks.length).withContext(`Link for path '${path}' should appear exactly once`).toBe(1);
+    };
+
+    checkSingleLink('/knowledge-inspector');
+    checkSingleLink('/traits');
+    checkSingleLink('/workbench');
+    checkSingleLink('/interactive-testing');
+    checkSingleLink('/detail');
   });
 
-  it('should render the Trait Contract deep-dive section with implements vs uses comparison', () => {
+  it('should explain the Trait concept in plain business terms', () => {
     const compiled = fixture.nativeElement as HTMLElement;
-    const traitSection = compiled.querySelector('[data-testid="trait-deep-dive"]');
-    expect(traitSection).toBeTruthy();
-    expect(compiled.textContent).toContain('implements_traits');
-    expect(compiled.textContent).toContain('uses_traits');
-    expect(compiled.textContent).toContain('Behavioral Invariants');
-  });
-
-  it('should render the 4 platform operational tenets', () => {
-    const compiled = fixture.nativeElement as HTMLElement;
-    const tenetsSection = compiled.querySelector('[data-testid="platform-tenets"]');
-    expect(tenetsSection).toBeTruthy();
-    expect(compiled.textContent).toContain('Zero Direct Runtime Env Vars');
-    expect(compiled.textContent).toContain('Deterministic Version Lineage');
-    expect(compiled.textContent).toContain('Strict Entity Referencing');
-    expect(compiled.textContent).toContain('Distributed Run Safety');
+    expect(compiled.textContent).toContain('Job Roles & Safety Rules (Traits)');
+    expect(compiled.textContent).toContain('Think of Traits like verified job certifications');
+    expect(compiled.textContent).toContain('Unbreakable corporate policy rules');
   });
 });
