@@ -76,11 +76,40 @@ All views across the application must share an identical, standardized top bar (
 
 ## Key UI Modules & Features
 
-### 10. Agent Context View (`/agent-context`)
-- **Semantic Entity Search**: A dedicated text input field allowing the user to provide natural language context. Upon pressing Enter, the view performs a RAG-type semantic search against the vector database.
-- **Matching & Scoring**: The system scores the separated embeddings (name, description, prompt) and picks the best matching Agents and Skills.
-- **Trace Depth Selection**: Provides a trace depth style tool (similar to the network graph analyzer) to configure and select the total number of Agents and Skills returned by the search.
-- **Match Feedback & Reasoning**: For each returned Agent and Skill, the view displays detailed feedback explaining the semantic similarity match, the calculated score, and reasoning on why it is a good fit for the provided context.
+### 0. Home Page & Platform Architecture Overview (`/home`)
+- **Central System Map & Orientation Hub**: Serves as the primary entry point and high-level architecture dashboard for Agent-As-Data Studio. Visualizes the end-to-end transformation of enterprise tacit knowledge into structured data, declarative contracts, reasoning agents, and autonomous bench execution environments.
+- **End-to-End System Workflow Lifecycle (Interactive Architecture Flow)**:
+  1. **Tacit Knowledge & Context (`/knowledge-inspector`, `/agent-context`)**:
+     - Semantic RAG vector chunking (`pgvector`) for narrative documentation and unwritten wisdom.
+     - Subject-Predicate-Object (SPO) graph relation tuples for concept mapping and multi-hop traversal.
+     - High-dimensional semantic scoring matching natural language context to registered capabilities.
+  2. **Declarative Specifications & Contracts (`/traits`, `/skills`, `/agents`, `/tools`)**:
+     - 3-Element Trait Contracts (Capability Requirements, Behavioral Invariants, Evaluation Criteria) with inherited guardrails.
+     - Reusable deterministic Skill definitions with strict input/output JSON schemas and one-click Agent promotion.
+     - Declarative Agent specifications with system prompts, version lineage (`agent_revisions`), and execution guardrails.
+     - Remote MCP Tool ingestion (Stdio & SSE) with cached argument schemas.
+  3. **Governance, Topology & Refactoring (`/network-visualizer`, `/refactoring-lab`)**:
+     - Interactive Mermaid delegation topology maps showing agent hierarchies, sub-agent links, and skill dependencies.
+     - Semantic cluster overlap scanning to detect duplication, harmonize conflicting instructions, or codify intentional persona contradictions.
+  4. **Verification & Testing Playground (`/interactive-testing`)**:
+     - Live SSE token streaming playground connecting directly to local Rig/Ollama models.
+     - Monospace system prompt inspector and dynamic runtime trait mapping overrides for contract verification.
+  5. **Autonomous Workbench Execution (`/workbench`)**:
+     - Isolated Bench project workspaces (`/tmp/workspace/benches/<bench_id>`) with persistent working memory.
+     - Multi-turn conversational threads executing autonomous file operations (`read_file`, `write_file`, `list_files`, etc.).
+     - Persistent action tracking (`thread_runs`) with distributed pre-tool cancellation safeguards.
+- **Deep-Dive: The Trait Contract Concept ("Interfaces for Autonomous AI")**:
+  - **The Problem**: In naive multi-agent architectures, agents hardcode references to concrete agent IDs (`delegate_to: agent-uuid-123`). This couples systems tightly: if the sub-agent prompt changes, drifts, or is swapped, callers break. Furthermore, prompts alone provide zero mathematical or programmatic guarantees regarding tools, security invariants, or evaluation standards.
+  - **The Solution (Traits as Behavioral Contracts)**: A Trait in Agent-As-Data is an **abstract, reusable interface specification** that decouples callers from concrete agent implementations. It defines four critical pillars:
+    1. **Capability Requirements**: The exact tools, environment access, or sensory inputs an agent *must possess* to fulfill this role (e.g. `ast_parser`, `git_repo_read`).
+    2. **Behavioral Invariants**: Uncompromising constraints the agent *must always* or *must never* violate (e.g. *MUST NEVER execute unvetted bash commands*, *MUST ALWAYS emit structured JSON*).
+    3. **Evaluation Rubric**: Semantic grading criteria used by LLM-as-a-Judge evaluators to objectively score agent outputs against the contract (0.0 - 1.0 thresholding).
+    4. **Inherited Baseline Guardrails**: Pre-execution and post-execution security guardrails (e.g. prompt injection shields, PII redaction, secret leakage filters) that any agent implementing the trait automatically inherits.
+  - **`implements_traits` vs `uses_traits`**:
+    - **`implements_traits`**: The agent promises to satisfy the contract's capabilities, adhere to its invariants, and inherit its baseline guardrails.
+    - **`uses_traits`**: The calling agent declares a dependency on a trait contract rather than a concrete sub-agent, enabling dynamic runtime binding (`trait_mappings`) and semantic verification (`POST /verify-contract`).
+- **Comprehensive Workspace Launchpad**: Unified matrix of responsive cards providing direct navigation, status indicators, and contextual summaries for all 10 core application workspaces.
+- **Architectural Tenets & Platform Health Cards**: At-a-glance summary cards detailing key operational guarantees: Zero Direct Runtime Env Vars, Immutable Database Migrations, Fail-Fast Configuration, and Strict Entity Referencing.
 
 ### 1. Declarative Agent Registry & Builder Module (`/agents`)
 - **Visual Agent Editor**: Form fields for `name`, `description`, `tags`, `implements_traits`, `uses_traits`, `model`, `agent_definition` (system prompt), `tools`, `available_skills`, and `available_agents`.
@@ -184,7 +213,13 @@ flowchart TD
     - **Editor & Memory Pane (Right)**: Multi-tab workspace featuring `[ Files ]` (shared bench filesystem explorer and editor) and `[ Bench Memory ]` (developer scratchpad and project invariants editor).
   - **Smart Routing**: URL schema `/workbench/:benchId/:threadId` with automatic forwarding to the most recent Bench and Thread when visiting `/workbench`.
 
-### 10. Robot Framework Integration Testing Suite (Ref: `sward-warden/integration-tests`)
+### 10. Agent Context View (`/agent-context`)
+- **Semantic Entity Search**: A dedicated text input field allowing the user to provide natural language context. Upon pressing Enter, the view performs a RAG-type semantic search against the vector database.
+- **Matching & Scoring**: The system scores the separated embeddings (name, description, prompt) and picks the best matching Agents and Skills.
+- **Trace Depth Selection**: Provides a trace depth style tool (similar to the network graph analyzer) to configure and select the total number of Agents and Skills returned by the search.
+- **Match Feedback & Reasoning**: For each returned Agent and Skill, the view displays detailed feedback explaining the semantic similarity match, the calculated score, and reasoning on why it is a good fit for the provided context.
+
+### 11. Robot Framework Integration Testing Suite (Ref: `sward-warden/integration-tests`)
 - **Declarative User Journey Robot Tests**: `/integration-tests/tests/*.robot` test cases mapping 1-to-1 to all 12 user journeys, covering 24 tests total (all currently passing).
 - **Python Integration Libraries**: Custom Python helper modules (`AADRequests.py`) extending Robot Framework for authenticated REST requests, database seeding, and state verification.
 - **Idempotent Seed Test**: `test_seed_exemplar_data.robot` seeds the database with exemplar data using upsert semantics — safe to re-run at any time without constraint conflicts.

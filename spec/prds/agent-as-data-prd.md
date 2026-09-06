@@ -70,6 +70,31 @@ Agent-As-Data (AAD) is an enterprise-grade declarative platform and specificatio
 
 
 ### 8. Agent Traits, 3-Element Definition & Trait Guardrail Inheritance Engine
+- **Decoupled Architecture Through Behavioral Contracts**:
+  In naive multi-agent systems, agents delegate tasks by hardcoding concrete agent identifiers (UUIDs), resulting in brittle coupling, prompt drift vulnerabilities, and zero verifiable security guarantees. Agent-As-Data solves this by introducing **Trait Contracts**—analogous to interfaces in Rust or TypeScript—which allow agents to delegate work based on abstract capability contracts rather than specific agent instances.
+
+```mermaid
+flowchart TD
+    subgraph TraitContract ["Trait Contract (e.g. 'SecurityAuditor')"]
+        CR["1. Capability Requirements\n(Required tools, AST parser, repo read access)"]
+        BI["2. Behavioral Invariants\n(MUST NEVER run untrusted code, MUST format JSON)"]
+        EC["3. Evaluation Rubrics\n(Automated LLM-as-a-Judge scoring thresholds)"]
+        BG["4. Inherited Guardrails\n(PII masking, secret redactor, injection interceptor)"]
+    end
+
+    subgraph Caller ["Orchestrator Agent"]
+        UT["uses_traits: ['SecurityAuditor']\n(Delegates to Trait Contract, not a UUID)"]
+    end
+
+    subgraph Implementation ["Specialized Worker Agent (e.g. 'RustSecAuditor')"]
+        IT["implements_traits: ['SecurityAuditor']\n(Fulfills capabilities & inherits baseline guardrails)"]
+    end
+
+    Caller -->|Declares Abstract Dependency| TraitContract
+    Implementation -->|Fulfills Contract & Inherits Guardrails| TraitContract
+    Caller -.->|Dynamic Runtime Binding\nVerified by POST /verify-contract| Implementation
+```
+
 - **3-Element Trait Definition (`implements_traits`)**: Declarative trait bindings defined by three core elements:
   1. *Capability Requirements*: Necessary tools, state access, or environmental interaction permissions (e.g. AST parser, read-only repo access).
   2. *Behavioral Invariants*: Strict rules and constraints the agent MUST ALWAYS or MUST NEVER violate (e.g. *MUST NEVER execute untrusted binaries*).
@@ -89,13 +114,14 @@ Agent-As-Data (AAD) is an enterprise-grade declarative platform and specificatio
 
 ### 10. Agent Development UI & Testing Kit Container (`aad-fe-container`)
 - **Interactive Development Studio**: Web dashboard container built with Angular 18+ (Standalone Components, Angular Material, RxJS, and TailwindCSS) following the `sward-warden/sw-fe-container` architecture.
-- **Unified Global Top Bar & Navigation Menu**: All views and registries must share an identical top bar and navigation menu (`appMenu`) offering one-click navigation across `/traits`, `/tools`, `/skills`, `/agents`, `/interactive-testing`, `/network-visualizer`, `/refactoring-lab`, `/knowledge-inspector`, and `/workbench`. Context badges, action buttons, view toggles, and user profile icons follow uniform styling and placement across all pages.
-- **Appearance & Styling Consistency**: All workspace views adhere to the standardized 2-column layout (collapsible search/list sidebar on the left, full blueprint editor on the right). Form views for Traits, Tools, Skills, and Agents must consistently place `Name`, `Owner`, `Description`, and `Tags` on the top lines with identical labels. Sidebar cards share unified card styling and dependency count indicators (`N Skills`, `N Tools`).
-- **Independent Card List Scrolling & Viewport Isolation**: The global application shell is strictly locked to `100%` viewport height (`overflow: hidden`). When users interact with collections or lists of objects/cards (e.g. the sidebar list of skills on `/skills`), scrolling the list scrolls only that specific list container while the top bar, search header, and rest of the page stay stationary. Detail editor panes scroll independently without whole-page vertical scrolling.
+- **Home Page & Architecture Overview (`/home`)**: Central platform launchpad and architecture map detailing the end-to-end data lifecycle from tacit knowledge capture (`pgvector` RAG, SPO graph tuples, agent context search) to declarative registries (traits, skills, agents, tools), governance & topology (network visualizer, refactoring lab), verification (interactive testing studio), and autonomous execution (workbench with bench isolation, filesystem tools, and run cancellation).
+- **Unified Global Top Bar & Navigation Menu**: All views and registries share an identical top bar and navigation menu (`appMenu`) offering one-click navigation across `/home`, `/agents`, `/traits`, `/skills`, `/tools`, `/interactive-testing`, `/workbench`, `/network-visualizer`, `/refactoring-lab`, `/knowledge-inspector`, and `/agent-context`. Context badges, action buttons, view toggles, and user profile icons follow uniform styling and placement across all pages.
+- **Appearance & Styling Consistency**: All workspace views adhere to the standardized 2-column layout (collapsible search/list sidebar on the left, full blueprint editor on the right). Form views for Traits, Tools, Skills, and Agents consistently place `Name`, `Owner`, `Description`, and `Tags` on the top lines with identical labels. Sidebar cards share unified card styling and dependency count indicators (`N Skills`, `N Tools`).
+- **Independent Card List Scrolling & Viewport Isolation**: The global application shell is strictly locked to `100%` viewport height (`overflow: hidden`). When users interact with collections or lists of objects/cards, scrolling the list scrolls only that specific list container while the top bar, search header, and rest of the page stay stationary. Detail editor panes scroll independently without whole-page vertical scrolling.
 - **Top-Level Trait Definition Registry (`/traits`)**: Dedicated workspace to inspect, define, and edit Trait specifications across Capability Requirements, Behavioral Invariants, Evaluation Criteria, and Mandatory Execution Guardrails.
 - **Testing Kit & SSE Workbench**: Interactive testing playground for running synchronous agents, streaming real-time SSE token events, and testing dynamic trait mapping overrides.
 - **Visual Diagnostics**: Embedded Mermaid network diagram visualizer, Refactoring & Compression lab, Knowledge SPO tuple inspector, and Remote Tool manager.
-- **Conversational Workbench**: Multiuser capabilities allowing users to maintain independent, isolated conversation threads driven by an active `userid`.
+- **Conversational Workbench**: Project-scoped Benches (`/tmp/workspace/benches/<bench_id>`) with multi-turn conversation threads, shared filesystem browser, bench working memory, and distributed action cancellation (`thread_runs`).
 
 
 ### 11. Probabilistic Agent Unit Testing & LLM-as-a-Judge Evaluation Engine
