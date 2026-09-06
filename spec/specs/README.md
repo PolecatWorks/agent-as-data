@@ -65,6 +65,7 @@ flowchart TD
 
     subgraph Phase8 ["Phase 8: Platform Overview & Developer Orientation"]
         Spec18["18-home-page-architecture-overview-spec.md<br/>(Home Page Architecture Overview & Launchpad)"]:::complete
+        Spec19["19-traits-registry-concept-guide-spec.md<br/>(Trait Registry Zero-Footprint Concept Guide)"]:::complete
     end
 
     classDef complete fill:#10B981,stroke:#047857,stroke-width:2px,color:#ffffff;
@@ -107,6 +108,7 @@ flowchart TD
     Spec15 --> Spec16
     Spec16 --> Spec17
     Spec17 --> Spec18
+    Spec18 --> Spec19
 ```
 
 ## Index of Task Specifications
@@ -133,3 +135,4 @@ flowchart TD
 | **Phase 7** | [16-workbench-persistent-action-tracking-and-cancellation-spec.md](./16-workbench-persistent-action-tracking-and-cancellation-spec.md) | `complete` | Thread Runs Persistence Schema (`thread_runs`), Async Worker Dispatch (`202 Accepted`), Active Run Query, & Distributed Pre-Tool Cancellation | [Workbench Bench & Thread PRD](../prds/workbench-bench-thread-prd.md) | Step 1 of Phase 7 (Depends on Spec 13 & 15) |
 | **Phase 7** | [17-workbench-action-in-progress-reload-and-cancellation-ui-spec.md](./17-workbench-action-in-progress-reload-and-cancellation-ui-spec.md) | `complete` | Active Run Screen Reload State Restoration, Animated Phase Banner, Interactive Cancel Action, & System Badge Formatting | [Workbench Bench & Thread PRD](../prds/workbench-bench-thread-prd.md) | Step 2 of Phase 7 (Depends on Spec 14 & 16) |
 | **Phase 8** | [18-home-page-architecture-overview-spec.md](./18-home-page-architecture-overview-spec.md) | `complete` | Home Page Architecture Overview, 5-Stage System Lifecycle Flow, Trait Contract Deep-Dive & 10-Module Launchpad | [Agent UI PRD](../prds/agent-ui-testing-kit-prd.md) | Phase 8 Spec (Depends on Spec 17) |
+| **Phase 8** | [19-traits-registry-concept-guide-spec.md](./19-traits-registry-concept-guide-spec.md) | `complete` | Trait Registry Zero-Footprint Concept Guide (Hover/Pinned Popover & Editor Tab Mappings) | [Agent UI PRD](../prds/agent-ui-testing-kit-prd.md) | Phase 8 Spec (Depends on Spec 18) |
