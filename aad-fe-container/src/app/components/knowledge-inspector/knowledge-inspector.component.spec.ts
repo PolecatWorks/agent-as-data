@@ -28,4 +28,16 @@ describe('KnowledgeInspectorComponent', () => {
   it('should create', () => {
     expect(component).toBeTruthy();
   });
+
+  it('should render the zero-footprint concept guide trigger and configuration in top bar', () => {
+    const trigger = fixture.nativeElement.querySelector('[data-testid="knowledge-concept-trigger"]');
+    expect(trigger).toBeTruthy();
+    expect(trigger.textContent).toContain('What is Knowledge Base?');
+
+    expect(component.conceptGuideMappings.length).toBe(3);
+    expect(component.conceptGuideMappings[0].title).toBe('1. Semantic Vector Store');
+    expect(component.conceptGuideMappings[1].title).toBe('2. Knowledge Graph Triples');
+    expect(component.conceptGuideMappings[2].title).toBe('3. Entity Resolution & Pruning');
+  });
 });
+

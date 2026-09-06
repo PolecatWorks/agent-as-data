@@ -8,18 +8,40 @@ import { MatMenuModule } from '@angular/material/menu';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { ApiService, Bench, Thread, Message, ThreadRun } from '../../services/api.service';
+import { ConceptGuideComponent, ConceptTabMapping } from '../concept-guide/concept-guide.component';
 import { APP_NAV_MENU_ITEMS } from '../../models/navigation';
 
 @Component({
   selector: 'app-workbench',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatCardModule, MatButtonModule, MatIconModule, MatMenuModule, MatTooltipModule, RouterModule],
+  imports: [CommonModule, FormsModule, MatCardModule, MatButtonModule, MatIconModule, MatMenuModule, MatTooltipModule, RouterModule, ConceptGuideComponent],
   templateUrl: './workbench.component.html',
   styleUrl: './workbench.component.scss'
 })
 export class WorkbenchComponent implements OnInit, OnDestroy {
   @ViewChild('messageInput') messageInput?: ElementRef<HTMLTextAreaElement>;
   @ViewChild('messagesContainer') messagesContainer?: ElementRef<HTMLDivElement>;
+
+  readonly conceptGuideMappings: ConceptTabMapping[] = [
+    {
+      icon: 'folder',
+      iconColor: 'text-indigo-600',
+      title: '1. Sandboxed Filesystem',
+      description: 'Isolated bench files and assets safely partitioned per active project.'
+    },
+    {
+      icon: 'chat',
+      iconColor: 'text-blue-600',
+      title: '2. Conversational Threads',
+      description: 'Multi-turn dialog, code editing, and tool execution history.'
+    },
+    {
+      icon: 'psychology',
+      iconColor: 'text-amber-600',
+      title: '3. Shared Bench Memory',
+      description: 'Working context, scratchpad notes, and persistent memory preserved across sessions.'
+    }
+  ];
 
   benches: Bench[] = [];
   activeBench: Bench | null = null;

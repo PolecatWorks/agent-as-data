@@ -14,6 +14,7 @@ import { MatTabsModule } from '@angular/material/tabs';
 import { MatMenuModule } from '@angular/material/menu';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { ApiService, Skill, TraitContract } from '../../services/api.service';
+import { ConceptGuideComponent, ConceptTabMapping } from '../concept-guide/concept-guide.component';
 import { forkJoin } from 'rxjs';
 import { marked } from 'marked';
 import { APP_NAV_MENU_ITEMS } from '../../models/navigation';
@@ -34,7 +35,8 @@ import { APP_NAV_MENU_ITEMS } from '../../models/navigation';
     MatSnackBarModule,
     MatSelectModule,
     MatTabsModule,
-    MatMenuModule
+    MatMenuModule,
+    ConceptGuideComponent
   ],
   templateUrl: './skills-registry.component.html',
   styleUrl: './skills-registry.component.scss'
@@ -43,6 +45,27 @@ export class SkillsRegistryComponent implements OnInit {
   isSidebarCollapsed = false;
 
   menuItems = APP_NAV_MENU_ITEMS;
+
+  readonly conceptGuideMappings: ConceptTabMapping[] = [
+    {
+      icon: 'description',
+      iconColor: 'text-indigo-600',
+      title: '1. Procedural Instructions',
+      description: 'Step-by-step guidance and deterministic execution rules defining how the task is performed.'
+    },
+    {
+      icon: 'schema',
+      iconColor: 'text-amber-600',
+      title: '2. Typed JSON Schemas',
+      description: 'Strictly validated input parameters and structured response payload schemas.'
+    },
+    {
+      icon: 'verified',
+      iconColor: 'text-emerald-600',
+      title: '3. Trait Safety Verification',
+      description: 'Automated contract verification ensuring the skill adheres to required behavioral invariants.'
+    }
+  ];
 
   toggleSidebar() {
     this.isSidebarCollapsed = !this.isSidebarCollapsed;

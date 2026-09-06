@@ -12,6 +12,7 @@ import { RouterModule } from '@angular/router';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { ApiService, Agent, Skill } from '../../services/api.service';
+import { ConceptGuideComponent, ConceptTabMapping } from '../concept-guide/concept-guide.component';
 import { APP_NAV_MENU_ITEMS } from '../../models/navigation';
 
 export type TestEntityType = 'agent' | 'skill';
@@ -44,7 +45,8 @@ export interface TestEntity {
     MatProgressSpinnerModule,
     MatMenuModule,
     MatTooltipModule,
-    RouterModule
+    RouterModule,
+    ConceptGuideComponent
   ],
   templateUrl: './interactive-testing.component.html',
   styleUrl: './interactive-testing.component.scss'
@@ -52,6 +54,27 @@ export interface TestEntity {
 export class InteractiveTestingComponent implements OnInit {
   // Navigation Menu
   menuItems = APP_NAV_MENU_ITEMS;
+
+  readonly conceptGuideMappings: ConceptTabMapping[] = [
+    {
+      icon: 'visibility',
+      iconColor: 'text-indigo-600',
+      title: '1. Prompt & Trait Inspector',
+      description: 'Live inspection of compiled system prompts, attached skills, and active trait contracts.'
+    },
+    {
+      icon: 'stream',
+      iconColor: 'text-emerald-600',
+      title: '2. Real-Time Token Streaming',
+      description: 'Low-latency Server-Sent Events (SSE) token streaming and step-by-step reasoning traces.'
+    },
+    {
+      icon: 'play_arrow',
+      iconColor: 'text-blue-600',
+      title: '3. Dynamic Sandbox Execution',
+      description: 'Safe pre-production execution with custom test inputs and runtime model switching.'
+    }
+  ];
 
   // Data
   agents: Agent[] = [];

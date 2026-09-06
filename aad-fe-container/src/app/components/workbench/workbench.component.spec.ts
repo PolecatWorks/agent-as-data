@@ -76,5 +76,17 @@ describe('WorkbenchComponent', () => {
     expect(component.activeThreadMessages.length).toBe(2);
     expect(component.activeThreadMessages[1].role).toBe('system');
   });
+
+  it('should render the zero-footprint concept guide trigger and configuration in top bar', () => {
+    const trigger = fixture.nativeElement.querySelector('[data-testid="workbench-concept-trigger"]');
+    expect(trigger).toBeTruthy();
+    expect(trigger.textContent).toContain('What are Workbenches?');
+
+    expect(component.conceptGuideMappings.length).toBe(3);
+    expect(component.conceptGuideMappings[0].title).toBe('1. Sandboxed Filesystem');
+    expect(component.conceptGuideMappings[1].title).toBe('2. Conversational Threads');
+    expect(component.conceptGuideMappings[2].title).toBe('3. Shared Bench Memory');
+  });
 });
+
 

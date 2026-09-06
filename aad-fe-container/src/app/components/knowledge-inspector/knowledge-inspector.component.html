@@ -2,9 +2,25 @@
   <!-- Top Bar -->
   <div class="h-14 bg-white border-b border-slate-200 flex items-center justify-between px-4 shrink-0 shadow-sm z-10">
     <!-- Left side of top bar (Title) -->
-    <div class="flex items-center gap-2">
-      <mat-icon class="text-blue-600">library_books</mat-icon>
-      <h1 class="text-lg font-black text-slate-800 m-0">Knowledge & SPO Tuple Inspector</h1>
+    <div class="flex items-center gap-3">
+      <div class="flex items-center gap-2">
+        <mat-icon class="text-blue-600">library_books</mat-icon>
+        <h1 class="text-lg font-black text-slate-800 m-0">Knowledge & SPO Tuple Inspector</h1>
+      </div>
+
+      <!-- Zero-Footprint Reusable Concept Guide -->
+      <app-concept-guide
+        badge="1. Company Institutional Memory"
+        title="Company Brain (Knowledge Base)"
+        icon="library_books"
+        triggerLabel="What is Knowledge Base?"
+        analogyTitle="The Company Brain Analogy"
+        analogyText="Think of the Knowledge Base like company institutional memory. It stores vectorized unwritten wisdom, documents, and relation graphs so your AI teammates have verified grounding and never hallucinate."
+        [tabMappings]="conceptGuideMappings"
+        detailLink="/detail"
+        detailLinkLabel="Explore Knowledge Architecture"
+        testIdPrefix="knowledge-concept">
+      </app-concept-guide>
     </div>
 
     <!-- Right side of top bar (Actions) -->

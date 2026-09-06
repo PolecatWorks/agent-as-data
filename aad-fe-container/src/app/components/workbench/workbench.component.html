@@ -231,7 +231,7 @@
 
       <!-- Left side of top bar (Breadcrumb & Active Bench Pill) -->
       <div class="flex items-center gap-3 overflow-hidden">
-        <div class="flex items-center gap-1 text-slate-500 text-xs">
+        <div class="flex items-center gap-1 text-slate-500 text-xs shrink-0">
           <mat-icon class="!w-4 !h-4 !text-base text-indigo-600">home_repair_service</mat-icon>
           <span class="font-bold text-slate-600">Workbench</span>
           <mat-icon class="!w-3 !h-3 !text-xs text-slate-400">chevron_right</mat-icon>
@@ -244,6 +244,20 @@
             {{ activeThread.title }}
           </span>
         </div>
+
+        <!-- Zero-Footprint Reusable Concept Guide -->
+        <app-concept-guide
+          badge="5. Multi-Turn Project Workspaces"
+          title="Active Project Rooms (Workbenches)"
+          icon="home_repair_service"
+          triggerLabel="What are Workbenches?"
+          analogyTitle="The Active Project Room Analogy"
+          analogyText="Think of Workbenches like dedicated project war rooms. Each bench provides an isolated workspace filesystem, focused conversational threads, and working memory where agents collaborate without cross-project contamination."
+          [tabMappings]="conceptGuideMappings"
+          detailLink="/detail"
+          detailLinkLabel="Explore Workbench Architecture"
+          testIdPrefix="workbench-concept">
+        </app-concept-guide>
       </div>
 
       <!-- Right side of top bar (Actions) -->
