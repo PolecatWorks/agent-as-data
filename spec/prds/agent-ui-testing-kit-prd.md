@@ -76,40 +76,28 @@ All views across the application must share an identical, standardized top bar (
 
 ## Key UI Modules & Features
 
-### 0. Home Page & Platform Architecture Overview (`/home`)
-- **Central System Map & Orientation Hub**: Serves as the primary entry point and high-level architecture dashboard for Agent-As-Data Studio. Visualizes the end-to-end transformation of enterprise tacit knowledge into structured data, declarative contracts, reasoning agents, and autonomous bench execution environments.
-- **End-to-End System Workflow Lifecycle (Interactive Architecture Flow)**:
-  1. **Tacit Knowledge & Context (`/knowledge-inspector`, `/agent-context`)**:
-     - Semantic RAG vector chunking (`pgvector`) for narrative documentation and unwritten wisdom.
-     - Subject-Predicate-Object (SPO) graph relation tuples for concept mapping and multi-hop traversal.
-     - High-dimensional semantic scoring matching natural language context to registered capabilities.
-  2. **Declarative Specifications & Contracts (`/traits`, `/skills`, `/agents`, `/tools`)**:
-     - 3-Element Trait Contracts (Capability Requirements, Behavioral Invariants, Evaluation Criteria) with inherited guardrails.
-     - Reusable deterministic Skill definitions with strict input/output JSON schemas and one-click Agent promotion.
-     - Declarative Agent specifications with system prompts, version lineage (`agent_revisions`), and execution guardrails.
-     - Remote MCP Tool ingestion (Stdio & SSE) with cached argument schemas.
-  3. **Governance, Topology & Refactoring (`/network-visualizer`, `/refactoring-lab`)**:
-     - Interactive Mermaid delegation topology maps showing agent hierarchies, sub-agent links, and skill dependencies.
-     - Semantic cluster overlap scanning to detect duplication, harmonize conflicting instructions, or codify intentional persona contradictions.
-  4. **Verification & Testing Playground (`/interactive-testing`)**:
-     - Live SSE token streaming playground connecting directly to local Rig/Ollama models.
-     - Monospace system prompt inspector and dynamic runtime trait mapping overrides for contract verification.
-  5. **Autonomous Workbench Execution (`/workbench`)**:
-     - Isolated Bench project workspaces (`/tmp/workspace/benches/<bench_id>`) with persistent working memory.
-     - Multi-turn conversational threads executing autonomous file operations (`read_file`, `write_file`, `list_files`, etc.).
-     - Persistent action tracking (`thread_runs`) with distributed pre-tool cancellation safeguards.
-- **Deep-Dive: The Trait Contract Concept ("Interfaces for Autonomous AI")**:
-  - **The Problem**: In naive multi-agent architectures, agents hardcode references to concrete agent IDs (`delegate_to: agent-uuid-123`). This couples systems tightly: if the sub-agent prompt changes, drifts, or is swapped, callers break. Furthermore, prompts alone provide zero mathematical or programmatic guarantees regarding tools, security invariants, or evaluation standards.
-  - **The Solution (Traits as Behavioral Contracts)**: A Trait in Agent-As-Data is an **abstract, reusable interface specification** that decouples callers from concrete agent implementations. It defines four critical pillars:
-    1. **Capability Requirements**: The exact tools, environment access, or sensory inputs an agent *must possess* to fulfill this role (e.g. `ast_parser`, `git_repo_read`).
-    2. **Behavioral Invariants**: Uncompromising constraints the agent *must always* or *must never* violate (e.g. *MUST NEVER execute unvetted bash commands*, *MUST ALWAYS emit structured JSON*).
-    3. **Evaluation Rubric**: Semantic grading criteria used by LLM-as-a-Judge evaluators to objectively score agent outputs against the contract (0.0 - 1.0 thresholding).
-    4. **Inherited Baseline Guardrails**: Pre-execution and post-execution security guardrails (e.g. prompt injection shields, PII redaction, secret leakage filters) that any agent implementing the trait automatically inherits.
-  - **`implements_traits` vs `uses_traits`**:
-    - **`implements_traits`**: The agent promises to satisfy the contract's capabilities, adhere to its invariants, and inherit its baseline guardrails.
-    - **`uses_traits`**: The calling agent declares a dependency on a trait contract rather than a concrete sub-agent, enabling dynamic runtime binding (`trait_mappings`) and semantic verification (`POST /verify-contract`).
-- **Comprehensive Workspace Launchpad**: Unified matrix of responsive cards providing direct navigation, status indicators, and contextual summaries for all 10 core application workspaces.
-- **Architectural Tenets & Platform Health Cards**: At-a-glance summary cards detailing key operational guarantees: Zero Direct Runtime Env Vars, Immutable Database Migrations, Fail-Fast Configuration, and Strict Entity Referencing.
+### 0. Home Page Landing (`/` and `/home`)
+- **Casual Business User Orientation & Single-Occurrence Link Standard**:
+  - **Conceptual Simplification Rule**: To avoid confusing cognitive clutter and decision paralysis, **every destination link on the landing page is represented strictly once**. Redundant duplicate buttons across headers, heroes, and footer lists are eliminated in favor of a clean, linear story.
+  - **Plain-English Business Value Proposition**:
+    - Explains the core business problem: Institutional wisdom is scattered across wikis, emails, and heads. Generic AI chats hallucinate, lack company context, and offer zero safety guarantees.
+    - Presents the solution: Agent-As-Data is an **Enterprise AI Brain & Digital Teammate Studio** that transforms company memory into certified AI colleagues who follow strict corporate rules.
+  - **4 Unified Sequential Gateway Pillars** (Each destination represented exactly once):
+    1. 🧠 **Company Knowledge Base (`/knowledge-inspector`)**: Teach the AI your business. Ingest documentation, policies, and process playbooks into an interconnected organizational brain.
+    2. 🛡️ **Job Roles & Safety Rules (`/traits`)**: Establish enforceable job certifications with **Traits**. Specifies approved tools, non-negotiable company policies, and automatic data protection.
+    3. 💼 **Project Workbenches (`/workbench`)**: Dedicated project rooms where humans and AI teammates collaborate on files, documents, and multi-turn tasks in isolated environments.
+    4. 🧪 **AI Testing Studio (`/interactive-testing`)**: Live preview sandbox where teams can test prompts and observe AI responses before deploying them on active projects.
+  - **Single Bridge to Technical Architecture (`/detail`)**: A single, clean footer banner directing engineers and architects to the full technical blueprint, 5-phase data flow, and code contracts.
+
+### 0b. System Architecture & Technical Deep-Dive (`/detail`)
+- **Comprehensive Platform Architecture Orientation**: Dedicated route providing an exhaustive technical map of the Agent-As-Data system:
+  - **5-Stage System Workflow Lifecycle**: End-to-end data flow (Knowledge & Context $\rightarrow$ Declarative Specs $\rightarrow$ Governance $\rightarrow$ Verification $\rightarrow$ Workbench Execution).
+  - **Trait Contracts Deep-Dive ("Interfaces for Autonomous AI")**:
+    - The problem: Brittle hardcoded agent UUIDs, prompt drift, zero security guarantees.
+    - The solution: Decoupled behavioral contracts with abstract delegation (`uses_traits`) and dynamic binding (`implements_traits`).
+    - The 4 pillars: Capability Requirements, Behavioral Invariants, Evaluation Rubrics, and Inherited Baseline Guardrails.
+  - **10 Core Workspaces Launchpad Matrix**: Detailed responsive cards with capability tags and direct routing for all platform modules (`/workbench`, `/agents`, `/traits`, `/skills`, `/tools`, `/interactive-testing`, `/network-visualizer`, `/refactoring-lab`, `/knowledge-inspector`, `/agent-context`).
+  - **Platform Operational Guarantees**: Highlights fail-fast configuration, immutable version lineage, strict entity referencing, and distributed run safety.
 
 ### 1. Declarative Agent Registry & Builder Module (`/agents`)
 - **Visual Agent Editor**: Form fields for `name`, `description`, `tags`, `implements_traits`, `uses_traits`, `model`, `agent_definition` (system prompt), `tools`, `available_skills`, and `available_agents`.

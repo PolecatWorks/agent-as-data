@@ -1,0 +1,14 @@
+/* Styles for detail component */
+:host {
+  display: block;
+  height: 100%;
+  width: 100%;
+}
+
+mat-card {
+  transition: transform 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}

@@ -1,0 +1,383 @@
+<div class="h-full w-full flex flex-col bg-slate-50 overflow-hidden">
+  <!-- Top Bar (Standard Global Top Bar) -->
+  <div class="h-14 bg-white border-b border-slate-200 flex items-center justify-between px-4 shrink-0 shadow-sm z-10">
+    <!-- Left side of top bar (Title + Back) -->
+    <div class="flex items-center gap-2">
+      <a mat-icon-button routerLink="/home" title="Back to Home" class="text-slate-500 hover:text-slate-800">
+        <mat-icon>arrow_back</mat-icon>
+      </a>
+      <div class="p-1.5 bg-indigo-50 text-indigo-600 rounded-lg flex items-center justify-center">
+        <mat-icon class="!w-5 !h-5 !text-lg">account_tree</mat-icon>
+      </div>
+      <h1 class="text-base font-black text-slate-800 m-0 tracking-tight">System Architecture & Technical Detail</h1>
+      <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
+        Technical Deep-Dive
+      </span>
+    </div>
+
+    <!-- Right side of top bar (Actions) -->
+    <div class="flex items-center gap-2">
+      <a mat-flat-button color="primary" class="!rounded-xl !h-8 !px-3 !text-xs !font-semibold" routerLink="/workbench">
+        <mat-icon class="!w-4 !h-4 !text-base mr-1">chat</mat-icon> Open Workbench
+      </a>
+
+      <div class="w-px h-6 bg-slate-200 mx-1"></div>
+
+      <!-- Hamburger Menu for App Navigation -->
+      <button mat-icon-button [matMenuTriggerFor]="appMenu" aria-label="Menu" class="text-slate-500 hover:text-slate-800">
+        <mat-icon>menu</mat-icon>
+      </button>
+
+      <mat-menu #appMenu="matMenu">
+        @for (item of menuItems; track item.path) {
+          <a mat-menu-item [routerLink]="item.path">
+            <mat-icon>{{ item.icon }}</mat-icon>
+            <span>{{ item.label }}</span>
+          </a>
+        }
+      </mat-menu>
+
+      <!-- User Profile (Mock) -->
+      <button mat-icon-button class="ml-1">
+        <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-amber-400 to-orange-500 border-2 border-white shadow-sm flex items-center justify-center text-white font-bold text-sm">
+          BG
+        </div>
+      </button>
+    </div>
+  </div>
+
+  <!-- Content Container (Scrollable) -->
+  <div class="flex-1 min-h-0 overflow-y-auto p-6 space-y-8 max-w-7xl w-full mx-auto">
+
+    <!-- Hero / Architecture Overview -->
+    <div class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 text-white p-8 shadow-xl border border-slate-800">
+      <div class="absolute -right-16 -top-16 w-80 h-80 rounded-full bg-indigo-500/10 blur-3xl pointer-events-none"></div>
+      <div class="absolute -left-16 -bottom-16 w-80 h-80 rounded-full bg-purple-500/10 blur-3xl pointer-events-none"></div>
+
+      <div class="relative z-10 max-w-3xl space-y-4">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-xs font-semibold">
+          <mat-icon class="!w-4 !h-4 !text-sm">account_tree</mat-icon> Full System Blueprint & Technical Specification
+        </div>
+        <h2 class="text-2xl sm:text-3xl font-black tracking-tight text-white m-0">
+          Transforming Tacit Knowledge into Verifiable Autonomous Agents
+        </h2>
+        <p class="text-sm sm:text-base text-slate-300 leading-relaxed m-0 font-normal">
+          Agent-As-Data captures unwritten organizational wisdom, turning documentation and operational processes into structured vector chunks and graph tuples. Compose agents through declarative contracts, enforce safety invariants with Traits, and run multi-turn reasoning loops in isolated bench workspaces.
+        </p>
+        <div class="pt-2 flex flex-wrap items-center gap-3">
+          <a mat-stroked-button class="!rounded-xl !h-10 !px-5 !font-semibold !text-sm !text-white !border-slate-700 hover:!bg-white/10" routerLink="/home">
+            <mat-icon class="mr-1.5">arrow_back</mat-icon> Simple Home View
+          </a>
+          <a mat-flat-button color="primary" class="!rounded-xl !h-10 !px-5 !font-semibold !text-sm" routerLink="/workbench">
+            <mat-icon class="mr-1.5">chat</mat-icon> Open Workbench
+          </a>
+          <a mat-stroked-button class="!rounded-xl !h-10 !px-5 !font-semibold !text-sm !text-white !border-slate-700 hover:!bg-white/10" routerLink="/traits">
+            <mat-icon class="mr-1.5 text-emerald-400">verified</mat-icon> Explore Trait Contracts
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 1: End-to-End System Workflow Lifecycle Architecture Flow -->
+    <mat-card class="!rounded-2xl border border-slate-200/80 shadow-sm bg-white overflow-hidden">
+      <mat-card-header class="p-4 border-b border-slate-100 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <div class="p-1.5 bg-indigo-50 text-indigo-600 rounded-lg">
+            <mat-icon class="!w-5 !h-5 !text-lg">account_tree</mat-icon>
+          </div>
+          <div>
+            <mat-card-title class="text-base font-bold text-slate-800 m-0">
+              System Workflow & Lifecycle Architecture
+            </mat-card-title>
+            <p class="text-xs text-slate-500 m-0">
+              How Agent-As-Data transforms institutional memory into verified, executing AI agents
+            </p>
+          </div>
+        </div>
+        <span class="text-[11px] font-semibold text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-full border border-indigo-200/60">
+          5-Phase Architecture
+        </span>
+      </mat-card-header>
+
+      <mat-card-content class="p-6">
+        <!-- 5-Phase Flow Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-4 relative">
+          @for (phase of lifecyclePhases; track phase.step; let last = $last) {
+            <div class="flex flex-col h-full rounded-2xl border p-4 transition-all duration-200 hover:shadow-md"
+                 [ngClass]="[phase.bgClass, phase.borderClass]">
+              
+              <!-- Phase Header -->
+              <div class="flex items-center justify-between mb-3">
+                <div class="w-8 h-8 rounded-xl bg-gradient-to-tr text-white flex items-center justify-center shadow-sm"
+                     [ngClass]="phase.accentClass">
+                  <mat-icon class="!w-4 !h-4 !text-base">{{ phase.icon }}</mat-icon>
+                </div>
+                <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-white/80 border border-slate-200"
+                      [ngClass]="phase.textClass">
+                  Step {{ phase.step }}
+                </span>
+              </div>
+
+              <!-- Phase Title -->
+              <h3 class="text-xs font-black uppercase tracking-tight m-0 mb-1" [ngClass]="phase.textClass">
+                {{ phase.title }}
+              </h3>
+              <p class="text-[11px] font-medium text-slate-600 m-0 mb-3">
+                {{ phase.subtitle }}
+              </p>
+
+              <!-- Phase Item Bullets -->
+              <ul class="space-y-1.5 list-none p-0 m-0 flex-1">
+                @for (item of phase.items; track item) {
+                  <li class="text-[11px] text-slate-600 flex items-start gap-1.5 leading-snug">
+                    <mat-icon class="!w-3.5 !h-3.5 !text-xs text-slate-400 shrink-0 mt-0.5">check_circle</mat-icon>
+                    <span>{{ item }}</span>
+                  </li>
+                }
+              </ul>
+            </div>
+          }
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Section 2: Deep-Dive: Trait Contracts Architecture -->
+    <mat-card data-testid="trait-deep-dive" class="!rounded-2xl border border-indigo-200/80 shadow-sm bg-gradient-to-b from-indigo-50/40 via-white to-white overflow-hidden">
+      <mat-card-header class="p-4 border-b border-indigo-100 flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <div class="p-2 bg-indigo-600 text-white rounded-xl shadow-sm">
+            <mat-icon class="!w-5 !h-5 !text-xl">verified</mat-icon>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <mat-card-title class="text-base font-bold text-slate-900 m-0">
+                Trait Contracts: "Interfaces for Autonomous AI"
+              </mat-card-title>
+              <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 border border-indigo-200">
+                Core Architectural Paradigm
+              </span>
+            </div>
+            <p class="text-xs text-slate-500 m-0">
+              Eliminating brittle coupling and prompt drift through declarative, verifiable behavioral contracts
+            </p>
+          </div>
+        </div>
+        <a mat-stroked-button color="primary" class="!rounded-xl !text-xs !font-semibold" routerLink="/traits">
+          View Traits Registry
+        </a>
+      </mat-card-header>
+
+      <mat-card-content class="p-6 space-y-6">
+        <!-- Problem vs Solution Comparison Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- The Problem: Naive Coupling -->
+          <div class="p-4 rounded-2xl bg-rose-50/70 border border-rose-200 space-y-2.5">
+            <div class="flex items-center gap-2 text-rose-700">
+              <mat-icon class="!w-5 !h-5 !text-lg">error_outline</mat-icon>
+              <h4 class="text-xs font-black uppercase tracking-wider m-0">The Problem: Brittle Hardcoded Coupling</h4>
+            </div>
+            <p class="text-xs text-rose-900/90 leading-relaxed m-0">
+              In naive multi-agent systems, agents delegate tasks by hardcoding concrete agent identifiers (<code class="bg-rose-100 px-1 py-0.5 rounded text-[11px]">delegate_to: agent-uuid-123</code>). If the sub-agent prompt changes, model parameters drift, or an agent is replaced, calling systems break without warning. Prompts alone offer zero guarantees for required tools or security invariants.
+            </p>
+            <div class="p-2.5 bg-white/80 rounded-xl border border-rose-200/80 font-mono text-[11px] text-rose-900">
+              ❌ Caller -> Hardcoded UUID -> Unvetted Prompt -> Failure on drift
+            </div>
+          </div>
+
+          <!-- The Solution: Trait Contracts -->
+          <div class="p-4 rounded-2xl bg-emerald-50/70 border border-emerald-200 space-y-2.5">
+            <div class="flex items-center gap-2 text-emerald-700">
+              <mat-icon class="!w-5 !h-5 !text-lg">check_circle_outline</mat-icon>
+              <h4 class="text-xs font-black uppercase tracking-wider m-0">The Solution: Decoupled Trait Contracts</h4>
+            </div>
+            <p class="text-xs text-emerald-900/90 leading-relaxed m-0">
+              A Trait is an abstract behavioral interface (like an interface in Rust or TypeScript). An orchestrator delegates to a Trait signature (<code class="bg-emerald-100 px-1 py-0.5 rounded text-[11px]">uses_traits: ['SecurityAuditor']</code>). Any concrete agent can satisfy the contract by declaring <code class="bg-emerald-100 px-1 py-0.5 rounded text-[11px]">implements_traits</code>, automatically inheriting baseline guardrails and verifying semantic compatibility.
+            </p>
+            <div class="p-2.5 bg-white/80 rounded-xl border border-emerald-200/80 font-mono text-[11px] text-emerald-900">
+              ✅ Caller -> uses_traits -> Contract Verification -> Dynamic Binding
+            </div>
+          </div>
+        </div>
+
+        <!-- The 4 Pillars of a Trait Contract -->
+        <div>
+          <div class="flex items-center justify-between mb-3">
+            <h4 class="text-xs font-black uppercase tracking-wider text-slate-700 m-0">
+              The 4 Pillars of Every Trait Contract
+            </h4>
+            <span class="text-[11px] text-slate-400">Strict behavioral and security enforcement</span>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            @for (pillar of traitPillars; track pillar.title) {
+              <div class="p-3.5 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-2 hover:border-indigo-300 transition-colors">
+                <div class="flex items-center justify-between">
+                  <div class="p-2 bg-indigo-50 text-indigo-600 rounded-xl">
+                    <mat-icon class="!w-4 !h-4 !text-base">{{ pillar.icon }}</mat-icon>
+                  </div>
+                  <span class="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
+                    {{ pillar.badge }}
+                  </span>
+                </div>
+                <h5 class="text-xs font-bold text-slate-800 m-0">
+                  {{ pillar.title }}
+                </h5>
+                <p class="text-[11px] text-slate-500 leading-relaxed m-0">
+                  {{ pillar.description }}
+                </p>
+                <div class="text-[10px] font-mono text-indigo-700 bg-indigo-50/60 p-1.5 rounded-lg border border-indigo-100">
+                  {{ pillar.example }}
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- Implements vs Uses Formula Callout -->
+        <div class="p-4 rounded-2xl bg-slate-900 text-slate-200 border border-slate-800 flex flex-col md:flex-row items-center justify-between gap-4">
+          <div class="space-y-1">
+            <span class="text-[10px] font-bold uppercase tracking-widest text-indigo-400">Delegation Syntax</span>
+            <div class="flex flex-wrap items-center gap-3 text-xs">
+              <span class="font-mono bg-slate-800 px-2.5 py-1 rounded-lg border border-slate-700 text-emerald-300">
+                implements_traits: ["SecurityAuditor"]
+              </span>
+              <span class="text-slate-400 font-semibold">= Fulfills contract & inherits guardrails</span>
+            </div>
+            <div class="flex flex-wrap items-center gap-3 text-xs">
+              <span class="font-mono bg-slate-800 px-2.5 py-1 rounded-lg border border-slate-700 text-blue-300">
+                uses_traits: ["SecurityAuditor"]
+              </span>
+              <span class="text-slate-400 font-semibold">= Abstract dependency decoupled from concrete agent ID</span>
+            </div>
+          </div>
+          <a mat-flat-button color="accent" class="!rounded-xl !text-xs !font-semibold shrink-0" routerLink="/traits">
+            <mat-icon class="mr-1">verified</mat-icon> Create Trait Contract
+          </a>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Section 3: Core Modules & Workspaces Launchpad (10 Workspaces) -->
+    <div class="space-y-4">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <div class="p-1.5 bg-slate-100 text-slate-700 rounded-lg">
+            <mat-icon class="!w-5 !h-5 !text-lg">apps</mat-icon>
+          </div>
+          <div>
+            <h2 class="text-base font-bold text-slate-800 m-0">
+              Platform Workspaces & Capabilities
+            </h2>
+            <p class="text-xs text-slate-500 m-0">
+              All 10 core registries, execution studios, and governance labs
+            </p>
+          </div>
+        </div>
+        <span class="text-[11px] font-semibold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-full border border-slate-200">
+          10 Workspaces
+        </span>
+      </div>
+
+      <!-- 10-Module Responsive Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        @for (card of workspaceCards; track card.id) {
+          <mat-card class="!rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md transition-all duration-200 flex flex-col justify-between overflow-hidden bg-white">
+            <mat-card-header class="p-4 border-b border-slate-100 flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <div class="p-2.5 rounded-xl flex items-center justify-center border"
+                     [ngClass]="card.colorClass">
+                  <mat-icon class="!w-5 !h-5 !text-xl">{{ card.icon }}</mat-icon>
+                </div>
+                <div>
+                  <mat-card-title class="text-sm font-bold text-slate-800 m-0">
+                    {{ card.title }}
+                  </mat-card-title>
+                  <span class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+                    {{ card.category }}
+                  </span>
+                </div>
+              </div>
+              @if (card.badge) {
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
+                  {{ card.badge }}
+                </span>
+              }
+            </mat-card-header>
+
+            <mat-card-content class="p-4 flex-1 flex flex-col justify-between space-y-4">
+              <p class="text-xs text-slate-600 leading-relaxed m-0">
+                {{ card.description }}
+              </p>
+
+              <!-- Capability Tags -->
+              <div class="flex flex-wrap gap-1.5 pt-1">
+                @for (cap of card.capabilities; track cap) {
+                  <span class="text-[10px] font-medium text-slate-500 bg-slate-50 px-2 py-0.5 rounded-md border border-slate-200/80">
+                    {{ cap }}
+                  </span>
+                }
+              </div>
+
+              <!-- Action Link -->
+              <div class="pt-2">
+                <a mat-stroked-button
+                   data-testid="workspace-card-link"
+                   class="w-full !rounded-xl !font-semibold !text-xs"
+                   [routerLink]="card.path">
+                  {{ card.actionText }}
+                  <mat-icon class="!w-3.5 !h-3.5 !text-xs ml-1">arrow_forward</mat-icon>
+                </a>
+              </div>
+            </mat-card-content>
+          </mat-card>
+        }
+      </div>
+    </div>
+
+    <!-- Section 4: Platform Operational Guarantees & Architectural Tenets -->
+    <mat-card data-testid="platform-tenets" class="!rounded-2xl border border-slate-200/80 shadow-sm bg-white overflow-hidden">
+      <mat-card-header class="p-4 border-b border-slate-100 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <div class="p-1.5 bg-slate-100 text-slate-700 rounded-lg">
+            <mat-icon class="!w-5 !h-5 !text-lg">security</mat-icon>
+          </div>
+          <div>
+            <mat-card-title class="text-base font-bold text-slate-800 m-0">
+              Platform Operational Guarantees
+            </mat-card-title>
+            <p class="text-xs text-slate-500 m-0">
+              Engineered for production resilience, deterministic reproducibility, and enterprise security
+            </p>
+          </div>
+        </div>
+        <span class="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200/60">
+          Enforced Invariants
+        </span>
+      </mat-card-header>
+
+      <mat-card-content class="p-6">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          @for (tenet of operationalTenets; track tenet.title) {
+            <div class="p-4 rounded-2xl bg-slate-50/70 border border-slate-200/80 space-y-2">
+              <div class="flex items-center justify-between">
+                <div class="p-2 bg-white text-slate-700 rounded-xl shadow-xs border border-slate-200">
+                  <mat-icon class="!w-4 !h-4 !text-base">{{ tenet.icon }}</mat-icon>
+                </div>
+                <span class="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                  {{ tenet.guarantee }}
+                </span>
+              </div>
+              <h4 class="text-xs font-bold text-slate-800 m-0">
+                {{ tenet.title }}
+              </h4>
+              <p class="text-[11px] text-slate-500 leading-relaxed m-0">
+                {{ tenet.description }}
+              </p>
+            </div>
+          }
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+  </div>
+</div>
