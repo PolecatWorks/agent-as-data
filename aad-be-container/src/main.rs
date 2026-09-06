@@ -20,6 +20,8 @@ pub struct Cli {
     pub command: Commands,
 }
 
+use aad_be_container::cli::ctl::{run_ctl, CtlCommands};
+
 #[derive(Subcommand, Debug)]
 pub enum Commands {
     /// Start the main application server
@@ -28,6 +30,11 @@ pub enum Commands {
     Migrate,
     /// Display application version
     Version,
+    /// Manage resources declaratively via API
+    Ctl {
+        #[command(subcommand)]
+        command: CtlCommands,
+    },
 }
 
 fn init_logging(log_level: &str) {
@@ -114,6 +121,28 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
         Commands::Version => {
             println!("aad-be {}", VERSION);
+        }
+        Commands::Ctl { command } => {
+            let result = (|| -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+                let config = AppConfig::load(&cli.config_path, &cli.secrets_dir)?;
+
+                // Construct the base URL for the API
+                let address = config.webservice.address.replace("0.0.0.0", "127.0.0.1");
+                let base_url = format!("http://{}/{}", address, config.webservice.api_prefix);
+
+                run_in_tokio(&config.runtime, async {
+                    run_ctl(command, &base_url)
+                        .await
+                        .map_err(|e| format!("CTL Error: {}", e))
+                })?;
+
+                Ok(())
+            })();
+
+            if let Err(e) = result {
+                tracing::error!("ctl command failed: {}", e);
+                std::process::exit(1);
+            }
         }
     }
 
