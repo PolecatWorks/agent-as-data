@@ -19,8 +19,6 @@ spec:
       route:
         - destination:
             host: agent-as-data-be
-            port:
-              number: 8080
     - name: agent-as-data-fe
       match:
         - uri:
@@ -28,5 +26,3 @@ spec:
       route:
         - destination:
             host: aad-fe-nginx-view
-            port:
-              number: 8080
