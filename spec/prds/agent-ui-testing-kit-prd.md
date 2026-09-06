@@ -120,6 +120,35 @@ All views across the application must share an identical, standardized top bar (
 - **Idempotent Create**: Trait creation uses upsert semantics (`ON CONFLICT (name) DO UPDATE`) so duplicate names update in place rather than failing with a constraint error.
 - **Sync with Backend**: Trait editor actions (create, update, delete) are verified by integration tests (`test_journey_11_trait_editor_ui.robot`) to confirm UI and backend remain in sync.
 
+#### Zero-Footprint Concept Reinforcement ("What are Traits?")
+To bridge the mental model between the business-level descriptions introduced on `/home` and the operational contract builder on `/traits`, the Trait Registry exposes an on-demand concept guide that reinforces core mental models **without consuming or shrinking any active working real estate**:
+
+- **Zero Working Area Loss**: The workspace area (`flex-1 min-h-0 overflow-y-auto p-6`) retains 100% of its vertical and horizontal dimensions. No static top banners, sticky alerts, or push-down cards are added to the primary editor viewport.
+- **Top Bar Anchor**: Positioned directly adjacent to the `Traits Registry` header title as an interactive trigger pill (`[help_outline] What are Traits?`).
+- **Interactive Floating Overlay / Popover**:
+  - **Hover & Click Modes**: Hovering over the trigger pill smoothly reveals the floating card with a 150ms debounce; clicking pins the popover open until explicitly closed or dismissed via outside click or `Esc`.
+  - **Card Content Architecture**:
+    - **Header & Analogy**: Re-articulates the certified hiring analogy: *"Think of Traits like verified job certifications. They define what tools the AI is allowed to touch, what company policies it must never violate, and what data protection guardrails stay active."*
+    - **Tri-Fold Mapping to Editor Tabs**: Directly maps each plain-English benefit to the 3 functional blueprint tabs of the Trait editor:
+      1. 🛠️ **Capability Requirements**: Tools, state access, and environmental interactions the agent must possess.
+      2. 🛡️ **Behavioral Invariants**: Unbreakable corporate policy rules the agent MUST ALWAYS or MUST NEVER violate.
+      3. 🔒 **Evaluation Criteria & Guardrails**: Scoring rubrics, judging criteria, and automated safety fences.
+    - **Technical Architecture Bridge**: Includes a direct link to `/detail` (`Explore Trait Contract Architecture →`) for architects requiring formal interface theory.
+
+```mermaid
+flowchart TD
+    A[User Views /traits Workspace] --> B{Interaction with Concept Guide?}
+    B -->|Idle Working State| C[Working Canvas at 100% Screen Space\nZero Persistent Space Consumed]
+    B -->|Hover on 'What are Traits?' Pill| D[Floating Popover Appears with 150ms Fade]
+    B -->|Click on 'What are Traits?' Pill| E[Floating Popover Pinned Open]
+    D --> F[User Inspects Business Analogies & Editor Tab Mappings]
+    E --> F
+    F -->|Mouse Leaves / Outside Click / Close Button / Esc| G[Popover Dismisses Instantly]
+    F -->|Click Architecture Link| H[Navigate to /detail Architecture Spec]
+    G --> C
+```
+
+
 ### 4. Interactive Agent Testing Studio (`/interactive-testing`)
 
 ```mermaid

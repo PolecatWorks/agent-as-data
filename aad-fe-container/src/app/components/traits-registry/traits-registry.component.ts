@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, HostListener, ChangeDetectorRef } from '@angular/core';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -45,6 +45,72 @@ import { APP_NAV_MENU_ITEMS } from '../../models/navigation';
 export class TraitsRegistryComponent implements OnInit {
   isSidebarCollapsed = false;
   menuItems = APP_NAV_MENU_ITEMS;
+
+  // Zero-Footprint Concept Guide State
+  isConceptGuideOpen = false;
+  isConceptGuidePinned = false;
+  private conceptGuideTimeout: any = null;
+
+  toggleConceptGuide(event?: MouseEvent): void {
+    if (event) {
+      event.stopPropagation();
+    }
+    if (this.conceptGuideTimeout) {
+      clearTimeout(this.conceptGuideTimeout);
+      this.conceptGuideTimeout = null;
+    }
+    if (this.isConceptGuidePinned) {
+      this.isConceptGuidePinned = false;
+      this.isConceptGuideOpen = false;
+    } else {
+      this.isConceptGuidePinned = true;
+      this.isConceptGuideOpen = true;
+    }
+    this.cdr.markForCheck();
+  }
+
+  showConceptGuide(): void {
+    if (this.conceptGuideTimeout) {
+      clearTimeout(this.conceptGuideTimeout);
+      this.conceptGuideTimeout = null;
+    }
+    this.isConceptGuideOpen = true;
+    this.cdr.markForCheck();
+  }
+
+  hideConceptGuide(): void {
+    if (!this.isConceptGuidePinned) {
+      if (this.conceptGuideTimeout) {
+        clearTimeout(this.conceptGuideTimeout);
+      }
+      this.conceptGuideTimeout = setTimeout(() => {
+        if (!this.isConceptGuidePinned) {
+          this.isConceptGuideOpen = false;
+          this.cdr.markForCheck();
+        }
+      }, 250);
+    }
+  }
+
+  closeConceptGuide(event?: MouseEvent): void {
+    if (event) {
+      event.stopPropagation();
+    }
+    this.isConceptGuidePinned = false;
+    this.isConceptGuideOpen = false;
+    if (this.conceptGuideTimeout) {
+      clearTimeout(this.conceptGuideTimeout);
+      this.conceptGuideTimeout = null;
+    }
+    this.cdr.markForCheck();
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscapePress(): void {
+    if (this.isConceptGuideOpen) {
+      this.closeConceptGuide();
+    }
+  }
 
   toggleSidebar(): void {
     this.isSidebarCollapsed = !this.isSidebarCollapsed;
@@ -229,7 +295,8 @@ export class TraitsRegistryComponent implements OnInit {
     private snackBar: MatSnackBar,
     private apiService: ApiService,
     private route: ActivatedRoute,
-    private router: Router
+    private router: Router,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
