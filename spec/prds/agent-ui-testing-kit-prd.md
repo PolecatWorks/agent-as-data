@@ -42,6 +42,14 @@ graph TD
 ### Global Top Bar & Navigation Menu Specification
 All views across the application must share an identical, standardized top bar (`h-14 bg-white border-b border-slate-200 shadow-sm`) and navigation menu to ensure a seamless, uniform developer experience:
 - **Left Context / Title Area**: Displays a pill badge with the module icon and current workspace name (e.g. `Trait Contracts`, `Skills Registry`, `Agents Registry`, `Interactive Testing Studio`).
+- **Zero-Footprint Concept Guide Standard**: Positioned directly adjacent to the workspace title across all core platform views as an interactive trigger pill (`[help_outline] What are [Concepts]?`):
+  - **Zero Persistent Footprint**: Never consumes, shrinks, or shifts the active working canvas or editor scroll area (`flex-1 min-h-0 overflow-y-auto`).
+  - **Interactive Popover Modes**: Hovering displays the floating card with a 200ms debounce; clicking pins the popover open until explicitly closed, dismissed by outside click, or by pressing `Esc`.
+  - **Educational Content Hierarchy**:
+    1. **Business Analogy**: Plain-English mental model (e.g., Hiring Job Certifications, Digital Teammates, Standard Operating Procedures, Project Rooms, Pre-Production Sandbox).
+    2. **Functional Mapping**: Direct 3-part mapping to the view's specific form tabs, schema panels, or execution consoles.
+    3. **Architecture Bridge**: Contextual link to `/detail` (`Explore [Domain] Architecture →`) for engineering specifications.
+  - **Reusable Component Architecture**: Implemented as a standalone, reusable Angular component (`<app-concept-guide>`) accepting typed configuration for badge, title, icon, trigger label, analogy, tab mappings, and architecture links to guarantee 100% visual and behavioral parity across all views.
 - **Primary View Action (Left of Menu)**: Contextual creation button styled consistently with a solid fill (`mat-flat-button color="primary"`), e.g., `+ New Trait`, `+ New Skill`, `+ New Agent`, or `+ New Thread`. Clicking this initializes a clean form in-place without triggering full route reloads.
 - **Secondary View Actions**: A secondary action button (`Sync Embeddings`) located on the top bar for both the Agent Registry and Skills Registry views. This action triggers the synchronization of the respective entity's embeddings into the vector database.
 - **Global Navigation (Hamburger Menu)**: An `appMenu` triggered by a standard hamburger icon (`menu`) providing one-click routing across all top-level workspaces:
@@ -61,6 +69,22 @@ All views across the application must share an identical, standardized top bar (
 - **Layout Consistency**: 2-column split view across all major registries and studios (collapsible sidebar list with search/filter on the left, full edit/blueprint or execution workspace on the right).
 - **Form Layout Standard**: For Traits, Tools, Skills, and Agents edit views, the fields `Name`, `Owner`, `Description`, and `Tags` must be presented as the top lines on the view with consistent labels (`Name`, `Owner`, `Description`, `Tags`).
 - **Card Parity**: Sidebar cards across Agents, Skills, Tools, and the Interactive Testing Studio must share unified card styling (icon, title, version/meta tags, description snippet, and attached items summary badges like `N Skills` / `N Tools`).
+
+### Conceptual & Descriptive Consistency Standard
+A primary goal of the Agent-As-Data Studio is **absolute consistency across the application, particularly in how domain concepts, workflows, and entities are described**:
+
+- **Unified Mental Models Across All Surfaces**: When describing domain entities across the application (on the `/home` onboarding overview, `/detail` architecture specification, top bar concept guides, form field hints, tooltips, and documentation), descriptions must reinforce an identical set of canonical metaphors and avoid confusing jargon drift.
+- **Canonical Concept Lexicon & Analogies**:
+  1. 📚 **Knowledge Base & Inspector (`/knowledge-inspector`)**: **"Company Brain & Institutional Memory"** — A single searchable truth consolidating documents, guidelines, and graph relationships so AI teammates never hallucinate.
+  2. 🛡️ **Traits (`/traits`)**: **"Job Roles & Safety Rules"** — The *Hiring & Certification* analogy: verifiable credentials that specify approved tools, unbreakable corporate policy rules, and automated data protection guardrails.
+  3. 🤖 **Agents (`/agents`)**: **"Digital Teammates"** — Autonomous worker personas with specialized prompts, assigned skills, tools, and required/implemented Traits.
+  4. 🧩 **Skills (`/skills`)**: **"Standard Operating Procedures (SOPs)"** — Reusable, deterministic capability packages with typed schemas that any agent can execute.
+  5. 💬 **Workbenches (`/workbench`)**: **"Active Project Rooms"** — Sandboxed collaboration spaces with isolated filesystems and continuous conversational threads for multi-turn execution.
+  6. 🧪 **Testing Studio (`/interactive-testing`)**: **"Pre-Production Sandbox"** — Safe staging ground to preview outputs, inspect prompt guidelines, and verify trait compliance before going live.
+  7. 🕸️ **Network Graph (`/network-visualizer`)**: **"Org Chart & Delegation Map"** — Interactive visualization of team hierarchies and trait interface relationships.
+  8. 🛠️ **Refactoring Lab (`/refactoring-lab`)**: **"AI Governance & Quality Control"** — Automated detection of duplicate agents, overlapping skills, and rule contradictions.
+- **Zero Descriptive Divergence**: If an entity is described using a specific mental model on `/home`, every other view in the system (including top bar concept popovers and contextual help) must reinforce and build upon that exact same mental model rather than introducing competing synonyms or disparate framing.
+
 - **Interactive Testing Studio Alignment with Skills Layout**:
   - **Collapsible Sidebar**: Left-hand target entity selector with smooth collapse/expand toggle (`w-72` expanded / `w-16` collapsed) matching Skills Registry navigation.
   - **Entity Filter & Search**: Pinned search input filtering across both agents and skills.

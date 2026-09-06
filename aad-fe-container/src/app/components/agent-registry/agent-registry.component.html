@@ -105,9 +105,25 @@
     <!-- Top Bar -->
     <div class="h-14 bg-white border-b border-slate-200 flex items-center justify-between px-4 shrink-0 shadow-sm z-10">
       <!-- Left side of top bar (Title) -->
-      <div class="flex items-center gap-2">
-        <mat-icon class="text-indigo-600">smart_toy</mat-icon>
-        <h1 class="text-lg font-black text-slate-800 m-0">Agents Registry</h1>
+      <div class="flex items-center gap-3">
+        <div class="flex items-center gap-2">
+          <mat-icon class="text-indigo-600">smart_toy</mat-icon>
+          <h1 class="text-lg font-black text-slate-800 m-0">Agents Registry</h1>
+        </div>
+
+        <!-- Zero-Footprint Reusable Concept Guide -->
+        <app-concept-guide
+          badge="3. Declarative AI Teammates"
+          title="Digital Teammates (Agents)"
+          icon="smart_toy"
+          triggerLabel="What are Agents?"
+          analogyTitle="The Digital Teammate Analogy"
+          analogyText="Think of Agents like specialized digital teammates. Each agent has a clear job description, core personality, assigned skills, and verified trait contracts determining what they can and cannot do."
+          [tabMappings]="conceptGuideMappings"
+          detailLink="/detail"
+          detailLinkLabel="Explore Agent Architecture"
+          testIdPrefix="agents-concept">
+        </app-concept-guide>
       </div>
 
       <!-- Right side of top bar (Actions) -->

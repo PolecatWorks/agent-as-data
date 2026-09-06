@@ -1,4 +1,4 @@
-import { Component, OnInit, HostListener, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, HostListener, ChangeDetectorRef, ViewChild } from '@angular/core';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -15,6 +15,7 @@ import { MatTabsModule } from '@angular/material/tabs';
 import { MatMenuModule } from '@angular/material/menu';
 import { ApiService, TraitContract } from '../../services/api.service';
 import { GuardrailsEditorComponent } from '../guardrails-editor/guardrails-editor.component';
+import { ConceptGuideComponent, ConceptTabMapping } from '../concept-guide/concept-guide.component';
 import { forkJoin } from 'rxjs';
 import { APP_NAV_MENU_ITEMS } from '../../models/navigation';
 
@@ -36,80 +37,62 @@ import { APP_NAV_MENU_ITEMS } from '../../models/navigation';
     GuardrailsEditorComponent,
     MatFormFieldModule,
     MatMenuModule,
-    RouterModule
+    RouterModule,
+    ConceptGuideComponent
   ],
 
   templateUrl: './traits-registry.component.html',
   styleUrl: './traits-registry.component.scss'
 })
 export class TraitsRegistryComponent implements OnInit {
+  @ViewChild(ConceptGuideComponent) conceptGuide?: ConceptGuideComponent;
+
   isSidebarCollapsed = false;
   menuItems = APP_NAV_MENU_ITEMS;
 
-  // Zero-Footprint Concept Guide State
-  isConceptGuideOpen = false;
-  isConceptGuidePinned = false;
-  private conceptGuideTimeout: any = null;
+  readonly conceptGuideMappings: ConceptTabMapping[] = [
+    {
+      icon: 'build',
+      iconColor: 'text-indigo-600',
+      title: '1. Capability Requirements',
+      description: 'Tools, state access, and environment permissions the agent must possess to execute this role.'
+    },
+    {
+      icon: 'gavel',
+      iconColor: 'text-red-500',
+      title: '2. Behavioral Invariants',
+      description: 'Unbreakable corporate policy rules the agent MUST ALWAYS or MUST NEVER violate.'
+    },
+    {
+      icon: 'fact_check',
+      iconColor: 'text-emerald-600',
+      title: '3. Evaluation Criteria & Guardrails',
+      description: 'Built-in data & password protection, output grading rubrics, and automated safety fences.'
+    }
+  ];
+
+  get isConceptGuideOpen(): boolean {
+    return this.conceptGuide?.isOpen ?? false;
+  }
+
+  get isConceptGuidePinned(): boolean {
+    return this.conceptGuide?.isPinned ?? false;
+  }
 
   toggleConceptGuide(event?: MouseEvent): void {
-    if (event) {
-      event.stopPropagation();
-    }
-    if (this.conceptGuideTimeout) {
-      clearTimeout(this.conceptGuideTimeout);
-      this.conceptGuideTimeout = null;
-    }
-    if (this.isConceptGuidePinned) {
-      this.isConceptGuidePinned = false;
-      this.isConceptGuideOpen = false;
-    } else {
-      this.isConceptGuidePinned = true;
-      this.isConceptGuideOpen = true;
-    }
-    this.cdr.markForCheck();
+    this.conceptGuide?.toggle(event);
   }
 
   showConceptGuide(): void {
-    if (this.conceptGuideTimeout) {
-      clearTimeout(this.conceptGuideTimeout);
-      this.conceptGuideTimeout = null;
-    }
-    this.isConceptGuideOpen = true;
-    this.cdr.markForCheck();
+    this.conceptGuide?.show();
   }
 
   hideConceptGuide(): void {
-    if (!this.isConceptGuidePinned) {
-      if (this.conceptGuideTimeout) {
-        clearTimeout(this.conceptGuideTimeout);
-      }
-      this.conceptGuideTimeout = setTimeout(() => {
-        if (!this.isConceptGuidePinned) {
-          this.isConceptGuideOpen = false;
-          this.cdr.markForCheck();
-        }
-      }, 250);
-    }
+    this.conceptGuide?.hide();
   }
 
   closeConceptGuide(event?: MouseEvent): void {
-    if (event) {
-      event.stopPropagation();
-    }
-    this.isConceptGuidePinned = false;
-    this.isConceptGuideOpen = false;
-    if (this.conceptGuideTimeout) {
-      clearTimeout(this.conceptGuideTimeout);
-      this.conceptGuideTimeout = null;
-    }
-    this.cdr.markForCheck();
-  }
-
-  @HostListener('document:keydown.escape')
-  onEscapePress(): void {
-    if (this.isConceptGuideOpen) {
-      this.closeConceptGuide();
-    }
+    this.conceptGuide?.close(event);
   }
 
   toggleSidebar(): void {

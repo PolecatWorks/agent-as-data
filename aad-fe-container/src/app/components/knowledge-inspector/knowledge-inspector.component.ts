@@ -8,6 +8,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
 import { RouterModule } from '@angular/router';
 import { ApiService } from '../../services/api.service';
+import { ConceptGuideComponent, ConceptTabMapping } from '../concept-guide/concept-guide.component';
 import { APP_NAV_MENU_ITEMS } from '../../models/navigation';
 
 @Component({
@@ -21,7 +22,8 @@ import { APP_NAV_MENU_ITEMS } from '../../models/navigation';
     MatInputModule,
     MatIconModule,
     MatMenuModule,
-    RouterModule
+    RouterModule,
+    ConceptGuideComponent
   ],
   templateUrl: './knowledge-inspector.component.html',
   styleUrl: './knowledge-inspector.component.scss'
@@ -34,6 +36,27 @@ export class KnowledgeInspectorComponent implements OnInit {
   isSearching: boolean = false;
 
   menuItems = APP_NAV_MENU_ITEMS;
+
+  readonly conceptGuideMappings: ConceptTabMapping[] = [
+    {
+      icon: 'saved_search',
+      iconColor: 'text-blue-600',
+      title: '1. Semantic Vector Store',
+      description: 'High-dimensional vector embeddings for hybrid RAG search over documents and corporate policies.'
+    },
+    {
+      icon: 'hub',
+      iconColor: 'text-indigo-600',
+      title: '2. Knowledge Graph Triples',
+      description: 'Subject-Predicate-Object relation tuples connecting company concepts, teams, and data structures.'
+    },
+    {
+      icon: 'cleaning_services',
+      iconColor: 'text-emerald-600',
+      title: '3. Entity Resolution & Pruning',
+      description: 'Canonical entity deduction and automated duplicate pruning ensuring reliable AI grounding.'
+    }
+  ];
 
   constructor(private apiService: ApiService) {}
 

@@ -428,8 +428,21 @@ flowchart TD
     B -->|No Config File / Missing Env Vars| C[Fail-Fast Crash on Boot]
     B -->|Explicit Config via Helm / Env| D[AppConfig::load & validate]
     D -->|Invalid URLs or Missing Keys| C
-    D -->|Valid| E[Initialize Tokio Runtime & Connect Services]
-```
+---
+
+## Application & Platform Consistency Standard
+
+AAD enforces strict conceptual, architectural, and descriptive consistency across all user-facing interfaces, documentation, and agent tool payloads:
+- **Conceptual & Descriptive Parity**: When describing system entities across any surface (the `/home` onboarding overview, `/detail` technical specification, in-app top bar concept guides, tooltips, and documentation), the platform must utilize an identical, coherent set of canonical mental models:
+  - **Knowledge Base**: *Company Brain & Institutional Memory* (Searchable unwritten wisdom, documents, and relation graphs).
+  - **Traits**: *Job Roles & Safety Rules* (The "Hiring & Certification" analogy: approved tools, unbreakable corporate policy invariants, and data protection rubrics).
+  - **Agents**: *Digital Teammates* (Declarative AI worker personas with personalities, skills, tools, and trait contracts).
+  - **Skills**: *Standard Operating Procedures (SOPs)* (Reusable, deterministic capability packages with typed schemas).
+  - **Workbenches**: *Active Project Rooms* (Dedicated sandboxes, conversational threads, and working memory).
+  - **Testing Studio**: *Pre-Production Sandbox* (Safe preview and verification of outputs and trait mappings before deployment).
+- **Anti-Pattern (Jargon Drift)**: Technical divergence, conflicting synonyms, or contradictory framing between different UI pages or service endpoints is strictly prohibited.
+
+---
 
 ## Sub-PRDs & Specifications
 - **PRD Index**: [spec/prds/README.md](./README.md)

@@ -62,4 +62,14 @@ describe('AgentRegistryComponent', () => {
     expect(component.getTraitDescription('SecurityAuditor')).toBe('Vulnerability scanner.');
     expect(component.getTraitDescription('NonExistent')).toBe('No description available');
   });
+
+  it('should render the zero-footprint concept guide trigger and configuration in top bar', () => {
+    const trigger = fixture.nativeElement.querySelector('[data-testid="agents-concept-trigger"]');
+    expect(trigger).toBeTruthy();
+    expect(trigger.textContent).toContain('What are Agents?');
+
+    expect(component.conceptGuideMappings.length).toBe(3);
+    expect(component.conceptGuideMappings[0].title).toBe('1. System Prompt & Persona');
+  });
 });
+

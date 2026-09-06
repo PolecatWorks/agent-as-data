@@ -107,9 +107,25 @@
     <!-- Top Bar -->
     <div class="h-14 bg-white border-b border-slate-200 flex items-center justify-between px-4 shrink-0 shadow-sm z-10">
       <!-- Left side of top bar (Title) -->
-      <div class="flex items-center gap-2">
-        <mat-icon class="text-indigo-600">extension</mat-icon>
-        <h1 class="text-lg font-black text-slate-800 m-0">Skills Registry</h1>
+      <div class="flex items-center gap-3">
+        <div class="flex items-center gap-2">
+          <mat-icon class="text-indigo-600">extension</mat-icon>
+          <h1 class="text-lg font-black text-slate-800 m-0">Skills Registry</h1>
+        </div>
+
+        <!-- Zero-Footprint Reusable Concept Guide -->
+        <app-concept-guide
+          badge="4. Standard Operating Procedures"
+          title="Standard Operating Procedures (Skills)"
+          icon="extension"
+          triggerLabel="What are Skills?"
+          analogyTitle="The SOP Analogy"
+          analogyText="Think of Skills like standard operating procedures (SOPs). They are modular, deterministic instruction packages with typed schemas that any authorized agent can invoke to execute specific tasks."
+          [tabMappings]="conceptGuideMappings"
+          detailLink="/detail"
+          detailLinkLabel="Explore Skill Architecture"
+          testIdPrefix="skills-concept">
+        </app-concept-guide>
       </div>
 
       <!-- Right side of top bar (Actions) -->

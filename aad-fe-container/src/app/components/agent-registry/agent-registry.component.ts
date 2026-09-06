@@ -16,6 +16,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { ApiService, Agent, GuardrailConfig, TraitContract } from '../../services/api.service';
 import { GuardrailsEditorComponent } from '../guardrails-editor/guardrails-editor.component';
+import { ConceptGuideComponent, ConceptTabMapping } from '../concept-guide/concept-guide.component';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { marked } from 'marked';
 import { forkJoin } from 'rxjs';
@@ -48,7 +49,8 @@ export interface LLMModelOption {
     MatMenuModule,
     MatTooltipModule,
     MatSnackBarModule,
-    GuardrailsEditorComponent
+    GuardrailsEditorComponent,
+    ConceptGuideComponent
   ],
 
   templateUrl: './agent-registry.component.html',
@@ -58,6 +60,27 @@ export class AgentRegistryComponent implements OnInit {
   isSidebarCollapsed = false;
 
   menuItems = APP_NAV_MENU_ITEMS;
+
+  readonly conceptGuideMappings: ConceptTabMapping[] = [
+    {
+      icon: 'psychology',
+      iconColor: 'text-indigo-600',
+      title: '1. System Prompt & Persona',
+      description: 'Role definition, operational demeanor, and core instructions driving the agent.'
+    },
+    {
+      icon: 'verified',
+      iconColor: 'text-emerald-600',
+      title: '2. Traits & Behavioral Contracts',
+      description: 'Enforced behavioral invariants, required capability fences, and corporate policy rules.'
+    },
+    {
+      icon: 'extension',
+      iconColor: 'text-blue-600',
+      title: '3. Assigned Skills & Tools',
+      description: 'Standard operating procedures (SOPs) and executable workspace tools assigned to this agent.'
+    }
+  ];
 
   toggleSidebar() {
     this.isSidebarCollapsed = !this.isSidebarCollapsed;
