@@ -1,25 +1,34 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-
 import { provideHttpClient } from '@angular/common/http';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
-import { ToolManagerComponent } from './tool-manager.component';
 import { ActivatedRoute } from '@angular/router';
 import { of } from 'rxjs';
 import { NO_ERRORS_SCHEMA } from '@angular/core';
+import { AgentContextComponent } from './agent-context.component';
 
-describe('ToolManagerComponent', () => {
-  let component: ToolManagerComponent;
-  let fixture: ComponentFixture<ToolManagerComponent>;
+describe('AgentContextComponent', () => {
+  let component: AgentContextComponent;
+  let fixture: ComponentFixture<AgentContextComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [ToolManagerComponent],
-      providers: [provideHttpClient(), provideAnimationsAsync(), { provide: ActivatedRoute, useValue: { paramMap: of({ get: () => null }), queryParams: of({}), snapshot: { paramMap: { get: () => null } } } }],
+      imports: [AgentContextComponent],
+      providers: [
+        provideHttpClient(),
+        provideAnimationsAsync(),
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            paramMap: of({ get: () => null }),
+            queryParams: of({}),
+            snapshot: { paramMap: { get: () => null } }
+          }
+        }
+      ],
       schemas: [NO_ERRORS_SCHEMA]
-    })
-    .compileComponents();
+    }).compileComponents();
 
-    fixture = TestBed.createComponent(ToolManagerComponent);
+    fixture = TestBed.createComponent(AgentContextComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });
@@ -32,13 +41,13 @@ describe('ToolManagerComponent', () => {
     const compiled = fixture.nativeElement as HTMLElement;
     const titleSwitcher = compiled.querySelector('[data-testid="workspace-title-switcher"]');
     expect(titleSwitcher).toBeTruthy();
-    expect(titleSwitcher?.textContent).toContain('Tools Registry');
+    expect(titleSwitcher?.textContent).toContain('Agent Context Search');
   });
 
-  it('should render the zero-footprint concept guide for tools', () => {
+  it('should render the zero-footprint concept guide for agent context', () => {
     const compiled = fixture.nativeElement as HTMLElement;
-    const trigger = compiled.querySelector('[data-testid="tools-concept-trigger"]');
+    const trigger = compiled.querySelector('[data-testid="context-concept-trigger"]');
     expect(trigger).toBeTruthy();
-    expect(trigger?.textContent).toContain('What are Tools?');
+    expect(trigger?.textContent).toContain('What is Context Search?');
   });
 });

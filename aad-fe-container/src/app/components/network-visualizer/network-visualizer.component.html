@@ -101,11 +101,30 @@
     <!-- Top Bar -->
     <div class="h-14 bg-white border-b border-slate-200 flex items-center justify-between px-4 shrink-0 shadow-sm z-10">
 
-      <!-- Left side of top bar (Context/Badges) -->
+      <!-- Left side of top bar (Title & View Switcher + Concept Guide) -->
       <div class="flex items-center gap-3">
-        <span class="bg-emerald-100 text-emerald-800 text-xs font-bold px-2.5 py-1 rounded-full flex items-center gap-1">
-          <mat-icon class="!w-3.5 !h-3.5 !text-sm">account_tree</mat-icon> Knowledge Base
-        </span>
+        <div class="flex items-center gap-1.5 px-2.5 py-1 -ml-2 rounded-lg hover:bg-slate-100 cursor-pointer transition-colors select-none group"
+             [matMenuTriggerFor]="appMenu"
+             data-testid="workspace-title-switcher"
+             title="Click to switch workspace">
+          <mat-icon class="text-emerald-600">account_tree</mat-icon>
+          <h1 class="text-lg font-black text-slate-800 m-0">Network Graph Visualizer</h1>
+          <mat-icon class="!w-4 !h-4 !text-base text-slate-400 group-hover:text-slate-700 transition-colors">expand_more</mat-icon>
+        </div>
+
+        <!-- Zero-Footprint Reusable Concept Guide -->
+        <app-concept-guide
+          badge="7. Interactive Visual Topology"
+          title="Org Chart & Delegation Map (Network Graph)"
+          icon="account_tree"
+          triggerLabel="What is Network Graph?"
+          analogyTitle="The Org Chart Analogy"
+          analogyText="Think of the Network Graph like an interactive company org chart. It visually maps how agents, assigned skills, and trait contracts connect and delegate responsibilities across the organization."
+          [tabMappings]="conceptGuideMappings"
+          detailLink="/detail"
+          detailLinkLabel="Explore Network Architecture"
+          testIdPrefix="network-concept">
+        </app-concept-guide>
       </div>
 
       <!-- Right side of top bar (Actions) -->

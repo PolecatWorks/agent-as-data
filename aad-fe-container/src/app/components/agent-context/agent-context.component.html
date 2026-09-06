@@ -1,8 +1,52 @@
 <div class="h-full flex flex-col bg-slate-50">
   <div class="h-14 bg-white border-b border-slate-200 flex items-center justify-between px-4 shrink-0 shadow-sm z-10">
+    <div class="flex items-center gap-3">
+      <div class="flex items-center gap-1.5 px-2.5 py-1 -ml-2 rounded-lg hover:bg-slate-100 cursor-pointer transition-colors select-none group"
+           [matMenuTriggerFor]="appMenu"
+           data-testid="workspace-title-switcher"
+           title="Click to switch workspace">
+        <mat-icon class="text-indigo-600">search</mat-icon>
+        <h1 class="text-lg font-black text-slate-800 m-0">Agent Context Search</h1>
+        <mat-icon class="!w-4 !h-4 !text-base text-slate-400 group-hover:text-slate-700 transition-colors">expand_more</mat-icon>
+      </div>
+
+      <!-- Zero-Footprint Concept Guide -->
+      <app-concept-guide
+        badge="Semantic Context Discovery"
+        title="Context Discovery (Agent Context)"
+        icon="search"
+        triggerLabel="What is Context Search?"
+        analogyTitle="The Semantic Matcher Analogy"
+        analogyText="Think of Context Discovery like an intelligent semantic routing engine. It translates natural language task requirements into the exact subgraphs of skills and agents needed to fulfill the job."
+        [tabMappings]="conceptGuideMappings"
+        detailLink="/detail"
+        detailLinkLabel="Explore Semantic Architecture"
+        testIdPrefix="context-concept">
+      </app-concept-guide>
+    </div>
+
+    <!-- Right Actions -->
     <div class="flex items-center gap-2">
-      <mat-icon class="text-indigo-600">search</mat-icon>
-      <h1 class="text-lg font-black text-slate-800 m-0">Agent Context Search</h1>
+      <!-- Hamburger Menu for App Navigation -->
+      <button mat-icon-button [matMenuTriggerFor]="appMenu" aria-label="Menu" class="text-slate-500 hover:text-slate-800">
+        <mat-icon>menu</mat-icon>
+      </button>
+
+      <mat-menu #appMenu="matMenu">
+        @for (item of menuItems; track item.path) {
+          <a mat-menu-item [routerLink]="item.path" routerLinkActive="active-link">
+            <mat-icon>{{ item.icon }}</mat-icon>
+            <span>{{ item.label }}</span>
+          </a>
+        }
+      </mat-menu>
+
+      <div class="w-px h-6 bg-slate-200 mx-1"></div> <!-- Divider -->
+
+      <!-- Avatar -->
+      <div class="w-8 h-8 rounded-full bg-slate-200 border border-slate-300 flex items-center justify-center text-slate-600 font-bold text-xs">
+        U
+      </div>
     </div>
   </div>
 

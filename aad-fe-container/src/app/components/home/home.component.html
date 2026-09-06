@@ -1,12 +1,16 @@
 <div class="h-full w-full flex flex-col bg-slate-50 overflow-hidden">
   <!-- Top Bar (Standard Global Top Bar - Clean & Non-Redundant) -->
   <div class="h-14 bg-white border-b border-slate-200 flex items-center justify-between px-6 shrink-0 shadow-sm z-10">
-    <!-- Left side of top bar (Title) -->
-    <div class="flex items-center gap-2">
+    <!-- Left side of top bar (Title & View Switcher) -->
+    <div class="flex items-center gap-1.5 px-2.5 py-1 -ml-2 rounded-lg hover:bg-slate-100 cursor-pointer transition-colors select-none group"
+         [matMenuTriggerFor]="appMenu"
+         data-testid="workspace-title-switcher"
+         title="Click to switch workspace">
       <div class="p-1.5 bg-indigo-50 text-indigo-600 rounded-lg flex items-center justify-center">
         <mat-icon class="!w-5 !h-5 !text-lg">home</mat-icon>
       </div>
       <h1 class="text-base font-black text-slate-800 m-0 tracking-tight">Agent-As-Data Studio</h1>
+      <mat-icon class="!w-4 !h-4 !text-base text-slate-400 group-hover:text-slate-700 transition-colors">expand_more</mat-icon>
     </div>
 
     <!-- Right side of top bar (Menu + Profile) -->

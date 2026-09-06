@@ -58,4 +58,11 @@ describe('HomeComponent', () => {
     expect(compiled.textContent).toContain('Think of Traits like verified job certifications');
     expect(compiled.textContent).toContain('Unbreakable corporate policy rules');
   });
+
+  it('should render the workspace title view switcher dropdown trigger', () => {
+    const compiled = fixture.nativeElement as HTMLElement;
+    const titleSwitcher = compiled.querySelector('[data-testid="workspace-title-switcher"]');
+    expect(titleSwitcher).toBeTruthy();
+    expect(titleSwitcher?.textContent).toContain('Agent-As-Data Studio');
+  });
 });
