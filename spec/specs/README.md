@@ -148,3 +148,5 @@ flowchart TD
 
 
 
+
+- [CLI Manifest Tool Spec](./cli-manifest-tool-spec.md)
