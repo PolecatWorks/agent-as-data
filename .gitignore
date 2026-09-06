@@ -6,3 +6,5 @@ target/
 *.log
 integration-tests/reports/
 node_modules/
+integration-tests/*.html
+integration-tests/*.xml
