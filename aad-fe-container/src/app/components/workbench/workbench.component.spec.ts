@@ -87,6 +87,14 @@ describe('WorkbenchComponent', () => {
     expect(component.conceptGuideMappings[1].title).toBe('2. Conversational Threads');
     expect(component.conceptGuideMappings[2].title).toBe('3. Shared Bench Memory');
   });
+
+  it('should render the workspace title as an interactive view switcher trigger with dropdown affordance', () => {
+    const switcher = fixture.nativeElement.querySelector('[data-testid="workspace-title-switcher"]');
+    expect(switcher).toBeTruthy();
+    expect(switcher.textContent).toContain('Workbench');
+    expect(switcher.textContent).toContain('expand_more');
+  });
 });
+
 
 

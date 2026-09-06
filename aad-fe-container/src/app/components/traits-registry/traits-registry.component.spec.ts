@@ -104,4 +104,12 @@ describe('TraitsRegistryComponent - Zero-Footprint Concept Guide', () => {
     expect(detailLink).toBeTruthy();
     expect(detailLink.getAttribute('routerLink')).toBe('/detail');
   });
+
+  it('should render the workspace title as an interactive view switcher trigger with dropdown affordance', () => {
+    const switcher = fixture.nativeElement.querySelector('[data-testid="workspace-title-switcher"]');
+    expect(switcher).toBeTruthy();
+    expect(switcher.textContent).toContain('Traits Registry');
+    expect(switcher.textContent).toContain('expand_more');
+  });
 });
+

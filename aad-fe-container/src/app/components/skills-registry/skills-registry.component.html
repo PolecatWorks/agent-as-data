@@ -106,11 +106,15 @@
 
     <!-- Top Bar -->
     <div class="h-14 bg-white border-b border-slate-200 flex items-center justify-between px-4 shrink-0 shadow-sm z-10">
-      <!-- Left side of top bar (Title) -->
+      <!-- Left side of top bar (Title & View Switcher) -->
       <div class="flex items-center gap-3">
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-1.5 px-2.5 py-1 -ml-2 rounded-lg hover:bg-slate-100 cursor-pointer transition-colors select-none group"
+             [matMenuTriggerFor]="appMenu"
+             data-testid="workspace-title-switcher"
+             title="Click to switch workspace">
           <mat-icon class="text-indigo-600">extension</mat-icon>
           <h1 class="text-lg font-black text-slate-800 m-0">Skills Registry</h1>
+          <mat-icon class="!w-4 !h-4 !text-base text-slate-400 group-hover:text-slate-700 transition-colors">expand_more</mat-icon>
         </div>
 
         <!-- Zero-Footprint Reusable Concept Guide -->

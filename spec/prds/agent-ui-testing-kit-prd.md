@@ -41,7 +41,9 @@ graph TD
 
 ### Global Top Bar & Navigation Menu Specification
 All views across the application must share an identical, standardized top bar (`h-14 bg-white border-b border-slate-200 shadow-sm`) and navigation menu to ensure a seamless, uniform developer experience:
-- **Left Context / Title Area**: Displays a pill badge with the module icon and current workspace name (e.g. `Trait Contracts`, `Skills Registry`, `Agents Registry`, `Interactive Testing Studio`).
+- **Left Context / Title Area & Quick View Switcher**: Displays a pill badge/container with the module icon, current workspace name (e.g. `Agents Registry`, `Traits Registry`, `Skills Registry`, `Workbench`, `Interactive Testing Studio`, `Knowledge & SPO Tuple Inspector`), and an interactive dropdown affordance (`expand_more` or `unfold_more`):
+  - **Click-to-Switch Navigation**: Clicking directly on the view title or icon opens a dropdown menu (`matMenu`) listing all available platform workspaces with their canonical icons and labels, enabling instant one-click switching directly from the title.
+  - **Visual Affordance**: Styled with smooth hover feedback (`hover:bg-slate-100/80 px-2 py-1 -ml-2 rounded-lg cursor-pointer transition-colors select-none flex items-center gap-1.5`) and subtle chevron indication so developers immediately discover that the current view title is a navigation switcher.
 - **Zero-Footprint Concept Guide Standard**: Positioned directly adjacent to the workspace title across all core platform views as an interactive trigger pill (`[help_outline] What are [Concepts]?`):
   - **Zero Persistent Footprint**: Never consumes, shrinks, or shifts the active working canvas or editor scroll area (`flex-1 min-h-0 overflow-y-auto`).
   - **Interactive Popover Modes**: Hovering displays the floating card with a 200ms debounce; clicking pins the popover open until explicitly closed, dismissed by outside click, or by pressing `Esc`.
