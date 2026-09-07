@@ -30,6 +30,7 @@ jobs:
       pull-requests: read
     outputs:
       backend: ${{ steps.filter.outputs.backend }}
+      mcp: ${{ steps.filter.outputs.mcp }}
       frontend: ${{ steps.filter.outputs.frontend }}
       spec: ${{ steps.filter.outputs.spec }}
       run_tests: ${{ steps.filter.outputs.run_tests }}
@@ -43,6 +44,9 @@ jobs:
             backend:
               - 'aad-be-container/**'
               - '.github/workflows/aad-be-docker-publish.yml'
+            mcp:
+              - 'aad-mcp-container/**'
+              - '.github/workflows/aad-mcp-docker-publish.yml'
             frontend:
               - 'aad-fe-container/**'
               - '.github/workflows/aad-fe-docker-publish.yml'
@@ -51,6 +55,8 @@ jobs:
             run_tests:
               - 'aad-be-container/**'
               - '.github/workflows/aad-be-docker-publish.yml'
+              - 'aad-mcp-container/**'
+              - '.github/workflows/aad-mcp-docker-publish.yml'
               - 'aad-fe-container/**'
               - '.github/workflows/aad-fe-docker-publish.yml'
               - 'charts/**'
@@ -105,6 +111,15 @@ jobs:
           else
             echo "AAD_FE_IMAGE=ghcr.io/${REPO_LOWER}-fe" >> $GITHUB_ENV
             echo "AAD_FE_TAG=main" >> $GITHUB_ENV
+          fi
+
+          if [[ "${{ needs.check-paths.outputs.mcp }}" == "true" ]]; then
+            MCP_SHA=$(git log -1 --format=%H -- aad-mcp-container/ .github/workflows/aad-mcp-docker-publish.yml)
+            echo "AAD_MCP_IMAGE=ghcr.io/${REPO_LOWER}-mcp" >> $GITHUB_ENV
+            echo "AAD_MCP_TAG=sha-$MCP_SHA" >> $GITHUB_ENV
+          else
+            echo "AAD_MCP_IMAGE=ghcr.io/${REPO_LOWER}-mcp" >> $GITHUB_ENV
+            echo "AAD_MCP_TAG=main" >> $GITHUB_ENV
           fi
 
       - name: Install GitHub CLI

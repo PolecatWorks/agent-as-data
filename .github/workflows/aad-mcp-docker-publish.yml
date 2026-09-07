@@ -1,0 +1,362 @@
+name: AAD-MCP Docker
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+  merge_group:
+
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}-mcp
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check-paths:
+    runs-on: ubuntu-latest
+    outputs:
+      mcp: ${{ steps.filter.outputs.mcp }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          ref: ${{ github.event.merge_group.base_ref || github.ref }}
+          filters: |
+            mcp:
+              - 'aad-mcp-container/**'
+              - '.github/workflows/aad-mcp-docker-publish.yml'
+
+  check-image:
+    needs: check-paths
+    if: needs.check-paths.outputs.mcp == 'true'
+    runs-on: ubuntu-latest
+    outputs:
+      exists: ${{ steps.check.outputs.exists }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine MCP Content SHA
+        id: mcp-content
+        run: |
+          # shellcheck disable=SC2086
+          MCP_SHA=$(git log -1 --format=%H -- aad-mcp-container/ .github/workflows/aad-mcp-docker-publish.yml)
+          echo "MCP_SHA=$MCP_SHA" >> "$GITHUB_OUTPUT"
+
+      - name: Determine Image Name
+        id: image-name
+        run: |
+          # shellcheck disable=SC2086
+          repo_name="${{ github.repository }}"
+          echo "IMAGE_NAME_LOWERCASE=$(echo "$repo_name" | tr '[:upper:]' '[:lower:]')-mcp" >> "$GITHUB_OUTPUT"
+
+      - name: Log into registry ${{ env.REGISTRY }}
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check if image exists
+        id: check
+        run: |
+          # shellcheck disable=SC2086
+          IMAGE_REF="${{ env.REGISTRY }}/${{ steps.image-name.outputs.IMAGE_NAME_LOWERCASE }}:sha-${{ steps.mcp-content.outputs.MCP_SHA }}"
+          echo "Checking if image exists: $IMAGE_REF"
+          if docker manifest inspect "$IMAGE_REF" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "Image exists!"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "Image does not exist."
+          fi
+
+  build:
+    needs: [check-paths, check-image]
+    if: github.event_name != 'pull_request' && needs.check-paths.outputs.mcp == 'true' && needs.check-image.outputs.exists != 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - linux/amd64
+          - linux/arm64
+
+    runs-on: ${{ matrix.platform == 'linux/amd64' && 'ubuntu-24.04' || matrix.platform == 'linux/arm64' && 'ubuntu-24.04-arm' }}
+    name: ${{ matrix.platform }} AAD-MCP Docker
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine MCP Content SHA
+        id: mcp-content
+        run: |
+          # shellcheck disable=SC2086
+          MCP_SHA=$(git log -1 --format=%H -- aad-mcp-container/ .github/workflows/aad-mcp-docker-publish.yml)
+          echo "Determined MCP content SHA: $MCP_SHA"
+          echo "MCP_SHA=$MCP_SHA" >> "$GITHUB_ENV"
+
+      - name: Prepare environment for current platform
+        id: prepare
+        run: |
+          # shellcheck disable=SC2086
+          platform=${{ matrix.platform }}
+          repo_name="${{ github.repository }}"
+          echo "IMAGE_NAME_LOWERCASE=$(echo "$repo_name" | tr '[:upper:]' '[:lower:]')-mcp" >> "$GITHUB_ENV"
+          echo "PLATFORM_PAIR=${platform//\//-}" >> "$GITHUB_ENV"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          platforms: ${{ matrix.platform }}
+
+      - name: Log into registry ${{ env.REGISTRY }}
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=main,enable=${{ github.ref_name == 'main' }}
+            type=raw,value=latest,enable=${{ github.ref_name == 'main' }}
+            type=raw,value=sha-${{ env.MCP_SHA }}
+
+      - name: Build and push Docker image
+        id: build
+        uses: docker/build-push-action@v7
+        with:
+          context: aad-mcp-container
+          file: aad-mcp-container/Dockerfile
+          push: true
+          labels: ${{ steps.meta.outputs.labels }}
+          annotations: ${{ steps.meta.outputs.annotations }}
+          outputs: type=image,name=${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWERCASE }},push-by-digest=true,name-canonical=true,push=true,oci-mediatypes=true
+          cache-from: |
+            type=gha,scope=${{ github.repository }}-aad-mcp-main-${{ matrix.platform }}
+          cache-to: type=gha,mode=max,scope=${{ github.repository }}-aad-mcp-main-${{ matrix.platform }}
+
+      - name: Export digest
+        run: |
+          # shellcheck disable=SC2086
+          mkdir -p /tmp/digests
+          digest="${{ steps.build.outputs.digest }}"
+          touch "/tmp/digests/${digest#sha256:}"
+
+      - name: Upload digest
+        uses: actions/upload-artifact@v6
+        with:
+          name: digests-${{ env.PLATFORM_PAIR }}
+          path: /tmp/digests/*
+          if-no-files-found: error
+          retention-days: 1
+
+  merge:
+    name: Merge Docker manifests
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+      contents: read
+    needs:
+      - build
+    if: github.event_name != 'pull_request' && needs.build.result == 'success'
+    steps:
+      - name: Prepare environment
+        run: |
+          # shellcheck disable=SC2086
+          repo_name="${{ github.repository }}"
+          echo "IMAGE_NAME_LOWERCASE=$(echo "$repo_name" | tr '[:upper:]' '[:lower:]')-mcp" >> "$GITHUB_ENV"
+
+      - name: Checkout repository (for history)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine MCP Content SHA
+        id: mcp-content
+        run: |
+          # shellcheck disable=SC2086
+          MCP_SHA=$(git log -1 --format=%H -- aad-mcp-container/ .github/workflows/aad-mcp-docker-publish.yml)
+          echo "MCP_SHA=$MCP_SHA" >> "$GITHUB_ENV"
+
+      - name: Download digests
+        uses: actions/download-artifact@v6
+        with:
+          path: /tmp/digests
+          pattern: digests-*
+          merge-multiple: true
+
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWERCASE }}
+          annotations: |
+            type=org.opencontainers.image.description,value=${{ github.event.repository.description || 'No description provided' }}
+          tags: |
+            type=raw,value=main,enable=${{ github.ref_name == 'main' }}
+            type=raw,value=latest,enable=${{ github.ref_name == 'main' }}
+            type=raw,value=sha-${{ env.MCP_SHA }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver-opts: |
+            network=host
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Get execution timestamp with RFC3339 format
+        id: timestamp
+        run: |
+          echo "timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")" >> "$GITHUB_OUTPUT"
+
+      - name: Create manifest list and push
+        working-directory: /tmp/digests
+        id: manifest-annotate
+        continue-on-error: true
+        run: |
+          # shellcheck disable=SC2046,SC2086
+          docker buildx imagetools create \
+            $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
+            --annotation='index:org.opencontainers.image.description=${{ github.event.repository.description }}' \
+            --annotation='index:org.opencontainers.image.created=${{ steps.timestamp.outputs.timestamp }}' \
+            --annotation='index:org.opencontainers.image.url=${{ github.event.repository.url }}' \
+            --annotation='index:org.opencontainers.image.source=${{ github.event.repository.url }}' \
+            $(printf '${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWERCASE }}@sha256:%s ' *)
+
+      - name: Create manifest list and push without annotations
+        if: steps.manifest-annotate.outcome == 'failure'
+        working-directory: /tmp/digests
+        run: |
+          # shellcheck disable=SC2046,SC2086
+          docker buildx imagetools create $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
+            $(printf '${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWERCASE }}@sha256:%s ' *)
+
+      - name: Inspect image
+        id: inspect
+        run: |
+          docker buildx imagetools inspect '${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWERCASE }}:${{ steps.meta.outputs.version }}'
+
+  retag:
+    name: Retag existing image for main
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+      contents: read
+    needs: [check-paths, check-image]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.check-paths.outputs.mcp == 'true' && needs.check-image.outputs.exists == 'true'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine MCP Content SHA
+        id: mcp-content
+        run: |
+          # shellcheck disable=SC2086
+          MCP_SHA=$(git log -1 --format=%H -- aad-mcp-container/ .github/workflows/aad-mcp-docker-publish.yml)
+          echo "MCP_SHA=$MCP_SHA" >> "$GITHUB_ENV"
+
+      - name: Determine Image Name
+        id: image-name
+        run: |
+          # shellcheck disable=SC2086
+          repo_name="${{ github.repository }}"
+          echo "IMAGE_NAME_LOWERCASE=$(echo "$repo_name" | tr '[:upper:]' '[:lower:]')-mcp" >> "$GITHUB_ENV"
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Retag main and latest
+        run: |
+          # shellcheck disable=SC2086
+          SOURCE_IMAGE="${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWERCASE }}:sha-${{ env.MCP_SHA }}"
+          echo "Retagging $SOURCE_IMAGE to main and latest"
+          docker buildx imagetools create \
+            -t "${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWERCASE }}:main" \
+            -t "${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWERCASE }}:latest" \
+            "$SOURCE_IMAGE"
+
+  rollout-dev:
+    name: Rollout Dev
+    needs: [check-paths, check-image, merge, retag]
+    if: |
+      always() &&
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/main' &&
+      needs.check-paths.outputs.mcp == 'true' &&
+      (needs.retag.result == 'success' || needs.merge.result == 'success')
+    runs-on: polecatworks-runner
+    steps:
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          version: "latest"
+
+      - name: Configure Kubeconfig
+        run: |
+          kubectl config set-cluster local --server=https://kubernetes.default.svc --certificate-authority=/var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+          kubectl config set-credentials runner --token="$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)"
+          kubectl config set-context local --cluster=local --user=runner
+          kubectl config use-context local
+
+      - name: Trigger Rolling Restart
+        run: |
+          kubectl rollout restart deployment/agent-as-data-mcp -n agent-as-data-dev
+
+  ci-success:
+    name: AAD-MCP Docker Success
+    needs: [check-paths, check-image, merge, retag, rollout-dev]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check Status
+        run: |
+          if [[ "${{ github.event_name }}" != 'pull_request' && "${{ needs.check-paths.outputs.mcp }}" == 'true' ]]; then
+            if [[ "${{ github.event_name }}" == 'merge_group' ]]; then
+              if [[ "${{ needs.check-image.outputs.exists }}" != 'true' && "${{ needs.merge.result }}" != 'success' ]]; then
+                 echo "Build/Merge failed for merge_group!"
+                 exit 1
+              fi
+            else
+              if [[ "${{ needs.retag.result }}" != 'success' && "${{ needs.merge.result }}" != 'success' ]]; then
+                 echo "Build/Merge/Retag failed!"
+                 exit 1
+              fi
+              if [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" == "refs/heads/main" && "${{ needs.rollout-dev.result }}" != 'success' ]]; then
+                 echo "Rollout failed!"
+                 exit 1
+              fi
+            fi
+          fi
+          echo "Success!"
