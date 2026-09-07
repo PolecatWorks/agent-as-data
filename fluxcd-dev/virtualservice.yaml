@@ -12,6 +12,13 @@ spec:
     - istio-ingress/k8s-gateway
     - mesh # applies to all the sidecars in the mesh
   http:
+    - name: agent-as-data-mcp
+      match:
+        - uri:
+            prefix: /mcp
+      route:
+        - destination:
+            host: agent-as-data-mcp
     - name: agent-as-data-be
       match:
         - uri:

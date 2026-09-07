@@ -38,15 +38,20 @@ Agent-As-Data (AAD) is an enterprise-grade declarative platform and specificatio
 * **ID**: UUID.
 * **Owner ID**: UUID (Strictly enforced non-optional identifier).
 
-### 4. Native Model Context Protocol (MCP) Server
-- Natively implement the MCP protocol (`mcp-server-rs`) supporting Stdio and SSE transports.
-- **Exposed MCP Tools**:
+### 4. Native Model Context Protocol (MCP) Server Container (`aad-mcp-container`)
+- Dedicated containerized microservice running a Model Context Protocol (MCP) server supporting Stdio and SSE transports.
+- **Backend Architectural Parity**: Follows the `aad-be-container` structure with Clap CLI parsing (`--config-path`, `--secrets-dir`, `serve`), centralized configuration & secrets loader (fail-fast validation, `fail_debug_delay`), HaMS health monitoring sidecar on `:8079` (`/hams/alive`, `/hams/ready`, `/hams/metrics`), and Tokio runtime harness.
+- **Dedicated Helm Chart (`charts/agent-as-data-mcp`)**: Copied and adapted from `charts/agent-as-data` with dual-port configuration (MCP Web `:8080` and HaMS `:8079`) and pre-configured probes.
+- Initial baseline verification tool:
+  - `hello`: Takes a `name` string input and returns a friendly greeting to the client (`"Hello, {name}!"`).
+- Domain-specific MCP tools:
   - `search_agents`: RAG vector search for top `n` agents matching task context.
   - `execute_agent`: Hydrate and run agent with prompt and guardrail checks.
   - `visualize_agents`: Generate Mermaid flowchart string and JSON graph nodes/edges for agent hierarchies.
   - `ingest_knowledge`: Store new text notes or graph tuples.
   - `search_knowledge`: Semantic RAG search over knowledge items.
   - `query_knowledge_graph`: Query subject-predicate-object relationships.
+- Refer to the dedicated [MCP Server Container PRD](./mcp-server-container-prd.md) for full architectural specifications, schema contracts, transport configurations, and container build requirements.
 
 ### 5. Agent Execution Engine
 - **Synchronous & Streaming Execution**: `POST /{{api_prefix}}/v1/agents/:id/execute` and `POST /{{api_prefix}}/v1/agents/search-and-execute`, streaming LLM output and tool call events back via SSE/chunked response.
@@ -308,9 +313,9 @@ graph TD
         APIClient["REST / gRPC Clients"]
     end
 
-    subgraph AAD["Agent-As-Data Microservice Engine"]
-        MCP["Native MCP Server (Stdio & SSE)"]
-        REST["REST API Server"]
+    subgraph AAD["Agent-As-Data Ecosystem"]
+        MCP["MCP Server Container (aad-mcp-container)"]
+        REST["Backend Engine (aad-be-container)"]
         Guardrails["Incoming & Outgoing Guardrails"]
         ExecEngine["Agent Execution Engine (Sync & Async)"]
     end
@@ -321,11 +326,11 @@ graph TD
         VectorDB[("agent_embeddings & knowledge_embeddings")]
     end
 
-    IDE <-->|MCP Transport| MCP
-    Claude <-->|MCP Transport| MCP
+    IDE <-->|MCP Transport (SSE/Stdio)| MCP
+    Claude <-->|MCP Transport (Stdio/SSE)| MCP
     APIClient <-->|HTTP / JSON| REST
 
-    MCP --> Guardrails
+    MCP <-->|Internal Service / REST| REST
     REST --> Guardrails
 
 ## Backend Modular Codebase Architecture
