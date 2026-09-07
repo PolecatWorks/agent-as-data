@@ -649,7 +649,30 @@ pub async fn execute_workspace_tool(
             let res = tool.call(args).await.map_err(|e| e.to_string())?;
             serde_json::to_string(&res).map_err(|e| e.to_string())
         }
-        _ => Err(format!("Unknown tool: {}", tool_name)),
+        _ => {
+            if let Some(pool) = pool {
+                let row = sqlx::query(
+                    r#"
+                    SELECT endpoint_config
+                    FROM tools
+                    WHERE cached_capabilities->'tools' @> $1::jsonb
+                    LIMIT 1
+                    "#,
+                )
+                .bind(serde_json::json!([{"name": tool_name}]).to_string())
+                .fetch_optional(pool)
+                .await;
+
+                if let Ok(Some(row)) = row {
+                    let endpoint_config: serde_json::Value = sqlx::Row::get(&row, "endpoint_config");
+                    if let Some(url) = endpoint_config.get("url").and_then(|u| u.as_str()) {
+                        let res = crate::webserver::tools::execute_remote_mcp_tool(url, tool_name, args_json.clone()).await?;
+                        return serde_json::to_string(&res).map_err(|e| e.to_string());
+                    }
+                }
+            }
+            Err(format!("Unknown tool: {}", tool_name))
+        }
     }
 }
 

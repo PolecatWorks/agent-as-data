@@ -117,9 +117,14 @@ flowchart TD
     Spec17 --> Spec18
     Spec18 --> Spec19
     Spec19 --> Spec20
+    subgraph Phase10 ["Phase 10: Remote MCP Ingestion, Sync & Execution"]
+        Spec24["24-mcp-tool-ingestion-and-sync-spec.md<br/>(MCP Tool Ingestion, Sync & Execution)"]:::complete
+    end
+
     Spec20 --> Spec21
     Spec21 --> Spec22
     Spec09 --> Spec23
+    Spec23 --> Spec24
 ```
 
 ## Index of Task Specifications
@@ -151,6 +156,7 @@ flowchart TD
 | **Phase 8** | [21-title-view-switcher-dropdown-spec.md](./21-title-view-switcher-dropdown-spec.md) | `complete` | Top Bar Workspace Title View Switcher Dropdown | [Agent UI PRD](../prds/agent-ui-testing-kit-prd.md) | Phase 8 Spec (Depends on Spec 20) |
 | **Phase 8** | [22-universal-top-bar-consistency-spec.md](./22-universal-top-bar-consistency-spec.md) | `complete` | Universal Top Bar Consistency & Concept Guide Integration Across All Views | [Agent UI PRD](../prds/agent-ui-testing-kit-prd.md) | Phase 8 Spec (Depends on Spec 21) |
 | **Phase 9** | [23-mcp-server-container-spec.md](./23-mcp-server-container-spec.md) | `complete` | Dedicated MCP Server Container (`aad-mcp-container`), Helm Chart (`charts/agent-as-data-mcp`), Backend Config Parity & `hello` Tool | [MCP Server Container PRD](../prds/mcp-server-container-prd.md) | Phase 9 Spec (Depends on Spec 09) |
+| **Phase 10** | [24-mcp-tool-ingestion-and-sync-spec.md](./24-mcp-tool-ingestion-and-sync-spec.md) | `complete` | Remote MCP Tool Ingestion, Handshake, Schema Discovery (`tools/list`), On-Demand / Webhook Sync & Execution Bridge | [Agent Registry PRD](../prds/agent-registry-execution-prd.md) | Phase 10 Spec (Depends on Spec 23) |
 
 
 

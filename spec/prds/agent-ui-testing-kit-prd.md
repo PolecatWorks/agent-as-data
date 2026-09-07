@@ -239,8 +239,11 @@ flowchart TD
 - **Graph Traversal Tree**: Interactive multi-hop entity graph visualizer.
 
 ### 8. Remote Tool Manager (`/tools`)
-- **Tool Ingestion**: Register external MCP servers Stdio commands or SSE transport URLs (`POST /{{api_prefix}}/v1/agents/tools/register`).
-- **Cached Tool & Schema Browser**: Inspect cached tool argument schemas, descriptions, and type signatures retrieved from remote servers.
+- **Tool Ingestion & Server Registration**: Form to register external MCP servers via stateless HTTP POST JSON-RPC 2.0 (`POST /{{api_prefix}}/v1/agents/tools/register`), architected for seamless routing across Istio Ingress Gateways and Kubernetes services. Eagerly validates connectivity and fetches tool capabilities on submission.
+- **Cached Tool & Schema Browser**: Inspect discovered tool listings, parameter schemas (JSON Schema v7), descriptions, and type signatures retrieved from remote servers.
+- **Freshness & Manual Sync Trigger ("Sync Now")**: Action button on each tool card triggering `POST /{{api_prefix}}/v1/agents/tools/:id/sync` to instantly re-query the remote server for new or updated tools.
+- **Sync Health & Status Indicators**: Visual status pills indicating synchronization state (`synced` [green], `syncing` [blue spinner], `degraded / failed` [amber/red with tooltip displaying `last_sync_error`]) and human-readable `last_synced_at` timestamp.
+- **Pre-configured Sample MCP Server**: Quick-fill or pre-configured target pointing to the dedicated sample container `aad-mcp-container` (`http://localhost:8082/mcp` or `http://agent-as-data-mcp:8080/mcp`) exposing the `hello` verification tool.
 
 ### 9. Workbench (Benches, Threads & Workspace Memory) (`/workbench`)
 - **Bench-Scoped Workspace Model**:
