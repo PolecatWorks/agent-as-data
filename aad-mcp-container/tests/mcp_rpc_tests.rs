@@ -1,13 +1,6 @@
 use std::sync::Arc;
 use axum_prometheus::metrics_exporter_prometheus::PrometheusBuilder;
-use rmcp::{
-    model::{CallToolRequestParams, ClientInfo},
-    ServiceExt,
-    transport::{
-        StreamableHttpClientTransport,
-        streamable_http_client::StreamableHttpClientTransportConfig,
-    },
-};
+use serde_json::json;
 use tokio_util::sync::CancellationToken;
 
 use aad_mcp_container::config::{AppConfig, DebuggingConfig, WebServiceConfig};
@@ -16,7 +9,7 @@ use aad_mcp_container::tools::AadMcpServer;
 use aad_mcp_container::webserver::create_app;
 
 #[tokio::test]
-async fn test_rmcp_server_end_to_end() -> anyhow::Result<()> {
+async fn test_http_json_rpc_end_to_end() -> anyhow::Result<()> {
     let ct = CancellationToken::new();
 
     let config = AppConfig {
@@ -52,54 +45,149 @@ async fn test_rmcp_server_end_to_end() -> anyhow::Result<()> {
         }
     });
 
-    let transport = StreamableHttpClientTransport::from_config(
-        StreamableHttpClientTransportConfig::with_uri(format!("http://{addr}/api/v1/mcp")),
-    );
-    let client = ClientInfo::default().serve(transport).await?;
+    let client = reqwest::Client::new();
+    let url = format!("http://{addr}/api/v1/mcp");
 
-    // 1. Tool discovery
-    let tool_list = client.list_tools(Default::default()).await?;
-    assert_eq!(tool_list.tools.len(), 1);
-    assert_eq!(tool_list.tools[0].name, "hello");
-    assert!(!tool_list.tools[0].description.as_deref().unwrap_or_default().is_empty());
+    // 0. Health check
+    let health_resp = client.get(format!("http://{addr}/healthz")).send().await?;
+    assert_eq!(health_resp.status(), reqwest::StatusCode::OK);
+    assert_eq!(health_resp.text().await?, "ok");
 
-    // 2. Tool invocation success
-    let args: serde_json::Map<String, serde_json::Value> =
-        serde_json::from_value(serde_json::json!({ "name": "Antigravity" }))?;
-    let call_res = client
-        .call_tool(CallToolRequestParams::new("hello").with_arguments(args))
-        .await?;
-    assert_ne!(call_res.is_error, Some(true));
-    let content_json = serde_json::to_string(&call_res.content[0])?;
-    assert!(content_json.contains("Hello, Antigravity!"));
+    // 1. Initialize
+    let init_payload = json!({
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "initialize",
+        "params": {
+            "protocolVersion": "2024-11-05",
+            "capabilities": {},
+            "clientInfo": {
+                "name": "test-client",
+                "version": "1.0.0"
+            }
+        }
+    });
+    let resp = client.post(&url).json(&init_payload).send().await?;
+    assert_eq!(resp.status(), reqwest::StatusCode::OK);
+    let body: serde_json::Value = resp.json().await?;
+    assert_eq!(body["id"], 1);
+    assert_eq!(body["result"]["protocolVersion"], "2024-11-05");
+    assert_eq!(body["result"]["serverInfo"]["name"], "aad-mcp");
 
-    // 3. Tool invocation whitespace trimming
-    let args_ws: serde_json::Map<String, serde_json::Value> =
-        serde_json::from_value(serde_json::json!({ "name": "   Alice   " }))?;
-    let call_res_ws = client
-        .call_tool(CallToolRequestParams::new("hello").with_arguments(args_ws))
-        .await?;
-    assert_ne!(call_res_ws.is_error, Some(true));
-    let content_ws = serde_json::to_string(&call_res_ws.content[0])?;
-    assert!(content_ws.contains("Hello, Alice!"));
+    // 2. Initialized notification
+    let initialized_payload = json!({
+        "jsonrpc": "2.0",
+        "method": "notifications/initialized"
+    });
+    let notif_resp = client.post(&url).json(&initialized_payload).send().await?;
+    assert_eq!(notif_resp.status(), reqwest::StatusCode::NO_CONTENT);
 
-    // 4. Tool validation error for empty name
-    let args_empty: serde_json::Map<String, serde_json::Value> =
-        serde_json::from_value(serde_json::json!({ "name": "   " }))?;
-    let call_res_empty = client
-        .call_tool(CallToolRequestParams::new("hello").with_arguments(args_empty))
-        .await?;
-    assert_eq!(call_res_empty.is_error, Some(true));
+    // 3. Ping
+    let ping_payload = json!({
+        "jsonrpc": "2.0",
+        "id": 2,
+        "method": "ping"
+    });
+    let ping_resp = client.post(&url).json(&ping_payload).send().await?;
+    assert_eq!(ping_resp.status(), reqwest::StatusCode::OK);
+    let ping_body: serde_json::Value = ping_resp.json().await?;
+    assert_eq!(ping_body["id"], 2);
+    assert!(ping_body["result"].is_object());
 
-    // 5. Tool call for nonexistent tool
-    let args_dummy: serde_json::Map<String, serde_json::Value> =
-        serde_json::from_value(serde_json::json!({}))?;
-    let call_res_missing = client
-        .call_tool(CallToolRequestParams::new("nonexistent").with_arguments(args_dummy))
-        .await;
-    assert!(call_res_missing.is_err() || call_res_missing.unwrap().is_error == Some(true));
+    // 4. Tools list
+    let list_payload = json!({
+        "jsonrpc": "2.0",
+        "id": 3,
+        "method": "tools/list"
+    });
+    let list_resp = client.post(&url).json(&list_payload).send().await?;
+    assert_eq!(list_resp.status(), reqwest::StatusCode::OK);
+    let list_body: serde_json::Value = list_resp.json().await?;
+    assert_eq!(list_body["id"], 3);
+    let tools = list_body["result"]["tools"].as_array().expect("tools array");
+    assert_eq!(tools.len(), 1);
+    assert_eq!(tools[0]["name"], "hello");
+    assert!(tools[0]["description"].as_str().unwrap().contains("greeting"));
+    assert!(tools[0]["inputSchema"]["properties"]["name"].is_object());
 
-    let _ = client.cancel().await;
+    // 5. Tools call success
+    let call_payload = json!({
+        "jsonrpc": "2.0",
+        "id": 4,
+        "method": "tools/call",
+        "params": {
+            "name": "hello",
+            "arguments": {
+                "name": "Antigravity"
+            }
+        }
+    });
+    let call_resp = client.post(&url).json(&call_payload).send().await?;
+    assert_eq!(call_resp.status(), reqwest::StatusCode::OK);
+    let call_body: serde_json::Value = call_resp.json().await?;
+    assert_eq!(call_body["id"], 4);
+    assert_eq!(call_body["result"]["isError"], false);
+    assert_eq!(call_body["result"]["content"][0]["text"], "Hello, Antigravity!");
+
+    // 6. Tools call whitespace trimming
+    let call_ws = json!({
+        "jsonrpc": "2.0",
+        "id": 5,
+        "method": "tools/call",
+        "params": {
+            "name": "hello",
+            "arguments": {
+                "name": "   Alice   "
+            }
+        }
+    });
+    let call_ws_resp = client.post(&url).json(&call_ws).send().await?;
+    let call_ws_body: serde_json::Value = call_ws_resp.json().await?;
+    assert_eq!(call_ws_body["result"]["isError"], false);
+    assert_eq!(call_ws_body["result"]["content"][0]["text"], "Hello, Alice!");
+
+    // 7. Tools call empty name error
+    let call_err = json!({
+        "jsonrpc": "2.0",
+        "id": 6,
+        "method": "tools/call",
+        "params": {
+            "name": "hello",
+            "arguments": {
+                "name": "   "
+            }
+        }
+    });
+    let call_err_resp = client.post(&url).json(&call_err).send().await?;
+    let call_err_body: serde_json::Value = call_err_resp.json().await?;
+    assert_eq!(call_err_body["result"]["isError"], true);
+    assert!(call_err_body["result"]["content"][0]["text"].as_str().unwrap().contains("non-empty string"));
+
+    // 8. Nonexistent tool call
+    let call_missing = json!({
+        "jsonrpc": "2.0",
+        "id": 7,
+        "method": "tools/call",
+        "params": {
+            "name": "nonexistent",
+            "arguments": {}
+        }
+    });
+    let call_missing_resp = client.post(&url).json(&call_missing).send().await?;
+    let call_missing_body: serde_json::Value = call_missing_resp.json().await?;
+    assert_eq!(call_missing_body["result"]["isError"], true);
+    assert!(call_missing_body["result"]["content"][0]["text"].as_str().unwrap().contains("not found"));
+
+    // 9. Root route alias
+    let root_url = format!("http://{addr}/");
+    let root_resp = client.post(&root_url).json(&ping_payload).send().await?;
+    assert_eq!(root_resp.status(), reqwest::StatusCode::OK);
+
+    // 10. /mcp route alias
+    let mcp_alias_url = format!("http://{addr}/mcp");
+    let mcp_alias_resp = client.post(&mcp_alias_url).json(&ping_payload).send().await?;
+    assert_eq!(mcp_alias_resp.status(), reqwest::StatusCode::OK);
+
     ct.cancel();
     let _ = server_handle.await;
 

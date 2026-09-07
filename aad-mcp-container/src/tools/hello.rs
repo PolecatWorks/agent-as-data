@@ -22,6 +22,38 @@ impl AadMcpServer {
             tool_router: Self::tool_router(),
         }
     }
+
+    pub fn list_tools(&self) -> Vec<rmcp::model::Tool> {
+        self.tool_router.list_all()
+    }
+
+    pub fn info(&self) -> ServerInfo {
+        self.get_info()
+    }
+
+    pub async fn call_tool(
+        &self,
+        name: &str,
+        arguments: serde_json::Value,
+    ) -> Result<serde_json::Value, String> {
+        match name {
+            "hello" => {
+                let req: HelloRequest = serde_json::from_value(arguments)
+                    .map_err(|e| format!("Invalid arguments for 'hello': {}", e))?;
+                let greeting = self.hello(Parameters(req))?;
+                Ok(serde_json::json!({
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": greeting
+                        }
+                    ],
+                    "isError": false
+                }))
+            }
+            _ => Err(format!("Error: Tool '{}' not found", name)),
+        }
+    }
 }
 
 impl Default for AadMcpServer {

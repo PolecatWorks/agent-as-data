@@ -83,9 +83,9 @@ graph TD
     KubeProbes -->|"HTTP GET :8079/hams/alive"| AliveProbe
     KubeProbes -->|"HTTP GET :8079/hams/ready"| ReadyProbe
 
-    IDE <-->|"SSE / HTTP :8080"| AxumServer
-    Desktop <-->|"Stdio or SSE"| AxumServer
-    Agents <-->|"SSE / HTTP :8080"| AxumServer
+    IDE <-->|"HTTP JSON-RPC :8080"| AxumServer
+    Desktop <-->|"HTTP JSON-RPC :8080"| AxumServer
+    Agents <-->|"HTTP JSON-RPC :8080"| AxumServer
 
     AxumServer --> Dispatcher
     Dispatcher --> ToolRegistry
@@ -130,7 +130,7 @@ sequenceDiagram
     Lib->>Hams: Register Prometheus exporter callback with HaMS
 
     Lib->>Web: start_webserver(app_state, &config.webservice, cancellation_token)
-    Web->>Web: Bind TCP listener (:8080) and register routes (/sse, /message)
+    Web->>Web: Bind TCP listener (:8080) and register routes (/mcp, /)
     Note over Web,Hams: Service running and healthy. Kubernetes probes passing.
 
     opt Shutdown Signal (SIGINT/SIGTERM)
