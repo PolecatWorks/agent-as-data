@@ -332,7 +332,11 @@ jobs:
 
       - name: Trigger Rolling Restart
         run: |
-          kubectl rollout restart deployment/agent-as-data-mcp -n agent-as-data-dev
+          if kubectl get deployment agent-as-data-mcp -n agent-as-data-dev >/dev/null 2>&1; then
+            kubectl rollout restart deployment/agent-as-data-mcp -n agent-as-data-dev
+          else
+            echo "Deployment agent-as-data-mcp not found in agent-as-data-dev yet (initial provisioning). Skipping rollout restart."
+          fi
 
   ci-success:
     name: AAD-MCP Docker Success
