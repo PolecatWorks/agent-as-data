@@ -1,0 +1,34 @@
+type: Skill
+id: "33333333-3333-3333-3333-333333333333"
+name: "audit_corporate_policy"
+description: "Checks line items against spending caps (e.g., $75/day meals, no personal charges, non-refundable flight requirements)."
+owner_id: "00000000-0000-0000-0000-000000000000"
+tags: ["policy", "audit", "compliance"]
+definition: "Classifies the merchant code and checks if the expense violates any corporate policies."
+input_schema:
+  type: "object"
+  properties:
+    audited_expense_report:
+      type: "object"
+      properties:
+        merchant:
+          type: "string"
+        amount_usd:
+          type: "number"
+  required: ["audited_expense_report"]
+output_schema:
+  type: "object"
+  properties:
+    policy_review:
+      type: "object"
+      properties:
+        expense_category:
+          type: "string"
+        policy_violations:
+          type: "array"
+          items:
+            type: "string"
+        requires_approval:
+          type: "boolean"
+      required: ["expense_category", "policy_violations", "requires_approval"]
+  required: ["policy_review"]

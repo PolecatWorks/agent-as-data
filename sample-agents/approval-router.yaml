@@ -1,0 +1,10 @@
+type: Agent
+name: "Approval Router Agent"
+description: "Operations dispatcher managing delegation of authority and executive approvals."
+owner_id: "00000000-0000-0000-0000-000000000000"
+tags: ["back-office", "router", "approval"]
+agent_definition:
+  prompt: "You are an Approval Router. You determine who needs to approve an expense and dispatch the request to them."
+attached_skills:
+  - "55555555-5555-5555-5555-555555555555" # resolve_approval_hierarchy
+  - "66666666-6666-6666-6666-666666666666" # dispatch_approval_request
