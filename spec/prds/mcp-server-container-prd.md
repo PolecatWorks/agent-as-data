@@ -213,25 +213,25 @@ The `aad-mcp-container` mirrors the structure of `aad-be-container`:
 
 ```
 aad-mcp-container/
-├── Cargo.toml                  # Service dependencies (Clap, Figment, Tokio, Hams, Axum, Serde)
+├── Cargo.toml                  # Service dependencies (rmcp, Clap, Figment, Tokio, Hams, Axum, Schemars)
 ├── Dockerfile                  # Multi-stage release container build
 ├── src/
 │   ├── main.rs                 # Clap CLI parser, fail_debug_delay handling, run_in_tokio
-│   ├── lib.rs                  # service_main orchestrator, HaMS startup, Prometheus hooks
+│   ├── lib.rs                  # service_main orchestrator, HaMS startup, Prometheus hooks, rmcp server init
 │   ├── config.rs               # Centralized AppConfig, WebserviceConfig, HamsConfig, validation
 │   ├── hams_tools.rs           # HaMS harness, ProbeManual readiness binding, cancellation
 │   ├── tokio_tools.rs          # Tokio runtime builder (matching aad-be-container)
 │   ├── metrics.rs              # Prometheus exporter hooks for HaMS
-│   ├── state.rs                # Shared AppState (configuration, cancellation tokens)
+│   ├── state.rs                # Shared AppState (configuration, AadMcpServer)
 │   ├── webserver/
-│   │   ├── mod.rs              # Axum router setup (/sse, /message) and graceful shutdown
-│   │   ├── sse.rs              # SSE transport session management
-│   │   └── rpc.rs              # JSON-RPC 2.0 protocol dispatching
+│   │   └── mod.rs              # Axum router mounting rmcp StreamableHttpService and graceful shutdown
 │   └── tools/
-│       ├── mod.rs              # Tool trait and registry dispatch
-│       └── hello.rs            # Hello greeting tool implementation
+│       ├── mod.rs              # Tool module exports
+│       └── hello.rs            # AadMcpServer & HelloRequest using rmcp #[tool] and #[tool_router]
 └── tests/
-    └── hello_tool_test.rs      # Unit and integration tests
+    ├── config_tests.rs         # Configuration loading and validation unit tests
+    ├── hello_tool_tests.rs     # Hello greeting tool unit tests
+    └── mcp_rpc_tests.rs        # End-to-end rmcp client-server integration tests
 ```
 
 ### Configuration Structure (`config.rs`)
