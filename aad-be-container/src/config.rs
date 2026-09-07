@@ -11,7 +11,7 @@ use ::hams::hams::config::HamsConfig;
 use crate::tokio_tools::ThreadRuntime;
 
 /// A URL structure that optionally embeds credential placeholders for file-based secret resolution.
-#[derive(Deserialize, Serialize, Debug, Clone)]
+#[derive(Serialize, Debug, Clone)]
 pub struct UrlWithUsernamePassword {
     /// Base target URL.
     pub url: Url,
@@ -19,6 +19,30 @@ pub struct UrlWithUsernamePassword {
     pub username: Option<String>,
     /// Optional password credential.
     pub password: Option<String>,
+}
+
+#[derive(Deserialize)]
+#[serde(untagged)]
+enum UrlHelper {
+    Full {
+        url: Url,
+        username: Option<String>,
+        password: Option<String>,
+    },
+    Simple(Url),
+}
+
+impl<'de> Deserialize<'de> for UrlWithUsernamePassword {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let helper = UrlHelper::deserialize(deserializer)?;
+        match helper {
+            UrlHelper::Full { url, username, password } => Ok(Self { url, username, password }),
+            UrlHelper::Simple(url) => Ok(Self { url, username: None, password: None }),
+        }
+    }
 }
 
 impl From<UrlWithUsernamePassword> for Url {
@@ -276,6 +300,23 @@ mod tests {
         assert_eq!(db_url.as_str(), "postgres://secretuser:secretpass@localhost:5432/aaddb");
 
         let _ = fs::remove_dir_all(test_dir);
+    }
+
+    #[test]
+    fn test_url_deserialization_from_string_and_object() {
+        let yaml_str = "url: 'postgres://localhost:5432/testdb'";
+        #[derive(serde::Deserialize)]
+        struct Wrapper {
+            url: UrlWithUsernamePassword,
+        }
+        let parsed_str: Wrapper = serde_yaml::from_str(yaml_str).unwrap();
+        assert_eq!(parsed_str.url.url.as_str(), "postgres://localhost:5432/testdb");
+        assert!(parsed_str.url.username.is_none());
+
+        let yaml_obj = "url:\n  url: 'postgres://localhost:5432/testdb'\n  username: 'user'\n  password: 'pw'";
+        let parsed_obj: Wrapper = serde_yaml::from_str(yaml_obj).unwrap();
+        assert_eq!(parsed_obj.url.url.as_str(), "postgres://localhost:5432/testdb");
+        assert_eq!(parsed_obj.url.username.as_deref(), Some("user"));
     }
 }
 

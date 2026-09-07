@@ -22,6 +22,12 @@ jobs:
     steps:
       - run: echo "Skipping helm lint in merge queue because they already ran on the PR."
 
+  mcp-test:
+    name: Build & Test MCP
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Skipping MCP tests in merge queue because they already ran on the PR."
+
   helm-ci-success:
     name: Helm CI Success
     runs-on: ubuntu-latest
