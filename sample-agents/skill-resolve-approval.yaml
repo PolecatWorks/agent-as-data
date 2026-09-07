@@ -1,0 +1,31 @@
+type: Skill
+id: "55555555-5555-5555-5555-555555555555"
+name: "resolve_approval_hierarchy"
+description: "Resolves who needs to approve the expense based on the submitter's department, cost center, and the total dollar amount."
+owner_id: "00000000-0000-0000-0000-000000000000"
+tags: ["approval", "hierarchy", "routing"]
+definition: "Looks up the HR org chart to determine the required approver based on the submitter and expense amount."
+input_schema:
+  type: "object"
+  properties:
+    submitter_id:
+      type: "string"
+    total_amount_usd:
+      type: "number"
+    cost_center:
+      type: "string"
+  required: ["submitter_id", "total_amount_usd", "cost_center"]
+output_schema:
+  type: "object"
+  properties:
+    approval_ticket:
+      type: "object"
+      properties:
+        approver_id:
+          type: "string"
+        approver_email:
+          type: "string"
+        escalation_required:
+          type: "boolean"
+      required: ["approver_id", "approver_email", "escalation_required"]
+  required: ["approval_ticket"]

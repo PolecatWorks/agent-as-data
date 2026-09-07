@@ -1,0 +1,33 @@
+type: Skill
+id: "11111111-1111-1111-1111-111111111111"
+name: "parse_expense_submission"
+description: "Orchestrates receipt OCR, date extraction, and form field mapping."
+owner_id: "00000000-0000-0000-0000-000000000000"
+tags: ["ocr", "expense", "extraction"]
+definition: "Extracts text from a receipt image, identifies the merchant, date, and total amount, and converts the amount to USD if necessary."
+input_schema:
+  type: "object"
+  properties:
+    receipt_image_path:
+      type: "string"
+      description: "Path or URL to the receipt image"
+  required: ["receipt_image_path"]
+output_schema:
+  type: "object"
+  properties:
+    line_item:
+      type: "object"
+      properties:
+        merchant:
+          type: "string"
+        date:
+          type: "string"
+          format: "date"
+        original_amount:
+          type: "number"
+        original_currency:
+          type: "string"
+        amount_usd:
+          type: "number"
+      required: ["merchant", "date", "original_amount", "original_currency", "amount_usd"]
+  required: ["line_item"]

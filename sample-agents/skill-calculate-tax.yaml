@@ -1,0 +1,27 @@
+type: Skill
+id: "44444444-4444-4444-4444-444444444444"
+name: "calculate_tax_deductibility"
+description: "Tags items eligible for sales tax/VAT reclaim."
+owner_id: "00000000-0000-0000-0000-000000000000"
+tags: ["tax", "vat", "deductibility"]
+definition: "Determines if an expense item is eligible for tax or VAT reclaim based on category and region."
+input_schema:
+  type: "object"
+  properties:
+    expense_category:
+      type: "string"
+    merchant_region:
+      type: "string"
+  required: ["expense_category", "merchant_region"]
+output_schema:
+  type: "object"
+  properties:
+    tax_eligibility:
+      type: "object"
+      properties:
+        is_eligible:
+          type: "boolean"
+        estimated_reclaim_amount:
+          type: "number"
+      required: ["is_eligible", "estimated_reclaim_amount"]
+  required: ["tax_eligibility"]

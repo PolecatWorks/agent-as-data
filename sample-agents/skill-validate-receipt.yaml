@@ -1,0 +1,35 @@
+type: Skill
+id: "22222222-2222-2222-2222-222222222222"
+name: "validate_receipt_integrity"
+description: "Checks for missing receipts, unreadable images, and weekend/duplicate transaction timestamps."
+owner_id: "00000000-0000-0000-0000-000000000000"
+tags: ["receipt", "validation", "integrity"]
+definition: "Validates a parsed expense line item to ensure it's not a duplicate, the receipt is legible, and it doesn't fall on a weekend unless justified."
+input_schema:
+  type: "object"
+  properties:
+    line_item:
+      type: "object"
+      properties:
+        merchant:
+          type: "string"
+        date:
+          type: "string"
+          format: "date"
+        amount_usd:
+          type: "number"
+  required: ["line_item"]
+output_schema:
+  type: "object"
+  properties:
+    audited_expense_report:
+      type: "object"
+      properties:
+        is_valid:
+          type: "boolean"
+        flags:
+          type: "array"
+          items:
+            type: "string"
+      required: ["is_valid", "flags"]
+  required: ["audited_expense_report"]

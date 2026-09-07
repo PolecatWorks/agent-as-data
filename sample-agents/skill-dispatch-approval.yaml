@@ -1,0 +1,34 @@
+type: Skill
+id: "66666666-6666-6666-6666-666666666666"
+name: "dispatch_approval_request"
+description: "Formats human-in-the-loop notifications with pre-summarized context and risk warnings."
+owner_id: "00000000-0000-0000-0000-000000000000"
+tags: ["dispatch", "notification", "human-in-the-loop"]
+definition: "Sends an approval request to a manager via Email or Slack, providing summarized context about the expense."
+input_schema:
+  type: "object"
+  properties:
+    approval_ticket:
+      type: "object"
+      properties:
+        approver_email:
+          type: "string"
+    expense_summary:
+      type: "string"
+    risk_warnings:
+      type: "array"
+      items:
+        type: "string"
+  required: ["approval_ticket", "expense_summary"]
+output_schema:
+  type: "object"
+  properties:
+    dispatch_status:
+      type: "object"
+      properties:
+        success:
+          type: "boolean"
+        notification_id:
+          type: "string"
+      required: ["success", "notification_id"]
+  required: ["dispatch_status"]
