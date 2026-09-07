@@ -1,6 +1,6 @@
 # Spec 23: Dedicated MCP Server Container & Baseline Greeting Tool
 
-**Status**: `draft`
+**Status**: `complete`
 
 ---
 
@@ -22,7 +22,7 @@ As a foundational baseline milestone, this spec defines the implementation and e
 flowchart TD
     Spec09["09-backend-modular-architecture-spec.md<br/>(Backend Modular Layout & Runtime)"]:::complete
     PRDMCP["mcp-server-container-prd.md<br/>(MCP Server Container PRD)"]
-    Spec23["23-mcp-server-container-spec.md<br/>(MCP Server Container & Hello Tool)"]:::draft
+    Spec23["23-mcp-server-container-spec.md<br/>(MCP Server Container & Hello Tool)"]:::complete
 
     Spec09 --> Spec23
     PRDMCP --> Spec23

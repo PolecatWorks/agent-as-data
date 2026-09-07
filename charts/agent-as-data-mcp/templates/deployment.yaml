@@ -1,0 +1,70 @@
+{{- $configsha := substr 0 8 ((include "agent-as-data-mcp.config" . ) | sha256sum) }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "agent-as-data-mcp.fullname" . }}
+  labels:
+    app: {{ include "agent-as-data-mcp.name" . }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "agent-as-data-mcp.name" . }}
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ $configsha }}
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        app: {{ include "agent-as-data-mcp.name" . }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["/usr/local/bin/aad-mcp-container", "--config-path", "/etc/aad-mcp/config.yaml", "--secrets-dir", "/etc/aad-mcp/secrets", "serve"]
+          {{- if .Values.env }}
+          env:
+            {{- include "agent-as-data-mcp.env" . | nindent 12 }}
+          {{- end }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port | default 8080 }}
+              protocol: TCP
+            - name: hams
+              containerPort: {{ .Values.service.hamsPort | default 8079 }}
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /hams/alive
+              port: hams
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /hams/ready
+              port: hams
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: config
+              mountPath: /etc/aad-mcp/config.yaml
+              subPath: config.yaml
+            {{- if .Values.volumeMounts }}
+            {{- include "agent-as-data-mcp.volumeMounts" . | nindent 12 }}
+            {{- end }}
+      volumes:
+        - name: config
+          configMap:
+            name: {{ include "agent-as-data-mcp.fullname" . }}
+        {{- if .Values.volumes }}
+        {{- include "agent-as-data-mcp.volumes" . | nindent 8 }}
+        {{- end }}

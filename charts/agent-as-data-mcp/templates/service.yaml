@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "agent-as-data-mcp.fullname" . }}
+  labels:
+    app: {{ include "agent-as-data-mcp.name" . }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+    - port: {{ .Values.service.hamsPort | default 8079 }}
+      targetPort: hams
+      protocol: TCP
+      name: hams
+  selector:
+    app: {{ include "agent-as-data-mcp.name" . }}
