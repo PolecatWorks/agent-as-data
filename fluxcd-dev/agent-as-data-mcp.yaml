@@ -1,0 +1,50 @@
+---
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: OCIRepository
+metadata:
+  name: agent-as-data-mcp
+  namespace: agent-as-data-dev
+spec:
+  interval: 10m
+  url: oci://ghcr.io/polecatworks/agent-as-data/helm/agent-as-data-mcp
+  secretRef:
+    name: ghcr-docker-auth
+  ref:
+    semver: ">= 0.1.x-0"
+    semverFilter: .*-main-*
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: agent-as-data-mcp
+  namespace: agent-as-data-dev
+spec:
+  chartRef:
+    kind: OCIRepository
+    name: agent-as-data-mcp
+  interval: 50m
+  install:
+    remediation:
+      retries: 3
+  values:
+    image:
+      repository: ghcr.io/polecatworks/agent-as-data-mcp
+      tag: main
+      pullPolicy: Always
+    imagePullSecrets:
+      - name: ghcr-docker-auth
+    config:
+      webservice:
+        address: "0.0.0.0:8080"
+        api_prefix: "/api"
+      hams:
+        name: "aad-mcp"
+        version: "0.1.0"
+        port: 8079
+      runtime:
+        threads: 2
+        stack_size: 3000000
+        name: "aad-mcp-worker"
+      debugging:
+        environment: "development"
+        log_level: "info"
