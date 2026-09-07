@@ -52,14 +52,15 @@ aad-mcp-container/
 │   ├── metrics.rs              # Prometheus exporter hooks for HaMS
 │   ├── state.rs                # Shared AppState (configuration, AadMcpServer)
 │   ├── webserver/
-│   │   └── mod.rs              # Axum router mounting rmcp StreamableHttpService, graceful shutdown
+│   │   ├── mod.rs              # Axum router mounting HTTP JSON-RPC routes, graceful shutdown
+│   │   └── rpc.rs              # JSON-RPC 2.0 HTTP dispatch logic
 │   └── tools/
 │       ├── mod.rs              # Tool module exports
 │       └── hello.rs            # AadMcpServer and HelloRequest using rmcp #[tool] and #[tool_router]
 └── tests/
     ├── config_tests.rs         # Configuration loading and validation unit tests
     ├── hello_tool_tests.rs     # Tool schema and invocation unit tests
-    └── mcp_rpc_tests.rs        # End-to-end rmcp client-server integration tests
+    └── mcp_rpc_tests.rs        # End-to-end HTTP JSON-RPC integration tests
 ```
 
 ---
@@ -151,7 +152,7 @@ The service utilizes the official Model Context Protocol Rust SDK (**`rmcp`**):
 - **Typed Parameter Schemas**: Arguments are strongly typed structs deriving `serde::Deserialize` and `schemars::JsonSchema`.
 - **Procedural Routing**: Methods are exposed using `#[tool(description = "...")]` inside an `impl` block marked with `#[tool_router]`.
 - **Server Handler**: The server implements `ServerHandler` using `#[tool_handler(router = self.tool_router)]`.
-- **Streamable HTTP Transport**: Wrapped in `StreamableHttpService<AadMcpServer, LocalSessionManager>` and nested directly within Axum.
+- **Direct HTTP Transport**: Dispatched via standard HTTP JSON-RPC 2.0 (`POST /`, `/mcp`, and `/api/v1/mcp`) without the complex session/SSE overhead of streamable transports.
 
 ### Tool Request Schema
 ```rust

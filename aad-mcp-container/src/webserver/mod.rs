@@ -1,21 +1,23 @@
 use axum::{
-    routing::get,
-    Router,
+    extract::State,
+    http::StatusCode,
+    response::IntoResponse,
+    routing::{get, post},
+    Json, Router,
 };
+use serde_json::Value;
 use std::net::SocketAddr;
 use tokio_util::sync::CancellationToken;
 use tower_http::cors::{Any, CorsLayer};
 use tower_http::trace::TraceLayer;
 use tracing::info;
-use rmcp::transport::streamable_http_server::{
-    session::local::LocalSessionManager, StreamableHttpServerConfig, StreamableHttpService,
-};
 
 use crate::config::WebServiceConfig;
 use crate::state::AppState;
-use crate::tools::AadMcpServer;
 
-pub fn create_app(state: AppState, ct: CancellationToken) -> Router {
+pub mod rpc;
+
+pub fn create_app(state: AppState, _ct: CancellationToken) -> Router {
     let cors = CorsLayer::new()
         .allow_origin(Any)
         .allow_methods(Any)
@@ -23,29 +25,26 @@ pub fn create_app(state: AppState, ct: CancellationToken) -> Router {
 
     let prefix = state.config.webservice.api_prefix.trim_end_matches('/');
     let mcp_prefixed = format!("{}/v1/mcp", prefix);
-    let sse_prefixed = format!("{}/v1/sse", prefix);
-    let message_prefixed = format!("{}/v1/message", prefix);
-
-    let server = state.server.clone();
-    let mcp_service: StreamableHttpService<AadMcpServer, LocalSessionManager> =
-        StreamableHttpService::new(
-            move || Ok(server.clone()),
-            Default::default(),
-            StreamableHttpServerConfig::default()
-                .with_cancellation_token(ct.child_token()),
-        );
 
     Router::new()
-        .nest_service(&mcp_prefixed, mcp_service.clone())
-        .nest_service(&sse_prefixed, mcp_service.clone())
-        .nest_service(&message_prefixed, mcp_service.clone())
-        .nest_service("/mcp", mcp_service.clone())
-        .nest_service("/sse", mcp_service.clone())
-        .nest_service("/message", mcp_service)
+        .route(&mcp_prefixed, post(handle_http_rpc))
+        .route("/mcp", post(handle_http_rpc))
+        .route("/", post(handle_http_rpc))
         .route("/healthz", get(|| async { "ok" }))
         .layer(TraceLayer::new_for_http())
         .layer(cors)
         .with_state(state)
+}
+
+async fn handle_http_rpc(
+    State(state): State<AppState>,
+    Json(payload): Json<Value>,
+) -> impl IntoResponse {
+    let response = rpc::handle_json_rpc(&state, payload).await;
+    match response {
+        Some(resp) => (StatusCode::OK, Json(resp)).into_response(),
+        None => StatusCode::NO_CONTENT.into_response(),
+    }
 }
 
 pub async fn start_webserver(

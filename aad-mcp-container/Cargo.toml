@@ -27,7 +27,7 @@ humantime-serde = "^1.1"
 axum-prometheus = "^0.10"
 prometheus = "^0.14"
 
-rmcp = { version = "3.2.0", features = ["server", "client", "macros", "transport-streamable-http-server", "transport-streamable-http-client-reqwest"] }
+rmcp = { version = "3.2.0", features = ["server", "macros", "schemars"] }
 schemars = "0.8"
 hams = { git = "https://github.com/PolecatWorks/hams.git" }
 uuid = { version = "1.11", features = ["serde", "v4"] }
