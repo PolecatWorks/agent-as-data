@@ -114,7 +114,8 @@ spec:
       - name: ghcr-secret
     config:
       database:
-        url: postgresql://postgres:postgres@postgres-test:5432/agent_as_data
+        url:
+          url: postgresql://postgres:postgres@postgres-test:5432/agent_as_data
 
 ---
 kind: Deploy
