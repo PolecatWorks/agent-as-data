@@ -393,6 +393,19 @@ The root `Makefile` provides port variables with `?=` default assignments allowi
 2. **Istio VirtualService Routing (`fluxcd-dev/virtualservice.yaml`)**:
    - Routes ingress traffic prefixed with `/mcp` directly to `agent-as-data-mcp:8080`.
 
+### CI/CD Automation (`.github/workflows/`)
+1. **PR Build & Test (`ci.yml`)**:
+   - Automated detection of changes to `aad-mcp-container/**`.
+   - Runs `cargo check` and `cargo test` on every PR affecting the MCP server.
+   - Dual Helm chart linting for `charts/agent-as-data` and `charts/agent-as-data-mcp`.
+2. **Multi-Arch Docker Build & Publish (`aad-mcp-docker-publish.yml`)**:
+   - Builds multi-arch container images (`linux/amd64` and `linux/arm64`) using cargo-chef build caching.
+   - Pushes to `ghcr.io/polecatworks/agent-as-data-mcp` tagged with `main`, `latest`, and `sha-*`.
+   - Automated dev cluster rollout restart on `push` to `main`.
+3. **Integration & Package Retention**:
+   - `integration-test.yaml` tracks MCP changes and resolves dynamic `AAD_MCP_IMAGE` and `AAD_MCP_TAG`.
+   - `cleanup-dev-packages.yml` enforces 2-week container retention policy on dev packages.
+
 ### Garden Integration (`garden.yml`)
 Add a Deploy entry for `agent-as-data-mcp` using Helm:
 ```yaml

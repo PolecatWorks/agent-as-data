@@ -279,12 +279,31 @@ build-mcp: aad-mcp-docker
 
 ---
 
-## 7. FluxCD GitOps Integration (`fluxcd-dev/`)
+## 7. GitOps & GitHub Actions CI/CD Workflows
+
+### FluxCD Manifests (`fluxcd-dev/`)
 1. **`fluxcd-dev/agent-as-data-mcp.yaml`**:
    - Declares `OCIRepository` tracking `oci://ghcr.io/polecatworks/agent-as-data/helm/agent-as-data-mcp`.
    - Declares `HelmRelease` deploying the MCP server into `agent-as-data-dev` with image `ghcr.io/polecatworks/agent-as-data-mcp:main`.
 2. **`fluxcd-dev/virtualservice.yaml`**:
    - Ingress routing prefix `/mcp` mapped to `agent-as-data-mcp:8080`.
+
+### GitHub Actions CI/CD Workflows (`.github/workflows/`)
+1. **`.github/workflows/ci.yml`**:
+   - `detect-changes`: Detects changes to `aad-mcp-container/**`.
+   - `mcp-test`: Runs `cargo check` and `cargo test` for `aad-mcp-container/Cargo.toml`.
+   - `helm-lint`: Lints both `charts/agent-as-data` and `charts/agent-as-data-mcp`.
+2. **`.github/workflows/aad-mcp-docker-publish.yml`**:
+   - Multi-arch Docker build (`linux/amd64` and `linux/arm64`) using buildx and cargo-chef layers.
+   - Publishes to `ghcr.io/polecatworks/agent-as-data-mcp` with tags `main`, `latest`, and `sha-${{ env.MCP_SHA }}`.
+   - Merges platform digests and creates multi-arch manifest list.
+   - Retags existing images on push to `main` when container content is unchanged.
+   - Triggers dev rollout restart for `deployment/agent-as-data-mcp` in `agent-as-data-dev`.
+3. **`.github/workflows/integration-test.yaml`**:
+   - Tracks `aad-mcp-container/**` and `aad-mcp-docker-publish.yml`.
+   - Injects `AAD_MCP_IMAGE` and `AAD_MCP_TAG` into the integration test runner environment.
+4. **`.github/workflows/cleanup-dev-packages.yml`**:
+   - Cleans up stale non-release packages for `agent-as-data-mcp` container and Helm OCI charts older than 2 weeks.
 
 ---
 
