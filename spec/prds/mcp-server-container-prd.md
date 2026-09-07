@@ -29,9 +29,9 @@ As a baseline milestone, the container build packages an operational MCP server 
    - Implement the JSON-RPC 2.0 based Model Context Protocol specification.
    - Support protocol lifecycle handshakes (`initialize`, `initialized`, `ping`).
    - Expose discoverable tool listings (`tools/list`) with strict JSON Schema definitions.
-5. **Configurable Dual Transport Support**:
-   - **SSE / HTTP Transport**: Primary transport for containerized cloud and cluster deployments (e.g. Kubernetes, Garden, Docker Compose), exposing an SSE stream endpoint and message submission endpoint.
-   - **Stdio Transport**: Alternative transport mode allowing the container or binary to run directly attached to standard input/output for local IDE integrations (e.g., Claude Desktop, Cursor, Antigravity IDE).
+5. **Direct HTTP JSON-RPC 2.0 Transport**:
+   - Standard HTTP POST JSON-RPC 2.0 endpoints (`/`, `/mcp`, `/api/v1/mcp`) processing standard `application/json` payloads and returning JSON-RPC responses directly without SSE streaming or complex session management overhead.
+   - Comprehensive protocol lifecycle support (`initialize`, `notifications/initialized`, `ping`, `tools/list`, `tools/call`).
 6. **Baseline Tool Verification (`hello`)**:
    - Provide a basic, robust `hello` tool accepting a user's name and returning a greeting.
    - Serve as the foundational smoke-test and integration verification tool for the MCP container pipeline before registering complex enterprise tools.
@@ -224,14 +224,15 @@ aad-mcp-container/
 │   ├── metrics.rs              # Prometheus exporter hooks for HaMS
 │   ├── state.rs                # Shared AppState (configuration, AadMcpServer)
 │   ├── webserver/
-│   │   └── mod.rs              # Axum router mounting rmcp StreamableHttpService and graceful shutdown
+│   │   ├── mod.rs              # Axum router mounting HTTP JSON-RPC POST routes and graceful shutdown
+│   │   └── rpc.rs              # Standard JSON-RPC 2.0 dispatch logic
 │   └── tools/
 │       ├── mod.rs              # Tool module exports
 │       └── hello.rs            # AadMcpServer & HelloRequest using rmcp #[tool] and #[tool_router]
 └── tests/
     ├── config_tests.rs         # Configuration loading and validation unit tests
     ├── hello_tool_tests.rs     # Hello greeting tool unit tests
-    └── mcp_rpc_tests.rs        # End-to-end rmcp client-server integration tests
+    └── mcp_rpc_tests.rs        # End-to-end HTTP JSON-RPC integration tests
 ```
 
 ### Configuration Structure (`config.rs`)
@@ -396,13 +397,16 @@ The root `Makefile` provides port variables with `?=` default assignments allowi
 ### CI/CD Automation (`.github/workflows/`)
 1. **PR Build & Test (`ci.yml`)**:
    - Automated detection of changes to `aad-mcp-container/**`.
-   - Runs `cargo check` and `cargo test` on every PR affecting the MCP server.
+   - Runs `cargo check` and `cargo test` (`Build & Test MCP`) on every PR affecting the MCP server.
    - Dual Helm chart linting for `charts/agent-as-data` and `charts/agent-as-data-mcp`.
-2. **Multi-Arch Docker Build & Publish (`aad-mcp-docker-publish.yml`)**:
+2. **Merge Queue Status Stubbing (`skip-merge-queue.yml`)**:
+   - Implements stub `Build & Test MCP` job for `merge_group` events, ensuring branch protection required status checks succeed during merge queue evaluation.
+3. **Multi-Arch Docker Build & Publish (`aad-mcp-docker-publish.yml`)**:
    - Builds multi-arch container images (`linux/amd64` and `linux/arm64`) using cargo-chef build caching.
-   - Pushes to `ghcr.io/polecatworks/agent-as-data-mcp` tagged with `main`, `latest`, and `sha-*`.
-   - Automated dev cluster rollout restart on `push` to `main`.
-3. **Integration & Package Retention**:
+   - Pushes to `ghcr.io/polecatworks/agent-as-data-mcp` tagged with `sha-*`.
+   - **Retag on Merge to Main**: On push to `main`, the `retag` job verifies the pre-built `sha-*` image in GHCR and instantly retags it as `:main` and `:latest` without rebuilding.
+   - **Idempotent Rollout**: Triggers rolling restart of `deployment/agent-as-data-mcp` in `agent-as-data-dev` if provisioned, or logs provisioning notice safely on initial cluster rollout.
+4. **Integration & Package Retention**:
    - `integration-test.yaml` tracks MCP changes and resolves dynamic `AAD_MCP_IMAGE` and `AAD_MCP_TAG`.
    - `cleanup-dev-packages.yml` enforces 2-week container retention policy on dev packages.
 

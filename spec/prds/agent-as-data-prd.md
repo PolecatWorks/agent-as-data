@@ -7,7 +7,7 @@ Agent-As-Data (AAD) is an enterprise-grade declarative platform and specificatio
 1. **Enterprise Tacit Knowledge Capture**: Systematic ingestion and preservation of unwritten operational processes, architecture decisions, business rules, and domain expertise.
 2. **Strategic AI Reasoning & Ideation**: Enable AI agents and human teams to reason about new business ideas and project concepts based on a broad, interconnected organizational knowledge base.
 3. **Hybrid Knowledge Retrieval (RAG + Graph Tuples)**: Search organizational memory using semantic vector similarity (`pgvector`) for narrative context alongside Graph relation tuples (`subject`, `predicate`, `object`) for concept mapping.
-4. **Seamless AI Tooling Context via MCP**: Natively expose knowledge ingestion, concept querying, and agent discovery via Model Context Protocol (MCP over Stdio/SSE) for immediate availability in IDEs and AI assistants.
+4. **Seamless AI Tooling Context via MCP**: Natively expose knowledge ingestion, concept querying, and agent discovery via Model Context Protocol (MCP over HTTP/Stdio) for immediate availability in IDEs and AI assistants.
 5. **Declarative Agent Registry & Versioning**: Store agent definitions, system prompts, guardrails, capabilities, and immutable version revisions in PostgreSQL.
 6. **Execution Engine & Safety Guardrails**: Serve and execute agents dynamically with strict incoming/outgoing guardrail validation, supporting both synchronous token streaming and asynchronous background execution jobs.
 7. **Cloud-Native Architecture**: Fully containerized Rust microservice integrated with Garden, Helm, and FluxCD dev environments.
@@ -39,7 +39,7 @@ Agent-As-Data (AAD) is an enterprise-grade declarative platform and specificatio
 * **Owner ID**: UUID (Strictly enforced non-optional identifier).
 
 ### 4. Native Model Context Protocol (MCP) Server Container (`aad-mcp-container`)
-- Dedicated containerized microservice running a Model Context Protocol (MCP) server supporting Stdio and SSE transports.
+- Dedicated containerized microservice running a Model Context Protocol (MCP) server supporting standard HTTP JSON-RPC 2.0 and Stdio transports.
 - **Backend Architectural Parity**: Follows the `aad-be-container` structure with Clap CLI parsing (`--config-path`, `--secrets-dir`, `serve`), centralized configuration & secrets loader (fail-fast validation, `fail_debug_delay`), HaMS health monitoring sidecar on `:8079` (`/hams/alive`, `/hams/ready`, `/hams/metrics`), and Tokio runtime harness.
 - **Dedicated Helm Chart (`charts/agent-as-data-mcp`)**: Copied and adapted from `charts/agent-as-data` with dual-port configuration (MCP Web `:8080` and HaMS `:8079`) and pre-configured probes.
 - Initial baseline verification tool:
@@ -326,8 +326,8 @@ graph TD
         VectorDB[("agent_embeddings & knowledge_embeddings")]
     end
 
-    IDE <-->|MCP Transport (SSE/Stdio)| MCP
-    Claude <-->|MCP Transport (Stdio/SSE)| MCP
+    IDE <-->|MCP Transport (HTTP/Stdio)| MCP
+    Claude <-->|MCP Transport (HTTP/Stdio)| MCP
     APIClient <-->|HTTP / JSON| REST
 
     MCP <-->|Internal Service / REST| REST
