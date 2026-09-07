@@ -39,7 +39,7 @@ Agent-As-Data (AAD) is an enterprise-grade declarative platform and specificatio
 * **Owner ID**: UUID (Strictly enforced non-optional identifier).
 
 ### 4. Native Model Context Protocol (MCP) Server Container (`aad-mcp-container`)
-- Dedicated containerized microservice running a Model Context Protocol (MCP) server supporting standard HTTP JSON-RPC 2.0 and Stdio transports.
+- Dedicated containerized microservice running a Model Context Protocol (MCP) server supporting standard stateless HTTP JSON-RPC 2.0 transport optimized for Kubernetes, Istio Service Mesh, and Ingress Gateways.
 - **Backend Architectural Parity**: Follows the `aad-be-container` structure with Clap CLI parsing (`--config-path`, `--secrets-dir`, `serve`), centralized configuration & secrets loader (fail-fast validation, `fail_debug_delay`), HaMS health monitoring sidecar on `:8079` (`/hams/alive`, `/hams/ready`, `/hams/metrics`), and Tokio runtime harness.
 - **Dedicated Helm Chart (`charts/agent-as-data-mcp`)**: Copied and adapted from `charts/agent-as-data` with dual-port configuration (MCP Web `:8080` and HaMS `:8079`) and pre-configured probes.
 - Initial baseline verification tool:
@@ -111,11 +111,12 @@ flowchart TD
 
 
 
-### 9. Remote Tool Registration & Schema Caching Engine
-- **Remote Tool Ingestion (`POST /{{api_prefix}}/v1/agents/tools/register`)**: Register external MCP servers (Stdio & SSE) as reusable Tools.
-- **Dynamic Schema Storage**: Extracted tools, arguments, and prompts from remote servers are cached locally.
+### 9. Remote MCP Tool Registration, Synchronization & Execution Engine
+- **Remote Tool Ingestion (`POST /{{api_prefix}}/v1/agents/tools/register`)**: Register external MCP servers via stateless HTTP POST JSON-RPC 2.0 (compatible with Istio Gateways and Kubernetes service routing).
+- **Eager Validation & Dynamic Schema Caching**: Validates connectivity and caches `tools/list` JSON schemas into the `tools` table immediately upon registration.
+- **Multi-Tier Synchronization**: Supports on-demand CI/CD / GitOps sync webhooks (`POST /{{api_prefix}}/v1/agents/tools/:id/sync`), "Sync Now" UI actions, and configurable background stale-while-revalidate TTL policies.
 - **RAG Discovery Integration**: Generates `pgvector` embeddings for remote tools, allowing seamless discovery alongside native declarative agents.
-- **Background Tool Sync**: Agents can periodically re-ping remote servers to refresh types and schemas if upstream tools change.
+- **Fault-Tolerant Execution**: LLM tool calls are dispatched as HTTP JSON-RPC `tools/call` requests; if a sync fails, last known good schemas are preserved.
 
 ### 10. Agent Development UI & Testing Kit Container (`aad-fe-container`)
 - **Interactive Development Studio**: Web dashboard container built with Angular 18+ (Standalone Components, Angular Material, RxJS, and TailwindCSS) following the `sward-warden/sw-fe-container` architecture.
@@ -223,9 +224,13 @@ The database persists connections to remote tools and caches their exported capa
 * **ID**: UUID.
 * **Owner ID**: UUID (Strictly enforced non-optional identifier for multi-tenant isolation).
 * **Server Name**: String identifier.
-* **Transport Type**: `stdio` or `sse`.
-* **Endpoint Config**: JSONB connection details (command, args, URLs, encrypted secrets).
+* **Transport Type**: `http` (stateless HTTP POST JSON-RPC 2.0; native for Istio Service Mesh / Kubernetes microservices).
+* **Endpoint Config**: JSONB connection details (`{"url": "http://agent-as-data-mcp:8080/mcp"}`).
 * **Cached Capabilities**: JSONB snapshot of `tools`, `resources`, and `prompts` exported by the server.
+* **Sync Policy**: `manual`, `lazy_revalidate`, or `interval`.
+* **Sync Status**: `synced`, `syncing`, or `degraded`.
+* **Last Synced At**: Timestamp.
+* **Last Sync Error**: String (optional diagnostic error on sync failure).
 
 ### Agent Test Suite Entity (`agent_test_suites`)
 - `id` (UUID), `agent_id` (UUID), `name` (String), `test_cases` (JSONB - Array of input payloads, deterministic assertions, and natural language Judge rubrics), `created_at` (Timestamp).

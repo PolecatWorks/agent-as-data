@@ -35,6 +35,7 @@ As a baseline milestone, the container build packages an operational MCP server 
 6. **Baseline Tool Verification (`hello`)**:
    - Provide a basic, robust `hello` tool accepting a user's name and returning a greeting.
    - Serve as the foundational smoke-test and integration verification tool for the MCP container pipeline before registering complex enterprise tools.
+   - Acts as the primary testbed for testing MCP tool ingestion, schema caching, synchronization, and live execution in the backend microservice (see [Agent Registry & Execution PRD](./agent-registry-execution-prd.md)).
 
 ---
 
