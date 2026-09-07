@@ -43,6 +43,9 @@ jobs:
       - name: Lint agent-as-data
         run: helm lint charts/agent-as-data
 
+      - name: Lint agent-as-data-mcp
+        run: helm lint charts/agent-as-data-mcp
+
   ci-success:
     name: Helm CI Success
     needs: [ check-paths, lint ]

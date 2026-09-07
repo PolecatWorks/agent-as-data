@@ -117,7 +117,7 @@ aad-mcp-dev:
 	-@lsof -t -i :$(aad-mcp_HEALTH_PORT) | xargs kill -9 2>/dev/null || true
 	cd aad-mcp-container && \
 	AAD_MCP__WEBSERVICE__ADDRESS="0.0.0.0:$(aad-mcp_PORT)" \
-	AAD_MCP__HAMS__PORT="$(aad-mcp_HEALTH_PORT)" \
+	AAD_MCP__HAMS__ADDRESS="0.0.0.0:$(aad-mcp_HEALTH_PORT)" \
 	cargo run -- serve
 
 aad-mcp-watch:
@@ -125,7 +125,7 @@ aad-mcp-watch:
 	-@lsof -t -i :$(aad-mcp_HEALTH_PORT) | xargs kill -9 2>/dev/null || true
 	cd aad-mcp-container && \
 	AAD_MCP__WEBSERVICE__ADDRESS="0.0.0.0:$(aad-mcp_PORT)" \
-	AAD_MCP__HAMS__PORT="$(aad-mcp_HEALTH_PORT)" \
+	AAD_MCP__HAMS__ADDRESS="0.0.0.0:$(aad-mcp_HEALTH_PORT)" \
 	AAD_MCP__DEBUGGING__LOG_LEVEL="debug" \
 	RUST_LOG="debug" \
 	cargo watch -x 'run -- serve'

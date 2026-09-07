@@ -72,7 +72,7 @@ flowchart TD
     end
 
     subgraph Phase9 ["Phase 9: Standalone MCP Container & Services"]
-        Spec23["23-mcp-server-container-spec.md<br/>(MCP Server Container & Hello Tool)"]:::draft
+        Spec23["23-mcp-server-container-spec.md<br/>(MCP Server Container & Hello Tool)"]:::complete
     end
 
     classDef complete fill:#10B981,stroke:#047857,stroke-width:2px,color:#ffffff;
@@ -150,7 +150,7 @@ flowchart TD
 | **Phase 8** | [20-global-concept-guide-component-spec.md](./20-global-concept-guide-component-spec.md) | `complete` | Global Concept Guide Reusable Component & Multi-View Top Bar Integration | [Agent UI PRD](../prds/agent-ui-testing-kit-prd.md) | Phase 8 Spec (Depends on Spec 19) |
 | **Phase 8** | [21-title-view-switcher-dropdown-spec.md](./21-title-view-switcher-dropdown-spec.md) | `complete` | Top Bar Workspace Title View Switcher Dropdown | [Agent UI PRD](../prds/agent-ui-testing-kit-prd.md) | Phase 8 Spec (Depends on Spec 20) |
 | **Phase 8** | [22-universal-top-bar-consistency-spec.md](./22-universal-top-bar-consistency-spec.md) | `complete` | Universal Top Bar Consistency & Concept Guide Integration Across All Views | [Agent UI PRD](../prds/agent-ui-testing-kit-prd.md) | Phase 8 Spec (Depends on Spec 21) |
-| **Phase 9** | [23-mcp-server-container-spec.md](./23-mcp-server-container-spec.md) | `draft` | Dedicated MCP Server Container (`aad-mcp-container`), Helm Chart (`charts/agent-as-data-mcp`), Backend Config Parity & `hello` Tool | [MCP Server Container PRD](../prds/mcp-server-container-prd.md) | Phase 9 Spec (Depends on Spec 09) |
+| **Phase 9** | [23-mcp-server-container-spec.md](./23-mcp-server-container-spec.md) | `complete` | Dedicated MCP Server Container (`aad-mcp-container`), Helm Chart (`charts/agent-as-data-mcp`), Backend Config Parity & `hello` Tool | [MCP Server Container PRD](../prds/mcp-server-container-prd.md) | Phase 9 Spec (Depends on Spec 09) |
 
 
 

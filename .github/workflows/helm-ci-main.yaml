@@ -42,6 +42,9 @@ jobs:
       - name: Lint agent-as-data
         run: helm lint charts/agent-as-data
 
+      - name: Lint agent-as-data-mcp
+        run: helm lint charts/agent-as-data-mcp
+
   publish:
     needs: [ check-paths, lint ]
     if: needs.check-paths.outputs.charts == 'true'
@@ -74,13 +77,26 @@ jobs:
           # Use the content SHA in the version
           suffix="-main-${{ steps.content_sha.outputs.sha_short }}"
           sed -i "s/^version: .*/&${suffix}/" charts/agent-as-data/Chart.yaml
+          sed -i "s/^version: .*/&${suffix}/" charts/agent-as-data-mcp/Chart.yaml
           echo "Updated agent-as-data Version:"
           grep "^version:" charts/agent-as-data/Chart.yaml
+          echo "Updated agent-as-data-mcp Version:"
+          grep "^version:" charts/agent-as-data-mcp/Chart.yaml
 
       - name: Push Helm chart to OCI for agent-as-data
         uses: bsord/helm-push@v4
         with:
           chart-folder: charts/agent-as-data
+          useOCIRegistry: true
+          registry-url: oci://ghcr.io/${{ steps.lower-repo.outputs.repository }}/helm
+          username: ${{ github.actor }}
+          access-token: ${{ secrets.GITHUB_TOKEN }}
+          force: true
+
+      - name: Push Helm chart to OCI for agent-as-data-mcp
+        uses: bsord/helm-push@v4
+        with:
+          chart-folder: charts/agent-as-data-mcp
           useOCIRegistry: true
           registry-url: oci://ghcr.io/${{ steps.lower-repo.outputs.repository }}/helm
           username: ${{ github.actor }}
