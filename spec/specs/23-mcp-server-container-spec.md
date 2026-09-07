@@ -39,28 +39,27 @@ The service is established in the workspace root at `aad-mcp-container/`:
 
 ```
 aad-mcp-container/
-├── Cargo.toml                  # Dependencies: axum, tokio, clap, figment, hams, serde, etc.
+├── Cargo.toml                  # Dependencies: rmcp, axum, tokio, clap, figment, hams, schemars, etc.
 ├── Dockerfile                  # Multi-stage release container build
 ├── config/
 │   └── default.yaml            # Default development configuration
 ├── src/
 │   ├── main.rs                 # Clap CLI entrypoint (parse flags, fail-debug-delay, Tokio harness)
-│   ├── lib.rs                  # service_main orchestrator (load config, start HaMS, run Axum)
+│   ├── lib.rs                  # service_main orchestrator (load config, start HaMS, run Axum with rmcp)
 │   ├── config.rs               # WebServiceConfig, HamsConfig, AppConfig fail-fast loader
 │   ├── hams_tools.rs           # HaMS harness, ProbeManual readiness binding, cancellation
 │   ├── tokio_tools.rs          # Tokio multi-thread runtime builder
 │   ├── metrics.rs              # Prometheus exporter hooks for HaMS
-│   ├── state.rs                # Shared AppState (configuration, cancellation tokens)
+│   ├── state.rs                # Shared AppState (configuration, AadMcpServer)
 │   ├── webserver/
-│   │   ├── mod.rs              # Axum router setup, port 8080 listener, graceful shutdown
-│   │   ├── sse.rs              # SSE transport session handler
-│   │   └── rpc.rs              # JSON-RPC 2.0 protocol dispatching
+│   │   └── mod.rs              # Axum router mounting rmcp StreamableHttpService, graceful shutdown
 │   └── tools/
-│       ├── mod.rs              # Tool trait definition and tool registry
-│       └── hello.rs            # Hello greeting tool implementation
+│       ├── mod.rs              # Tool module exports
+│       └── hello.rs            # AadMcpServer and HelloRequest using rmcp #[tool] and #[tool_router]
 └── tests/
     ├── config_tests.rs         # Configuration loading and validation unit tests
-    └── hello_tool_tests.rs     # Tool schema and invocation unit tests
+    ├── hello_tool_tests.rs     # Tool schema and invocation unit tests
+    └── mcp_rpc_tests.rs        # End-to-end rmcp client-server integration tests
 ```
 
 ---
@@ -146,10 +145,24 @@ sequenceDiagram
 
 ---
 
-## 4. MCP Protocol & `hello` Tool Specification
+## 4. MCP Protocol & `hello` Tool Specification (`rmcp` SDK)
 
-### Tool JSON Schema
-The `tools/list` response includes:
+The service utilizes the official Model Context Protocol Rust SDK (**`rmcp`**):
+- **Typed Parameter Schemas**: Arguments are strongly typed structs deriving `serde::Deserialize` and `schemars::JsonSchema`.
+- **Procedural Routing**: Methods are exposed using `#[tool(description = "...")]` inside an `impl` block marked with `#[tool_router]`.
+- **Server Handler**: The server implements `ServerHandler` using `#[tool_handler(router = self.tool_router)]`.
+- **Streamable HTTP Transport**: Wrapped in `StreamableHttpService<AadMcpServer, LocalSessionManager>` and nested directly within Axum.
+
+### Tool Request Schema
+```rust
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize, schemars::JsonSchema)]
+pub struct HelloRequest {
+    #[schemars(description = "The name of the user, persona, or entity to greet.")]
+    pub name: String,
+}
+```
+
+The generated `tools/list` schema:
 ```json
 {
   "name": "hello",
@@ -159,12 +172,10 @@ The `tools/list` response includes:
     "properties": {
       "name": {
         "type": "string",
-        "description": "The name of the user, persona, or entity to greet.",
-        "minLength": 1
+        "description": "The name of the user, persona, or entity to greet."
       }
     },
-    "required": ["name"],
-    "additionalProperties": false
+    "required": ["name"]
   }
 }
 ```

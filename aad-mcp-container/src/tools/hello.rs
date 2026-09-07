@@ -1,65 +1,51 @@
-use std::future::Future;
-use std::pin::Pin;
-use serde_json::{json, Value};
-use super::{Tool, ToolResult};
+use rmcp::{
+    ServerHandler,
+    handler::server::{router::tool::ToolRouter, wrapper::Parameters},
+    model::{ServerCapabilities, ServerInfo},
+    schemars, tool, tool_handler, tool_router,
+};
 
-#[derive(Default, Clone, Debug)]
-pub struct HelloTool;
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize, schemars::JsonSchema)]
+pub struct HelloRequest {
+    #[schemars(description = "The name of the user, persona, or entity to greet.")]
+    pub name: String,
+}
 
-impl HelloTool {
+#[derive(Debug, Clone)]
+pub struct AadMcpServer {
+    tool_router: ToolRouter<Self>,
+}
+
+impl AadMcpServer {
     pub fn new() -> Self {
-        Self
+        Self {
+            tool_router: Self::tool_router(),
+        }
     }
 }
 
-impl Tool for HelloTool {
-    fn name(&self) -> &str {
-        "hello"
+impl Default for AadMcpServer {
+    fn default() -> Self {
+        Self::new()
     }
+}
 
-    fn description(&self) -> &str {
-        "Generates a friendly greeting response for a specified user or entity name."
+#[tool_router]
+impl AadMcpServer {
+    #[tool(description = "Generates a friendly greeting response for a specified user or entity name.")]
+    pub fn hello(&self, Parameters(HelloRequest { name }): Parameters<HelloRequest>) -> Result<String, String> {
+        let trimmed = name.trim();
+        if trimmed.is_empty() {
+            return Err("Error: 'name' argument must be a non-empty string".to_string());
+        }
+        Ok(format!("Hello, {}!", trimmed))
     }
+}
 
-    fn input_schema(&self) -> Value {
-        json!({
-            "type": "object",
-            "properties": {
-                "name": {
-                    "type": "string",
-                    "description": "The name of the user, persona, or entity to greet.",
-                    "minLength": 1
-                }
-            },
-            "required": ["name"],
-            "additionalProperties": false
-        })
-    }
-
-    fn execute<'a>(
-        &'a self,
-        arguments: Value,
-    ) -> Pin<Box<dyn Future<Output = ToolResult> + Send + 'a>> {
-        Box::pin(async move {
-            let name_val = match arguments.get("name") {
-                Some(val) => val,
-                None => {
-                    return ToolResult::error_text("Error: 'name' argument must be a non-empty string");
-                }
-            };
-
-            let name_str = match name_val.as_str() {
-                Some(s) => s.trim(),
-                None => {
-                    return ToolResult::error_text("Error: 'name' argument must be a non-empty string");
-                }
-            };
-
-            if name_str.is_empty() {
-                return ToolResult::error_text("Error: 'name' argument must be a non-empty string");
-            }
-
-            ToolResult::success_text(format!("Hello, {}!", name_str))
-        })
+#[tool_handler(router = self.tool_router)]
+impl ServerHandler for AadMcpServer {
+    fn get_info(&self) -> ServerInfo {
+        ServerInfo::new(ServerCapabilities::builder().enable_tools().build())
+            .with_instructions("Agent-As-Data MCP Server")
     }
 }

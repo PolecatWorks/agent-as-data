@@ -1,7 +1,7 @@
 //! Agent-As-Data MCP Server (`aad-mcp-container`) core library.
 //!
 //! Provides application lifecycle orchestration, configuration loading,
-//! Model Context Protocol (MCP) server endpoints, HaMS health sidecar integration, and Axum webserver.
+//! Model Context Protocol (MCP) server endpoints via `rmcp`, HaMS health sidecar integration, and Axum webserver.
 
 pub mod config;
 pub mod hams_tools;
@@ -26,8 +26,7 @@ use axum_prometheus::metrics_exporter_prometheus::PrometheusBuilder;
 use crate::config::AppConfig;
 use crate::hams_tools::HamsHarness;
 use crate::metrics::{prometheus_response_free, prometheus_response_mystate};
-use crate::tools::hello::HelloTool;
-use crate::tools::ToolRegistry;
+use crate::tools::AadMcpServer;
 use crate::webserver::start_webserver;
 
 /// Main application service orchestrator.
@@ -35,7 +34,7 @@ use crate::webserver::start_webserver;
 /// 1. Loads fail-fast AppConfig from file and secrets.
 /// 2. Validates configuration.
 /// 3. Initializes HaMS sidecar on health port (default 8079).
-/// 4. Initializes tool registry with standard baseline tools (e.g. HelloTool).
+/// 4. Initializes rmcp server with standard baseline tools (e.g. Hello).
 /// 5. Binds and serves the Axum MCP webservice.
 pub async fn service_main(
     config_path: &Path,
@@ -69,14 +68,13 @@ pub async fn service_main(
         .map_err(|e| format!("HaMS init error: {}", e))?;
     info!("HaMS health sidecar started on port {} with readiness probe and shutdown hook.", config.hams.address.port());
 
-    // 4. Initialize Tool Registry
-    let mut tool_registry = ToolRegistry::new();
-    tool_registry.register(Arc::new(HelloTool::new()));
-    info!("Registered default MCP tools: hello");
+    // 4. Initialize rmcp Server
+    let mcp_server = AadMcpServer::new();
+    info!("Initialized rmcp server with tools: hello");
 
     let app_state = AppState::new(
         config.clone(),
-        Arc::new(tool_registry),
+        mcp_server,
         Arc::new(metric_handle),
     );
 
