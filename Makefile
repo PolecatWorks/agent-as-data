@@ -2,7 +2,7 @@
         aad-mcp-dev aad-mcp-watch aad-mcp-test aad-mcp-docker aad-mcp-docker-run \
         aad-fe-dev aad-fe-test aad-fe-docker aad-fe-docker-run \
         db-up db-down compose-db-up compose-db-down compose-db-clean stop-other-db \
-        test build-be build-mcp build-fe build-docker garden-up robot-test
+        test build-be build-mcp build-fe build-docker garden-up garden-test garden-down robot-test
 
 DATABASE_URL ?= postgres://postgres:mysecretpassword@localhost:5432/aaddb
 
@@ -14,6 +14,7 @@ aad-be_HEALTH_PORT ?= 8079
 aad-mcp_PORT ?= 8082
 aad-mcp_HEALTH_PORT ?= 8078
 aad-fe_PORT ?= 4200
+ROBOT_REPORT_DIR ?= integration-tests/reports
 
 all: build-be build-mcp build-fe
 
@@ -49,6 +50,8 @@ help:
 	@echo "  build-fe           - Build frontend Docker image (agent-as-data-fe:latest)"
 	@echo "  build-docker       - Alias for build-be"
 	@echo "  garden-up          - Deploy dev environment via Garden"
+	@echo "  garden-test        - Run integration tests inside Garden local cluster"
+	@echo "  garden-down        - Tear down Garden local dev environment"
 	@echo "  robot-test         - Execute Robot Framework integration test runner"
 	@echo "  seed-data          - Seed the database with exemplar data (Traits, Tools, Skills, Agents)"
 
@@ -168,7 +171,25 @@ build-fe: aad-fe-docker
 build-docker: build-be build-mcp build-fe
 
 garden-up:
+	@echo "Logging Helm into GHCR and running Garden deploy..."
+	@echo "$${GHCR_TOKEN}" | helm registry login ghcr.io -u "$${GHCR_USER:-bengreen}" --password-stdin 2>/dev/null || true
 	garden deploy --env local
+
+garden-test: garden-up
+	@echo "Running Garden tests..."
+	garden test --env local
+	@echo "Copying test reports to $(ROBOT_REPORT_DIR)..."
+	@mkdir -p $(ROBOT_REPORT_DIR)
+	@NS="agent-as-data-$${USER:-local}"; \
+	kubectl cp $$NS/robot-test-runner:/tmp/reports $(ROBOT_REPORT_DIR) 2>/dev/null || true
+	@if [ -f "$(ROBOT_REPORT_DIR)/log.html" ]; then \
+		echo "Opening test report log.html..."; \
+		open $(ROBOT_REPORT_DIR)/log.html || true; \
+	fi
+
+garden-down:
+	@echo "Tearing down Garden environment..."
+	garden cleanup env --env local
 
 robot-test:
 	./integration-tests/run-tests-local.sh
