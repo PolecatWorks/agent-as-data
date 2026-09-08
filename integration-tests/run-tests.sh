@@ -1,6 +1,11 @@
 #!/bin/bash
 set -ex
 
+# Ensure working directory is project root
+if [ ! -d "integration-tests" ] && [ -d "../integration-tests" ]; then
+    cd ..
+fi
+
 # Use Garden's provided namespace if available, otherwise fallback to the PR pattern
 NS="${GARDEN_NAMESPACE:-agent-as-data-pr-${PR_NUMBER:-local}}"
 
