@@ -240,10 +240,23 @@ flowchart TD
 
 ### 8. Remote Tool Manager (`/tools`)
 - **Tool Ingestion & Server Registration**: Form to register external MCP servers via stateless HTTP POST JSON-RPC 2.0 (`POST /{{api_prefix}}/v1/agents/tools/register`), architected for seamless routing across Istio Ingress Gateways and Kubernetes services. Eagerly validates connectivity and fetches tool capabilities on submission.
-- **Cached Tool & Schema Browser**: Inspect discovered tool listings, parameter schemas (JSON Schema v7), descriptions, and type signatures retrieved from remote servers.
-- **Freshness & Manual Sync Trigger ("Sync Now")**: Action button on each tool card triggering `POST /{{api_prefix}}/v1/agents/tools/:id/sync` to instantly re-query the remote server for new or updated tools.
+- **Transport Protocol Selection**: Form provides selectable transport protocols:
+  - **`HTTP (JSON-RPC 2.0 Streamable HTTP)`** *(Recommended default for Kubernetes / Istio service mesh deployments)*.
+  - **`SSE (Server-Sent Events HTTP)`** *(Legacy HTTP streaming transport)*.
+  - **`Stdio (Standard Input/Output Command)`** *(Local daemon/subprocess execution)*.
+- **Cached Tool & Schema Browser**:
+  - Displays all discovered tools retrieved from the server (`cached_capabilities.tools`) in a dedicated panel directly below the connection settings.
+  - For each tool, displays tool name, description, required/optional parameter properties, and full JSON Schema definitions.
+- **Freshness & Manual Sync Trigger ("Sync Now")**:
+  - Action button in the tool header triggering `POST /{{api_prefix}}/v1/agents/tools/:id/sync` to instantly re-query the remote server for updated tools.
+  - Visual loading state with spinner while synchronization request is in-flight.
 - **Sync Health & Status Indicators**: Visual status pills indicating synchronization state (`synced` [green], `syncing` [blue spinner], `degraded / failed` [amber/red with tooltip displaying `last_sync_error`]) and human-readable `last_synced_at` timestamp.
-- **Pre-configured Sample MCP Server**: Quick-fill or pre-configured target pointing to the dedicated sample container `aad-mcp-container` (`http://localhost:8082/mcp` or `http://agent-as-data-mcp:8080/mcp`) exposing the `hello` verification tool.
+- **Interactive Tool Verification & Testing Console**:
+  - In-browser verification console allowing developers to test any discovered MCP tool directly without initiating a full agent execution session.
+  - Automatically prepopulates a sample JSON arguments payload derived from the tool's `inputSchema`.
+  - Dispatches execution requests via `POST /{{api_prefix}}/v1/agents/tools/:id/test` (`tool_name` and `arguments`).
+  - Displays execution latency, status codes, formatted text output, and raw JSON-RPC response payloads.
+- **Pre-configured Sample MCP Server**: Quick-fill or pre-configured target pointing to the dedicated sample container `aad-mcp-container` (`http://localhost:8082` or `http://localhost:8082/mcp`) exposing the canonical `hello` verification tool.
 
 ### 9. Workbench (Benches, Threads & Workspace Memory) (`/workbench`)
 - **Bench-Scoped Workspace Model**:

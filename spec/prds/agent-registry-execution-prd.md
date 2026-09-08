@@ -143,11 +143,44 @@ sequenceDiagram
     BE-->>Client: Final response streaming with greeting
 ```
 
-#### 7. Integration Verification with Sample MCP Container (`aad-mcp-container`)
+#### 7. Direct Remote Tool Verification Endpoint & Interactive Testing Flow
+To enable developers and automated smoke tests to verify MCP tools in isolation without needing to execute full multi-turn LLM reasoning loops, the backend provides an interactive tool verification endpoint:
+- **Endpoint**: `POST /{{api_prefix}}/v1/agents/tools/:id/test`
+- **Request Payload**:
+  ```json
+  {
+    "tool_name": "hello",
+    "arguments": {
+      "name": "Developer"
+    }
+  }
+  ```
+- **Execution Bridge**:
+  1. Validates that the requested `tool_name` exists within the server's `cached_capabilities.tools`.
+  2. Forwards the stateless JSON-RPC `tools/call` to the remote server's `endpoint_config.url`.
+  3. Returns execution timing (latency in ms), formatted text content, and full JSON-RPC response envelope.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Dev as Developer / UI Studio
+    participant BE as AAD Backend (tools API)
+    participant DB as PostgreSQL (tools table)
+    participant MCP as Remote MCP Server (aad-mcp-container)
+
+    Dev->>BE: POST /tools/:id/test {tool_name: "hello", arguments: {name: "Alice"}}
+    BE->>DB: Fetch tool server by :id and verify tool exists in cached_capabilities
+    DB-->>BE: Server record & endpoint_config.url
+    BE->>MCP: HTTP POST / {jsonrpc: "2.0", method: "tools/call", params: {name: "hello", arguments: {name: "Alice"}}}
+    MCP-->>BE: 200 OK {result: {content: [{type: "text", text: "Hello, Alice!"}], isError: false}}
+    BE-->>Dev: 200 OK {success: true, output: "Hello, Alice!", raw_result: {...}, latency_ms: 42}
+```
+
+#### 8. Integration Verification with Sample MCP Container (`aad-mcp-container`)
 The dedicated [MCP Server Container (`aad-mcp-container`)](./mcp-server-container-prd.md) serves as the primary verification target for testing MCP tool ingestion, synchronization, and agent execution:
-- **Server Address**: `http://127.0.0.1:8082/mcp` (or internal Kubernetes DNS `http://agent-as-data-mcp:8080/mcp`).
+- **Server Address**: `http://127.0.0.1:8082` or `http://127.0.0.1:8082/mcp` (or internal Kubernetes DNS `http://agent-as-data-mcp:8080/mcp`).
 - **Target Verification Tool**: `hello`, which accepts a `name` string input and returns a friendly greeting.
-- **Automated Test Flow**: Registration -> Eager `tools/list` discovery -> Verification of cached schema in `tools` table -> Execution via agent turn -> Verifying greeting in LLM response.
+- **Automated Test Flow**: Registration -> Eager `tools/list` discovery -> Verification of cached schema in `tools` table -> Direct verification via `/test` -> Execution via agent turn -> Verifying greeting in LLM response.
 
 ### 4. Semantic RAG Discovery
 - **Vector Embeddings**: Generates embeddings for agent definitions and tags in `agent_embeddings` (`pgvector`).
@@ -263,6 +296,15 @@ The dedicated [MCP Server Container (`aad-mcp-container`)](./mcp-server-containe
 2. The engine first validates that the new agent's JSON output strictly conforms to the original Skill's expected schema (Deterministic Schema & Guardrail Check).
 3. The engine then passes the probabilistic output to a designated "Judge Agent" (LLM-as-a-Judge) which evaluates the qualitative accuracy and reasoning trace.
 4. The test passes if both the deterministic schema assertion and the probabilistic Judge score exceed the defined threshold (e.g. >0.85), allowing promotion to production `agent_revisions`.
+
+### Journey 3: Interactive Developer Verification of Remote MCP Tools
+**Scenario**: A developer deploys a new MCP container (or connects to an existing internal microservice) and needs to verify its tools and input schemas directly within the AAD Studio before attaching them to agents.
+1. The developer navigates to `/tools` and registers a new tool server selecting `Transport Protocol: HTTP` with endpoint `http://localhost:8082`.
+2. The system triggers eager handshake validation (`initialize`, `notifications/initialized`, `tools/list`), discovers available tools (e.g. `hello`), and stores the schemas into PostgreSQL with `sync_status: "synced"`.
+3. The UI automatically displays the discovered tools, their parameter requirements, and descriptions.
+4. The developer clicks **"Test Tool"**, reviews the prepopulated sample arguments (`{"name": "Alice"}`), and clicks **"Execute Tool"**.
+5. The backend dispatches `POST /{{api_prefix}}/v1/agents/tools/:id/test`, executes `tools/call` over JSON-RPC 2.0 to `aad-mcp-container`, and displays the resulting greeting `"Hello, Alice!"` alongside execution duration (ms) in the UI console.
+6. The developer clicks **"Sync Now"** at any time to refresh the tool definitions if new tools or schema updates are deployed to the remote server.
 
 ## Agent Execution Pipeline
 
