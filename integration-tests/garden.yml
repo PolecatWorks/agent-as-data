@@ -33,4 +33,4 @@ timeout: 900
 dependencies:
   - deploy.robot-test-runner
 spec:
-  command: ["/bin/bash", "-c", "GARDEN_NAMESPACE=${environment.namespace} ./integration-tests/run-tests.sh"]
+  command: ["/bin/bash", "-c", "if [ -f ./integration-tests/run-tests.sh ]; then GARDEN_NAMESPACE=${environment.namespace} ./integration-tests/run-tests.sh; else (cd .. && GARDEN_NAMESPACE=${environment.namespace} ./integration-tests/run-tests.sh); fi"]
