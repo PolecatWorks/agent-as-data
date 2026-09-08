@@ -55,3 +55,22 @@ pub struct Tool {
     pub last_synced_at: chrono::DateTime<chrono::Utc>,
     pub last_sync_error: Option<String>,
 }
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct TestToolRequest {
+    pub tool_name: String,
+    #[serde(default)]
+    pub arguments: serde_json::Value,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct TestToolResponse {
+    pub success: bool,
+    pub tool_name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub output: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<String>,
+    pub raw_result: serde_json::Value,
+    pub latency_ms: u64,
+}

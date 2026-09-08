@@ -10,7 +10,10 @@ use sqlx::{PgPool, Row};
 use uuid::Uuid;
 
 use crate::{
-    models::{RegisterToolRequest, RegisterToolResponse, SyncToolResponse, Tool},
+    models::{
+        RegisterToolRequest, RegisterToolResponse, SyncToolResponse, TestToolRequest,
+        TestToolResponse, Tool,
+    },
     state::AppState,
 };
 
@@ -20,6 +23,7 @@ pub fn router() -> Router<AppState> {
         .route("/register", post(register_tool))
         .route("/{id}", delete(delete_tool))
         .route("/{id}/sync", post(sync_tool))
+        .route("/{id}/test", post(test_tool_execution))
 }
 
 pub async fn fetch_mcp_capabilities(url: &str) -> Result<serde_json::Value, String> {
@@ -387,6 +391,171 @@ pub async fn sync_tool(
     }
 }
 
+pub async fn test_tool_execution(
+    State(pool): State<PgPool>,
+    Path(id): Path<Uuid>,
+    Json(payload): Json<TestToolRequest>,
+) -> Result<(StatusCode, Json<TestToolResponse>), (StatusCode, String)> {
+    tracing::info!("Testing tool '{}' on server ID: {}", payload.tool_name, id);
+
+    let tool = sqlx::query_as::<_, Tool>(
+        r#"
+        SELECT id, server_name, transport_type, endpoint_config, cached_capabilities, owner_id, sync_policy, sync_status, last_synced_at, last_sync_error
+        FROM tools
+        WHERE id = $1
+        "#,
+    )
+    .bind(id)
+    .fetch_optional(&pool)
+    .await
+    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Database query error: {}", e)))?
+    .ok_or_else(|| (StatusCode::NOT_FOUND, format!("Tool server '{}' not found", id)))?;
+
+    // Verify tool_name exists in cached_capabilities.tools
+    let tools_list = tool
+        .cached_capabilities
+        .get("tools")
+        .and_then(|t| t.as_array());
+
+    let tool_found = tools_list
+        .map(|arr| {
+            arr.iter()
+                .any(|t| t.get("name").and_then(|n| n.as_str()) == Some(&payload.tool_name))
+        })
+        .unwrap_or(false);
+
+    if !tool_found {
+        return Err((
+            StatusCode::UNPROCESSABLE_ENTITY,
+            format!(
+                "Tool '{}' not found in server capabilities",
+                payload.tool_name
+            ),
+        ));
+    }
+
+    let url = tool
+        .endpoint_config
+        .get("url")
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| (StatusCode::BAD_REQUEST, "Missing endpoint_config.url".to_string()))?;
+
+    let start = std::time::Instant::now();
+
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(15))
+        .build()
+        .map_err(|e| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Failed to build HTTP client: {}", e),
+            )
+        })?;
+
+    let call_payload = serde_json::json!({
+        "jsonrpc": "2.0",
+        "id": Uuid::new_v4().to_string(),
+        "method": "tools/call",
+        "params": {
+            "name": payload.tool_name,
+            "arguments": payload.arguments
+        }
+    });
+
+    let res = client
+        .post(url)
+        .header("Content-Type", "application/json")
+        .json(&call_payload)
+        .send()
+        .await
+        .map_err(|e| {
+            (
+                StatusCode::BAD_GATEWAY,
+                format!("Remote MCP server communication failed: {}", e),
+            )
+        })?;
+
+    let latency_ms = start.elapsed().as_millis() as u64;
+
+    if !res.status().is_success() {
+        return Err((
+            StatusCode::BAD_GATEWAY,
+            format!("Remote MCP server returned HTTP status {}", res.status()),
+        ));
+    }
+
+    let json: serde_json::Value = res
+        .json()
+        .await
+        .map_err(|e| {
+            (
+                StatusCode::BAD_GATEWAY,
+                format!("Invalid JSON response from MCP server: {}", e),
+            )
+        })?;
+
+    if let Some(err) = json.get("error") {
+        return Ok((
+            StatusCode::OK,
+            Json(TestToolResponse {
+                success: false,
+                tool_name: payload.tool_name,
+                output: None,
+                error: Some(err.to_string()),
+                raw_result: json,
+                latency_ms,
+            }),
+        ));
+    }
+
+    let result = json
+        .get("result")
+        .cloned()
+        .unwrap_or(serde_json::Value::Null);
+
+    let is_error = result
+        .get("isError")
+        .and_then(|v| v.as_bool())
+        .unwrap_or(false);
+
+    let text_output = result
+        .get("content")
+        .and_then(|c| c.as_array())
+        .and_then(|arr| arr.first())
+        .and_then(|item| item.get("text"))
+        .and_then(|t| t.as_str())
+        .map(|s| s.to_string());
+
+    if is_error {
+        let err_msg = text_output
+            .clone()
+            .unwrap_or_else(|| "Remote tool execution failed".to_string());
+        Ok((
+            StatusCode::OK,
+            Json(TestToolResponse {
+                success: false,
+                tool_name: payload.tool_name,
+                output: text_output,
+                error: Some(err_msg),
+                raw_result: result,
+                latency_ms,
+            }),
+        ))
+    } else {
+        Ok((
+            StatusCode::OK,
+            Json(TestToolResponse {
+                success: true,
+                tool_name: payload.tool_name,
+                output: text_output,
+                error: None,
+                raw_result: result,
+                latency_ms,
+            }),
+        ))
+    }
+}
+
 pub async fn list_tools(
     State(pool): State<PgPool>,
 ) -> Result<(StatusCode, Json<Vec<Tool>>), (StatusCode, String)> {
@@ -571,6 +740,64 @@ mod tests {
         } else {
             // Live container not running; skip live assertion gracefully
             println!("Note: Live sample MCP container not running on 8082, skipping live test");
+        }
+    }
+
+    #[tokio::test]
+    async fn test_tool_verification_handler() {
+        let db_url = std::env::var("DATABASE_URL")
+            .unwrap_or_else(|_| "postgres://postgres:mysecretpassword@localhost:5432/aaddb".to_string());
+        if let Ok(pool) = sqlx::postgres::PgPoolOptions::new().connect(&db_url).await {
+            let (mock_url, _shutdown) = start_mock_mcp_server().await;
+            let server_name = format!("test-mcp-verify-{}", Uuid::new_v4());
+            let server_id = Uuid::new_v4();
+
+            // Insert tool
+            let _ = sqlx::query(
+                r#"
+                INSERT INTO tools (id, server_name, transport_type, endpoint_config, cached_capabilities, owner_id, sync_policy, sync_status, last_synced_at)
+                VALUES ($1, $2, 'http', $3, $4, '00000000-0000-0000-0000-000000000001', 'manual', 'synced', NOW())
+                "#
+            )
+            .bind(server_id)
+            .bind(&server_name)
+            .bind(json!({"url": mock_url}))
+            .bind(json!({"tools": [{"name": "mock_greeting"}]}))
+            .execute(&pool)
+            .await;
+
+            // 1. Successful verification
+            let req = TestToolRequest {
+                tool_name: "mock_greeting".to_string(),
+                arguments: json!({"name": "Agent"}),
+            };
+            let res = test_tool_execution(axum::extract::State(pool.clone()), axum::extract::Path(server_id), axum::Json(req.clone())).await;
+            assert!(res.is_ok());
+            let (status, axum::Json(test_res)) = res.unwrap();
+            assert_eq!(status, StatusCode::OK);
+            assert!(test_res.success);
+            assert_eq!(test_res.output, Some("Mock hello, Agent!".to_string()));
+
+            // 2. Unknown tool fails fast with 422
+            let unknown_req = TestToolRequest {
+                tool_name: "non_existent".to_string(),
+                arguments: json!({}),
+            };
+            let unk_res = test_tool_execution(axum::extract::State(pool.clone()), axum::extract::Path(server_id), axum::Json(unknown_req)).await;
+            assert!(unk_res.is_err());
+            let (unk_status, unk_msg) = unk_res.unwrap_err();
+            assert_eq!(unk_status, StatusCode::UNPROCESSABLE_ENTITY);
+            assert!(unk_msg.contains("not found in server capabilities"));
+
+            // 3. Unknown server fails with 404
+            let missing_server_id = Uuid::new_v4();
+            let missing_res = test_tool_execution(axum::extract::State(pool.clone()), axum::extract::Path(missing_server_id), axum::Json(req)).await;
+            assert!(missing_res.is_err());
+            let (missing_status, _) = missing_res.unwrap_err();
+            assert_eq!(missing_status, StatusCode::NOT_FOUND);
+
+            // Cleanup
+            let _ = sqlx::query("DELETE FROM tools WHERE id = $1").bind(server_id).execute(&pool).await;
         }
     }
 }
