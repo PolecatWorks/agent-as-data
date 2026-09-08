@@ -242,12 +242,12 @@ jobs:
       - name: Wait for Docker Images
         run: |
           echo "Waiting for backend image $AAD_BE_IMAGE:$AAD_BE_TAG..."
-          for i in {1..60}; do
+          for i in {1..180}; do
             if docker manifest inspect "$AAD_BE_IMAGE:$AAD_BE_TAG" >/dev/null 2>&1; then
               echo "Backend image is available!"
               break
             fi
-            echo "Backend image not available yet. Waiting 10s... ($i/60)"
+            echo "Backend image not available yet. Waiting 10s... ($i/180)"
             sleep 10
           done
           if ! docker manifest inspect "$AAD_BE_IMAGE:$AAD_BE_TAG" >/dev/null 2>&1; then
@@ -256,12 +256,12 @@ jobs:
           fi
 
           echo "Waiting for frontend image $AAD_FE_IMAGE:$AAD_FE_TAG..."
-          for i in {1..60}; do
+          for i in {1..180}; do
             if docker manifest inspect "$AAD_FE_IMAGE:$AAD_FE_TAG" >/dev/null 2>&1; then
               echo "Frontend image is available!"
               break
             fi
-            echo "Frontend image not available yet. Waiting 10s... ($i/60)"
+            echo "Frontend image not available yet. Waiting 10s... ($i/180)"
             sleep 10
           done
           if ! docker manifest inspect "$AAD_FE_IMAGE:$AAD_FE_TAG" >/dev/null 2>&1; then

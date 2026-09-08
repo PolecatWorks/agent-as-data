@@ -26,7 +26,7 @@ jobs:
           image-names: ${{ steps.repo.outputs.repo_name }}-be
           cut-off: 2 weeks ago UTC
           timestamp-to-use: updated_at
-          skip-tags: ^([0-9]+\.[0-9]+\.[0-9]+|main|latest|sha-.+)$
+          skip-tags: ^([0-9]+\.[0-9]+\.[0-9]+|main|latest|sha-.+|buildcache-.+)$
           keep-at-least: 1
           token: ${{ secrets.GITHUB_TOKEN }}
           token-type: github-token
@@ -39,7 +39,7 @@ jobs:
           image-names: ${{ steps.repo.outputs.repo_name }}-fe
           cut-off: 2 weeks ago UTC
           timestamp-to-use: updated_at
-          skip-tags: ^([0-9]+\.[0-9]+\.[0-9]+|main|latest|sha-.+)$
+          skip-tags: ^([0-9]+\.[0-9]+\.[0-9]+|main|latest|sha-.+|buildcache-.+)$
           keep-at-least: 1
           token: ${{ secrets.GITHUB_TOKEN }}
           token-type: github-token
@@ -52,7 +52,7 @@ jobs:
           image-names: ${{ steps.repo.outputs.repo_name }}-mcp
           cut-off: 2 weeks ago UTC
           timestamp-to-use: updated_at
-          skip-tags: ^([0-9]+\.[0-9]+\.[0-9]+|main|latest|sha-.+)$
+          skip-tags: ^([0-9]+\.[0-9]+\.[0-9]+|main|latest|sha-.+|buildcache-.+)$
           keep-at-least: 1
           token: ${{ secrets.GITHUB_TOKEN }}
           token-type: github-token
