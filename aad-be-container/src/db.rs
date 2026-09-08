@@ -14,6 +14,22 @@ pub async fn init_db_pool(database_url: &str, max_connections: u32) -> Result<Pg
 
 /// Pre-flight Fail-Fast check verifying `pgvector` extension is active.
 pub async fn verify_pgvector_extension(pool: &PgPool) -> Result<(), String> {
+    let avail: (bool,) = sqlx::query_as(
+        "SELECT EXISTS (SELECT 1 FROM pg_available_extensions WHERE name = 'vector')"
+    )
+    .fetch_one(pool)
+    .await
+    .map_err(|e| format!("Failed to query PostgreSQL available extensions: {}", e))?;
+
+    if !avail.0 {
+        return Err("Fail-Fast Error: pgvector extension is NOT installed/active in PostgreSQL (extension missing from server)".to_string());
+    }
+
+    sqlx::query("CREATE EXTENSION IF NOT EXISTS vector")
+        .execute(pool)
+        .await
+        .map_err(|e| format!("Failed to enable pgvector extension: {}", e))?;
+
     let row: (bool,) = sqlx::query_as(
         "SELECT EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'vector')"
     )

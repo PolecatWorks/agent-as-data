@@ -55,6 +55,13 @@ name: postgres-test
 description: "Ephemeral PostgreSQL database for integration tests & dev"
 spec:
   manifests:
+    - apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: postgres-test-init
+      data:
+        init.sql: |
+          CREATE EXTENSION IF NOT EXISTS vector;
     - apiVersion: apps/v1
       kind: Deployment
       metadata:
@@ -82,6 +89,13 @@ spec:
                 ports:
                   - containerPort: 5432
                     name: postgres
+                volumeMounts:
+                  - name: init-script
+                    mountPath: /docker-entrypoint-initdb.d
+            volumes:
+              - name: init-script
+                configMap:
+                  name: postgres-test-init
     - apiVersion: v1
       kind: Service
       metadata:
