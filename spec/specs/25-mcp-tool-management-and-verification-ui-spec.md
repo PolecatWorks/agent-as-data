@@ -1,6 +1,6 @@
 # Spec 25: MCP Tool Management & Interactive Verification UI
 
-**Status**: `draft`
+**Status**: `complete`
 
 ---
 

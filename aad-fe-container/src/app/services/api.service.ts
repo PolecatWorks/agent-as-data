@@ -286,6 +286,17 @@ export class ApiService {
     return this.http.get<any[]>(`${this.baseUrl}/agents/tools`);
   }
 
+  syncTool(id: string): Observable<any> {
+    return this.http.post(`${this.baseUrl}/agents/tools/${id}/sync`, {});
+  }
+
+  testTool(id: string, toolName: string, args: any): Observable<any> {
+    return this.http.post(`${this.baseUrl}/agents/tools/${id}/test`, {
+      tool_name: toolName,
+      arguments: args
+    });
+  }
+
   deleteTool(id: string): Observable<any> {
     return this.http.delete(`${this.baseUrl}/agents/tools/${id}`);
   }

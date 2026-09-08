@@ -68,12 +68,20 @@ export class ToolManagerComponent implements OnInit {
   isEditing: boolean = false;
   showDeleteConfirm: boolean = false;
   selectedServer: any | null = null;
+  isSyncing: boolean = false;
+
+  // Tool Verification Console State
+  activeTestTool: any | null = null;
+  testArgsJson: string = '{}';
+  isExecutingTest: boolean = false;
+  testResult: any | null = null;
+  testError: string | null = null;
 
   serverForm: any = {
     server_name: '',
     owner_id: '00000000-0000-0000-0000-000000000000',
-    transport_type: 'sse',
-    url: '',
+    transport_type: 'http',
+    url: 'http://localhost:8082',
     description: '',
     tags: []
   };
@@ -81,26 +89,7 @@ export class ToolManagerComponent implements OnInit {
   newTag: string = '';
   isRegistering: boolean = false;
 
-  registeredServers: any[] = [
-    {
-      id: '00000000-0000-0000-0000-000000000001',
-      server_name: 'github-mcp-server',
-      transport_type: 'sse',
-      url: 'http://localhost:3000/sse',
-      tools_count: 8,
-      last_synced: '2 mins ago',
-      tags: ['github', 'vcs']
-    },
-    {
-      id: '00000000-0000-0000-0000-000000000002',
-      server_name: 'postgres-mcp-server',
-      transport_type: 'stdio',
-      url: 'npx -y @modelcontextprotocol/server-postgres postgresql://localhost/db',
-      tools_count: 5,
-      last_synced: '1 hour ago',
-      tags: ['database', 'sql']
-    }
-  ];
+  registeredServers: any[] = [];
 
   constructor(
     private apiService: ApiService,
@@ -143,6 +132,9 @@ export class ToolManagerComponent implements OnInit {
             url: s.endpoint_config ? s.endpoint_config.url : '',
             tools_count: count,
             last_synced: 'Just now',
+            sync_status: s.sync_status || 'synced',
+            last_sync_error: s.last_sync_error || null,
+            cached_capabilities: s.cached_capabilities || { tools: [] },
             tags: tags,
             description: description,
             owner_id: s.owner_id || '00000000-0000-0000-0000-000000000000'
@@ -213,12 +205,130 @@ export class ToolManagerComponent implements OnInit {
     this.serverForm = {
       server_name: '',
       owner_id: '00000000-0000-0000-0000-000000000000',
-      transport_type: 'sse',
-      url: '',
+      transport_type: 'http',
+      url: 'http://localhost:8082',
       description: '',
       tags: []
     };
     // Removed navigation to avoid flickering when already on the same route.
+  }
+
+  syncServer(): void {
+    if (!this.selectedServer) return;
+    this.isSyncing = true;
+    const id = this.selectedServer.id;
+    this.apiService.syncTool(id).subscribe({
+      next: (res) => {
+        this.isSyncing = false;
+        this.selectedServer.tools_count = res.cached_tools_count;
+        this.selectedServer.sync_status = res.sync_status;
+        this.selectedServer.last_sync_error = res.last_sync_error;
+        this.selectedServer.last_synced = 'Just now';
+
+        const idx = this.registeredServers.findIndex(s => s.id === id);
+        if (idx >= 0) {
+          this.registeredServers[idx].tools_count = res.cached_tools_count;
+          this.registeredServers[idx].sync_status = res.sync_status;
+          this.registeredServers[idx].last_sync_error = res.last_sync_error;
+          this.registeredServers[idx].last_synced = 'Just now';
+        }
+
+        // Re-query tools to get updated full cached_capabilities
+        this.apiService.getTools().subscribe({
+          next: (tools) => {
+            const updated = tools.find(t => t.id === id);
+            if (updated && updated.cached_capabilities) {
+              this.selectedServer.cached_capabilities = updated.cached_capabilities;
+              if (idx >= 0) {
+                this.registeredServers[idx].cached_capabilities = updated.cached_capabilities;
+              }
+            }
+          }
+        });
+
+        this.snackBar.open(
+          res.sync_status === 'synced'
+            ? `Successfully synced ${res.cached_tools_count} tool(s) from ${res.server_name}`
+            : `Sync completed with status '${res.sync_status}': ${res.last_sync_error || 'warning'}`,
+          'Close',
+          { duration: 4000 }
+        );
+      },
+      error: (err) => {
+        this.isSyncing = false;
+        this.snackBar.open(`Sync failed: ${err.message || err}`, 'Close', { duration: 4000 });
+      }
+    });
+  }
+
+  openToolTester(tool: any): void {
+    this.activeTestTool = tool;
+    this.testResult = null;
+    this.testError = null;
+
+    // Generate sample arguments derived from inputSchema
+    const sampleArgs: Record<string, any> = {};
+    if (tool.inputSchema && tool.inputSchema.properties) {
+      for (const [key, prop] of Object.entries<any>(tool.inputSchema.properties)) {
+        if (prop.type === 'string') {
+          sampleArgs[key] = key === 'name' ? 'Antigravity' : (prop.description || 'Sample ' + key);
+        } else if (prop.type === 'number' || prop.type === 'integer') {
+          sampleArgs[key] = 1;
+        } else if (prop.type === 'boolean') {
+          sampleArgs[key] = true;
+        } else if (prop.type === 'object') {
+          sampleArgs[key] = {};
+        } else if (prop.type === 'array') {
+          sampleArgs[key] = [];
+        } else {
+          sampleArgs[key] = '';
+        }
+      }
+    }
+    this.testArgsJson = JSON.stringify(sampleArgs, null, 2);
+  }
+
+  closeToolTester(): void {
+    this.activeTestTool = null;
+    this.testResult = null;
+    this.testError = null;
+  }
+
+  executeToolTest(): void {
+    if (!this.selectedServer || !this.activeTestTool) return;
+    let parsedArgs: any = {};
+    try {
+      parsedArgs = JSON.parse(this.testArgsJson);
+    } catch (e: any) {
+      this.testError = `Invalid JSON arguments: ${e.message}`;
+      return;
+    }
+
+    this.isExecutingTest = true;
+    this.testResult = null;
+    this.testError = null;
+
+    this.apiService.testTool(this.selectedServer.id, this.activeTestTool.name, parsedArgs).subscribe({
+      next: (res) => {
+        this.isExecutingTest = false;
+        this.testResult = res;
+      },
+      error: (err) => {
+        this.isExecutingTest = false;
+        this.testError = err.error?.message || err.error || err.message || 'Execution request failed';
+      }
+    });
+  }
+
+  getToolProperties(tool: any): Array<{ name: string; type: string; description: string; required: boolean }> {
+    if (!tool.inputSchema || !tool.inputSchema.properties) return [];
+    const requiredList = Array.isArray(tool.inputSchema.required) ? tool.inputSchema.required : [];
+    return Object.entries<any>(tool.inputSchema.properties).map(([key, val]) => ({
+      name: key,
+      type: val.type || 'any',
+      description: val.description || '',
+      required: requiredList.includes(key)
+    }));
   }
 
   enableEdit(): void {
