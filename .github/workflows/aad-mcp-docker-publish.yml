@@ -152,8 +152,9 @@ jobs:
           annotations: ${{ steps.meta.outputs.annotations }}
           outputs: type=image,name=${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWERCASE }},push-by-digest=true,name-canonical=true,push=true,oci-mediatypes=true
           cache-from: |
+            type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWERCASE }}:buildcache-${{ env.PLATFORM_PAIR }}
             type=gha,scope=${{ github.repository }}-aad-mcp-main-${{ matrix.platform }}
-          cache-to: type=gha,mode=max,scope=${{ github.repository }}-aad-mcp-main-${{ matrix.platform }}
+          cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWERCASE }}:buildcache-${{ env.PLATFORM_PAIR }},mode=max,image-manifest=true
 
       - name: Export digest
         run: |
