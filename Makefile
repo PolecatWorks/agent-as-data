@@ -15,6 +15,8 @@ aad-mcp_PORT ?= 8082
 aad-mcp_HEALTH_PORT ?= 8078
 aad-fe_PORT ?= 4200
 ROBOT_REPORT_DIR ?= integration-tests/reports
+GHCR_USER ?= bengreen
+GHCR_TOKEN ?= $(shell gh auth token 2>/dev/null)
 
 all: build-be build-mcp build-fe
 
@@ -172,12 +174,12 @@ build-docker: build-be build-mcp build-fe
 
 garden-up:
 	@echo "Logging Helm into GHCR and running Garden deploy..."
-	@echo "$${GHCR_TOKEN}" | helm registry login ghcr.io -u "$${GHCR_USER:-bengreen}" --password-stdin 2>/dev/null || true
-	garden deploy --env local
+	@echo "$${GHCR_TOKEN:-$(GHCR_TOKEN)}" | helm registry login ghcr.io -u "$${GHCR_USER:-$(GHCR_USER)}" --password-stdin 2>/dev/null || true
+	GHCR_TOKEN="$${GHCR_TOKEN:-$(GHCR_TOKEN)}" GHCR_USER="$${GHCR_USER:-$(GHCR_USER)}" garden deploy --env local
 
 garden-test: garden-up
 	@echo "Running Garden tests..."
-	garden test --env local
+	GHCR_TOKEN="$${GHCR_TOKEN:-$(GHCR_TOKEN)}" GHCR_USER="$${GHCR_USER:-$(GHCR_USER)}" garden test --env local
 	@echo "Copying test reports to $(ROBOT_REPORT_DIR)..."
 	@mkdir -p $(ROBOT_REPORT_DIR)
 	@NS="agent-as-data-$${USER:-local}"; \

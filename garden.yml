@@ -5,10 +5,10 @@ name: agent-as-data
 variables:
   pr-number: ${local.env.PR_NUMBER || "local"}
   kube-context: "${local.env.GARDEN_KUBECONTEXT || (local.env.CI == 'true' ? 'local' : 'kubernetes-admin@kubernetes')}"
-  aad-be-image: ${local.env.AAD_BE_IMAGE || "agent-as-data-be"}
-  aad-be-tag: ${local.env.AAD_BE_TAG || "latest"}
-  aad-fe-image: ${local.env.AAD_FE_IMAGE || "agent-as-data-fe"}
-  aad-fe-tag: ${local.env.AAD_FE_TAG || "latest"}
+  aad-be-image: ${local.env.AAD_BE_IMAGE || "ghcr.io/polecatworks/agent-as-data-be"}
+  aad-be-tag: ${local.env.AAD_BE_TAG || "main"}
+  aad-fe-image: ${local.env.AAD_FE_IMAGE || "ghcr.io/polecatworks/agent-as-data-fe"}
+  aad-fe-tag: ${local.env.AAD_FE_TAG || "main"}
 
 providers:
   - name: kubernetes
@@ -41,9 +41,9 @@ spec:
           {
             "auths": {
               "ghcr.io": {
-                "username": "${local.env.GHCR_USER || 'bengreene'}",
+                "username": "${local.env.GHCR_USER || 'bengreen'}",
                 "password": "${local.env.GHCR_TOKEN || ''}",
-                "auth": "${base64Encode((local.env.GHCR_USER || 'bengreene') + ':' + (local.env.GHCR_TOKEN || ''))}"
+                "auth": "${base64Encode((local.env.GHCR_USER || 'bengreen') + ':' + (local.env.GHCR_TOKEN || ''))}"
               }
             }
           }
@@ -116,14 +116,17 @@ description: "Deploy Agent-As-Data Rust backend service"
 dependencies:
   - deploy.postgres-test
   - deploy.ghcr-external-secret
+  - build.get-be-sha
 source:
   path: charts/agent-as-data
+include:
+  - "**/*"
 spec:
   values:
     image:
-      repository: ${var.aad-be-image}
-      tag: ${var.aad-be-tag}
-      pullPolicy: IfNotPresent
+      repository: '${local.env.AAD_BE_IMAGE != null ? local.env.AAD_BE_IMAGE : actions.build.get-be-sha.outputs.image}'
+      tag: '${local.env.AAD_BE_TAG != null ? local.env.AAD_BE_TAG : actions.build.get-be-sha.outputs.tag}'
+      pullPolicy: '${local.env.AAD_BE_IMAGE != null ? "IfNotPresent" : "Always"}'
     imagePullSecrets:
       - name: ghcr-secret
     config:
@@ -138,6 +141,7 @@ name: agent-as-data-fe
 description: "Deploy Agent-As-Data Angular frontend service"
 dependencies:
   - deploy.ghcr-external-secret
+  - build.get-fe-sha
 spec:
   manifests:
     - apiVersion: apps/v1
@@ -158,8 +162,8 @@ spec:
               - name: ghcr-secret
             containers:
               - name: fe
-                image: "${var.aad-fe-image}:${var.aad-fe-tag}"
-                imagePullPolicy: IfNotPresent
+                image: '${local.env.AAD_FE_IMAGE != null ? local.env.AAD_FE_IMAGE : actions.build.get-fe-sha.outputs.image}:${local.env.AAD_FE_TAG != null ? local.env.AAD_FE_TAG : actions.build.get-fe-sha.outputs.tag}'
+                imagePullPolicy: '${local.env.AAD_FE_IMAGE != null ? "IfNotPresent" : "Always"}'
                 ports:
                   - containerPort: 80
                     name: http
@@ -174,4 +178,60 @@ spec:
             name: http
         selector:
           app: agent-as-data-fe
+
+---
+kind: Build
+type: exec
+name: get-be-sha
+description: "Get git commit SHA and image repo for backend files"
+buildAtSource: true
+spec:
+  command:
+    - "/bin/bash"
+    - "-c"
+    - |
+      BACKEND_SHA=$(git log -1 --format=%H -- aad-be-container/ .github/workflows/aad-be-docker-publish.yml)
+      MAIN_SHA=$(git log -1 --format=%H origin/main -- aad-be-container/ .github/workflows/aad-be-docker-publish.yml 2>/dev/null || echo "")
+      HAS_UNCOMMITTED=$(git status --porcelain -- aad-be-container/ .github/workflows/aad-be-docker-publish.yml)
+      IMAGE="ghcr.io/polecatworks/agent-as-data-be"
+      if { [ -n "$HAS_UNCOMMITTED" ] || [ "$BACKEND_SHA" != "$MAIN_SHA" ]; } && [ -n "$BACKEND_SHA" ] && docker manifest inspect "$IMAGE:sha-$BACKEND_SHA" >/dev/null 2>&1; then
+        TAG="sha-$BACKEND_SHA"
+      else
+        TAG="main"
+      fi
+      if [ -n "$GARDEN_ACTION_OUTPUTS_JSON_PATH" ]; then
+        echo "{\"image\": \"$IMAGE\", \"tag\": \"$TAG\"}" > "$GARDEN_ACTION_OUTPUTS_JSON_PATH"
+      elif [ -n "$GARDEN_ACTION_JSON_OUTPUTS_PATH" ]; then
+        echo "{\"image\": \"$IMAGE\", \"tag\": \"$TAG\"}" > "$GARDEN_ACTION_JSON_OUTPUTS_PATH"
+      else
+        echo "Outputs path not defined by Garden, skipping writing outputs file"
+      fi
+
+---
+kind: Build
+type: exec
+name: get-fe-sha
+description: "Get git commit SHA and image repo for frontend files"
+buildAtSource: true
+spec:
+  command:
+    - "/bin/bash"
+    - "-c"
+    - |
+      FRONTEND_SHA=$(git log -1 --format=%H -- aad-fe-container/ .github/workflows/aad-fe-docker-publish.yml)
+      MAIN_SHA=$(git log -1 --format=%H origin/main -- aad-fe-container/ .github/workflows/aad-fe-docker-publish.yml 2>/dev/null || echo "")
+      HAS_UNCOMMITTED=$(git status --porcelain -- aad-fe-container/ .github/workflows/aad-fe-docker-publish.yml)
+      IMAGE="ghcr.io/polecatworks/agent-as-data-fe"
+      if { [ -n "$HAS_UNCOMMITTED" ] || [ "$FRONTEND_SHA" != "$MAIN_SHA" ]; } && [ -n "$FRONTEND_SHA" ] && docker manifest inspect "$IMAGE:sha-$FRONTEND_SHA" >/dev/null 2>&1; then
+        TAG="sha-$FRONTEND_SHA"
+      else
+        TAG="main"
+      fi
+      if [ -n "$GARDEN_ACTION_OUTPUTS_JSON_PATH" ]; then
+        echo "{\"image\": \"$IMAGE\", \"tag\": \"$TAG\"}" > "$GARDEN_ACTION_OUTPUTS_JSON_PATH"
+      elif [ -n "$GARDEN_ACTION_JSON_OUTPUTS_PATH" ]; then
+        echo "{\"image\": \"$IMAGE\", \"tag\": \"$TAG\"}" > "$GARDEN_ACTION_JSON_OUTPUTS_PATH"
+      else
+        echo "Outputs path not defined by Garden, skipping writing outputs file"
+      fi
 

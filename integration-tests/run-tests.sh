@@ -29,9 +29,10 @@ BE_POD_IP=$(kubectl get pods -l app=agent-as-data -n $NS -o jsonpath='{.items[0]
 echo "Backend Pod IP: $BE_POD_IP"
 
 # Create target directory and copy tests
-kubectl exec $POD_NAME -n $NS -- rm -rf /tmp/robot-tests /tmp/reports
+kubectl exec $POD_NAME -n $NS -- rm -rf /tmp/robot-tests /tmp/reports /tmp/lib
 kubectl exec $POD_NAME -n $NS -- mkdir -p /tmp/robot-tests /tmp/reports
 kubectl cp ./integration-tests/tests $POD_NAME:/tmp/robot-tests -n $NS
+kubectl cp ./integration-tests/lib $POD_NAME:/tmp/robot-tests/lib -n $NS
 kubectl cp ./integration-tests/lib $POD_NAME:/tmp/lib -n $NS
 
 # Execute tests
@@ -41,10 +42,10 @@ kubectl exec $POD_NAME -n $NS -- /bin/bash -c "
   cd /tmp
   export PATH=\$PATH:/home/pwuser/.local/bin:/home/pwuser/.venv/bin
 
-  BE_BASE_URL=\"http://agent-as-data:8080\"
+  BE_BASE_URL=\"http://agent-as-data-be:8080\"
   FE_BASE_URL=\"http://agent-as-data-fe:80\"
 
-  robot --variable BE_POD_IP:$BE_POD_IP --variable BE_BASE_URL:\$BE_BASE_URL --variable FE_BASE_URL:\$FE_BASE_URL --loglevel DEBUG -d /tmp/reports /tmp/robot-tests
+  robot --pythonpath /tmp/robot-tests/lib --pythonpath /tmp/lib --variable BE_POD_IP:$BE_POD_IP --variable BE_BASE_URL:\$BE_BASE_URL --variable FE_BASE_URL:\$FE_BASE_URL --loglevel DEBUG -d /tmp/reports /tmp/robot-tests
 " || TEST_EXIT_CODE=$?
 
 # Pull reports back
