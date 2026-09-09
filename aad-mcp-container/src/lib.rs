@@ -8,7 +8,7 @@ pub mod hams_tools;
 pub mod metrics;
 pub mod state;
 pub mod tokio_tools;
-pub mod tools;
+pub mod server;
 pub mod webserver;
 
 pub use state::AppState;
@@ -26,7 +26,7 @@ use axum_prometheus::metrics_exporter_prometheus::PrometheusBuilder;
 use crate::config::AppConfig;
 use crate::hams_tools::HamsHarness;
 use crate::metrics::{prometheus_response_free, prometheus_response_mystate};
-use crate::tools::AadMcpServer;
+use crate::server::AadMcpServer;
 use crate::webserver::start_webserver;
 
 /// Main application service orchestrator.
