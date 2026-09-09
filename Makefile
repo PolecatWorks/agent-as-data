@@ -198,3 +198,11 @@ robot-test:
 
 seed-data:
 	./integration-tests/run-tests-local.sh tests/test_seed_exemplar_data.robot
+
+apply-sample-agents:
+	@echo "Applying sample agents and skills..."
+	@for file in sample-agents/*.yaml; do \
+		echo "Applying $$file"; \
+		cd aad-be-container && cargo run -- ctl apply --file ../$$file; \
+		cd ..; \
+	done

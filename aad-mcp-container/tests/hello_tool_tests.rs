@@ -1,4 +1,4 @@
-use aad_mcp_container::tools::hello::{AadMcpServer, HelloRequest};
+use aad_mcp_container::server::{AadMcpServer, HelloRequest};
 use rmcp::handler::server::wrapper::Parameters;
 
 #[test]
@@ -65,8 +65,8 @@ fn test_hello_tool_whitespace_only_error() {
 async fn test_hello_tool_list_and_call() {
     let server = AadMcpServer::new();
     let tools = server.list_tools();
-    assert_eq!(tools.len(), 1);
-    assert_eq!(tools[0].name, "hello");
+    assert_eq!(tools.len(), 6);
+    assert!(tools.iter().any(|t| t.name == "hello"));
 
     let call_res = server.call_tool("hello", serde_json::json!({ "name": "Antigravity" })).await;
     assert!(call_res.is_ok());

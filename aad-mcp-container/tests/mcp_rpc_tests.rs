@@ -5,7 +5,7 @@ use tokio_util::sync::CancellationToken;
 
 use aad_mcp_container::config::{AppConfig, DebuggingConfig, WebServiceConfig};
 use aad_mcp_container::state::AppState;
-use aad_mcp_container::tools::AadMcpServer;
+use aad_mcp_container::server::AadMcpServer;
 use aad_mcp_container::webserver::create_app;
 
 #[tokio::test]
@@ -105,10 +105,10 @@ async fn test_http_json_rpc_end_to_end() -> anyhow::Result<()> {
     let list_body: serde_json::Value = list_resp.json().await?;
     assert_eq!(list_body["id"], 3);
     let tools = list_body["result"]["tools"].as_array().expect("tools array");
-    assert_eq!(tools.len(), 1);
-    assert_eq!(tools[0]["name"], "hello");
-    assert!(tools[0]["description"].as_str().unwrap().contains("greeting"));
-    assert!(tools[0]["inputSchema"]["properties"]["name"].is_object());
+    assert_eq!(tools.len(), 6);
+    let hello_tool = tools.iter().find(|t| t["name"] == "hello").unwrap();
+    assert!(hello_tool["description"].as_str().unwrap().contains("greeting"));
+    assert!(hello_tool["inputSchema"]["properties"]["name"].is_object());
 
     // 5. Tools call success
     let call_payload = json!({
