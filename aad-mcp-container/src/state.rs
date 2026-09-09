@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use axum_prometheus::metrics_exporter_prometheus::PrometheusHandle;
 use crate::config::AppConfig;
-use crate::tools::AadMcpServer;
+use crate::server::AadMcpServer;
 
 #[derive(Clone)]
 pub struct AppState {
