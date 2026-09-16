@@ -35,10 +35,10 @@ spec:
           {{- end }}
           ports:
             - name: http
-              containerPort: {{ .Values.service.port | default 8080 }}
+              containerPort: {{ .Values.container.port }}
               protocol: TCP
             - name: hams
-              containerPort: {{ .Values.service.hamsPort | default 8079 }}
+              containerPort: {{ .Values.container.hamsPort }}
               protocol: TCP
           livenessProbe:
             httpGet:

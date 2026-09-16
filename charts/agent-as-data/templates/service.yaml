@@ -11,7 +11,7 @@ spec:
       targetPort: http
       protocol: TCP
       name: http
-    - port: {{ .Values.service.hamsPort | default 8079 }}
+    - port: {{ .Values.service.hamsPort }}
       targetPort: hams
       protocol: TCP
       name: hams
