@@ -6,6 +6,10 @@ image:
   pullPolicy: IfNotPresent
   tag: "latest"
 
+container:
+  port: 8080
+  hamsPort: 8079
+
 service:
   type: ClusterIP
   port: 80
