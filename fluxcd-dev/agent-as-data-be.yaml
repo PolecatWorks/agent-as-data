@@ -28,9 +28,9 @@ spec:
       retries: 3
   values:
     podAnnotations:
+      prometheus.io/path: /hams/metrics
+      prometheus.io/port: "8079"
       prometheus.io/scrape: "true"
-      prometheus.io/port: "15020"
-      prometheus.io/path: "/stats/prometheus"
     image:
       repository: ghcr.io/polecatworks/agent-as-data-be
       tag: main
