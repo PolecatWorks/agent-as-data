@@ -44,7 +44,7 @@ spec:
         address: "0.0.0.0:8080"
         api_prefix: "/api"
       llm:
-        ollama_url: "http://ollama.k8s:80"
+        ollama_url: "http://ollama.ollama:11434"
         model: "qwen2.5-coder:14b"
         timeout_secs: 180
       debugging:
