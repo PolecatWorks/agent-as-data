@@ -64,13 +64,26 @@ pub fn init_startup_metrics(name: &str, version: &str) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use axum_prometheus::metrics_exporter_prometheus::PrometheusBuilder;
+    use std::sync::OnceLock;
+    use axum_prometheus::metrics_exporter_prometheus::{PrometheusBuilder, PrometheusHandle};
+
+    static TEST_RECORDER_HANDLE: OnceLock<PrometheusHandle> = OnceLock::new();
+
+    fn get_test_handle() -> PrometheusHandle {
+        TEST_RECORDER_HANDLE
+            .get_or_init(|| {
+                PrometheusBuilder::new()
+                    .install_recorder()
+                    .unwrap_or_else(|_| {
+                        PrometheusBuilder::new().build_recorder().handle()
+                    })
+            })
+            .clone()
+    }
 
     #[test]
     fn test_init_startup_metrics() {
-        let handle = PrometheusBuilder::new().install_recorder().unwrap_or_else(|_| {
-            PrometheusBuilder::new().build_recorder().handle()
-        });
+        let handle = get_test_handle();
 
         init_startup_metrics("aad-mcp", "0.1.0");
 
