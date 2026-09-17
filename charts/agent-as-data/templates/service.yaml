@@ -4,7 +4,6 @@ metadata:
   name: {{ include "agent-as-data.fullname" . }}
   labels:
     {{- include "agent-as-data.labels" . | nindent 4 }}
-
 spec:
   type: {{ .Values.service.type }}
   ports:
