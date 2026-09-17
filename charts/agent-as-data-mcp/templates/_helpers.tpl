@@ -49,3 +49,25 @@ Create a default fully qualified app name.
 {{- define "agent-as-data-mcp.env" -}}
 {{- tpl (toYaml .Values.env) . }}
 {{- end -}}
+
+{{/*
+Common labels
+*/}}
+{{- define "agent-as-data-mcp.labels" -}}
+helm.sh/chart: {{ include "agent-as-data-mcp.chart" . }}
+{{ include "agent-as-data-mcp.selectorLabels" . }}
+{{- if .Chart.AppVersion }}
+app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
+{{- end }}
+app.kubernetes.io/managed-by: {{ .Release.Service }}
+{{- end }}
+
+{{/*
+Selector labels
+*/}}
+{{- define "agent-as-data-mcp.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "agent-as-data-mcp.name" . }}
+app.kubernetes.io/instance: {{ .Release.Name }}
+{{- end }}
+
+

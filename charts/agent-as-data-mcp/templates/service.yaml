@@ -3,7 +3,7 @@ kind: Service
 metadata:
   name: {{ include "agent-as-data-mcp.fullname" . }}
   labels:
-    app: {{ include "agent-as-data-mcp.name" . }}
+    {{- include "agent-as-data-mcp.labels" . | nindent 4 }}
 spec:
   type: {{ .Values.service.type }}
   ports:
