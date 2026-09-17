@@ -95,6 +95,7 @@ pub async fn service_main(
         pool,
         config: config.clone(),
         prometheus_handle: Arc::new(metric_handle),
+        tokio_handle: tokio::runtime::Handle::current(),
     };
 
     // HaMS Prometheus Registration

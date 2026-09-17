@@ -30,7 +30,7 @@ async fn test_http_json_rpc_end_to_end() -> anyhow::Result<()> {
         PrometheusBuilder::new().build_recorder().handle()
     });
 
-    let state = AppState::new(config, AadMcpServer::new(), Arc::new(recorder));
+    let state = AppState::new(config, AadMcpServer::new(), Arc::new(recorder), tokio::runtime::Handle::current());
     let app = create_app(state, ct.clone());
 
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await?;

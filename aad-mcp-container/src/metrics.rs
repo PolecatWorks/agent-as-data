@@ -17,7 +17,26 @@ use crate::state::AppState;
 pub extern "C" fn prometheus_response_mystate(ptr: *const c_void) -> *mut c_char {
     let state = unsafe { &*(ptr as *const AppState) };
 
-    let axum_string = state.prometheus_handle.render();
+    let mut axum_string = state.prometheus_handle.render();
+
+    let handle = &state.tokio_handle;
+    let metrics = handle.metrics();
+    axum_string.push_str("\n# HELP tokio_workers_count Number of worker threads\n");
+    axum_string.push_str("# TYPE tokio_workers_count gauge\n");
+    axum_string.push_str(&format!("tokio_workers_count {}\n", metrics.num_workers()));
+
+    axum_string.push_str("# HELP tokio_alive_tasks Number of alive tasks\n");
+    axum_string.push_str("# TYPE tokio_alive_tasks gauge\n");
+    axum_string.push_str(&format!("tokio_alive_tasks {}\n", metrics.num_alive_tasks()));
+
+    axum_string.push_str("# HELP tokio_blocking_threads Number of blocking threads\n");
+    axum_string.push_str("# TYPE tokio_blocking_threads gauge\n");
+    axum_string.push_str(&format!("tokio_blocking_threads {}\n", metrics.num_blocking_threads()));
+
+    axum_string.push_str("# HELP tokio_idle_blocking_threads Number of idle blocking threads\n");
+    axum_string.push_str("# TYPE tokio_idle_blocking_threads gauge\n");
+    axum_string.push_str(&format!("tokio_idle_blocking_threads {}\n", metrics.num_idle_blocking_threads()));
+
     let buffer = axum_string.into_bytes();
 
     let prometheus = String::from_utf8(buffer).unwrap_or_default();

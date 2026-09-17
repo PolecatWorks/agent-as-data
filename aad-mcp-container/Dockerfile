@@ -19,7 +19,7 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
 # Grab dependencies into target
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/usr/local/cargo/git \
-    cargo chef cook --recipe-path recipe.json
+    RUSTFLAGS="--cfg tokio_unstable" cargo chef cook --recipe-path recipe.json
 # This enables us to keep /app/target inside the container when we mount /app from host
 VOLUME /app/target
 # So we hold the daemon mode of docker run
@@ -29,16 +29,16 @@ FROM buildcache AS buildcacherelease
 # Build dependencies - this is the caching Docker layer!
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/usr/local/cargo/git \
-    cargo chef cook --release --recipe-path recipe.json
+    RUSTFLAGS="--cfg tokio_unstable" cargo chef cook --release --recipe-path recipe.json
 
 FROM buildcacherelease AS build
 COPY . .
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/usr/local/cargo/git \
-    cargo test -- --test-threads=1
+    RUSTFLAGS="--cfg tokio_unstable" cargo test -- --test-threads=1
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/usr/local/cargo/git \
-    cargo build --release
+    RUSTFLAGS="--cfg tokio_unstable" cargo build --release
 
 # We do not need the Rust toolchain to run the binary!
 FROM debian:bookworm-slim AS runtime
