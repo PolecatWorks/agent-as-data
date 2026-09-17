@@ -3,7 +3,8 @@ kind: Service
 metadata:
   name: {{ include "agent-as-data.fullname" . }}
   labels:
-    app: {{ include "agent-as-data.name" . }}
+    {{- include "agent-as-data.labels" . | nindent 4 }}
+
 spec:
   type: {{ .Values.service.type }}
   ports:
