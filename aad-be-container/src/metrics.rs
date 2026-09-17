@@ -65,17 +65,28 @@ pub fn init_startup_metrics(name: &str, version: &str) {
 mod tests {
     use super::*;
     use std::ffi::CStr;
-    use std::sync::Arc;
-    use axum_prometheus::metrics_exporter_prometheus::PrometheusBuilder;
+    use std::sync::{Arc, OnceLock};
+    use axum_prometheus::metrics_exporter_prometheus::{PrometheusBuilder, PrometheusHandle};
     use crate::config::AppConfig;
     use sqlx::postgres::PgPoolOptions;
 
+    static TEST_RECORDER_HANDLE: OnceLock<PrometheusHandle> = OnceLock::new();
+
+    fn get_test_handle() -> PrometheusHandle {
+        TEST_RECORDER_HANDLE
+            .get_or_init(|| {
+                PrometheusBuilder::new()
+                    .install_recorder()
+                    .unwrap_or_else(|_| {
+                        PrometheusBuilder::new().build_recorder().handle()
+                    })
+            })
+            .clone()
+    }
+
     #[tokio::test]
     async fn test_prometheus_response_mystate_and_free() {
-        let handle = PrometheusBuilder::new().install_recorder().unwrap_or_else(|_| {
-            // If already installed in this process, builder error is ignored
-            PrometheusBuilder::new().build_recorder().handle()
-        });
+        let handle = get_test_handle();
 
         let config = AppConfig {
             debugging: crate::config::DebuggingConfig {
@@ -127,9 +138,7 @@ mod tests {
 
     #[test]
     fn test_init_startup_metrics() {
-        let handle = PrometheusBuilder::new().install_recorder().unwrap_or_else(|_| {
-            PrometheusBuilder::new().build_recorder().handle()
-        });
+        let handle = get_test_handle();
 
         init_startup_metrics("aad-be", "0.1.0");
 
