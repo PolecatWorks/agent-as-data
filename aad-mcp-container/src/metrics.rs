@@ -42,3 +42,42 @@ pub extern "C" fn prometheus_response_free(ptr: *mut c_char) {
         let _ = CString::from_raw(ptr);
     };
 }
+
+/// Initializes baseline application telemetry and registers initial static gauge metrics.
+///
+/// Guarantees that `/hams/metrics` immediately yields valid, non-empty Prometheus
+/// exposition output upon container startup before any inbound API traffic is received.
+pub fn init_startup_metrics(name: &str, version: &str) {
+    metrics::describe_gauge!(
+        "app_info",
+        metrics::Unit::Count,
+        "Application build and runtime metadata"
+    );
+    metrics::gauge!(
+        "app_info",
+        "name" => name.to_string(),
+        "version" => version.to_string()
+    )
+    .set(1.0);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use axum_prometheus::metrics_exporter_prometheus::PrometheusBuilder;
+
+    #[test]
+    fn test_init_startup_metrics() {
+        let handle = PrometheusBuilder::new().install_recorder().unwrap_or_else(|_| {
+            PrometheusBuilder::new().build_recorder().handle()
+        });
+
+        init_startup_metrics("aad-mcp", "0.1.0");
+
+        let rendered = handle.render();
+        assert!(!rendered.is_empty(), "Rendered metrics should not be empty after startup initialization");
+        assert!(rendered.contains("app_info"), "Rendered metrics should include app_info");
+        assert!(rendered.contains("aad-mcp"), "Rendered metrics should include application name");
+        assert!(rendered.contains("0.1.0"), "Rendered metrics should include version");
+    }
+}

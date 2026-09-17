@@ -16,6 +16,7 @@ dependencies = [
  "http-body-util",
  "humantime-serde",
  "log",
+ "metrics",
  "prometheus",
  "reqwest",
  "rmcp",
