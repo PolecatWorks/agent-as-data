@@ -16,7 +16,6 @@ pub use state::AppState;
 pub const NAME: &str = env!("CARGO_PKG_NAME");
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
-use std::ffi::c_void;
 use std::path::Path;
 use std::sync::Arc;
 use tracing::info;
@@ -25,7 +24,7 @@ use axum_prometheus::metrics_exporter_prometheus::PrometheusBuilder;
 
 use crate::config::AppConfig;
 use crate::hams_tools::HamsHarness;
-use crate::metrics::{prometheus_response_free, prometheus_response_mystate};
+use crate::metrics::init_startup_metrics;
 use crate::server::AadMcpServer;
 use crate::webserver::start_webserver;
 
@@ -56,6 +55,9 @@ pub async fn service_main(
         .install_recorder()
         .map_err(|e| format!("Failed to install Prometheus recorder: {e}"))?;
 
+    // Initialize baseline startup telemetry (guarantees non-empty /hams/metrics)
+    init_startup_metrics(NAME, VERSION);
+
     let ct = tokio_util::sync::CancellationToken::new();
 
     // 3. Initialize HaMS Health Monitoring Sidecar & ProbeManual readiness signal
@@ -79,11 +81,10 @@ pub async fn service_main(
     );
 
     // HaMS Prometheus Registration
-    hams_harness.hams.register_prometheus(
-        prometheus_response_mystate,
-        prometheus_response_free,
-        &app_state as *const _ as *const c_void,
-    ).map_err(|e| format!("Failed to register Prometheus with HaMS: {e}"))?;
+    let handle_clone = Arc::clone(&app_state.prometheus_handle);
+    hams_harness.hams.register_prometheus_closure(move || {
+        handle_clone.render()
+    }).map_err(|e| format!("Failed to register Prometheus closure with HaMS: {e}"))?;
 
     // 5. Start Axum MCP Webservice
     let res = start_webserver(app_state, &config.webservice, ct).await;

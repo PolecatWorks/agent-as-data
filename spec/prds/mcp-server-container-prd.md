@@ -19,7 +19,8 @@ As a baseline milestone, the container build packages an operational MCP server 
 2. **Architectural Parity with Backend Microservice**:
    - **CLI Entrypoint (`clap`)**: Structured command parsing with `--config-path`, `--secrets-dir`, and subcommands (`serve`, `version`).
    - **Centralized Config & Secret Loading**: Hierarchical loading via `Figment` (YAML configuration + `AAD_MCP__*` environment variable overrides + secret directory file provider) with fail-fast validation and configurable `fail_debug_delay`.
-   - **HaMS Health Monitoring Sidecar**: Integrate the `hams` crate to serve liveness (`/hams/alive`), readiness (`/hams/ready`), and Prometheus metrics (`/hams/metrics`) on a dedicated health port (`8079`).
+   - **HaMS Health Monitoring Sidecar & Prometheus Telemetry**: Integrate the `hams` crate to serve liveness (`/hams/alive`), readiness (`/hams/ready`), and Prometheus metrics (`/hams/metrics`) on a dedicated health port (`8079`).
+   - **Startup Metrics Initialization & HTTP Instrumentation**: Instrument incoming MCP HTTP JSON-RPC transport requests via `axum-prometheus` (`PrometheusMetricLayer`), and immediately register baseline startup metrics (`app_info{name="agent-as-data-mcp", version="..."} = 1.0`) upon Prometheus recorder installation. Guarantees that `/hams/metrics` immediately serves non-empty Prometheus exposition payloads upon container readiness and passes merged telemetry to Istio Envoy sidecars.
    - **Tokio Runtime & Graceful Shutdown**: Structured initialization via `tokio_tools::run_in_tokio` and graceful termination coordinated through `tokio_util::sync::CancellationToken`.
 3. **Dedicated Helm Chart (`charts/agent-as-data-mcp`)**:
    - Copied and adapted from `charts/agent-as-data` to provide native Kubernetes deployment manifests (`Deployment`, `Service`, `ConfigMap`, `_helpers.tpl`).

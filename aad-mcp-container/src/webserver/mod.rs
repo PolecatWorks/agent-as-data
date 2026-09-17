@@ -5,6 +5,7 @@ use axum::{
     routing::{get, post},
     Json, Router,
 };
+use axum_prometheus::PrometheusMetricLayer;
 use serde_json::Value;
 use std::net::SocketAddr;
 use tokio_util::sync::CancellationToken;
@@ -18,6 +19,7 @@ use crate::state::AppState;
 pub mod rpc;
 
 pub fn create_app(state: AppState, _ct: CancellationToken) -> Router {
+    let metric_layer = PrometheusMetricLayer::new();
     let cors = CorsLayer::new()
         .allow_origin(Any)
         .allow_methods(Any)
@@ -31,6 +33,7 @@ pub fn create_app(state: AppState, _ct: CancellationToken) -> Router {
         .route("/mcp", post(handle_http_rpc))
         .route("/", post(handle_http_rpc))
         .route("/healthz", get(|| async { "ok" }))
+        .layer(metric_layer)
         .layer(TraceLayer::new_for_http())
         .layer(cors)
         .with_state(state)

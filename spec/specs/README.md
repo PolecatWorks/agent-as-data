@@ -122,17 +122,23 @@ flowchart TD
         Spec25["25-mcp-tool-management-and-verification-ui-spec.md<br/>(MCP Tool Management & Verification UI)"]:::complete
     end
 
+    subgraph Phase11 ["Phase 11: Production Observability & Startup Telemetry"]
+        Spec26["26-startup-metrics-initialization-spec.md<br/>(Startup Metrics & Telemetry)"]:::complete
+    end
+
     Spec20 --> Spec21
     Spec21 --> Spec22
     Spec09 --> Spec23
     Spec23 --> Spec24
     Spec24 --> Spec25
+    Spec09 --> Spec26
+    Spec23 --> Spec26
 ```
 
 ## Index of Task Specifications
 
 | Phase / Scope | Specification Document | Status | Category / Scope | Primary PRD Reference | Dependencies & Role |
-| :---: | :--- | :---: | :--- | :--- | :--- |
+| :---: | :--- | :--- | :--- | :--- | :--- |
 | **Reference** | [agent-schema-spec.md](./agent-schema-spec.md) | `draft` | Consolidated Schema DDL Reference, Indices, & REST/MCP Payload Specifications | [Master PRD](../prds/agent-as-data-prd.md) | **Cross-Cutting Spec**: Source of truth for database DDL tables and JSON payloads across Phases 1-4 |
 | **Reference** | [user-journeys-spec.md](./user-journeys-spec.md) | `draft` | Sequence Diagrams & End-to-End User Journeys (Knowledge, RAG, MCP, Compiler) | [Master PRD](../prds/agent-as-data-prd.md) | **Cross-Cutting Spec**: E2E integration test criteria and sequence flows validating Phases 2-4 |
 | **Phase 1** | [01-core-storage-spec.md](./01-core-storage-spec.md) | `complete` | Database DDL Tables, Extension Init (`pgvector`), `sqlx` Migrations, & Seed Engine | [Master PRD](../prds/agent-as-data-prd.md) | Root Phase 1 Spec (Informed by `agent-schema-spec.md`) |
@@ -160,8 +166,6 @@ flowchart TD
 | **Phase 9** | [23-mcp-server-container-spec.md](./23-mcp-server-container-spec.md) | `complete` | Dedicated MCP Server Container (`aad-mcp-container`), Helm Chart (`charts/agent-as-data-mcp`), Backend Config Parity & `hello` Tool | [MCP Server Container PRD](../prds/mcp-server-container-prd.md) | Phase 9 Spec (Depends on Spec 09) |
 | **Phase 10** | [24-mcp-tool-ingestion-and-sync-spec.md](./24-mcp-tool-ingestion-and-sync-spec.md) | `complete` | Remote MCP Tool Ingestion, Handshake, Schema Discovery (`tools/list`), On-Demand / Webhook Sync & Execution Bridge | [Agent Registry PRD](../prds/agent-registry-execution-prd.md) | Phase 10 Spec (Depends on Spec 23) |
 | **Phase 10** | [25-mcp-tool-management-and-verification-ui-spec.md](./25-mcp-tool-management-and-verification-ui-spec.md) | `complete` | HTTP Transport Selection, "Sync Now" Refresh, Discovered Tools Schema Inspector & In-Browser Interactive Tool Verification Console | [Agent UI PRD](../prds/agent-ui-testing-kit-prd.md) | Phase 10 Spec (Depends on Spec 24) |
-
-
-
+| **Phase 11** | [26-startup-metrics-initialization-spec.md](./26-startup-metrics-initialization-spec.md) | `complete` | Baseline Startup Metrics Initialization (`app_info`), Safe HaMS Closure Registration & MCP HTTP Telemetry Layer | [Master PRD](../prds/agent-as-data-prd.md), [MCP PRD](../prds/mcp-server-container-prd.md) | Phase 11 Spec (Depends on Spec 09 & Spec 23) |
 
 - [CLI Manifest Tool Spec](./cli-manifest-tool-spec.md)

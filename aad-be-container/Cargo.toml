@@ -26,6 +26,7 @@ tokio-util = "^0.7"
 chrono = { version = "^0.4", features = ["serde"] }
 humantime-serde = "^1.1"
 axum-prometheus = "^0.10"
+metrics = "^0.24"
 prometheus = "^0.14"
 
 hams = { git = "https://github.com/PolecatWorks/hams.git" }
