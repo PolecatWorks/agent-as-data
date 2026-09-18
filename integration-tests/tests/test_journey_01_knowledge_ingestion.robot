@@ -5,6 +5,7 @@ Library          Collections
 Library          String
 
 *** Variables ***
+${NODE_ID}    ${EMPTY}
 ${BE_BASE_URL}    http://localhost:8080
 
 *** Test Cases ***
@@ -44,6 +45,5 @@ Journey 1 Knowledge Ingestion
 *** Keywords ***
 Cleanup Ingested Knowledge
     [Documentation]    Clean up the ingested knowledge
-    # TODO: Backend currently lacks a knowledge deletion endpoint.
-    Log    Backend currently lacks a knowledge deletion endpoint.
-    # Log    Cleaned up knowledge ${NODE_ID}
+    Run Keyword And Ignore Error    Delete Knowledge    ${NODE_ID}
+    Log    Cleaned up knowledge ${NODE_ID}

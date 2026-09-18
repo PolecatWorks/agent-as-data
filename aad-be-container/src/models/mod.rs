@@ -8,6 +8,7 @@ pub mod thread;
 pub mod execution;
 pub mod bench;
 pub mod run;
+pub mod analytics;
 
 pub use common::*;
 pub use agent::*;
@@ -19,3 +20,4 @@ pub use thread::*;
 pub use execution::*;
 pub use bench::*;
 pub use run::*;
+pub use analytics::*;

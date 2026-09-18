@@ -1,8 +1,8 @@
 use axum::{
     Json,
-    extract::State,
+    extract::{State, Path},
     http::StatusCode,
-    routing::post,
+    routing::{post, delete},
     Router,
 };
 use sqlx::{PgPool, Row};
@@ -21,6 +21,7 @@ pub fn router() -> Router<AppState> {
         .route("/", post(ingest_knowledge))
         .route("/search", post(search_knowledge))
         .route("/graph/traverse", post(traverse_graph))
+        .route("/:id", delete(delete_knowledge))
 }
 
 pub fn chunk_text(text: &str, chunk_size: usize) -> Vec<String> {
@@ -36,6 +37,8 @@ pub async fn ingest_knowledge(
     Json(payload): Json<IngestKnowledgeRequest>,
 ) -> Result<(StatusCode, Json<IngestKnowledgeResponse>), (StatusCode, String)> {
     let node_id = Uuid::new_v4();
+    metrics::counter!("knowledge_ingestion_total").increment(1);
+
     tracing::info!("Ingesting/Saving knowledge node '{:?}' (topic: '{}', ID: {})", payload.title, payload.topic, node_id);
     let metadata = payload.metadata.unwrap_or_else(|| serde_json::json!({}));
 
@@ -177,6 +180,26 @@ pub async fn traverse_graph(
         .collect();
 
     Ok(Json(results))
+}
+
+
+pub async fn delete_knowledge(
+    State(pool): State<PgPool>,
+    Path(id): Path<Uuid>,
+) -> Result<StatusCode, (StatusCode, String)> {
+    tracing::info!("Deleting knowledge node: {}", id);
+
+    let result = sqlx::query("DELETE FROM knowledge_nodes WHERE id = $1")
+        .bind(id)
+        .execute(&pool)
+        .await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("DB Error: {}", e)))?;
+
+    if result.rows_affected() == 0 {
+        return Err((StatusCode::NOT_FOUND, "Knowledge node not found".to_string()));
+    }
+
+    Ok(StatusCode::NO_CONTENT)
 }
 
 #[cfg(test)]

@@ -30,6 +30,7 @@ pub async fn execute_agent(
 
     // 1. Fetch Agent definition & version, or fallback to Skill definition
     let agent_version: String;
+    let mut is_skill = false;
     let mut system_prompt = String::new();
     let mut target_model = payload
         .model
@@ -71,6 +72,7 @@ pub async fn execute_agent(
             }
         }
     } else {
+        is_skill = true;
         // Check skills table
         let skill_row =
             sqlx::query("SELECT name, current_version, definition, description FROM skills WHERE id = $1")
@@ -185,6 +187,57 @@ pub async fn execute_agent(
                 )
             }
         };
+
+
+    // --- METRICS & USAGE TELEMETRY ---
+
+    metrics::counter!("llm_tokens_total", "type" => "prompt", "model" => target_model.clone()).increment((full_prompt.len() / 4) as u64);
+    metrics::counter!("llm_tokens_total", "type" => "completion", "model" => target_model.clone()).increment((output_text.len() / 4) as u64);
+
+    if is_skill {
+        metrics::counter!(
+            "skill_execution_total",
+            "skill_id" => agent_id.to_string(),
+            "model" => target_model.clone()
+        ).increment(1);
+    } else {
+        metrics::counter!(
+            "agent_execution_total",
+            "agent_id" => agent_id.to_string(),
+            "model" => target_model.clone()
+        ).increment(1);
+    }
+
+
+
+    // We mock the token usage as we don't get it from the standard completion API easily in this naive run
+    let token_metrics = serde_json::json!({
+        "prompt_tokens": full_prompt.len() / 4,
+        "completion_tokens": output_text.len() / 4,
+        "total_tokens": (full_prompt.len() + output_text.len()) / 4
+    });
+
+    let caller = "anonymous".to_string(); // TODO: get from auth context
+
+    if !is_skill {
+        sqlx::query(
+            r#"
+            INSERT INTO agent_usage_logs (agent_id, agent_version, caller_identity, tool_calls, token_metrics, guardrail_events, created_at)
+            VALUES ($1, $2, $3, '[]'::jsonb, $4, '[]'::jsonb, NOW())
+            "#
+        )
+        .bind(agent_id)
+        .bind(&agent_version)
+        .bind(caller)
+        .bind(&token_metrics)
+        .execute(&state.pool)
+        .await
+        .map_err(|e| {
+            tracing::error!("Failed to log telemetry: {}", e);
+            // We don't fail the execution if telemetry fails
+        }).ok();
+    }
+    // ---------------------------------
 
     // 3. Log execution in database
     let request_json = serde_json::to_value(&payload).unwrap_or_default();

@@ -48,6 +48,26 @@ pub extern "C" fn prometheus_response_free(ptr: *mut c_char) {
 /// Guarantees that `/hams/metrics` immediately yields valid, non-empty Prometheus
 /// exposition output upon container startup before any inbound API traffic is received.
 pub fn init_startup_metrics(name: &str, version: &str) {
+
+
+    metrics::describe_counter!(
+        "skill_execution_total",
+        "Total number of skill executions"
+    );
+    metrics::describe_counter!(
+        "llm_tokens_total",
+        "Total number of LLM tokens consumed"
+    );
+
+    metrics::describe_counter!(
+        "agent_execution_total",
+        "Total number of agent executions"
+    );
+    metrics::describe_counter!(
+        "knowledge_ingestion_total",
+        "Total number of knowledge ingestions"
+    );
+
     metrics::describe_gauge!(
         "app_info",
         metrics::Unit::Count,
