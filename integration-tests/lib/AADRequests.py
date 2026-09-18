@@ -244,3 +244,8 @@ class AADRequests:
                 return msgs
             time.sleep(0.5)
         raise TimeoutError(f"Assistant message was not generated within {timeout} seconds")
+
+    def delete_knowledge(self, node_id):
+        resp = requests.delete(f"{self.base_url}/api/v1/knowledge/{node_id}", timeout=5)
+        resp.raise_for_status()
+        return resp.status_code == 204
