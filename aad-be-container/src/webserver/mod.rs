@@ -114,6 +114,7 @@ mod tests {
             pool,
             config,
             prometheus_handle: Arc::new(handle),
+            tokio_handle: tokio::runtime::Handle::current(),
         };
 
         // This verifies all nested routes and syntax (e.g. {id} vs :id) parse cleanly without panic
