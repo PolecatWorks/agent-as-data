@@ -65,12 +65,12 @@ jobs:
           workspaces: 'aad-be-container -> target'
 
       - name: Run Cargo Check
-        run: cargo check --manifest-path aad-be-container/Cargo.toml
+        run: RUSTFLAGS="--cfg tokio_unstable" cargo check --manifest-path aad-be-container/Cargo.toml
 
       - name: Run Backend Tests
         env:
           DATABASE_URL: postgres://postgres:postgres@localhost:5432/agent_as_data
-        run: cargo test --manifest-path aad-be-container/Cargo.toml
+        run: RUSTFLAGS="--cfg tokio_unstable" cargo test --manifest-path aad-be-container/Cargo.toml
 
   frontend-test:
     name: Build & Test Frontend
@@ -126,10 +126,10 @@ jobs:
           workspaces: 'aad-mcp-container -> target'
 
       - name: Run Cargo Check
-        run: cargo check --manifest-path aad-mcp-container/Cargo.toml
+        run: RUSTFLAGS="--cfg tokio_unstable" cargo check --manifest-path aad-mcp-container/Cargo.toml
 
       - name: Run MCP Tests
-        run: cargo test --manifest-path aad-mcp-container/Cargo.toml
+        run: RUSTFLAGS="--cfg tokio_unstable" cargo test --manifest-path aad-mcp-container/Cargo.toml
 
   helm-lint:
     name: Helm Chart Lint

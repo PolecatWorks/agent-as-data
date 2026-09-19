@@ -83,9 +83,8 @@ pub async fn service_main(
 
     // HaMS Prometheus Registration
     let handle_clone = Arc::clone(&app_state.prometheus_handle);
-    let tokio_handle = app_state.tokio_handle.clone();
     hams_harness.hams.register_prometheus_closure(move || {
-        crate::metrics::render_prometheus_metrics(&handle_clone, &tokio_handle)
+        handle_clone.render()
     }).map_err(|e| format!("Failed to register Prometheus closure with HaMS: {e}"))?;
 
     // 5. Start Axum MCP Webservice
