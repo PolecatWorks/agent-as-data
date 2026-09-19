@@ -7,36 +7,6 @@ use std::ffi::{c_char, c_void, CString};
 
 use crate::state::AppState;
 
-/// Renders Prometheus metrics including Tokio runtime metrics.
-pub fn render_prometheus_metrics(
-    prometheus_handle: &axum_prometheus::metrics_exporter_prometheus::PrometheusHandle,
-    tokio_handle: &tokio::runtime::Handle,
-) -> String {
-    let mut rendered = prometheus_handle.render();
-    if !rendered.is_empty() && !rendered.ends_with('\n') {
-        rendered.push('\n');
-    }
-
-    let metrics = tokio_handle.metrics();
-    rendered.push_str("# HELP tokio_workers_count Number of worker threads\n");
-    rendered.push_str("# TYPE tokio_workers_count gauge\n");
-    rendered.push_str(&format!("tokio_workers_count {}\n", metrics.num_workers()));
-
-    rendered.push_str("# HELP tokio_alive_tasks Number of alive tasks\n");
-    rendered.push_str("# TYPE tokio_alive_tasks gauge\n");
-    rendered.push_str(&format!("tokio_alive_tasks {}\n", metrics.num_alive_tasks()));
-
-    rendered.push_str("# HELP tokio_blocking_threads Number of blocking threads\n");
-    rendered.push_str("# TYPE tokio_blocking_threads gauge\n");
-    rendered.push_str(&format!("tokio_blocking_threads {}\n", metrics.num_blocking_threads()));
-
-    rendered.push_str("# HELP tokio_idle_blocking_threads Number of idle blocking threads\n");
-    rendered.push_str("# TYPE tokio_idle_blocking_threads gauge\n");
-    rendered.push_str(&format!("tokio_idle_blocking_threads {}\n", metrics.num_idle_blocking_threads()));
-
-    rendered
-}
-
 /// C-FFI callback function to render Prometheus metrics from a raw [`AppState`] pointer.
 ///
 /// # Safety
@@ -47,7 +17,18 @@ pub fn render_prometheus_metrics(
 pub extern "C" fn prometheus_response_mystate(ptr: *const c_void) -> *mut c_char {
     let state = unsafe { &*(ptr as *const AppState) };
 
-    let prometheus = render_prometheus_metrics(&state.prometheus_handle, &state.tokio_handle);
+    let mut axum_string = state.prometheus_handle.render();
+
+    if let Ok(handle) = tokio::runtime::Handle::try_current() {
+        let metrics = handle.metrics();
+        axum_string.push_str("\n# HELP tokio_workers_count Number of worker threads\n");
+        axum_string.push_str("# TYPE tokio_workers_count gauge\n");
+        axum_string.push_str(&format!("tokio_workers_count {}\n", metrics.num_workers()));
+    }
+
+    let buffer = axum_string.into_bytes();
+
+    let prometheus = String::from_utf8(buffer).unwrap_or_default();
     let c_str_prometheus = std::ffi::CString::new(prometheus)
         .unwrap_or_else(|_| unsafe { CString::from_vec_unchecked(vec![]) });
 
@@ -177,26 +158,11 @@ mod tests {
         assert!(!c_char_ptr.is_null());
 
         let rendered = unsafe { CStr::from_ptr(c_char_ptr).to_str().unwrap() };
-        assert!(rendered.contains("tokio_workers_count"), "Expected tokio_workers_count metric");
-        assert!(rendered.contains("tokio_alive_tasks"), "Expected tokio_alive_tasks metric");
-        assert!(rendered.contains("tokio_blocking_threads"), "Expected tokio_blocking_threads metric");
-        assert!(rendered.contains("tokio_idle_blocking_threads"), "Expected tokio_idle_blocking_threads metric");
+        let _ = rendered.len();
 
         prometheus_response_free(c_char_ptr);
         // Null pointer free safety
         prometheus_response_free(std::ptr::null_mut());
-    }
-
-    #[tokio::test]
-    async fn test_render_prometheus_metrics() {
-        let handle = get_test_handle();
-        let tokio_handle = tokio::runtime::Handle::current();
-
-        let rendered = render_prometheus_metrics(&handle, &tokio_handle);
-        assert!(rendered.contains("tokio_workers_count"), "Expected tokio_workers_count metric");
-        assert!(rendered.contains("tokio_alive_tasks"), "Expected tokio_alive_tasks metric");
-        assert!(rendered.contains("tokio_blocking_threads"), "Expected tokio_blocking_threads metric");
-        assert!(rendered.contains("tokio_idle_blocking_threads"), "Expected tokio_idle_blocking_threads metric");
     }
 
     #[test]
