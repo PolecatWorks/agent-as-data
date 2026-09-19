@@ -21,7 +21,7 @@ pub fn router() -> Router<AppState> {
         .route("/", post(ingest_knowledge))
         .route("/search", post(search_knowledge))
         .route("/graph/traverse", post(traverse_graph))
-        .route("/:id", delete(delete_knowledge))
+        .route("/{id}", delete(delete_knowledge))
 }
 
 pub fn chunk_text(text: &str, chunk_size: usize) -> Vec<String> {
@@ -211,5 +211,10 @@ pub mod tests {
         let text = "abcdefghij";
         let chunks = chunk_text(text, 3);
         assert_eq!(chunks, vec!["abc", "def", "ghi", "j"]);
+    }
+
+    #[test]
+    fn test_knowledge_router_construction() {
+        let _r: Router<AppState> = router();
     }
 }
