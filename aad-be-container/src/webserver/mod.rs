@@ -70,3 +70,53 @@ pub async fn start_webserver(
 
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::sync::Arc;
+    use axum_prometheus::metrics_exporter_prometheus::PrometheusBuilder;
+    use sqlx::postgres::PgPoolOptions;
+    use crate::config::AppConfig;
+
+    #[tokio::test]
+    async fn test_app_router_construction() {
+        let handle = PrometheusBuilder::new().build_recorder().handle();
+        let pool = PgPoolOptions::new().connect_lazy("postgres://user:pass@localhost:5432/test").unwrap();
+        let config = AppConfig {
+            debugging: crate::config::DebuggingConfig {
+                environment: "test".into(),
+                log_level: "info".into(),
+                fail_debug_delay: std::time::Duration::from_secs(0),
+            },
+            webservice: crate::config::WebServiceConfig {
+                address: "127.0.0.1:8080".into(),
+                api_prefix: "/api".into(),
+            },
+            llm: crate::config::LlmConfig {
+                ollama_url: "http://localhost:11434".into(),
+                model: "llama3".into(),
+                timeout_secs: 30,
+            },
+            runtime: crate::tokio_tools::ThreadRuntime::default(),
+            database: crate::config::DatabaseConfig {
+                url: crate::config::UrlWithUsernamePassword {
+                    url: url::Url::parse("postgres://localhost:5432/test").unwrap(),
+                    username: Some("user".into()),
+                    password: Some("pass".into()),
+                },
+                max_connections: 1,
+            },
+            hams: ::hams::hams::config::HamsConfig::default(),
+        };
+
+        let state = AppState {
+            pool,
+            config,
+            prometheus_handle: Arc::new(handle),
+        };
+
+        // This verifies all nested routes and syntax (e.g. {id} vs :id) parse cleanly without panic
+        let _router = app_router(state);
+    }
+}
