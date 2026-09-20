@@ -2,7 +2,7 @@ use axum::{
     Json,
     extract::{State, Path},
     http::StatusCode,
-    routing::{get, post, put, delete},
+    routing::{get, post},
     Router,
 };
 use sqlx::{PgPool, Row};
