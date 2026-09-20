@@ -647,29 +647,52 @@ pub async fn search_agent_context(
     // In production, we'd embed the payload.query and do vector cosine matching over entity_embeddings
     let pattern = format!("%{}%", payload.query);
 
-    let rows = sqlx::query(
-        r#"
-        SELECT entity_id, entity_type, field_name, content
-        FROM entity_embeddings
-        WHERE content ILIKE $1
+    let query = r#"
+        SELECT
+            e.entity_id,
+            e.entity_type,
+            e.field_name,
+            e.content,
+            COALESCE(a.name, s.name, t.server_name, tr.name) as name,
+            COALESCE(a.description, s.description, tr.description) as description
+        FROM entity_embeddings e
+        LEFT JOIN agents a ON e.entity_type IN ('agents', 'agent') AND e.entity_id = a.id
+        LEFT JOIN skills s ON e.entity_type IN ('skills', 'skill') AND e.entity_id = s.id
+        LEFT JOIN tools t ON e.entity_type IN ('tools', 'tool') AND e.entity_id = t.id
+        LEFT JOIN trait_contracts tr ON e.entity_type IN ('traits', 'trait') AND e.entity_id = tr.id
+        WHERE e.content ILIKE $1
         LIMIT $2
-        "#,
-    )
-    .bind(pattern)
-    .bind(limit)
-    .fetch_all(&pool)
-    .await
-    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Search Error: {}", e)))?;
+    "#;
+
+    let rows = sqlx::query(query)
+        .bind(pattern)
+        .bind(limit)
+        .fetch_all(&pool)
+        .await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Search Error: {}", e)))?;
 
     let results = rows
         .into_iter()
-        .map(|r| AgentContextSearchResult {
-            entity_id: r.get("entity_id"),
-            entity_type: r.get("entity_type"),
-            field_name: r.get("field_name"),
-            content: r.get("content"),
-            score: 0.95, // Mock score for now
-            match_reason: "Semantic similarity matched well with query".to_string(),
+        .map(|r| {
+            let field_name: String = r.get("field_name");
+            let match_reason = match field_name.as_str() {
+                "name" => "Matched on entity name".to_string(),
+                "description" => "Matched on entity description".to_string(),
+                "prompt" => "Matched on agent prompt".to_string(),
+                "definition" => "Matched on skill definition".to_string(),
+                other => format!("Matched on {}", other),
+            };
+
+            AgentContextSearchResult {
+                entity_id: r.get("entity_id"),
+                entity_type: r.get("entity_type"),
+                name: r.try_get("name").ok(),
+                description: r.try_get("description").ok(),
+                field_name,
+                content: r.get("content"),
+                score: 0.95,
+                match_reason,
+            }
         })
         .collect();
 

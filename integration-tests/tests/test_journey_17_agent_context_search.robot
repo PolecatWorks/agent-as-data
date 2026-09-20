@@ -50,6 +50,13 @@ Test Agent Context Search Roundtrip
     Should Be Equal As Strings    ${entity_id}    ${agent_id}
     ${matched_content}=    Get From Dictionary    ${top_result}    content
     Should Contain    ${matched_content}    ${keyword}
+    ${res_name}=    Get From Dictionary    ${top_result}    name
+    Should Be Equal As Strings    ${res_name}    ${agent_name}
+    ${res_desc}=    Get From Dictionary    ${top_result}    description
+    Should Be Equal As Strings    ${res_desc}    ${description}
+    ${match_reason}=    Get From Dictionary    ${top_result}    match_reason
+    Should Not Be Empty    ${match_reason}
+    Should Not Contain    ${match_reason}    Semantic similarity
 
     [Teardown]    Cleanup Agent
 
