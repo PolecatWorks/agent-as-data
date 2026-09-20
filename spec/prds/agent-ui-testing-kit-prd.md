@@ -284,6 +284,31 @@ flowchart TD
 - **Idempotent Seed Test**: `test_seed_exemplar_data.robot` seeds the database with exemplar data using upsert semantics — safe to re-run at any time without constraint conflicts.
 - **UI Journey Tests (Playwright/Browser Library)**: `test_journey_11_trait_editor_ui.robot` drives a headless Chromium instance to verify the Trait Editor UI lifecycle (create, persist, delete) in sync with the backend REST API.
 - **Local Dev & Garden Test Runners**: `run-tests-local.sh` local pre-flight runner verifying backend (`http://localhost:8080`) and frontend (`http://localhost:4200`) before running `robot` suites, integrated into Kubernetes via `garden.yml` (`kind: Test`).
+- **Dual-Mode Telemetry Endpoint Resolution Abstraction (Local vs. In-Cluster Pod IPs)**: Integration tests that validate sidecar telemetry (`/hams/metrics`) and health cannot rely on standard Kubernetes `Service` names (`http://agent-as-data-be:8080`) because port `8079` is an out-of-band sidecar listener, and Service load-balancing randomly rotates scrapes across multiple replicas. The test harness introduces a unified **Pod Endpoint Resolution Abstraction**:
+  - **Local Development Mode**: Directly addresses localhost loopback ports (`http://localhost:8079` for backend, `http://localhost:8078` for MCP).
+  - **Kubernetes / Garden In-Cluster Mode**: Dynamically discovers backend and MCP pod IP addresses via label selectors (`app=agent-as-data`, `app=agent-as-data-mcp`), routing metric requests directly to individual pod instances (`http://<pod_ip>:8079/hams/metrics`). This guarantees deterministic pod-level telemetry validation in both local and Kubernetes cluster environments.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant Test as Robot Framework Test
+    participant Resolver as Endpoint Resolver (AADRequests / Helper)
+    participant K8s as Kubernetes API / Pod Discovery
+    participant Pod as Target Pod (:8079)
+
+    alt Local Mode (run-tests-local.sh)
+        Test->>Resolver: Resolve HaMS Endpoint (Service: backend)
+        Resolver-->>Test: http://localhost:8079/hams/metrics
+    else Kubernetes Mode (run-tests.sh / Garden)
+        Test->>Resolver: Resolve HaMS Endpoint (Service: backend)
+        Resolver->>K8s: Query Pod IPs by label (app=agent-as-data)
+        K8s-->>Resolver: [podIP_1, podIP_2]
+        Resolver-->>Test: http://<podIP_1>:8079/hams/metrics
+    end
+
+    Test->>Pod: GET /hams/metrics
+    Pod-->>Test: Prometheus Exposition (app_info, tokio_*)
+```
 
 ---
 
