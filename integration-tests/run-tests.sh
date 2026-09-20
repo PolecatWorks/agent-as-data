@@ -24,9 +24,11 @@ echo "Installing robotframework-requests..."
 kubectl exec $POD_NAME -n $NS -- /bin/bash -c "pip install robotframework-requests"
 echo "pip install finished."
 
-# Extract backend pod IP
-BE_POD_IP=$(kubectl get pods -l app=agent-as-data -n $NS -o jsonpath='{.items[0].status.podIP}')
+# Extract backend and MCP pod IPs
+BE_POD_IP=$(kubectl get pods -l app=agent-as-data -n $NS -o jsonpath='{.items[0].status.podIP}' 2>/dev/null || echo "")
+MCP_POD_IP=$(kubectl get pods -l app=agent-as-data-mcp -n $NS -o jsonpath='{.items[0].status.podIP}' 2>/dev/null || echo "")
 echo "Backend Pod IP: $BE_POD_IP"
+echo "MCP Pod IP:     $MCP_POD_IP"
 
 # Create target directory and copy tests
 kubectl exec $POD_NAME -n $NS -- rm -rf /tmp/robot-tests /tmp/reports /tmp/lib
@@ -45,7 +47,15 @@ kubectl exec $POD_NAME -n $NS -- /bin/bash -c "
   BE_BASE_URL=\"http://agent-as-data-be:8080\"
   FE_BASE_URL=\"http://agent-as-data-fe:80\"
 
-  robot --pythonpath /tmp/robot-tests/lib --pythonpath /tmp/lib --variable BE_POD_IP:$BE_POD_IP --variable BE_BASE_URL:\$BE_BASE_URL --variable FE_BASE_URL:\$FE_BASE_URL --loglevel DEBUG -d /tmp/reports /tmp/robot-tests
+  EXTRA_ARGS=\"\"
+  if [ -n \"$BE_POD_IP\" ]; then
+    EXTRA_ARGS=\"\$EXTRA_ARGS --variable BE_POD_IP:$BE_POD_IP --variable HAMS_BE_URL:http://$BE_POD_IP:8079\"
+  fi
+  if [ -n \"$MCP_POD_IP\" ]; then
+    EXTRA_ARGS=\"\$EXTRA_ARGS --variable MCP_POD_IP:$MCP_POD_IP --variable HAMS_MCP_URL:http://$MCP_POD_IP:8079\"
+  fi
+
+  robot --pythonpath /tmp/robot-tests/lib --pythonpath /tmp/lib \$EXTRA_ARGS --variable BE_BASE_URL:\$BE_BASE_URL --variable FE_BASE_URL:\$FE_BASE_URL --loglevel DEBUG -d /tmp/reports /tmp/robot-tests
 " || TEST_EXIT_CODE=$?
 
 # Pull reports back

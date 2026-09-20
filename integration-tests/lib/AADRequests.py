@@ -249,3 +249,64 @@ class AADRequests:
         resp = requests.delete(f"{self.base_url}/api/v1/knowledge/{node_id}", timeout=5)
         resp.raise_for_status()
         return resp.status_code == 204
+
+    def _get_var(self, name, default=None):
+        """Helper to get a variable from Robot Framework BuiltIn context or os.environ."""
+        try:
+            from robot.libraries.BuiltIn import BuiltIn
+            val = BuiltIn().get_variable_value(f"${{{name}}}")
+            if val is not None and str(val).strip() != "":
+                return str(val).strip()
+        except Exception:
+            pass
+        return os.environ.get(name, default)
+
+    def resolve_hams_endpoint(self, service="backend"):
+        """
+        Resolves the base URL for the HaMS telemetry endpoint of the requested service.
+        Hierarchy:
+          1. Direct URL override (HAMS_BE_URL / HAMS_MCP_URL)
+          2. Pod IP direct addressing (BE_POD_IP / MCP_POD_IP) with port 8079
+          3. Local development loopback fallback (:8079 for backend, :8078 for mcp)
+        """
+        s = service.lower().strip()
+        if s in ("backend", "be", "aad-be-container", "agent-as-data"):
+            override = self._get_var("HAMS_BE_URL")
+            if override:
+                return override.rstrip("/")
+            pod_ip = self._get_var("BE_POD_IP")
+            if pod_ip:
+                return f"http://{pod_ip}:8079"
+            return "http://localhost:8079"
+        elif s in ("mcp", "aad-mcp-container", "agent-as-data-mcp"):
+            override = self._get_var("HAMS_MCP_URL")
+            if override:
+                return override.rstrip("/")
+            pod_ip = self._get_var("MCP_POD_IP")
+            if pod_ip:
+                return f"http://{pod_ip}:8079"
+            return "http://localhost:8078"
+        else:
+            raise ValueError(f"Unknown service '{service}'. Expected 'backend' or 'mcp'.")
+
+    def get_hams_metrics(self, service="backend", timeout=5):
+        """
+        Fetches the Prometheus exposition text from the resolved HaMS telemetry endpoint.
+        """
+        endpoint = f"{self.resolve_hams_endpoint(service)}/hams/metrics"
+        resp = requests.get(endpoint, timeout=timeout)
+        resp.raise_for_status()
+        return resp.text
+
+    def get_hams_health(self, service="backend", endpoint="ready", timeout=5):
+        """
+        Checks health status (/hams/alive or /hams/ready) on the resolved HaMS endpoint.
+        """
+        target = endpoint.lstrip("/")
+        url = f"{self.resolve_hams_endpoint(service)}/hams/{target}"
+        try:
+            resp = requests.get(url, timeout=timeout)
+            return resp.status_code == 200
+        except Exception:
+            return False
+
