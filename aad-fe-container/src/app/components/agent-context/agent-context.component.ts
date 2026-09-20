@@ -9,7 +9,7 @@ import { MatSliderModule } from '@angular/material/slider';
 import { MatCardModule } from '@angular/material/card';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatMenuModule } from '@angular/material/menu';
-import { RouterModule } from '@angular/router';
+import { RouterModule, Router } from '@angular/router';
 import { ApiService } from '../../services/api.service';
 import { APP_NAV_MENU_ITEMS } from '../../models/navigation';
 import { ConceptGuideComponent, ConceptTabMapping } from '../concept-guide/concept-guide.component';
@@ -63,7 +63,7 @@ export class AgentContextComponent {
   searchResults: any[] = [];
   isSearching: boolean = false;
 
-  constructor(private apiService: ApiService) {}
+  constructor(private apiService: ApiService, private router: Router) {}
 
   onSearch(): void {
     if (!this.searchQuery.trim()) return;
@@ -78,5 +78,21 @@ export class AgentContextComponent {
         this.isSearching = false;
       }
     });
+  }
+
+  viewDetails(result: any): void {
+    if (!result || !result.entity_id) return;
+    const type = (result.entity_type || '').toLowerCase();
+    if (type.includes('agent')) {
+      this.router.navigate(['/agents', result.entity_id]);
+    } else if (type.includes('skill')) {
+      this.router.navigate(['/skills', result.entity_id]);
+    } else if (type.includes('trait')) {
+      this.router.navigate(['/traits', result.entity_id]);
+    } else if (type.includes('tool')) {
+      this.router.navigate(['/tools', result.entity_id]);
+    } else {
+      this.router.navigate(['/detail'], { queryParams: { id: result.entity_id, type: result.entity_type } });
+    }
   }
 }
