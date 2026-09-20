@@ -14,11 +14,11 @@ This directory contains the long-term, persistent Product Requirements Documents
 | [workbench-bench-thread-prd.md](./workbench-bench-thread-prd.md) | **Workbench Benches, Threads & Workspace Memory PRD**: Isolated bench project workspaces (`/tmp/workspace/benches/<bench_id>`), immutable thread-to-bench scoping, modal-free inline management, active bench visual context & smart URL routing, phased bench memory, and persistent action tracking with distributed cancellation (`thread_runs`). |
 | [cli-manifest-tool-prd.md](./cli-manifest-tool-prd.md) | **CLI Manifest Tool PRD**: Defines the CLI extension `aad-be ctl` for applying, listing, and deleting Agents and Skills via YAML definitions interacting directly through the REST API. |
 | [mcp-server-container-prd.md](./mcp-server-container-prd.md) | **MCP Server Container PRD**: Dedicated container build (`aad-mcp-container`) and Helm chart (`charts/agent-as-data-mcp`) with backend architectural parity (Clap CLI, centralized config/secrets, HaMS health monitoring on `:8079`, baseline startup metrics, Tokio runtime metrics, Pod Endpoint Resolution Abstraction & `hello` greeting tool). |
-
+| [semantic-search-page-prd.md](./semantic-search-page-prd.md) | **Semantic Search Discovery PRD**: Natural language task context discovery (`/agent-context`), PostgreSQL full-text/vector hybrid cover-density ranking (`ts_rank_cd`), enter-to-submit keydown handling, entity deduplication, and refined discovery cards with direct entity routing. |
+| [skills-registry-tools-prd.md](./skills-registry-tools-prd.md) | **Skills Registry Tools PRD**: Declarative skill schemas, embedding synchronization (`/skills/{id}/sync-embeddings`), and MCP tool integration. |
 
 ## Governance & Lifecycle Rules
 1. **Source of Truth**: PRD files in this directory define the permanent vision and requirements for the platform.
 2. **Iterative Evolution**: As new features or capabilities are conceptualized, PRDs are updated to reflect the expanded scope.
 3. **Relation to Specs**: Ephemeral execution tasks and historical implementation snapshots live in `spec/specs/` and reference these PRDs.
-- [Skills Registry Tools PRD](./skills-registry-tools-prd.md)
-- [Semantic Search Discovery Page PRD](./semantic-search-page-prd.md)
+
