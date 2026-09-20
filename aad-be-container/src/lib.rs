@@ -63,6 +63,13 @@ pub async fn service_main(
     // Initialize baseline startup telemetry (guarantees non-empty /hams/metrics)
     init_startup_metrics(NAME, VERSION);
 
+    // Spawn Tokio runtime metrics reporter
+    tokio::task::spawn(
+        tokio_metrics::RuntimeMetricsReporterBuilder::default()
+            .with_interval(config.runtime.metrics_interval)
+            .describe_and_run(),
+    );
+
     let ct = tokio_util::sync::CancellationToken::new();
 
     // 2. Initialize HaMS Health Monitoring Sidecar & ProbeManual readiness signal

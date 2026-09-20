@@ -21,6 +21,7 @@ runtime:
   threads: 4
   stack_size: 3000000
   name: "aad-worker"
+  metrics_interval: "5s"
 
 debugging:
   environment: "production"

@@ -2,6 +2,8 @@ use serde::{Deserialize, Serialize};
 use tokio::runtime::{self, Runtime};
 use tracing::info;
 
+use std::time::Duration;
+
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct ThreadRuntime {
     /// Number of worker threads (0 for current thread / single-threaded runtime).
@@ -10,6 +12,13 @@ pub struct ThreadRuntime {
     pub stack_size: usize,
     /// Name prefix assigned to worker threads.
     pub name: String,
+    /// Metrics sampling interval for tokio-metrics runtime reporter.
+    #[serde(default = "default_metrics_interval", with = "humantime_serde")]
+    pub metrics_interval: Duration,
+}
+
+fn default_metrics_interval() -> Duration {
+    Duration::from_secs(5)
 }
 
 impl Default for ThreadRuntime {
@@ -18,6 +27,7 @@ impl Default for ThreadRuntime {
             threads: 2,
             stack_size: 3_000_000,
             name: "aad-mcp-worker".into(),
+            metrics_interval: default_metrics_interval(),
         }
     }
 }
@@ -60,6 +70,7 @@ mod tests {
             threads: 0,
             stack_size: 2_000_000,
             name: "test-single".into(),
+            metrics_interval: Duration::from_secs(5),
         };
         let rt = create_tokio_runtime(&runtime).unwrap();
         let result = rt.block_on(async { 42 });
@@ -72,6 +83,7 @@ mod tests {
             threads: 2,
             stack_size: 2_000_000,
             name: "test-multi".into(),
+            metrics_interval: Duration::from_secs(5),
         };
         let rt = create_tokio_runtime(&runtime).unwrap();
         let result = rt.block_on(async { 100 });

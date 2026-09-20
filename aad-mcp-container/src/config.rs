@@ -67,6 +67,9 @@ impl AppConfig {
         if self.webservice.api_prefix.trim().is_empty() {
             return Err("Webservice api_prefix cannot be empty".to_string());
         }
+        if self.runtime.metrics_interval.is_zero() {
+            return Err("Runtime metrics_interval must be greater than 0".to_string());
+        }
         Ok(())
     }
 }
