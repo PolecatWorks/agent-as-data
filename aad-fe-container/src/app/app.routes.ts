@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 
 export const routes: Routes = [
+  { path: 'semantic-search', loadComponent: () => import('./pages/semantic-search/semantic-search.component').then(m => m.SemanticSearchComponent) },
   { path: '', redirectTo: 'home', pathMatch: 'full' },
   { path: 'home', loadComponent: () => import('./components/home/home.component').then(m => m.HomeComponent) },
   { path: 'detail', loadComponent: () => import('./components/detail/detail.component').then(m => m.DetailComponent) },
