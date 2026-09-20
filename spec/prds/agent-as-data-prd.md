@@ -184,6 +184,33 @@ flowchart TD
 - **Prometheus Telemetry & C-FFI Bridge**: Instruments incoming API requests via `axum-prometheus` (`PrometheusMetricLayer`) and exports Prometheus metrics directly through the HaMS listener using safe closure callbacks (`register_prometheus_closure`) and C-FFI bridge callbacks (`prometheus_response_mystate`, `prometheus_response_free`). HaMS is explicitly deregistered from Prometheus upon shutdown.
 - **Fail-Safe Startup Metrics Initialization**: To prevent empty (0-byte) responses on `/hams/metrics` and guarantee immediate metric availability for Istio Envoy sidecar scraping (`:15020/stats/prometheus`) prior to incoming API traffic, the application initializes baseline application telemetry at boot time upon recorder registration. This includes registering static application information (`app_info{name="...", version="..."} = 1.0`) and pre-describing core metric counters and gauges so that `/hams/metrics` immediately returns valid, non-empty Prometheus exposition payloads from initial container readiness.
 - **Tokio Runtime Metrics Telemetry (`tokio-metrics`)**: Integrates `tokio-metrics` with the `metrics-rs-integration` feature to automatically sample and export Tokio runtime scheduler metrics (including worker thread counts, task counts, queue latencies, and worker utilization) into the global `metrics` recorder. When HaMS scrapes `/hams/metrics`, Tokio runtime telemetry is automatically rendered alongside application metrics without manual string interpolation.
+- **Pod-Direct Telemetry & Test Endpoint Resolution Abstraction**: In Kubernetes environments (e.g. Garden integration test runs), standard Kubernetes `Service` objects balance incoming traffic across port `8080`, but do not front individual pod instances for health and metrics sidecars on port `8079`. Furthermore, scraping Prometheus metrics via a Service VIP non-deterministically rotates across replicas, defeating per-instance runtime verification. To solve this, the integration test harness employs an **Endpoint Resolution Abstraction** that identifies execution context:
+  - **Local Mode**: Queries host loopback addresses directly (`http://localhost:8079/hams/metrics` for backend, `http://localhost:8078/hams/metrics` for MCP).
+  - **In-Cluster (Kubernetes) Mode**: Identifies target pod IP addresses directly via Kubernetes label selectors (`app=agent-as-data`, `app=agent-as-data-mcp`) and contacts individual pods on `http://<pod_ip>:8079/hams/metrics`, decoupling metric test assertions from cluster networking topology.
+
+```mermaid
+flowchart TD
+    subgraph TestRunner ["Robot Framework Test Runner (Integration Tests)"]
+        Test["Metrics Test Case (e.g. Journey 16)"] --> Resolver["Telemetry Endpoint Resolver<br/>(Local / In-Cluster Abstraction)"]
+    end
+
+    Resolver --> ModeCheck{"Execution Context?"}
+
+    subgraph LocalContext ["Local Workstation (run-tests-local.sh)"]
+        ModeCheck -->|"Local Host"| LocalEndpoints["Direct Loopback Endpoints<br/>Backend: http://localhost:8079<br/>MCP: http://localhost:8078"]
+        LocalEndpoints --> LocalBE["Local aad-be-container (:8079)"]
+        LocalEndpoints --> LocalMCP["Local aad-mcp-container (:8078)"]
+    end
+
+    subgraph K8sContext ["Kubernetes / Garden (run-tests.sh)"]
+        ModeCheck -->|"In-Cluster (Garden)"| K8sDiscovery["Pod IP Discovery<br/>(kubectl / k8s API Label Selectors)"]
+        K8sDiscovery -->|"app=agent-as-data"| BEPodIP["Backend Pod IP(s)<br/>http://<pod_ip>:8079/hams/metrics"]
+        K8sDiscovery -->|"app=agent-as-data-mcp"| MCPPodIP["MCP Pod IP(s)<br/>http://<pod_ip>:8079/hams/metrics"]
+        BEPodIP --> K8sBEPod["Backend Pod Instance (:8079)"]
+        MCPPodIP --> K8sMCPPod["MCP Pod Instance (:8079)"]
+    end
+```
+
 - **Fail-Fast Early Startup Validation & Debug Delay**: Application configuration, YAML overrides, secret files, database connectivity, and required `pgvector` PostgreSQL extensions are validated **at process startup** before opening the main webservice port (`8080`). Invalid configurations, missing credentials, or missing database extensions abort execution immediately with error logs (failing fast).
 - **CrashLoop Fail Debug Delay (`fail_debug_delay`)**: Configurable duration (`debugging.fail_debug_delay`, e.g. `"30s"`, defaulting to `"0s"`) to pause before process termination on startup or server errors, preventing immediate Kubernetes `CrashLoopBackOff` restarts and allowing pod inspection via `kubectl exec`.
 - **Zero Silent Fallback / Explicit Failures**: Runtime execution and discovery components must never perform silent failovers or mask failures by substituting fallback models, alternative queries, or default credentials. If a specified LLM model, resource, or execution dependency fails or is unavailable, the operation must fail immediately and return an explicit, descriptive error status.
