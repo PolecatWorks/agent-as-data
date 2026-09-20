@@ -21,7 +21,7 @@ pub fn router() -> Router<AppState> {
         .route("/", get(list_knowledge).post(ingest_knowledge))
         .route("/search", post(search_knowledge))
         .route("/graph/traverse", post(traverse_graph))
-        .route("/:id", get(get_knowledge).put(update_knowledge).delete(delete_knowledge))
+        .route("/{id}", get(get_knowledge).put(update_knowledge).delete(delete_knowledge))
 }
 
 pub fn chunk_text(text: &str, chunk_size: usize) -> Vec<String> {
