@@ -168,7 +168,12 @@ pub async fn list_files(
     let workspace_root = get_workspace_root(entity_id);
 
     if !workspace_root.exists() {
-        return Err((StatusCode::NOT_FOUND, "Workspace not found".to_string()));
+        if let Err(e) = std::fs::create_dir_all(&workspace_root) {
+            return Err((
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Failed to create workspace directory: {}", e),
+            ));
+        }
     }
 
     let target_dir = match payload.dir_path {
