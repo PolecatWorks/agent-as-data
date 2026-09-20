@@ -20,9 +20,11 @@ use tracing::{info, Level};
 use crate::config::WebServiceConfig;
 use crate::state::AppState;
 
+pub mod search;
 pub fn app_router(state: AppState) -> Router {
     let metric_layer = PrometheusMetricLayer::new();
     let api_routes = Router::new()
+        .nest("/v1/search", search::router())
         .nest("/v1/agents", agents::router())
         .nest("/v1/skills", skills::router())
         .nest("/v1/traits", traits::router())
