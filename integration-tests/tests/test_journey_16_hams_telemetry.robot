@@ -1,22 +1,23 @@
 *** Settings ***
 Documentation    Integration test for HaMS Prometheus Telemetry & Tokio Runtime Metrics
-Library          RequestsLibrary
+Library          ../lib/AADRequests.py
 Library          String
 
-*** Variables ***
-${HAMS_BASE_URL}    http://localhost:8079
-
 *** Test Cases ***
-Verify HaMS Metrics Endpoint Responds With Baseline And Tokio Metrics
-    [Documentation]    Verify that /hams/metrics returns 200 OK and contains both baseline app_info and tokio-metrics runtime telemetry.
-    Create Session    hams_session    ${HAMS_BASE_URL}
-    ${response}=    GET On Session    hams_session    /hams/metrics    expected_status=200
-    ${body}=    Set Variable    ${response.text}
+Verify Backend HaMS Metrics Endpoint Responds With Baseline And Tokio Metrics
+    [Documentation]    Verify that backend /hams/metrics returns 200 OK and contains both baseline app_info and tokio-metrics runtime telemetry.
+    ${metrics}=    Get Hams Metrics    service=backend
+    Should Contain    ${metrics}    app_info
+    Should Contain    ${metrics}    name="aad-be-container"
+    Should Contain    ${metrics}    tokio_workers_count
+    Should Contain    ${metrics}    tokio_live_tasks_count
 
-    # Verify baseline app_info telemetry
-    Should Contain    ${body}    app_info
-    Should Contain    ${body}    name="aad-be-container"
-
-    # Verify tokio-metrics runtime telemetry
-    Should Contain    ${body}    tokio_workers_count
-    Should Contain    ${body}    tokio_live_tasks_count
+Verify MCP HaMS Metrics Endpoint Responds With Baseline And Tokio Metrics If Online
+    [Documentation]    Verify MCP /hams/metrics returns baseline app_info and tokio-metrics if service is online.
+    ${is_ready}=    Get Hams Health    service=mcp    endpoint=ready
+    Pass Execution If    not ${is_ready}    MCP server is offline - skipping live test
+    ${metrics}=    Get Hams Metrics    service=mcp
+    Should Contain    ${metrics}    app_info
+    Should Contain    ${metrics}    name="agent-as-data-mcp"
+    Should Contain    ${metrics}    tokio_workers_count
+    Should Contain    ${metrics}    tokio_live_tasks_count

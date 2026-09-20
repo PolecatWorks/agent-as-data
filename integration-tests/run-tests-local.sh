@@ -11,6 +11,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 LOCAL_BE_URL="${LOCAL_BE_URL:-http://localhost:8080}"
 LOCAL_FE_URL="${LOCAL_FE_URL:-http://localhost:4200}"
+LOCAL_HAMS_BE_URL="${LOCAL_HAMS_BE_URL:-http://localhost:8079}"
+LOCAL_HAMS_MCP_URL="${LOCAL_HAMS_MCP_URL:-http://localhost:8078}"
 
 REPORT_DIR="${SCRIPT_DIR}/reports"
 rm -rf "${REPORT_DIR}"
@@ -39,6 +41,8 @@ echo " Agent-As-Data Robot Tests - Local Runner"
 echo "=============================================="
 echo "Backend URL:  ${LOCAL_BE_URL}"
 echo "Frontend URL: ${LOCAL_FE_URL}"
+echo "HaMS BE URL:  ${LOCAL_HAMS_BE_URL}"
+echo "HaMS MCP URL: ${LOCAL_HAMS_MCP_URL}"
 echo "Test Path:    ${TEST_PATH}"
 echo "Report Dir:   ${REPORT_DIR}"
 echo "=============================================="
@@ -65,7 +69,10 @@ echo ""
 "${ROBOT_CMD}" \
     --variable BE_BASE_URL:${LOCAL_BE_URL} \
     --variable FE_BASE_URL:${LOCAL_FE_URL} \
+    --variable HAMS_BE_URL:${LOCAL_HAMS_BE_URL} \
+    --variable HAMS_MCP_URL:${LOCAL_HAMS_MCP_URL} \
     --loglevel DEBUG \
     -d "${REPORT_DIR}" \
     "${TEST_PATH}"
+
 
