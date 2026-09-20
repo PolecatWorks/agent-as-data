@@ -177,3 +177,4 @@ flowchart TD
 - [CLI Manifest Tool Spec](./cli-manifest-tool-spec.md)
 
 
+- [12. Skills Registry Tools Spec](./12-skills-tools-spec.md)

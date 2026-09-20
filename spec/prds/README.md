@@ -20,3 +20,4 @@ This directory contains the long-term, persistent Product Requirements Documents
 1. **Source of Truth**: PRD files in this directory define the permanent vision and requirements for the platform.
 2. **Iterative Evolution**: As new features or capabilities are conceptualized, PRDs are updated to reflect the expanded scope.
 3. **Relation to Specs**: Ephemeral execution tasks and historical implementation snapshots live in `spec/specs/` and reference these PRDs.
+- [Skills Registry Tools PRD](./skills-registry-tools-prd.md)
