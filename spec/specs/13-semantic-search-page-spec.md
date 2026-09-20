@@ -1,5 +1,5 @@
 ---
-status: draft
+status: complete
 ---
 
 # 13. Semantic Search Discovery Page Spec

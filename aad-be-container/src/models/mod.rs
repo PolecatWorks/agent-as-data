@@ -21,3 +21,4 @@ pub use execution::*;
 pub use bench::*;
 pub use run::*;
 pub use analytics::*;
+pub mod search; pub use search::*;

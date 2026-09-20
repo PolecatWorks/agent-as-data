@@ -1,24 +1,21 @@
-1. **Update Configuration Structure**:
-   - In `aad-be-container/src/config.rs`, add `pub api_prefix: String,` to `WebServiceConfig`.
-   - Update `aad-be-container/config/default.yaml` to include `api_prefix: "/api"` under `webservice`.
-   - Update `AppConfig` tests in `config.rs` to include `api_prefix: "/api".to_string()`.
+1. **Backend Implementation (`aad-be-container`)**:
+   - Create `aad-be-container/src/models/search.rs` (already did this but need to make sure).
+   - Implement `POST /api/v1/search/semantic` endpoint in a new file `aad-be-container/src/webserver/search.rs`. It will mock embeddings for now or do text search if no real embeddings exist, joining with `agents`, `skills`, `tools`, `traits` to get `name`, `description`, `tags`.
+   - Update `aad-be-container/src/webserver/mod.rs` to include the `search` module and route the endpoint under `/v1/search`.
 
-2. **Refactor Route Setup in `main.rs`**:
-   - Modify `aad-be-container/src/main.rs` to group API routes under an `axum::Router::new().nest(&config.webservice.api_prefix, api_routes)`.
-   - Ensure the `/health` route is added to the root app router independently, as it should not be affected by the API prefix.
-   - The prefix in the configuration (e.g., `/api`) will combine with `/v1/...` which we'll define in the nest router to create the final route paths. (Wait, let's look at how the prefix should be formatted. The instructions say "uses a customisable prefix ... this prefix is used to prefix all the served APIs". If the frontend proxy expects `/api`, it means `api_prefix: "/api"`, and routes will be `/v1/...` relative to it, resulting in `/api/v1/...`).
+2. **Frontend Implementation (`aad-fe-container`)**:
+   - Create `SemanticSearchComponent` at `aad-fe-container/src/app/pages/semantic-search/semantic-search.component.ts`.
+   - Create the corresponding template (`.html`) and styles (`.scss`).
+   - The UI should have a search input and display suggestion cards (name, description, tags, type, similarity score).
+   - The card should have a "View Details" button navigating to the entity detail page.
+   - Update `app.routes.ts` to map `/semantic-search` to this component.
+   - Add backend API call in the component or in a new/existing service (e.g. `SearchService`).
 
-3. **Update PRDs/Specs (Already Done)**:
-   - PRDs were already updated to use `{{api_prefix}}`.
+3. **Pre-commit Steps**:
+   - Ensure proper testing, verification, review, and reflection are done by following pre-commit instructions.
 
-4. **Verify Frontend**:
-   - The frontend proxy is already set up to proxy `/api` to `localhost:8080`, and the `ApiService` in `aad-fe-container/src/app/services/api.service.ts` uses `/api/v1`. If we configure the backend to use `/api` as the prefix, the frontend will continue to work without changes.
+4. **Update Spec Status**:
+   - Change `spec/specs/13-semantic-search-page-spec.md` status from `draft` to `complete`.
 
-5. **Verify Tests**:
-   - The integration tests use `/api/v1/...`. They will continue to work if the backend uses `/api` as the prefix.
-   - Run integration tests to ensure nothing breaks.
-
-6. **Pre-commit**:
-   - Run `pre_commit_instructions`.
-
-7. **Submit Changes**.
+5. **Submit**:
+   - Submit the changes using the `submit` tool.

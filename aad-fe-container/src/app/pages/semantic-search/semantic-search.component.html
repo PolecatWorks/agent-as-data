@@ -1,0 +1,63 @@
+<div class="search-container p-6">
+  <h1 class="text-3xl font-bold mb-6">Semantic Search Discovery</h1>
+
+  <div class="search-box mb-8 flex gap-4 items-center">
+    <mat-form-field appearance="outline" class="flex-1 w-full m-0">
+      <mat-label>Search for agents, skills, tools, or traits...</mat-label>
+      <input matInput [(ngModel)]="query" (keyup.enter)="onSearch()" placeholder="e.g. A helpful agent for data analysis" />
+      <mat-icon matPrefix>search</mat-icon>
+    </mat-form-field>
+
+    <button mat-raised-button color="primary" class="h-[56px] px-8" [disabled]="isSearching || !query.trim()" (click)="onSearch()">
+      Search
+    </button>
+  </div>
+
+  <div *ngIf="isSearching" class="loading-state mb-8">
+    <div class="flex items-center text-gray-500 gap-2 mb-2">
+      <mat-icon>hourglass_empty</mat-icon>
+      <span>Searching across knowledge base...</span>
+    </div>
+    <mat-progress-bar mode="indeterminate"></mat-progress-bar>
+  </div>
+
+  <div *ngIf="hasSearched && !isSearching && results.length === 0" class="no-results text-center py-12 text-gray-500">
+    <mat-icon class="text-5xl mb-4 text-gray-400 opacity-50">search_off</mat-icon>
+    <h2 class="text-xl">No matching entities found.</h2>
+    <p>Try adjusting your search terms.</p>
+  </div>
+
+  <div class="results-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" *ngIf="!isSearching && results.length > 0">
+    <mat-card *ngFor="let result of results" class="result-card flex flex-col h-full hover:shadow-lg transition-shadow">
+      <mat-card-header class="mb-4">
+        <mat-card-title class="text-xl mb-1">{{ result.name }}</mat-card-title>
+        <mat-card-subtitle class="flex items-center gap-2">
+          <span class="type-badge px-2 py-1 rounded bg-gray-200 text-gray-700 text-xs font-bold uppercase">{{ result.entity_type }}</span>
+        </mat-card-subtitle>
+      </mat-card-header>
+
+      <mat-card-content class="flex-1">
+        <p class="text-gray-600 mb-4 line-clamp-3">{{ result.description || 'No description available.' }}</p>
+
+        <div class="tags-container mb-4" *ngIf="result.tags && result.tags.length > 0">
+          <mat-chip-set>
+            <mat-chip *ngFor="let tag of result.tags.slice(0, 3)" class="text-xs">{{ tag }}</mat-chip>
+            <span *ngIf="result.tags.length > 3" class="text-xs text-gray-500 self-center">+{{ result.tags.length - 3 }} more</span>
+          </mat-chip-set>
+        </div>
+
+        <div class="score-container mt-auto pt-4 border-t border-gray-100">
+          <div class="flex justify-between text-xs text-gray-500 mb-1">
+            <span>Match Likelihood</span>
+            <span>{{ (result.similarity_score * 100).toFixed(0) }}%</span>
+          </div>
+          <mat-progress-bar mode="determinate" [value]="result.similarity_score * 100" [color]="getScoreColor(result.similarity_score)"></mat-progress-bar>
+        </div>
+      </mat-card-content>
+
+      <mat-card-actions align="end" class="p-4 pt-0 mt-4">
+        <button mat-button color="primary" (click)="viewDetails(result)">View Details</button>
+      </mat-card-actions>
+    </mat-card>
+  </div>
+</div>
