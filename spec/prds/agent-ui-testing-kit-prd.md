@@ -273,10 +273,18 @@ flowchart TD
   - **Smart Routing**: URL schema `/workbench/:benchId/:threadId` with automatic forwarding to the most recent Bench and Thread when visiting `/workbench`.
 
 ### 10. Agent Context View (`/agent-context`)
-- **Semantic Entity Search**: A dedicated text input field allowing the user to provide natural language context. Upon pressing Enter, the view performs a RAG-type semantic search against the vector database.
-- **Matching & Scoring**: The system scores the separated embeddings (name, description, prompt) and picks the best matching Agents and Skills.
-- **Trace Depth Selection**: Provides a trace depth style tool (similar to the network graph analyzer) to configure and select the total number of Agents and Skills returned by the search.
-- **Match Feedback & Reasoning**: For each returned Agent and Skill, the view displays detailed feedback explaining the semantic similarity match, the calculated score, and reasoning on why it is a good fit for the provided context.
+- **Natural Language Task Context Input**: A multiline textarea enabling users to input complex task context (e.g., *"i need an agent that can be used to design accounting systems"*).
+  - **Enter-to-Submit**: Intercepts `keydown` on Enter to execute search immediately without inserting extraneous newline characters, while preserving Shift+Enter for multiline formatting. Trims queries on both frontend and backend.
+- **Hybrid Semantic & Cover-Density Matching**: The backend parses natural language queries into linguistic stems via PostgreSQL (`plainto_tsquery('english', ...)`), removes stop words, and evaluates disjunctive term matches (`|`) against entity embeddings.
+- **Scoring & Relevance**: Uses cover-density ranking (`ts_rank_cd`) to prioritize entities matching multiple search concepts (e.g. *"accounting"* and *"agent"*), boosting exact matches to 98% and scoring multi-token matches between 60% and 96%.
+- **Trace Depth Selection**: Provides a slider control to configure and select the maximum number of results returned by the search (1 to 20).
+- **Refined Discovery Cards**:
+  - **Entity Name & Type**: Prominently displays the resolved name of the entity (e.g., `FinancialAuditorAgent`) along with an entity type indicator (`Agents`, `Skills`, `Tools`, `Traits`).
+  - **Specific Match Reason Badge**: Replaces generic similarity text with an explicit match reason (e.g. `✓ Matched on entity description`, `✓ Matched on entity name`, `✓ Matched on agent prompt`).
+  - **Entity Description**: Renders the complete description of the matching entity directly beneath the match badge.
+  - **Omission of Raw IDs**: Internal UUIDs are strictly omitted from the discovery cards for a clean user interface.
+  - **Direct Entity Navigation**: Features a dedicated **View Details** action on every card that navigates to `/agents/:id`, `/skills/:id`, `/traits/:id`, or `/tools/:id`.
+  - **Result Deduplication**: Groups and deduplicates results by entity name/ID so that an entity matching across multiple fields (e.g. prompt and description) only appears once as its best match.
 
 ### 11. Robot Framework Integration Testing Suite (Ref: `sward-warden/integration-tests`)
 - **Declarative User Journey Robot Tests**: `/integration-tests/tests/*.robot` test cases mapping 1-to-1 to all 12 user journeys, covering 24 tests total (all currently passing).
