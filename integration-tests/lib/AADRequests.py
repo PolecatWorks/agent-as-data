@@ -316,7 +316,10 @@ class AADRequests:
         return resp.json()
 
     def search_agent_context(self, query, depth=5):
-        resp = requests.post(f"{self.base_url}/api/v1/agent-context/search", json={"query": query, "depth": depth}, timeout=10)
+        payload = {"query": str(query)}
+        if depth is not None:
+            payload["depth"] = int(depth)
+        resp = requests.post(f"{self.base_url}/api/v1/agent-context/search", json=payload, timeout=10)
         resp.raise_for_status()
         return resp.json()
 
