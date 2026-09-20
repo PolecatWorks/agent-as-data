@@ -508,6 +508,113 @@ pub struct UpdateBenchMemoryTool {
     pub pool: sqlx::PgPool,
 }
 
+#[derive(Deserialize)]
+pub struct ListSkillsArgs {}
+
+#[derive(Serialize)]
+pub struct SkillMetadata {
+    pub name: String,
+    pub description: String,
+}
+
+#[derive(Serialize)]
+pub struct ListSkillsOutput {
+    pub skills: Vec<SkillMetadata>,
+}
+
+pub struct ListSkillsTool {
+    pub pool: sqlx::PgPool,
+}
+
+impl PortableTool for ListSkillsTool {
+    const NAME: &'static str = "list_skills";
+    type Error = std::io::Error;
+    type Args = ListSkillsArgs;
+    type Output = ListSkillsOutput;
+
+    fn description(&self) -> String {
+        "Lists all available skills in the database.".to_string()
+    }
+
+    fn parameters(&self) -> serde_json::Value {
+        json!({
+            "type": "object",
+            "properties": {}
+        })
+    }
+
+    async fn call(&self, _args: Self::Args) -> Result<Self::Output, Self::Error> {
+        let rows: Vec<(String, String)> = sqlx::query_as(
+            "SELECT name, description FROM skills"
+        )
+        .fetch_all(&self.pool)
+        .await
+        .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, format!("Database error: {}", e)))?;
+
+        let skills = rows.into_iter().map(|(name, description)| SkillMetadata {
+            name,
+            description,
+        }).collect();
+
+        Ok(ListSkillsOutput { skills })
+    }
+}
+
+#[derive(Deserialize)]
+pub struct ViewSkillArgs {
+    pub skill_name: String,
+}
+
+#[derive(Serialize)]
+pub struct ViewSkillOutput {
+    pub skill: Option<crate::models::skill::Skill>,
+    pub error: Option<String>,
+}
+
+pub struct ViewSkillTool {
+    pub pool: sqlx::PgPool,
+}
+
+impl PortableTool for ViewSkillTool {
+    const NAME: &'static str = "view_skill";
+    type Error = std::io::Error;
+    type Args = ViewSkillArgs;
+    type Output = ViewSkillOutput;
+
+    fn description(&self) -> String {
+        "Views the full definition of a specific skill.".to_string()
+    }
+
+    fn parameters(&self) -> serde_json::Value {
+        json!({
+            "type": "object",
+            "properties": {
+                "skill_name": {
+                    "type": "string",
+                    "description": "The name of the skill to view."
+                }
+            },
+            "required": ["skill_name"]
+        })
+    }
+
+    async fn call(&self, args: Self::Args) -> Result<Self::Output, Self::Error> {
+        let skill_res = sqlx::query_as::<_, crate::models::skill::Skill>(
+            "SELECT * FROM skills WHERE name = $1"
+        )
+        .bind(&args.skill_name)
+        .fetch_optional(&self.pool)
+        .await
+        .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, format!("Database error: {}", e)))?;
+
+        if let Some(skill) = skill_res {
+            Ok(ViewSkillOutput { skill: Some(skill), error: None })
+        } else {
+            Ok(ViewSkillOutput { skill: None, error: Some("Skill not found".to_string()) })
+        }
+    }
+}
+
 impl PortableTool for UpdateBenchMemoryTool {
     const NAME: &'static str = "update_bench_memory";
     type Error = std::io::Error;
@@ -644,6 +751,26 @@ pub async fn execute_workspace_tool(
                 .map_err(|e| format!("Invalid arguments for {}: {}", tool_name, e))?;
             let tool = UpdateBenchMemoryTool {
                 bench_id,
+                pool: pool.clone(),
+            };
+            let res = tool.call(args).await.map_err(|e| e.to_string())?;
+            serde_json::to_string(&res).map_err(|e| e.to_string())
+        }
+        ListSkillsTool::NAME => {
+            let pool = pool.ok_or_else(|| "Database pool required for list_skills".to_string())?;
+            let args: ListSkillsArgs = serde_json::from_value(args_json.clone())
+                .unwrap_or(ListSkillsArgs {});
+            let tool = ListSkillsTool {
+                pool: pool.clone(),
+            };
+            let res = tool.call(args).await.map_err(|e| e.to_string())?;
+            serde_json::to_string(&res).map_err(|e| e.to_string())
+        }
+        ViewSkillTool::NAME => {
+            let pool = pool.ok_or_else(|| "Database pool required for view_skill".to_string())?;
+            let args: ViewSkillArgs = serde_json::from_value(args_json.clone())
+                .map_err(|e| format!("Invalid arguments for {}: {}", tool_name, e))?;
+            let tool = ViewSkillTool {
                 pool: pool.clone(),
             };
             let res = tool.call(args).await.map_err(|e| e.to_string())?;
@@ -825,5 +952,69 @@ mod tests {
         assert!(unknown_out.is_err());
 
         let _ = std::fs::remove_dir_all(&workspace_root);
+    }
+
+    #[tokio::test]
+    async fn test_list_skills_and_view_skill_tools() {
+        let db_url = std::env::var("DATABASE_URL")
+            .unwrap_or_else(|_| "postgres://postgres:mysecretpassword@localhost:5432/aaddb".to_string());
+
+        let pool = match sqlx::postgres::PgPoolOptions::new().connect(&db_url).await {
+            Ok(p) => p,
+            Err(_) => {
+                println!("Note: Database not available, skipping test_list_skills_and_view_skill_tools");
+                return;
+            }
+        };
+
+        // Create a dummy skill
+        let skill_id = Uuid::new_v4();
+        let owner_id = Uuid::new_v4();
+        let skill_name = format!("test-skill-{}", skill_id);
+
+        let insert_res = sqlx::query(
+            r#"
+            INSERT INTO skills (id, name, description, definition, tags, owner_id)
+            VALUES ($1, $2, $3, $4, $5, $6)
+            "#
+        )
+        .bind(skill_id)
+        .bind(&skill_name)
+        .bind("A test skill")
+        .bind("Test definition")
+        .bind(vec!["test"])
+        .bind(owner_id)
+        .execute(&pool)
+        .await;
+
+        if insert_res.is_err() {
+            println!("Note: Database not migrated, skipping test_list_skills_and_view_skill_tools");
+            return;
+        }
+
+        // Test ListSkillsTool
+        let list_tool = ListSkillsTool { pool: pool.clone() };
+        let list_res = list_tool.call(ListSkillsArgs {}).await.expect("ListSkillsTool failed");
+
+        let found = list_res.skills.iter().any(|s| s.name == skill_name && s.description == "A test skill");
+        assert!(found, "ListSkillsTool did not return the inserted skill");
+
+        // Test ViewSkillTool - Found
+        let view_tool = ViewSkillTool { pool: pool.clone() };
+        let view_res = view_tool.call(ViewSkillArgs { skill_name: skill_name.clone() }).await.expect("ViewSkillTool failed");
+
+        assert!(view_res.error.is_none());
+        assert!(view_res.skill.is_some());
+        let skill = view_res.skill.unwrap();
+        assert_eq!(skill.name, skill_name);
+        assert_eq!(skill.description, "A test skill");
+
+        // Test ViewSkillTool - Not Found
+        let view_res_not_found = view_tool.call(ViewSkillArgs { skill_name: "nonexistent_skill_123".to_string() }).await.expect("ViewSkillTool failed");
+        assert!(view_res_not_found.skill.is_none());
+        assert_eq!(view_res_not_found.error.unwrap(), "Skill not found");
+
+        // Cleanup
+        let _ = sqlx::query("DELETE FROM skills WHERE id = $1").bind(skill_id).execute(&pool).await;
     }
 }
