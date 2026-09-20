@@ -6,7 +6,6 @@ use axum::{
     Router,
 };
 use sqlx::{PgPool, Row};
-use uuid::Uuid;
 
 use crate::{
     models::{SemanticSearchRequest, SemanticSearchResult},

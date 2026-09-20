@@ -169,6 +169,8 @@ pub struct AgentContextSearchRequest {
 pub struct AgentContextSearchResult {
     pub entity_id: Uuid,
     pub entity_type: String,
+    pub name: Option<String>,
+    pub description: Option<String>,
     pub field_name: String,
     pub content: String,
     pub score: f64,

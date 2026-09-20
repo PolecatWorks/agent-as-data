@@ -68,25 +68,33 @@ describe('AgentContextComponent', () => {
     expect(router.navigate).toHaveBeenCalledWith(['/skills', 'skill-456']);
   });
 
-  it('should render the View Details button on result cards and trigger viewDetails on click', () => {
+  it('should render the View Details button, name, match reason, description and omit entity_id', () => {
     component.searchResults = [
       {
-        entity_id: 'test-agent-id',
+        entity_id: 'test-agent-id-12345',
+        name: 'Autonomous Research Agent',
+        description: 'An agent that performs deep web research and synthesis.',
         entity_type: 'agents',
-        field_name: 'name',
-        content: 'Test Agent Content',
+        field_name: 'description',
+        content: 'deep web research',
         score: 0.95,
-        match_reason: 'Semantic similarity match'
+        match_reason: 'Matched on entity description'
       }
     ];
     fixture.detectChanges();
 
     const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.textContent).toContain('Autonomous Research Agent');
+    expect(compiled.textContent).toContain('Matched on entity description');
+    expect(compiled.textContent).toContain('An agent that performs deep web research and synthesis.');
+    expect(compiled.textContent).not.toContain('test-agent-id-12345');
+    expect(compiled.textContent).not.toContain('Semantic similarity');
+
     const btn = compiled.querySelector('[data-testid="view-details-btn"]') as HTMLButtonElement;
     expect(btn).toBeTruthy();
     expect(btn.textContent).toContain('View Details');
 
     btn.click();
-    expect(router.navigate).toHaveBeenCalledWith(['/agents', 'test-agent-id']);
+    expect(router.navigate).toHaveBeenCalledWith(['/agents', 'test-agent-id-12345']);
   });
 });

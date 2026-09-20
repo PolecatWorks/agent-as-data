@@ -91,13 +91,13 @@
 
         <mat-card *ngFor="let result of searchResults" class="!rounded-xl !border !border-slate-200 !shadow-sm hover:!shadow-md transition-shadow">
           <mat-card-content class="!p-5">
-            <div class="flex justify-between items-start mb-3">
+            <div class="flex justify-between items-start mb-2">
               <div class="flex items-center gap-3">
                 <mat-icon class="text-indigo-500" [fontIcon]="result.entity_type === 'agents' ? 'smart_toy' : 'extension'"></mat-icon>
                 <div>
                   <div class="font-bold text-lg flex items-center gap-2">
-                    {{ result.entity_id }}
-                    <span class="text-xs font-mono bg-slate-100 text-slate-600 px-2 py-1 rounded">
+                    <span>{{ result.name || 'Unnamed' }}</span>
+                    <span class="text-xs font-mono bg-slate-100 text-slate-600 px-2 py-0.5 rounded capitalize">
                       {{ result.entity_type }}
                     </span>
                   </div>
@@ -111,16 +111,24 @@
               </div>
             </div>
 
-            <div class="bg-indigo-50/50 rounded-lg p-4 border border-indigo-100 mb-4">
-              <div class="text-xs uppercase font-bold text-indigo-400 mb-1 tracking-wider">Matched on {{ result.field_name }}</div>
-              <p class="text-sm text-slate-700 font-medium italic">"{{ result.content }}"</p>
+            <!-- Match Reason Badge -->
+            <div class="flex items-center gap-1.5 text-xs font-semibold text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-md w-fit mb-3">
+              <mat-icon class="!w-4 !h-4 !text-base text-indigo-600">check_circle</mat-icon>
+              <span>{{ result.match_reason }}</span>
             </div>
 
-            <div class="flex items-center justify-between gap-4 pt-3 border-t border-slate-100 mt-2">
-              <div class="flex items-start gap-2">
-                <mat-icon class="text-green-500 text-sm mt-0.5">check_circle</mat-icon>
-                <p class="text-sm text-slate-600 m-0">{{ result.match_reason }}</p>
-              </div>
+            <!-- Description -->
+            <p class="text-sm text-slate-700 font-normal mb-3" *ngIf="result.description">
+              {{ result.description }}
+            </p>
+
+            <!-- Matched Content Snippet (if matched on prompt/definition/etc) -->
+            <div class="bg-slate-50 rounded-lg p-3 border border-slate-200 mb-3" *ngIf="result.field_name !== 'description' && result.field_name !== 'name'">
+              <div class="text-xs uppercase font-bold text-slate-500 mb-1 tracking-wider">Matched Content ({{ result.field_name }})</div>
+              <p class="text-xs text-slate-600 font-mono m-0 line-clamp-2">{{ result.content }}</p>
+            </div>
+
+            <div class="flex items-center justify-end pt-3 border-t border-slate-100 mt-2">
               <button mat-flat-button color="primary" class="!rounded-lg !px-4 h-9 !text-xs font-bold shrink-0"
                       data-testid="view-details-btn"
                       (click)="viewDetails(result)">
