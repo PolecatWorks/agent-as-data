@@ -643,9 +643,11 @@ pub async fn search_agent_context(
     Json(payload): Json<AgentContextSearchRequest>,
 ) -> Result<Json<Vec<AgentContextSearchResult>>, (StatusCode, String)> {
     let limit = payload.depth.unwrap_or(5) as i64;
-    // For now, doing a basic text search since rig-core mock might not give useful embeddings
-    // In production, we'd embed the payload.query and do vector cosine matching over entity_embeddings
-    let pattern = format!("%{}%", payload.query);
+    let query_trimmed = payload.query.trim();
+    if query_trimmed.is_empty() {
+        return Ok(Json(vec![]));
+    }
+    let pattern = format!("%{}%", query_trimmed);
 
     let query = r#"
         SELECT
