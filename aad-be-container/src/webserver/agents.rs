@@ -650,24 +650,48 @@ pub async fn search_agent_context(
     let pattern = format!("%{}%", query_trimmed);
 
     let query = r#"
-        SELECT
-            e.entity_id,
-            e.entity_type,
-            e.field_name,
-            e.content,
-            COALESCE(a.name, s.name, t.server_name, tr.name) as name,
-            COALESCE(a.description, s.description, tr.description) as description
-        FROM entity_embeddings e
-        LEFT JOIN agents a ON e.entity_type IN ('agents', 'agent') AND e.entity_id = a.id
-        LEFT JOIN skills s ON e.entity_type IN ('skills', 'skill') AND e.entity_id = s.id
-        LEFT JOIN tools t ON e.entity_type IN ('tools', 'tool') AND e.entity_id = t.id
-        LEFT JOIN trait_contracts tr ON e.entity_type IN ('traits', 'trait') AND e.entity_id = tr.id
-        WHERE e.content ILIKE $1
-        LIMIT $2
+        WITH matches AS (
+            SELECT
+                e.entity_id,
+                e.entity_type,
+                e.field_name,
+                e.content,
+                COALESCE(a.name, s.name, t.server_name, tr.name) as name,
+                COALESCE(a.description, s.description, tr.description) as description,
+                (CASE
+                    WHEN e.content ILIKE $1 THEN 0.98::float8
+                    ELSE LEAST(0.96::float8, GREATEST(0.60::float8, (0.65 + (ts_rank_cd(to_tsvector('english', e.content), NULLIF(replace(plainto_tsquery('english', $2)::text, '&', '|'), '')::tsquery) * 1.5))::float8))
+                END)::float8 as score
+            FROM entity_embeddings e
+            LEFT JOIN agents a ON e.entity_type IN ('agents', 'agent') AND e.entity_id = a.id
+            LEFT JOIN skills s ON e.entity_type IN ('skills', 'skill') AND e.entity_id = s.id
+            LEFT JOIN tools t ON e.entity_type IN ('tools', 'tool') AND e.entity_id = t.id
+            LEFT JOIN trait_contracts tr ON e.entity_type IN ('traits', 'trait') AND e.entity_id = tr.id
+            WHERE e.content ILIKE $1
+               OR (
+                   to_tsvector('english', e.content) @@ NULLIF(replace(plainto_tsquery('english', $2)::text, '&', '|'), '')::tsquery
+               )
+        ),
+        deduped AS (
+            SELECT DISTINCT ON (COALESCE(name, entity_id::text))
+                entity_id,
+                entity_type,
+                field_name,
+                content,
+                name,
+                description,
+                score
+            FROM matches
+            ORDER BY COALESCE(name, entity_id::text), score DESC
+        )
+        SELECT * FROM deduped
+        ORDER BY score DESC
+        LIMIT $3
     "#;
 
     let rows = sqlx::query(query)
         .bind(pattern)
+        .bind(query_trimmed)
         .bind(limit)
         .fetch_all(&pool)
         .await
@@ -692,7 +716,7 @@ pub async fn search_agent_context(
                 description: r.try_get("description").ok(),
                 field_name,
                 content: r.get("content"),
-                score: 0.95,
+                score: r.get("score"),
                 match_reason,
             }
         })
