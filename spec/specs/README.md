@@ -178,3 +178,4 @@ flowchart TD
 
 
 - [12. Skills Registry Tools Spec](./12-skills-tools-spec.md)
+- [13. Semantic Search Discovery Page Spec](./13-semantic-search-page-spec.md)
