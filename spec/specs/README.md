@@ -173,6 +173,7 @@ flowchart TD
 | **Phase 11** | [26-startup-metrics-initialization-spec.md](./26-startup-metrics-initialization-spec.md) | `complete` | Baseline Startup Metrics Initialization (`app_info`), Safe HaMS Closure Registration & MCP HTTP Telemetry Layer | [Master PRD](../prds/agent-as-data-prd.md), [MCP PRD](../prds/mcp-server-container-prd.md) | Phase 11 Spec (Depends on Spec 09 & Spec 23) |
 | **Phase 11** | [27-tokio-runtime-metrics-spec.md](./27-tokio-runtime-metrics-spec.md) | `complete` | Tokio Runtime Metrics Telemetry Instrumentation (`tokio-metrics`) in HaMS Prometheus Exports | [Master PRD](../prds/agent-as-data-prd.md), [MCP PRD](../prds/mcp-server-container-prd.md) | Phase 11 Spec (Depends on Spec 26) |
 | **Phase 11** | [28-telemetry-pod-endpoint-resolution-spec.md](./28-telemetry-pod-endpoint-resolution-spec.md) | `complete` | Test Harness Telemetry & Pod Endpoint Resolution Abstraction (Local vs. In-Cluster Pod IPs) | [Master PRD](../prds/agent-as-data-prd.md), [Testing Kit PRD](../prds/agent-ui-testing-kit-prd.md) | Phase 11 Spec (Depends on Spec 27) |
+| **Phase 12** | [29-knowledge-registry-ui-bread-spec.md](./29-knowledge-registry-ui-bread-spec.md) | `draft` | Knowledge Registry UI/UX parity, Data Model expansion (`description`, `tags`), and BREAD capabilities | [Knowledge PRD](../prds/knowledge-data-system-prd.md) | Phase 12 Spec (Depends on Spec 02 & 08) |
 
 - [CLI Manifest Tool Spec](./cli-manifest-tool-spec.md)
 

@@ -5,9 +5,34 @@ use uuid::Uuid;
 pub struct IngestKnowledgeRequest {
     pub topic: String,
     pub title: Option<String>,
+    pub description: Option<String>,
+    pub tags: Option<Vec<String>>,
     pub content: String,
     pub metadata: Option<serde_json::Value>,
     pub tuples: Option<Vec<KnowledgeTupleInput>>,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone, sqlx::FromRow)]
+pub struct KnowledgeNode {
+    pub id: Uuid,
+    pub topic: String,
+    pub title: Option<String>,
+    pub description: Option<String>,
+    pub tags: Vec<String>,
+    pub content: String,
+    pub metadata: serde_json::Value,
+    pub created_at: chrono::DateTime<chrono::Utc>,
+    pub updated_at: chrono::DateTime<chrono::Utc>,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct UpdateKnowledgeRequest {
+    pub topic: Option<String>,
+    pub title: Option<String>,
+    pub description: Option<String>,
+    pub tags: Option<Vec<String>>,
+    pub content: Option<String>,
+    pub metadata: Option<serde_json::Value>,
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]

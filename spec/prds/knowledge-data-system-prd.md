@@ -7,11 +7,15 @@ The Knowledge & Data System in **Agent-As-Data (AAD)** serves as a persistent **
 ## Core Capabilities
 
 ### 1. Hybrid Knowledge Storage
-- **Text & Document Nodes**: Raw narrative notes, design docs, and architectural decisions stored in `knowledge_nodes`.
+- **Text & Document Nodes**: Raw narrative notes, design docs, and architectural decisions stored in `knowledge_nodes`. Extended to include `description` and `tags` metadata to facilitate human browsing and categorization.
 - **Semantic RAG Embeddings**: Automatic text chunking and vector indexing in `knowledge_embeddings` (`pgvector` with HNSW cosine similarity indices) to enable semantic vector queries (`POST /{{api_prefix}}/v1/knowledge/search`).
 - **Graph Relational Triples**: Relational tuple storage (`subject`, `predicate`, `object`, `confidence`, `metadata`) in `knowledge_tuples` to capture concept maps (e.g., `User -> belongs_to -> Tenant`).
 
-### 2. Knowledge Retrieval & Graph Traversal
+### 2. Knowledge Registry UI & Management (BREAD)
+- **Unified UI/UX Structure**: Following the identical architectural structure of the Agency Registry, the Knowledge UI implements a dual-pane layout: a collapsible left sidebar for browsing knowledge nodes, and a right-side main workspace for creating, reading, and editing knowledge nodes.
+- **BREAD Operations**: Full Browse, Read, Edit, Add, and Delete capabilities over knowledge items directly from the UI, supporting edits to `title`, `description`, `content`, and `tags`.
+
+### 3. Knowledge Retrieval & Graph Traversal
 - **Semantic Vector Search**: Nearest-neighbor retrieval over chunked text context given a user or agent prompt.
 - **Multi-Hop Graph Queries**: Traversal endpoint (`POST /{{api_prefix}}/v1/knowledge/graph/traverse`) to discover connected entities and conceptual dependencies.
 - **AI / LLM Integration**: Integration with AI via the `rig-core` crate and connection to an Ollama instance to process natural language queries over vector data (RAG).
