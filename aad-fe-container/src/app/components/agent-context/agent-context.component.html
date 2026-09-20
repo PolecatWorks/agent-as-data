@@ -63,7 +63,7 @@
               <mat-label>Enter natural language task context</mat-label>
               <textarea matInput [(ngModel)]="searchQuery" rows="3"
                         placeholder="e.g. I need an agent that can review Rust code and check for security vulnerabilities"
-                        (keyup.enter)="onSearch()"></textarea>
+                        (keydown)="onKeydown($event)"></textarea>
             </mat-form-field>
           </div>
 

@@ -5,6 +5,7 @@ import { provideRouter, Router, ActivatedRoute } from '@angular/router';
 import { of } from 'rxjs';
 import { NO_ERRORS_SCHEMA } from '@angular/core';
 import { AgentContextComponent } from './agent-context.component';
+import { ApiService } from '../../services/api.service';
 
 describe('AgentContextComponent', () => {
   let component: AgentContextComponent;
@@ -96,5 +97,33 @@ describe('AgentContextComponent', () => {
 
     btn.click();
     expect(router.navigate).toHaveBeenCalledWith(['/agents', 'test-agent-id-12345']);
+  });
+
+  it('should trigger search and prevent default newline when Enter is pressed without Shift', () => {
+    const apiService = TestBed.inject(ApiService);
+    spyOn(apiService, 'searchAgentContext').and.returnValue(of([]));
+    spyOn(component, 'onSearch').and.callThrough();
+    component.searchQuery = '  find rust agent  \n';
+
+    const event = new KeyboardEvent('keydown', { key: 'Enter', cancelable: true });
+    spyOn(event, 'preventDefault');
+
+    component.onKeydown(event);
+
+    expect(event.preventDefault).toHaveBeenCalled();
+    expect(component.onSearch).toHaveBeenCalled();
+    expect(component.searchQuery).toBe('find rust agent');
+    expect(apiService.searchAgentContext).toHaveBeenCalledWith('find rust agent', 5);
+  });
+
+  it('should not trigger search or prevent default when Shift+Enter is pressed', () => {
+    spyOn(component, 'onSearch');
+    const event = new KeyboardEvent('keydown', { key: 'Enter', shiftKey: true, cancelable: true });
+    spyOn(event, 'preventDefault');
+
+    component.onKeydown(event);
+
+    expect(event.preventDefault).not.toHaveBeenCalled();
+    expect(component.onSearch).not.toHaveBeenCalled();
   });
 });

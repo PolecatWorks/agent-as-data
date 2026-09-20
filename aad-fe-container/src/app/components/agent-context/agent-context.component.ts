@@ -65,10 +65,19 @@ export class AgentContextComponent {
 
   constructor(private apiService: ApiService, private router: Router) {}
 
+  onKeydown(event: KeyboardEvent): void {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      this.onSearch();
+    }
+  }
+
   onSearch(): void {
-    if (!this.searchQuery.trim()) return;
+    const trimmed = this.searchQuery.trim();
+    if (!trimmed) return;
+    this.searchQuery = trimmed;
     this.isSearching = true;
-    this.apiService.searchAgentContext(this.searchQuery, this.traceDepth).subscribe({
+    this.apiService.searchAgentContext(trimmed, this.traceDepth).subscribe({
       next: (results) => {
         this.searchResults = results;
         this.isSearching = false;
