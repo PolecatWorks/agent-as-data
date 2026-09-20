@@ -197,6 +197,17 @@ export interface Skill {
   implementation?: any;
 }
 
+export interface KnowledgeNode {
+  id: string;
+  topic: string;
+  title?: string;
+  description?: string;
+  tags: string[];
+  content: string;
+  metadata?: any;
+  created_at?: string;
+  updated_at?: string;
+}
 
 @Injectable({
   providedIn: 'root'
@@ -257,12 +268,28 @@ export class ApiService {
   }
 
   // Knowledge APIs
+  getKnowledgeNodes(): Observable<KnowledgeNode[]> {
+    return this.http.get<KnowledgeNode[]>(`${this.baseUrl}/knowledge`);
+  }
+
+  getKnowledgeNode(id: string): Observable<KnowledgeNode> {
+    return this.http.get<KnowledgeNode>(`${this.baseUrl}/knowledge/${id}`);
+  }
+
+  updateKnowledgeNode(id: string, payload: Partial<KnowledgeNode>): Observable<KnowledgeNode> {
+    return this.http.put<KnowledgeNode>(`${this.baseUrl}/knowledge/${id}`, payload);
+  }
+
+  deleteKnowledgeNode(id: string): Observable<any> {
+    return this.http.delete(`${this.baseUrl}/knowledge/${id}`);
+  }
+
   searchKnowledge(query: string): Observable<any[]> {
     return this.http.post<any[]>(`${this.baseUrl}/knowledge/search`, { query, limit: 10 });
   }
 
-  ingestKnowledge(topic: string, title: string, content: string, tuples?: any[]): Observable<any> {
-    return this.http.post(`${this.baseUrl}/knowledge`, { topic, title, content, tuples });
+  ingestKnowledge(topic: string, title: string, description: string | undefined, tags: string[], content: string, tuples?: any[]): Observable<any> {
+    return this.http.post(`${this.baseUrl}/knowledge`, { topic, title, description, tags, content, tuples });
   }
 
   traverseGraph(subject: string): Observable<any[]> {
