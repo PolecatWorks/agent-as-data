@@ -279,6 +279,8 @@ async fn process_thread_message(
             .tool(crate::llm_tools::RenameFileTool { bench_id })
             .tool(crate::llm_tools::ReadBenchMemoryTool { bench_id, pool: state.pool.clone() })
             .tool(crate::llm_tools::UpdateBenchMemoryTool { bench_id, pool: state.pool.clone() })
+            .tool(crate::llm_tools::ListSkillsTool { pool: state.pool.clone() })
+            .tool(crate::llm_tools::ViewSkillTool { pool: state.pool.clone() })
             .default_max_turns(5)
             .build();
 

@@ -1,5 +1,5 @@
 ---
-status: draft
+status: complete
 ---
 
 # 12. Skills Registry Tools Spec
