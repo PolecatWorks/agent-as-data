@@ -1,6 +1,6 @@
 # Spec 29: Knowledge Registry UI & BREAD Operations
 
-**Status**: `draft`
+**Status**: `complete`
 
 ## Overview & Scope
 This specification details the implementation of a full BREAD (Browse, Read, Edit, Add, Delete) feature set for the Knowledge System, bringing it to architectural UI/UX parity with the Agent Registry. It expands the underlying `knowledge_nodes` data model and introduces corresponding REST endpoints and Angular UI components.
