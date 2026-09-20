@@ -310,3 +310,13 @@ class AADRequests:
         except Exception:
             return False
 
+    def sync_agent_embeddings(self, agent_id):
+        resp = requests.post(f"{self.base_url}/api/v1/agents/{agent_id}/sync-embeddings", timeout=10)
+        resp.raise_for_status()
+        return resp.json()
+
+    def search_agent_context(self, query, depth=5):
+        resp = requests.post(f"{self.base_url}/api/v1/agent-context/search", json={"query": query, "depth": depth}, timeout=10)
+        resp.raise_for_status()
+        return resp.json()
+
