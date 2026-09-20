@@ -26,6 +26,7 @@ dependencies = [
  "serde_yaml",
  "thiserror 2.0.20",
  "tokio",
+ "tokio-metrics",
  "tokio-stream",
  "tokio-util",
  "tower",
@@ -2308,6 +2309,19 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 3.0.5",
+]
+
+[[package]]
+name = "tokio-metrics"
+version = "0.5.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "01f967a7d11cf59ebeb361546fcc207763de7a885db18176e7042dfc28665f1c"
+dependencies = [
+ "futures-util",
+ "metrics",
+ "pin-project-lite",
+ "tokio",
+ "tokio-stream",
 ]
 
 [[package]]

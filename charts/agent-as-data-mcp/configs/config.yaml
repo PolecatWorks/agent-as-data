@@ -11,6 +11,7 @@ runtime:
   threads: 2
   stack_size: 3000000
   name: "aad-mcp-worker"
+  metrics_interval: "5s"
 
 debugging:
   environment: "production"

@@ -45,6 +45,28 @@ fn test_config_validation_empty_address() {
 }
 
 #[test]
+fn test_config_validation_zero_metrics_interval() {
+    let mut config = AppConfig {
+        webservice: WebServiceConfig {
+            address: "0.0.0.0:8080".to_string(),
+            api_prefix: "/api".to_string(),
+        },
+        hams: ::hams::hams::config::HamsConfig::default(),
+        runtime: ThreadRuntime::default(),
+        debugging: DebuggingConfig {
+            environment: "development".to_string(),
+            log_level: "info".to_string(),
+            fail_debug_delay: Duration::from_secs(0),
+        },
+    };
+    config.runtime.metrics_interval = Duration::from_secs(0);
+
+    let result = config.validate();
+    assert!(result.is_err());
+    assert!(result.unwrap_err().contains("metrics_interval"));
+}
+
+#[test]
 fn test_config_load_from_file_and_env_override() {
     let test_dir = std::path::Path::new("target/test_mcp_config");
     if test_dir.exists() {

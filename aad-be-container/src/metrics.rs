@@ -17,14 +17,7 @@ use crate::state::AppState;
 pub extern "C" fn prometheus_response_mystate(ptr: *const c_void) -> *mut c_char {
     let state = unsafe { &*(ptr as *const AppState) };
 
-    let mut axum_string = state.prometheus_handle.render();
-
-    if let Ok(handle) = tokio::runtime::Handle::try_current() {
-        let metrics = handle.metrics();
-        axum_string.push_str("\n# HELP tokio_workers_count Number of worker threads\n");
-        axum_string.push_str("# TYPE tokio_workers_count gauge\n");
-        axum_string.push_str(&format!("tokio_workers_count {}\n", metrics.num_workers()));
-    }
+    let axum_string = state.prometheus_handle.render();
 
     let buffer = axum_string.into_bytes();
 
@@ -176,5 +169,26 @@ mod tests {
         assert!(rendered.contains("app_info"), "Rendered metrics should include app_info");
         assert!(rendered.contains("aad-be"), "Rendered metrics should include application name");
         assert!(rendered.contains("0.1.0"), "Rendered metrics should include version");
+    }
+
+    #[tokio::test]
+    async fn test_tokio_metrics_reporting() {
+        let handle = get_test_handle();
+
+        let reporter_task = tokio::task::spawn(
+            tokio_metrics::RuntimeMetricsReporterBuilder::default()
+                .with_interval(std::time::Duration::from_millis(50))
+                .describe_and_run(),
+        );
+
+        tokio::time::sleep(std::time::Duration::from_millis(150)).await;
+
+        let rendered = handle.render();
+        assert!(
+            rendered.contains("tokio_workers_count"),
+            "Rendered metrics should contain tokio_workers_count from tokio-metrics reporter"
+        );
+
+        reporter_task.abort();
     }
 }

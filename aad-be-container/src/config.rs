@@ -143,6 +143,9 @@ impl AppConfig {
             return Err("LLM timeout_secs must be greater than 0".to_string());
         }
         Url::parse(&self.llm.ollama_url).map_err(|e| format!("Invalid LLM Ollama URL format: {}", e))?;
+        if self.runtime.metrics_interval.is_zero() {
+            return Err("Runtime metrics_interval must be greater than 0".to_string());
+        }
         Ok(())
     }
 }
@@ -247,6 +250,41 @@ mod tests {
         };
 
         assert!(config.validate().is_err());
+    }
+
+    #[test]
+    fn test_config_validation_zero_metrics_interval() {
+        let mut config = AppConfig {
+            database: DatabaseConfig {
+                url: UrlWithUsernamePassword {
+                    url: Url::parse("postgres://localhost:5432/aaddb").unwrap(),
+                    username: Some("postgres".to_string()),
+                    password: Some("mysecretpassword".to_string()),
+                },
+                max_connections: 5,
+            },
+            webservice: WebServiceConfig {
+                address: "0.0.0.0:8080".to_string(),
+                api_prefix: "/api".to_string(),
+            },
+            llm: LlmConfig {
+                ollama_url: "http://localhost:11434".to_string(),
+                model: "llama3".to_string(),
+                timeout_secs: 15,
+            },
+            hams: ::hams::hams::config::HamsConfig::default(),
+            runtime: ThreadRuntime::default(),
+            debugging: DebuggingConfig {
+                environment: "development".to_string(),
+                log_level: "info".to_string(),
+                fail_debug_delay: Duration::from_secs(0),
+            },
+        };
+        config.runtime.metrics_interval = Duration::from_secs(0);
+
+        let res = config.validate();
+        assert!(res.is_err());
+        assert!(res.unwrap_err().contains("metrics_interval"));
     }
 
     #[test]
