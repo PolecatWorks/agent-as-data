@@ -233,6 +233,10 @@ flowchart TD
 ### 6. Agent Refactoring & Compression Lab (`/refactoring-lab`)
 - **Overlap & Duplication Scanner**: Trigger cluster analysis (`POST /{{api_prefix}}/v1/agents/refactor/analyze`) to discover duplicate or conflicting agents.
 - **Harmonization & Merge Diff Viewer**: Review suggested merges or deliberate contradiction labels before applying changes to `agent_revisions`.
+- **Entity Presentation & Navigation**:
+  - Raw UUIDs must be strictly hidden from the cluster UI.
+  - Entities (agents/skills) within clusters must be displayed using their `name` with their full `description` available via a hover-over tooltip.
+  - Clicking on an entity must route the user directly to its respective detail/viewer page (e.g., `/agents/:id`).
 
 ### 7. Knowledge & SPO Tuple Inspector (`/knowledge-inspector`)
 - **Hybrid Knowledge Search**: RAG vector query input (`POST /{{api_prefix}}/v1/knowledge/search`) displaying semantic chunk similarity scores alongside Subject-Predicate-Object relation tuples (`knowledge_tuples`).
