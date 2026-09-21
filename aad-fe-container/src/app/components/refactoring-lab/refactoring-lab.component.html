@@ -84,7 +84,12 @@
                   {{ (c.overlap_score * 100).toFixed(0) }}% OVERLAP
                 </span>
               </div>
-              <p class="text-xs text-purple-700 m-0">Agents: {{ c.agents.join(', ') }}</p>
+              <p class="text-xs text-purple-700 m-0">
+                Agents:
+                @for (agentId of c.agents; track agentId) {
+                  <a [routerLink]="['/agents', agentId]" [matTooltip]="getAgentDescription(agentId)" class="hover:underline cursor-pointer">{{ getAgentName(agentId) }}</a>@if (!$last) { , }
+                }
+              </p>
             </div>
           } @empty {
             <div class="text-center py-12 text-slate-400 text-xs">
@@ -105,7 +110,7 @@
         <mat-card-content class="flex-1 min-h-0 overflow-y-auto p-4 space-y-2">
           @for (r of redundantAgents; track r) {
             <div class="p-3 bg-amber-50 rounded-xl border border-amber-200 text-xs font-semibold text-amber-900 flex justify-between items-center">
-              <span>{{ r }}</span>
+              <a [routerLink]="['/agents', r]" [matTooltip]="getAgentDescription(r)" class="hover:underline cursor-pointer">{{ getAgentName(r) }}</a>
               <span class="text-[10px] text-amber-700 bg-amber-200 px-2 py-0.5 rounded-md font-bold">MERGE CANDIDATE</span>
             </div>
           } @empty {
@@ -128,9 +133,9 @@
           @for (dc of deliberateContradictions; track dc.agent_a) {
             <div class="p-3 bg-blue-50 rounded-xl border border-blue-200 text-xs text-blue-900 space-y-1">
               <div class="font-bold flex items-center gap-1">
-                <span>{{ dc.agent_a }}</span>
+                <a [routerLink]="['/agents', dc.agent_a]" [matTooltip]="getAgentDescription(dc.agent_a)" class="hover:underline cursor-pointer">{{ getAgentName(dc.agent_a) }}</a>
                 <span class="text-blue-500 font-bold">↔</span>
-                <span>{{ dc.agent_b }}</span>
+                <a [routerLink]="['/agents', dc.agent_b]" [matTooltip]="getAgentDescription(dc.agent_b)" class="hover:underline cursor-pointer">{{ getAgentName(dc.agent_b) }}</a>
               </div>
               <p class="text-[10px] text-blue-700 m-0 font-medium">Type: {{ dc.conflict_type }}</p>
             </div>

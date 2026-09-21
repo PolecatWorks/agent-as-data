@@ -5,8 +5,9 @@ import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { RouterModule } from '@angular/router';
-import { ApiService } from '../../services/api.service';
+import { ApiService, Agent } from '../../services/api.service';
 import { ConceptGuideComponent, ConceptTabMapping } from '../concept-guide/concept-guide.component';
 import { APP_NAV_MENU_ITEMS } from '../../models/navigation';
 
@@ -20,6 +21,7 @@ import { APP_NAV_MENU_ITEMS } from '../../models/navigation';
     MatButtonModule,
     MatIconModule,
     MatMenuModule,
+    MatTooltipModule,
     RouterModule,
     ConceptGuideComponent
   ],
@@ -31,6 +33,7 @@ export class RefactoringLabComponent implements OnInit {
   clusters: any[] = [];
   redundantAgents: string[] = [];
   deliberateContradictions: any[] = [];
+  agentsMap: Map<string, Agent> = new Map();
 
   menuItems = APP_NAV_MENU_ITEMS;
 
@@ -58,7 +61,29 @@ export class RefactoringLabComponent implements OnInit {
   constructor(private apiService: ApiService) {}
 
   ngOnInit(): void {
-    this.runScan();
+    this.apiService.getAgents().subscribe({
+      next: (agents) => {
+        agents.forEach(agent => {
+          if (agent.id) {
+            this.agentsMap.set(agent.id, agent);
+          }
+        });
+        this.runScan();
+      },
+      error: () => {
+        this.runScan();
+      }
+    });
+  }
+
+  getAgentName(id: string): string {
+    const agent = this.agentsMap.get(id);
+    return agent ? agent.name : id;
+  }
+
+  getAgentDescription(id: string): string {
+    const agent = this.agentsMap.get(id);
+    return agent?.description || 'No description available';
   }
 
   runScan(): void {
