@@ -132,6 +132,10 @@ flowchart TD
         Spec29["29-knowledge-registry-ui-bread-spec.md<br/>(Knowledge Registry UI & BREAD)"]:::complete
     end
 
+    subgraph Phase13 ["Phase 13: Workbench Tool Execution Cards UI"]
+        Spec30["30-workbench-tool-execution-cards-ui-spec.md<br/>(Tool Execution Cards UI)"]:::complete
+    end
+
     Spec20 --> Spec21
     Spec21 --> Spec22
     Spec09 --> Spec23
@@ -143,6 +147,7 @@ flowchart TD
     Spec27 --> Spec28
     Spec02 --> Spec29
     Spec08 --> Spec29
+    Spec17 --> Spec30
 ```
 
 ## Index of Task Specifications
@@ -180,6 +185,7 @@ flowchart TD
 | **Phase 11** | [27-tokio-runtime-metrics-spec.md](./27-tokio-runtime-metrics-spec.md) | `complete` | Tokio Runtime Metrics Telemetry Instrumentation (`tokio-metrics`) in HaMS Prometheus Exports | [Master PRD](../prds/agent-as-data-prd.md), [MCP PRD](../prds/mcp-server-container-prd.md) | Phase 11 Spec (Depends on Spec 26) |
 | **Phase 11** | [28-telemetry-pod-endpoint-resolution-spec.md](./28-telemetry-pod-endpoint-resolution-spec.md) | `complete` | Test Harness Telemetry & Pod Endpoint Resolution Abstraction (Local vs. In-Cluster Pod IPs) | [Master PRD](../prds/agent-as-data-prd.md), [Testing Kit PRD](../prds/agent-ui-testing-kit-prd.md) | Phase 11 Spec (Depends on Spec 27) |
 | **Phase 12** | [29-knowledge-registry-ui-bread-spec.md](./29-knowledge-registry-ui-bread-spec.md) | `complete` | Knowledge Registry UI/UX parity, Data Model expansion (`description`, `tags`), and BREAD capabilities | [Knowledge PRD](../prds/knowledge-data-system-prd.md) | Phase 12 Spec (Depends on Spec 02 & 08) |
+| **Phase 13** | [30-workbench-tool-execution-cards-ui-spec.md](./30-workbench-tool-execution-cards-ui-spec.md) | `complete` | Workbench Tool Execution Cards UI & Structured Outcome Rendering | [Workspace Tools PRD](../prds/workspace-filesystem-tools-prd.md), [Workbench Bench & Thread PRD](../prds/workbench-bench-thread-prd.md) | Phase 13 Spec (Depends on Spec 17) |
 
 - [CLI Manifest Tool Spec](./cli-manifest-tool-spec.md)
 

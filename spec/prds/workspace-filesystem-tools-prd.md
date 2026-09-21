@@ -141,7 +141,15 @@ flowchart TD
 5. **Instructive Error Feedback & Dynamic Fallback**:
    - When a tool fails (e.g. file does not exist), return clear contextual guidance (e.g. `File 'notes.txt' not found. Available workspace files are: ['todo.md', 'draft.txt']`) so the model can adjust arguments on the next turn.
    - If the LLM service is temporarily offline, fallback processing must dynamically interpret the specific user question and workspace state rather than echoing static strings.
-6. **Distributed Cancellation & Mutating Tool Safeguards**:
+6. **Structured Tool Execution Presentation (No Raw JSON Dumps)**:
+   - Tool execution results returned to the user must never dump raw, unformatted JSON blocks (e.g. ```` ```json {"success": true, ...} ``` ````).
+   - Structured tool outputs (such as `{ "success": bool, "message": String }` from `write_file`, `replace_in_file`, `delete_file`, `rename_file`, `update_bench_memory`) must be clearly articulated with their execution status and message.
+   - **UI Tool Execution Cards (Option C)**: The Workbench frontend must parse and identify tool execution responses, rendering a dedicated, high-polish **Tool Execution Card** featuring:
+     - Tool name identifier and icon.
+     - Semantic status badge (e.g. green `Success` or red `Failed`).
+     - Clear, human-readable outcome message.
+     - Backwards compatibility with historical tool execution message formats in existing threads.
+7. **Distributed Cancellation & Mutating Tool Safeguards**:
    - Before executing *any* mutating workspace tool (`write_file`, `replace_in_file`, `delete_file`, `rename_file`) and before committing the assistant's final response, check `SELECT status FROM thread_runs WHERE id = $run_id`.
    - If `status == 'cancelled'`, immediately abort execution without modifying the filesystem or memory, append a standardized system message `[Action cancelled by user]` to `messages`, set `thread_runs.current_phase = 'cancelled'`, and terminate the loop cleanly.
    - This database-coordinated cancellation model enables horizontally scaled pods to stop in-flight actions reliably without pod-affinity or cross-pod signal handling.

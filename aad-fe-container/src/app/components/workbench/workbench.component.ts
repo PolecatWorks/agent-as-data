@@ -686,4 +686,99 @@ export class WorkbenchComponent implements OnInit, OnDestroy {
       }
     }, 100);
   }
+
+  parseToolExecution(content: string): ToolExecutionDetails | null {
+    if (!content || typeof content !== 'string') return null;
+
+    const trimmed = content.trim();
+
+    // Pattern 1: Structured single line: Executed `<tool>` (success|failed): <message>
+    const structuredMatch = trimmed.match(/^Executed\s+`([^`]+)`\s+\((success|failed)\):\s*([\s\S]*)$/i);
+    if (structuredMatch) {
+      return {
+        toolName: structuredMatch[1],
+        success: structuredMatch[2].toLowerCase() === 'success',
+        message: structuredMatch[3].trim()
+      };
+    }
+
+    // Pattern 2: Error execution: Attempted to execute tool `<tool>` but encountered an error: <message>
+    const errorMatch = trimmed.match(/^Attempted to execute tool\s+`([^`]+)`\s+but encountered an error:\s*([\s\S]*)$/i);
+    if (errorMatch) {
+      return {
+        toolName: errorMatch[1],
+        success: false,
+        message: errorMatch[2].trim()
+      };
+    }
+
+    // Pattern 3: Executed `<tool>`: followed by JSON codeblock or raw JSON
+    const executedMatch = trimmed.match(/^Executed\s+`([^`]+)`:\s*([\s\S]*)$/i);
+    if (executedMatch) {
+      const toolName = executedMatch[1];
+      const remainder = executedMatch[2].trim();
+
+      // Look for ```json ... ``` or raw {...}
+      let jsonStr = '';
+      const codeblockMatch = remainder.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
+      if (codeblockMatch) {
+        jsonStr = codeblockMatch[1].trim();
+      } else if (remainder.startsWith('{') && remainder.endsWith('}')) {
+        jsonStr = remainder;
+      }
+
+      if (jsonStr) {
+        try {
+          const parsed = JSON.parse(jsonStr);
+          if (typeof parsed.success === 'boolean') {
+            return {
+              toolName,
+              success: parsed.success,
+              message: parsed.message || (parsed.success ? 'Operation succeeded.' : 'Operation failed.')
+            };
+          }
+          if (Array.isArray(parsed.files)) {
+            return {
+              toolName,
+              success: true,
+              message: parsed.files.length > 0 ? `Files: ${parsed.files.join(', ')}` : 'No files found.'
+            };
+          }
+          if (typeof parsed.content === 'string') {
+            return {
+              toolName,
+              success: true,
+              message: parsed.content
+            };
+          }
+          if (typeof parsed.memory === 'string') {
+            return {
+              toolName,
+              success: true,
+              message: parsed.memory || 'Bench memory retrieved.'
+            };
+          }
+        } catch {
+          // If JSON parsing fails, fall through
+        }
+      }
+
+      if (remainder && !codeblockMatch) {
+        return {
+          toolName,
+          success: true,
+          message: remainder
+        };
+      }
+    }
+
+    return null;
+  }
 }
+
+export interface ToolExecutionDetails {
+  toolName: string;
+  success: boolean;
+  message: string;
+}
+
