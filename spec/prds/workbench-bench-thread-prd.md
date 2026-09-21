@@ -223,6 +223,14 @@ sequenceDiagram
   - Navigating to `/workbench/:benchId` automatically inspects the Bench's threads, selecting the most recently updated thread and redirecting to `/workbench/:benchId/:threadId`.
   - If a Bench has no threads, a default initial thread is automatically scaffolded.
 
+### 5. Tool Execution Card Rendering in Chat Pane
+- **Visual Elevation over JSON Dumps**: Rather than rendering raw JSON strings or unformatted markdown codeblocks in assistant message bubbles when tools are invoked, the chat timeline visually transforms tool execution messages into dedicated **Tool Execution Cards**.
+- **Card Design Elements**:
+  - **Tool Name & Icon**: Mono-spaced tool name (e.g. `write_file`, `replace_in_file`, `list_files`) paired with a tool/build icon.
+  - **Status Pill**: Semantic badge indicating execution outcome (green `Success` or red `Failed`).
+  - **Human-Readable Message**: Descriptive outcome message (e.g. `Successfully wrote to ben.md`).
+  - **Backward Compatibility**: Automatically detects and formats historical messages containing `Executed \`<tool>\`:` with JSON blocks as well as modern structured execution payloads.
+
 ---
 
 ## Phased Bench Memory System

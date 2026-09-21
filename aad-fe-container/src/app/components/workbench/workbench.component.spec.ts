@@ -94,6 +94,68 @@ describe('WorkbenchComponent', () => {
     expect(switcher.textContent).toContain('Workbench');
     expect(switcher.textContent).toContain('expand_more');
   });
+
+  describe('Tool Execution Cards', () => {
+    it('should parse historical JSON codeblock tool execution message with success: true', () => {
+      const raw = 'Executed `write_file`:\n```json\n{"success":true,"message":"Successfully wrote to ben.md"}\n```';
+      const parsed = component.parseToolExecution(raw);
+      expect(parsed).not.toBeNull();
+      expect(parsed?.toolName).toBe('write_file');
+      expect(parsed?.success).toBeTrue();
+      expect(parsed?.message).toBe('Successfully wrote to ben.md');
+    });
+
+    it('should parse historical JSON codeblock tool execution message with success: false', () => {
+      const raw = 'Executed `delete_file`:\n```json\n{"success":false,"message":"File not found"}\n```';
+      const parsed = component.parseToolExecution(raw);
+      expect(parsed).not.toBeNull();
+      expect(parsed?.toolName).toBe('delete_file');
+      expect(parsed?.success).toBeFalse();
+      expect(parsed?.message).toBe('File not found');
+    });
+
+    it('should parse structured single-line tool execution format', () => {
+      const raw = 'Executed `replace_in_file` (success): Replaced 1 occurrence';
+      const parsed = component.parseToolExecution(raw);
+      expect(parsed).not.toBeNull();
+      expect(parsed?.toolName).toBe('replace_in_file');
+      expect(parsed?.success).toBeTrue();
+      expect(parsed?.message).toBe('Replaced 1 occurrence');
+    });
+
+    it('should return null for standard user and assistant messages', () => {
+      expect(component.parseToolExecution('Hello world')).toBeNull();
+      expect(component.parseToolExecution('I have created the file for you.')).toBeNull();
+      expect(component.parseToolExecution('')).toBeNull();
+    });
+
+    it('should render Tool Execution Card in template instead of raw JSON dump', () => {
+      component.activeThread = {
+        id: 'thread-1',
+        bench_id: 'bench-1',
+        owner_id: 'owner-1',
+        title: 'Test Thread',
+        created_at: new Date().toISOString()
+      };
+      component.activeThreadMessages = [
+        {
+          id: 'msg-1',
+          thread_id: 'thread-1',
+          role: 'assistant',
+          content: 'Executed `write_file`:\n```json\n{"success":true,"message":"Successfully wrote to ben.md"}\n```',
+          created_at: new Date().toISOString()
+        }
+      ];
+      fixture.detectChanges();
+
+      const card = fixture.nativeElement.querySelector('[data-testid="tool-execution-card"]');
+      expect(card).toBeTruthy();
+      expect(card.textContent).toContain('write_file');
+      expect(card.textContent).toContain('Success');
+      expect(card.textContent).toContain('Successfully wrote to ben.md');
+      expect(card.textContent).not.toContain('```json');
+    });
+  });
 });
 
 

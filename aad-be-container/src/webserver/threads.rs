@@ -356,11 +356,11 @@ async fn process_thread_message(
                                     Ok(Ok(final_answer)) => Some(final_answer),
                                     Ok(Err(e)) => {
                                         tracing::warn!("Agent follow-up after tool execution failed: {}", e);
-                                        Some(format!("Executed `{}`:\n```json\n{}\n```", tool_name, output))
+                                        Some(format_tool_execution_result(tool_name, &output))
                                     }
                                     Err(_) => {
                                         tracing::warn!("Agent follow-up after tool execution timed out");
-                                        Some(format!("Executed `{}`:\n```json\n{}\n```", tool_name, output))
+                                        Some(format_tool_execution_result(tool_name, &output))
                                     }
                                 }
                             }
@@ -630,3 +630,42 @@ async fn record_cancellation_message(pool: &sqlx::PgPool, thread_id: Uuid, run_i
     .execute(pool)
     .await;
 }
+
+pub fn format_tool_execution_result(tool_name: &str, output: &str) -> String {
+    if let Ok(val) = serde_json::from_str::<serde_json::Value>(output) {
+        if let (Some(success), Some(message)) = (
+            val.get("success").and_then(|v| v.as_bool()),
+            val.get("message").and_then(|v| v.as_str()),
+        ) {
+            let status = if success { "success" } else { "failed" };
+            return format!("Executed `{}` ({}): {}", tool_name, status, message);
+        }
+    }
+    format!("Executed `{}`: {}", tool_name, output)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_format_tool_execution_result_success() {
+        let json = r#"{"success":true,"message":"Successfully wrote to ben.md"}"#;
+        let formatted = format_tool_execution_result("write_file", json);
+        assert_eq!(formatted, "Executed `write_file` (success): Successfully wrote to ben.md");
+    }
+
+    #[test]
+    fn test_format_tool_execution_result_failure() {
+        let json = r#"{"success":false,"message":"File not found"}"#;
+        let formatted = format_tool_execution_result("delete_file", json);
+        assert_eq!(formatted, "Executed `delete_file` (failed): File not found");
+    }
+
+    #[test]
+    fn test_format_tool_execution_result_unstructured() {
+        let formatted = format_tool_execution_result("custom_tool", "plain text output");
+        assert_eq!(formatted, "Executed `custom_tool`: plain text output");
+    }
+}
+
