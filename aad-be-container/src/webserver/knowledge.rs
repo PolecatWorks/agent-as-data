@@ -211,6 +211,13 @@ pub async fn update_knowledge(
     // If content changed, we should ideally re-chunk and update embeddings.
     // Here we'll just delete old and insert new chunks as a simple strategy.
     if new_content != current_node.content {
+        // Cascade delete tuples associated with the content
+        sqlx::query("DELETE FROM knowledge_tuples WHERE source_node_id = $1")
+            .bind(id)
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Delete tuples error: {}", e)))?;
+
         sqlx::query("DELETE FROM knowledge_embeddings WHERE node_id = $1")
             .bind(id)
             .execute(&mut *tx)
@@ -247,17 +254,20 @@ pub async fn search_knowledge(
     Json(payload): Json<KnowledgeSearchRequest>,
 ) -> Result<Json<Vec<KnowledgeSearchResult>>, (StatusCode, String)> {
     let limit = payload.limit.unwrap_or(5) as i64;
-    let pattern = format!("%{}%", payload.query);
+
+    // Mock incoming embedding string
+    let mock_embedding_str = format!("[{}]", vec!["0.1"; 1536].join(","));
 
     let rows = sqlx::query(
         r#"
-        SELECT node_id, chunk_index, chunk_text
+        SELECT node_id, chunk_index, chunk_text,
+               1.0 - (embedding <=> $1::vector) as similarity_score
         FROM knowledge_embeddings
-        WHERE chunk_text ILIKE $1
+        ORDER BY embedding <=> $1::vector
         LIMIT $2
         "#,
     )
-    .bind(pattern)
+    .bind(mock_embedding_str)
     .bind(limit)
     .fetch_all(&pool)
     .await
@@ -269,7 +279,7 @@ pub async fn search_knowledge(
             node_id: r.get("node_id"),
             chunk_index: r.get("chunk_index"),
             chunk_text: r.get("chunk_text"),
-            score: 0.95,
+            score: r.get("similarity_score"),
         })
         .collect();
 

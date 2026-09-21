@@ -9,10 +9,12 @@ pub struct SemanticSearchRequest {
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct SemanticSearchResult {
-    pub id: Uuid,
+    pub entity_id: Uuid,
     pub entity_type: String,
-    pub name: String,
+    pub name: Option<String>,
     pub description: Option<String>,
-    pub tags: Vec<String>,
-    pub similarity_score: f64,
+    pub field_name: String,
+    pub content: String,
+    pub score: f64,
+    pub match_reason: String,
 }
