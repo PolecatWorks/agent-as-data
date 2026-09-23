@@ -23,3 +23,4 @@ This directory contains the long-term, persistent Product Requirements Documents
 2. **Iterative Evolution**: As new features or capabilities are conceptualized, PRDs are updated to reflect the expanded scope.
 3. **Relation to Specs**: Ephemeral execution tasks and historical implementation snapshots live in `spec/specs/` and reference these PRDs.
 
+- [Knowledge Base MCP Journey PRD](./knowledge-mcp-journey-prd.md)
