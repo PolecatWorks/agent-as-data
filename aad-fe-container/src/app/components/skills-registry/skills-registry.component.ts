@@ -74,6 +74,10 @@ export class SkillsRegistryComponent implements OnInit {
   selectedSkill: Skill | null = null;
   searchQuery: string = '';
   isEditing: boolean = false;
+  isReviewing: boolean = false;
+  aiReviewResult: any = null;
+  selectedReviewerSkillId: string | null = "NONE";
+
   showDeleteConfirm: boolean = false;
 
   traitContracts: TraitContract[] = [];
@@ -252,6 +256,43 @@ export class SkillsRegistryComponent implements OnInit {
     if (this.skillForm.tags) {
       this.skillForm.tags = this.skillForm.tags.filter(t => t !== tag);
     }
+  }
+
+
+  requestAiReview() {
+    if (!this.selectedSkill?.id) return;
+    this.isReviewing = true;
+    this.aiReviewResult = null;
+    const payload = {
+      current_description: this.skillForm.description || '',
+      skill_name: this.skillForm.name || '',
+      skill_tags: this.skillForm.tags || [],
+      reviewer_skill_id: this.selectedReviewerSkillId !== 'NONE' ? this.selectedReviewerSkillId : null
+    };
+    this.apiService.aiReviewSkill(this.selectedSkill.id, payload).subscribe({
+      next: (res) => {
+        this.aiReviewResult = res;
+        this.isReviewing = false;
+        this.snackBar.open('AI Review complete', 'Close', { duration: 3000 });
+      },
+      error: (err) => {
+        console.error('Error during AI review:', err);
+        this.isReviewing = false;
+        this.snackBar.open('AI Review failed', 'Close', { duration: 3000 });
+      }
+    });
+  }
+
+  acceptRewrite() {
+    if (this.aiReviewResult?.suggested_rewrite) {
+      this.skillForm.description = this.aiReviewResult.suggested_rewrite;
+      this.aiReviewResult = null;
+      this.snackBar.open('Rewrite applied. Please save to confirm.', 'Close', { duration: 3000 });
+    }
+  }
+
+  cancelReview() {
+    this.aiReviewResult = null;
   }
 
   saveSkill(): void {
