@@ -187,3 +187,4 @@ flowchart TD
 - [12. Skills Registry Tools Spec](./12-skills-tools-spec.md)
 - [13. Semantic Search Discovery Page Spec](./13-semantic-search-page-spec.md)
 - [29. Refactoring Lab UI Enhancement Spec](./29-refactoring-lab-ui-enhancement-spec.md)
+- [30-workbench-multiturn-journeys-spec.md](./30-workbench-multiturn-journeys-spec.md): Outlines implementation for 3 multi-turn journeys, including context retention and mocking the Code Execution MCP Server.
