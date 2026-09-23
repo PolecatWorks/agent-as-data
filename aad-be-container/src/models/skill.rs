@@ -25,3 +25,26 @@ pub struct Skill {
     pub output_schema: Option<serde_json::Value>,
     pub implementation: Option<serde_json::Value>,
 }
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct ReviewSkillRequest {
+    pub current_description: String,
+    pub reviewer_skill_id: Option<Uuid>,
+    pub skill_name: String,
+    pub skill_tags: Vec<String>,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct ReviewSkillResponse {
+    pub feedback: String,
+    pub suggested_rewrite: String,
+    pub similar_skills: Vec<SimilarSkillInfo>,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct SimilarSkillInfo {
+    pub id: Uuid,
+    pub name: String,
+    pub description: String,
+    pub overlap_reasoning: String,
+}

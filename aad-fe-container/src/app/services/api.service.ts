@@ -541,6 +541,10 @@ export class ApiService {
     return this.http.delete(`${this.baseUrl}/skills/${id}`);
   }
 
+  aiReviewSkill(id: string, payload: any): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/skills/${id}/ai-review`, payload);
+  }
+
   promoteSkill(id: string): Observable<Agent> {
     return this.http.post<Agent>(`${this.baseUrl}/skills/${id}/promote`, {});
   }

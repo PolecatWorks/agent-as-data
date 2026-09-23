@@ -19,6 +19,7 @@ pub fn router() -> Router<AppState> {
         .route("/{id}", get(get_skill).put(update_skill).delete(delete_skill))
         .route("/{id}/promote", post(promote_skill))
         .route("/{id}/demote", post(demote_skill))
+        .route("/{id}/ai-review", post(ai_review_skill))
         .route("/{id}/sync-embeddings", post(sync_skill_embeddings))
 }
 
@@ -342,4 +343,121 @@ pub async fn sync_skill_embeddings(
         entity_id: id,
         embeddings_created: count,
     }))
+}
+
+pub async fn ai_review_skill(
+    State(state): State<AppState>,
+    Path(skill_id): Path<Uuid>,
+    Json(payload): Json<crate::models::ReviewSkillRequest>,
+) -> Result<Json<crate::models::ReviewSkillResponse>, (StatusCode, String)> {
+
+    // 1. Gather similarities from pgvector
+    let raw_search_results = sqlx::query(
+        "
+        SELECT e.entity_id, e.entity_type, e.content, s.name, s.description
+        FROM entity_embeddings e
+        JOIN skills s ON e.entity_id = s.id
+        WHERE e.entity_type = 'skill'
+          AND e.entity_id != $1
+        ORDER BY e.embedding <=> (
+            SELECT embedding FROM entity_embeddings WHERE entity_id = $1 AND entity_type = 'skill' LIMIT 1
+        )
+        LIMIT 5;
+        "
+    )
+    .bind(skill_id)
+    .fetch_all(&state.pool)
+    .await
+    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Similarity Search Error: {}", e)))?;
+
+    let mut similar_skills_context = String::new();
+    let mut similarities: Vec<crate::models::SimilarSkillInfo> = Vec::new();
+    for row in raw_search_results.iter() {
+        let id: Uuid = row.try_get("entity_id").unwrap_or_default();
+        let name: String = row.try_get("name").unwrap_or_default();
+        let desc: String = row.try_get("description").unwrap_or_default();
+        let content: String = row.try_get("content").unwrap_or_default();
+
+        // Don't include the target review skill in similarities if it matched
+        if id == payload.reviewer_skill_id.unwrap_or_default() {
+            continue;
+        }
+
+        similar_skills_context.push_str(&format!("Skill Name: {}\nDescription: {}\n---\n", name, desc));
+        similarities.push(crate::models::SimilarSkillInfo {
+            id,
+            name,
+            description: desc,
+            overlap_reasoning: String::new(),
+        });
+    }
+
+    // 2. Determine reviewer prompt
+    let mut system_prompt = "You are an expert AI skill reviewer and architect. Your job is to review skill descriptions, provide constructive feedback, and suggest a rewritten description that is clear, complete, and well-formatted. Also, evaluate overlaps with similar skills and provide reasoning for the overlap.".to_string();
+
+    if let Some(reviewer_id) = payload.reviewer_skill_id {
+        let reviewer_row = sqlx::query("SELECT name, description, definition FROM skills WHERE id = $1")
+            .bind(reviewer_id)
+            .fetch_optional(&state.pool)
+            .await
+            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Reviewer Fetch Error: {}", e)))?;
+
+        if let Some(r) = reviewer_row {
+            let def: String = r.get("definition");
+            if !def.trim().is_empty() {
+                system_prompt = def;
+            } else {
+                let name: String = r.get("name");
+                let desc: String = r.get("description");
+                system_prompt = format!("You are an AI skill named {}. {}", name, desc);
+            }
+        }
+    }
+
+    // 3. Construct LLM Call
+    let builder = rig_core::providers::ollama::Client::builder()
+        .base_url(&state.config.llm.ollama_url)
+        .api_key(rig_core::client::Nothing);
+
+    let ollama_client = builder.build().map_err(|e| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("Failed to initialize Ollama client: {}", e),
+        )
+    })?;
+
+
+    let prompt = format!(
+        "Review the following skill.\nSkill Name: {}\nTags: {}\n\nCurrent Description:\n{}\n\nSimilar Existing Skills in the system:\n{}\n\nPlease provide your response in valid JSON format with the following keys:\n- \"feedback\": A string with your review feedback.\n- \"suggested_rewrite\": A string with the improved description.\n- \"similar_skills\": An array of objects, each containing \"id\", \"name\", \"description\", and \"overlap_reasoning\". You MUST match the IDs from the provided Similar Existing Skills list if you include them. You can omit a similar skill if you don't think there's a meaningful overlap.",
+        payload.skill_name,
+        payload.skill_tags.join(", "),
+        payload.current_description,
+        similar_skills_context
+    );
+
+
+    use rig::prelude::{Prompt, AgentClientExt};
+    let agent = ollama_client.agent(&state.config.llm.model)
+        .preamble(&system_prompt)
+        .build();
+
+    let output_text = agent.prompt(&prompt).await.unwrap_or_else(|e| format!("{{\"feedback\": \"LLM generation failed: {}\", \"suggested_rewrite\": \"\", \"similar_skills\": []}}", e));
+
+    // Try to parse the output as JSON
+    let mut parsed_response: crate::models::ReviewSkillResponse = serde_json::from_str(&output_text).unwrap_or_else(|_| {
+
+        let cleaned_output = output_text.trim_start_matches("```json").trim_end_matches("```").trim();
+        serde_json::from_str(cleaned_output).unwrap_or_else(|_| crate::models::ReviewSkillResponse {
+            feedback: "Failed to parse LLM JSON response. Raw output:\n".to_string() + &output_text,
+            suggested_rewrite: payload.current_description.clone(),
+            similar_skills: similarities.clone(),
+        })
+    });
+
+    // In case the LLM generates string overlaps rather than structured array, fallback
+    if parsed_response.similar_skills.is_empty() && !similarities.is_empty() {
+        parsed_response.similar_skills = similarities;
+    }
+
+    Ok(Json(parsed_response))
 }
