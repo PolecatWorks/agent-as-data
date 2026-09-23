@@ -1,5 +1,10 @@
-
 use std::fmt;
+use rig_core::tool::PortableTool;
+use serde::{Deserialize, Serialize};
+use serde_json::json;
+use reqwest::Client;
+use std::future::Future;
+use std::pin::Pin;
 
 #[derive(Debug)]
 pub struct ToolError(pub String);
@@ -11,13 +16,6 @@ impl fmt::Display for ToolError {
 }
 
 impl std::error::Error for ToolError {}
-
-use rig_core::tool::PortableTool;
-use serde::{Deserialize, Serialize};
-use serde_json::json;
-use reqwest::Client;
-use std::future::Future;
-use std::pin::Pin;
 
 #[derive(Clone)]
 pub struct KbNodeBrowseTool {
