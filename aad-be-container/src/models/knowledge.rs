@@ -63,6 +63,7 @@ pub struct KnowledgeSearchResult {
     pub chunk_index: i32,
     pub chunk_text: String,
     pub score: f64,
+    pub search_type: String,
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]

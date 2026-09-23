@@ -14,12 +14,15 @@ import { catchError, finalize } from 'rxjs/operators';
 import { of } from 'rxjs';
 
 export interface SemanticSearchResult {
-  id: string;
+  entity_id: string;
   entity_type: string;
-  name: string;
-  description: string;
-  tags: string[];
-  similarity_score: number;
+  name?: string;
+  description?: string;
+  field_name: string;
+  content: string;
+  score: number;
+  match_reason: string;
+  search_type: string;
 }
 
 @Component({
@@ -55,7 +58,7 @@ export class SemanticSearchComponent {
     this.isSearching = true;
     this.hasSearched = true;
 
-    this.http.post<SemanticSearchResult[]>('/api/v1/search/semantic', { query: this.query, limit: 10 })
+    this.http.post<SemanticSearchResult[]>('/api/v1/agent-context/search', { query: this.query, limit: 10 })
       .pipe(
         catchError(err => {
           console.error('Search error:', err);
@@ -76,6 +79,6 @@ export class SemanticSearchComponent {
 
   viewDetails(result: SemanticSearchResult): void {
     const routeType = result.entity_type;
-    this.router.navigate(['/detail'], { queryParams: { id: result.id, type: result.entity_type } });
+    this.router.navigate(['/detail'], { queryParams: { id: result.entity_id, type: result.entity_type } });
   }
 }

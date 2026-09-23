@@ -1,0 +1,41 @@
+
+> aad-fe-container@0.0.0 start
+> ng serve
+
+❯ Building...
+✔ Building...
+Initial chunk files | Names                         |  Raw size
+styles.css          | styles                        | 165.93 kB |
+polyfills.js        | polyfills                     |  90.20 kB |
+main.js             | main                          |   5.37 kB |
+chunk-Y5RQAIA6.js   | -                             |   1.50 kB |
+chunk-LTL2NWZT.js   | -                             | 994 bytes |
+
+                    | Initial total                 | 263.99 kB
+
+Lazy chunk files    | Names                         |  Raw size
+chunk-ACE2QXLX.js   | agent-registry-component      | 104.33 kB |
+chunk-T4XRHSTW.js   | workbench-component           |  96.41 kB |
+chunk-EKOGJ36N.js   | skills-registry-component     |  76.64 kB |
+chunk-LEYYSC2O.js   | tool-manager-component        |  75.08 kB |
+chunk-BKEMD2JJ.js   | -                             |  73.30 kB |
+chunk-GMQZYE5H.js   | traits-registry-component     |  69.67 kB |
+chunk-JYR4JWDU.js   | network-visualizer-component  |  48.77 kB |
+chunk-GJTGBWLM.js   | interactive-testing-component |  45.81 kB |
+chunk-NTCB6W22.js   | detail-component              |  43.00 kB |
+chunk-KCXNE57C.js   | knowledge-inspector-component |  41.46 kB |
+chunk-NGULWLMZ.js   | -                             |  25.22 kB |
+chunk-LDMUD5IU.js   | agent-context-component       |  20.25 kB |
+chunk-6O2D7ETR.js   | home-component                |  17.49 kB |
+chunk-CXVWUD4X.js   | refactoring-lab-component     |  16.15 kB |
+chunk-UDZP6KVD.js   | semantic-search-component     |  12.95 kB |
+
+Application bundle generation complete. [8.814 seconds]
+
+Watch mode enabled. Watching for file changes...
+NOTE: Raw file sizes do not reflect development server per-request transformations.
+  ➜  Local:   http://localhost:4200/
+11:47:48 AM [vite] http proxy error: /api/v1/agent-context/search
+AggregateError [ECONNREFUSED]:
+    at internalConnectMultiple (node:net:1134:18)
+    at afterConnectMultiple (node:net:1715:7)

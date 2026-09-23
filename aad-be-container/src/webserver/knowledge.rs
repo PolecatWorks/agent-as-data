@@ -280,6 +280,7 @@ pub async fn search_knowledge(
             chunk_index: r.get("chunk_index"),
             chunk_text: r.get("chunk_text"),
             score: r.get("similarity_score"),
+            search_type: "semantic".to_string(),
         })
         .collect();
 
