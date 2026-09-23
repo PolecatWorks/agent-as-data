@@ -1,0 +1,83 @@
+<div class="h-full w-full flex flex-col bg-slate-50 overflow-hidden">
+  <!-- Top Bar -->
+  <div class="h-14 bg-white border-b border-slate-200 flex items-center justify-between px-4 shrink-0 shadow-sm z-10">
+    <div class="flex items-center gap-3">
+      <div class="flex items-center gap-1.5 px-2.5 py-1 -ml-2 rounded-lg hover:bg-slate-100 cursor-pointer transition-colors select-none group"
+           [matMenuTriggerFor]="appMenu"
+           data-testid="workspace-title-switcher"
+           title="Click to switch workspace">
+        <mat-icon class="text-indigo-600">explore</mat-icon>
+        <h1 class="text-lg font-black text-slate-800 m-0">Knowledge Explorer</h1>
+        <mat-icon class="!w-4 !h-4 !text-base text-slate-400 group-hover:text-slate-700 transition-colors">expand_more</mat-icon>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <!-- Hamburger Menu for App Navigation -->
+      <button mat-icon-button [matMenuTriggerFor]="appMenu" aria-label="Menu" class="text-slate-500 hover:text-slate-800">
+        <mat-icon>menu</mat-icon>
+      </button>
+
+      <mat-menu #appMenu="matMenu">
+        @for (item of menuItems; track item.path) {
+          <a mat-menu-item [routerLink]="item.path" routerLinkActive="active-link">
+            <mat-icon>{{ item.icon }}</mat-icon>
+            <span>{{ item.label }}</span>
+          </a>
+        }
+      </mat-menu>
+    </div>
+  </div>
+
+  <div class="flex-1 flex min-h-0 overflow-hidden relative">
+    <!-- Full screen graph container -->
+    <div id="network-graph" class="w-full h-full bg-slate-50 absolute inset-0 z-0"></div>
+
+    <!-- Info side panel -->
+    @if (selectedNode) {
+    <div class="absolute right-0 top-0 bottom-0 w-80 bg-white border-l border-slate-200 shadow-xl z-10 flex flex-col transform transition-transform duration-300">
+      <div class="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+        <div class="flex items-center gap-2">
+          <mat-icon [class]="getIconColor(selectedNode.type)">{{ getIcon(selectedNode.type) }}</mat-icon>
+          <h2 class="text-sm font-bold m-0">{{ selectedNode.type | titlecase }}</h2>
+        </div>
+        <button mat-icon-button (click)="closePanel()" class="scale-75">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+      <div class="p-4 overflow-y-auto flex-1 space-y-4">
+        <div>
+          <h3 class="text-lg font-black text-slate-800 break-words">{{ selectedNode.name || selectedNode.title }}</h3>
+          <p class="text-xs text-slate-400 mt-1 font-mono break-all">{{ selectedNode.id }}</p>
+        </div>
+
+        <div>
+          <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Description</h4>
+          <p class="text-sm text-slate-700 leading-relaxed">{{ selectedNode.description || 'No description available.' }}</p>
+        </div>
+
+        @if (selectedNode.tags && selectedNode.tags.length > 0) {
+        <div>
+          <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Tags</h4>
+          <div class="flex flex-wrap gap-1">
+            @for (tag of selectedNode.tags; track tag) {
+            <span class="px-2 py-0.5 bg-slate-100 border border-slate-200 text-slate-600 rounded text-[10px] font-semibold uppercase tracking-wider">
+              {{ tag }}
+            </span>
+            }
+          </div>
+        </div>
+        }
+
+        <!-- Add content if it's a knowledge node -->
+        @if (selectedNode.content) {
+        <div>
+           <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Content Snippet</h4>
+           <p class="text-xs text-slate-600 bg-slate-50 p-2 rounded border border-slate-100 max-h-32 overflow-y-auto">{{ selectedNode.content }}</p>
+        </div>
+        }
+      </div>
+    </div>
+    }
+  </div>
+</div>
