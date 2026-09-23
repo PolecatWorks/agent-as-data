@@ -1,0 +1,19 @@
+   Compiling aad-be-container v0.1.0 (/app/aad-be-container)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 3.78s
+     Running `target/debug/aad-be-container`
+Agent-As-Data Backend Microservice
+
+Usage: aad-be-container [OPTIONS] <COMMAND>
+
+Commands:
+  serve    Start the main application server
+  migrate  Execute database migrations
+  version  Display application version
+  ctl      Manage resources declaratively via API
+  help     Print this message or the help of the given subcommand(s)
+
+Options:
+  -c, --config-path <CONFIG_PATH>  [default: config/default.yaml]
+  -s, --secrets-dir <SECRETS_DIR>  [default: config]
+  -h, --help                       Print help
+  -V, --version                    Print version

@@ -17,4 +17,5 @@ pub struct SemanticSearchResult {
     pub content: String,
     pub score: f64,
     pub match_reason: String,
+    pub search_type: String,
 }

@@ -96,6 +96,7 @@ pub async fn semantic_search(
                 content: r.get("content"),
                 score: r.get("score"),
                 match_reason,
+                search_type: "hybrid".to_string(),
             }
         })
         .collect();
