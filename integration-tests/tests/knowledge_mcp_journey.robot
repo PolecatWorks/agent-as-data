@@ -4,13 +4,13 @@ Library          RequestsLibrary
 Library          Collections
 Library          String
 
-Suite Setup      Create Session    backend    http://localhost:8080
+Suite Setup      Create Session    backend    ${BE_BASE_URL}
 Suite Teardown   Delete All Sessions
 
 *** Variables ***
+${BE_BASE_URL}      http://localhost:8080
 ${API_PREFIX}       /api/v1
 ${CREATED_NODE_ID}  ${EMPTY}
-${BACKEND_URL}      http://localhost:8080
 
 *** Test Cases ***
 Test Knowledge Base MCP Journey
