@@ -186,6 +186,7 @@ flowchart TD
 | **Phase 11** | [28-telemetry-pod-endpoint-resolution-spec.md](./28-telemetry-pod-endpoint-resolution-spec.md) | `complete` | Test Harness Telemetry & Pod Endpoint Resolution Abstraction (Local vs. In-Cluster Pod IPs) | [Master PRD](../prds/agent-as-data-prd.md), [Testing Kit PRD](../prds/agent-ui-testing-kit-prd.md) | Phase 11 Spec (Depends on Spec 27) |
 | **Phase 12** | [29-knowledge-registry-ui-bread-spec.md](./29-knowledge-registry-ui-bread-spec.md) | `complete` | Knowledge Registry UI/UX parity, Data Model expansion (`description`, `tags`), and BREAD capabilities | [Knowledge PRD](../prds/knowledge-data-system-prd.md) | Phase 12 Spec (Depends on Spec 02 & 08) |
 | **Phase 13** | [30-workbench-tool-execution-cards-ui-spec.md](./30-workbench-tool-execution-cards-ui-spec.md) | `complete` | Workbench Tool Execution Cards UI & Structured Outcome Rendering | [Workspace Tools PRD](../prds/workspace-filesystem-tools-prd.md), [Workbench Bench & Thread PRD](../prds/workbench-bench-thread-prd.md) | Phase 13 Spec (Depends on Spec 17) |
+| **Phase 14** | [31-knowledge-mcp-journey-spec.md](./31-knowledge-mcp-journey-spec.md) | `draft` | Knowledge Base MCP Journey & Autonomous Tool Definitions | [Knowledge Base MCP Journey PRD](../prds/knowledge-mcp-journey-prd.md) | Phase 14 Spec (Depends on Spec 02 & Spec 24) |
 
 - [CLI Manifest Tool Spec](./cli-manifest-tool-spec.md)
 
@@ -193,4 +194,3 @@ flowchart TD
 - [12. Skills Registry Tools Spec](./12-skills-tools-spec.md)
 - [13. Semantic Search Discovery Page Spec](./13-semantic-search-page-spec.md)
 - [29. Refactoring Lab UI Enhancement Spec](./29-refactoring-lab-ui-enhancement-spec.md)
-- [30-knowledge-mcp-journey-spec.md](./30-knowledge-mcp-journey-spec.md)
