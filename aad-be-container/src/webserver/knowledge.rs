@@ -254,6 +254,7 @@ pub async fn search_knowledge(
     Json(payload): Json<KnowledgeSearchRequest>,
 ) -> Result<Json<Vec<KnowledgeSearchResult>>, (StatusCode, String)> {
     let limit = payload.limit.unwrap_or(5) as i64;
+    let pattern = format!("%{}%", payload.query.trim());
 
     // Mock incoming embedding string
     let mock_embedding_str = format!("[{}]", vec!["0.1"; 1536].join(","));
@@ -261,12 +262,23 @@ pub async fn search_knowledge(
     let rows = sqlx::query(
         r#"
         SELECT node_id, chunk_index, chunk_text,
-               1.0 - (embedding <=> $1::vector) as similarity_score
+               (CASE
+                   WHEN chunk_text ILIKE $1 THEN 0.95::float8
+                   ELSE COALESCE(1.0 - (embedding <=> $2::vector), 0.5)::float8
+               END) as similarity_score,
+               (CASE
+                   WHEN chunk_text ILIKE $1 THEN 'fulltext'
+                   ELSE 'semantic'
+               END) as search_type
         FROM knowledge_embeddings
-        ORDER BY embedding <=> $1::vector
-        LIMIT $2
+        WHERE chunk_text ILIKE $1
+           OR embedding IS NOT NULL
+        ORDER BY (CASE WHEN chunk_text ILIKE $1 THEN 0 ELSE 1 END),
+                 embedding <=> $2::vector NULLS LAST
+        LIMIT $3
         "#,
     )
+    .bind(pattern)
     .bind(mock_embedding_str)
     .bind(limit)
     .fetch_all(&pool)
@@ -279,8 +291,8 @@ pub async fn search_knowledge(
             node_id: r.get("node_id"),
             chunk_index: r.get("chunk_index"),
             chunk_text: r.get("chunk_text"),
-            score: r.get("similarity_score"),
-            search_type: "semantic".to_string(),
+            score: r.try_get("similarity_score").unwrap_or(0.5),
+            search_type: r.try_get("search_type").unwrap_or_else(|_| "semantic".to_string()),
         })
         .collect();
 
