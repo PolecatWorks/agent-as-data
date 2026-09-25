@@ -44,7 +44,7 @@ kubectl exec $POD_NAME -n $NS -- /bin/bash -c "
   cd /tmp
   export PATH=\$PATH:/home/pwuser/.local/bin:/home/pwuser/.venv/bin
 
-  BE_BASE_URL=\"http://agent-as-data-be:8080\"
+  BE_BASE_URL=\"${BE_BASE_URL:-http://agent-as-data-be:80}\"
   FE_BASE_URL=\"http://agent-as-data-fe:80\"
 
   EXTRA_ARGS=\"\"
