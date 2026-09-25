@@ -9,7 +9,7 @@
         <div class="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white font-bold shrink-0">
           <mat-icon class="!w-5 !h-5 !text-xl">library_books</mat-icon>
         </div>
-        <span class="font-black text-slate-800 text-lg whitespace-nowrap">AAD Knowledge</span>
+        <span class="font-black text-slate-800 text-lg whitespace-nowrap">AAD</span>
       </div>
       <button mat-icon-button (click)="toggleSidebar()" class="text-slate-400 hover:text-slate-700" [title]="isSidebarCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'">
         <mat-icon>{{ isSidebarCollapsed ? 'chevron_right' : 'chevron_left' }}</mat-icon>
@@ -26,7 +26,7 @@
       </div>
     </div>
 
-    <!-- Nodes List -->
+    <!-- Knowledge List -->
     <div class="flex-1 min-h-0 overflow-y-auto py-2">
       <div *ngIf="getFilteredNodes().length === 0 && !isSidebarCollapsed" class="text-center py-8 text-slate-400 text-xs">
         No matching knowledge found.
@@ -47,7 +47,7 @@
                 <div class="flex items-start gap-3 overflow-hidden flex-1">
                   <mat-icon class="shrink-0 text-slate-400 mt-0.5"
                             [ngClass]="{'text-blue-600': selectedNode?.id === node.id}">
-                    description
+                    article
                   </mat-icon>
                   <div class="flex-1 min-w-0">
                     <h5 class="text-sm font-bold text-slate-900 m-0 truncate leading-tight mt-0.5">{{ node.title || node.topic }}</h5>
@@ -55,9 +55,9 @@
                 </div>
               </div>
 
-              <!-- Description -->
-              <p *ngIf="node.description" class="text-xs text-slate-500 m-0 mt-2 line-clamp-2 leading-relaxed">
-                {{ node.description }}
+              <!-- Content snippet -->
+              <p class="text-xs text-slate-500 m-0 mt-2 line-clamp-2 leading-relaxed">
+                {{ node.content }}
               </p>
 
               <!-- Tags -->
@@ -72,7 +72,7 @@
             <div class="flex justify-center items-center" *ngIf="isSidebarCollapsed">
                <mat-icon class="text-slate-400 transition-colors"
                         [ngClass]="{'text-blue-600': selectedNode?.id === node.id}">
-                description
+                article
               </mat-icon>
             </div>
           </div>
@@ -97,7 +97,6 @@
           <mat-icon class="!w-4 !h-4 !text-base text-slate-400 group-hover:text-slate-700 transition-colors">expand_more</mat-icon>
         </div>
 
-        <!-- Zero-Footprint Reusable Concept Guide -->
         <app-concept-guide
           badge="1. Company Institutional Memory"
           title="Company Brain (Knowledge Base)"
@@ -132,13 +131,7 @@
           }
         </mat-menu>
 
-        <div class="w-px h-6 bg-slate-200 mx-1"></div> <!-- Divider -->
-
-        <button mat-icon-button class="text-slate-500 hover:text-slate-800" title="Change View">
-          <mat-icon>view_column</mat-icon>
-        </button>
-
-        <!-- User Profile (Mock) -->
+        <div class="w-px h-6 bg-slate-200 mx-1"></div>
         <button mat-icon-button class="ml-1">
           <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-amber-400 to-orange-500 border-2 border-white shadow-sm flex items-center justify-center text-white font-bold text-sm">
             BG
@@ -149,34 +142,36 @@
 
     <!-- Workspace Content (Scrollable) -->
     <div class="flex-1 min-h-0 overflow-y-auto p-6">
-      @if (selectedNode || isEditing) {
-        <mat-card class="!rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden bg-white">
+        @if (selectedNode || isEditing) {
+        <mat-card class="!rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
           <div class="p-6 bg-slate-50/80 border-b border-slate-200/60 flex justify-between items-center">
             <div>
               <h2 class="text-base font-black text-slate-800 m-0">
-                {{ isEditing ? (selectedNode ? 'Edit Knowledge Node' : 'Create New Knowledge') : 'Knowledge Node Details' }}
+                {{ isEditing ? (selectedNode ? 'Edit Knowledge Node' : 'Create New Knowledge Node') : 'Knowledge Node Details' }}
               </h2>
               @if (selectedNode) {
                 <p class="text-xs text-slate-400 m-0 mt-0.5">ID: {{ selectedNode.id }}</p>
               }
             </div>
-            <div class="flex gap-2">
-              @if (!isEditing && selectedNode) {
-                <button mat-stroked-button color="warn" class="!rounded-xl !font-semibold" (click)="confirmDeleteState()">
-                  <mat-icon>delete</mat-icon> Delete
-                </button>
-                <button mat-stroked-button class="!rounded-xl !font-semibold" (click)="enableEdit()">
-                  <mat-icon>edit</mat-icon> Edit
-                </button>
-              }
-              @if (isEditing) {
-                <button mat-stroked-button class="!rounded-xl !font-bold" (click)="cancelEdit()">
-                  Cancel
-                </button>
-                <button mat-flat-button color="primary" class="!rounded-xl !font-bold" (click)="saveNode()">
-                  <mat-icon>save</mat-icon> Save
-                </button>
-              }
+            <div class="flex flex-col items-end gap-1">
+              <div class="flex gap-2">
+                @if (!isEditing && selectedNode) {
+                  <button mat-stroked-button color="warn" class="!rounded-xl !font-semibold" (click)="confirmDeleteState()">
+                    <mat-icon>delete</mat-icon> Delete
+                  </button>
+                  <button mat-stroked-button class="!rounded-xl !font-semibold" (click)="enableEdit()">
+                    <mat-icon>edit</mat-icon> Edit
+                  </button>
+                }
+                @if (isEditing) {
+                  <button mat-stroked-button class="!rounded-xl !font-bold" (click)="cancelEdit()">
+                    Cancel
+                  </button>
+                  <button mat-flat-button color="primary" class="!rounded-xl !font-bold" (click)="saveNode()" [disabled]="!nodeForm.topic || !nodeForm.content">
+                    <mat-icon>save</mat-icon> Save
+                  </button>
+                }
+              </div>
             </div>
           </div>
 
@@ -184,7 +179,7 @@
             <div class="p-3 bg-red-50 border-b border-red-200 text-red-900 text-xs font-semibold flex items-center justify-between px-6">
               <span class="flex items-center gap-1.5">
                 <mat-icon class="!w-4 !h-4 !text-base text-red-600">warning</mat-icon>
-                Warning: Deleting this knowledge node will permanently remove its content and vector embeddings. Confirm deletion?
+                Warning: Deleting this knowledge node will permanently remove it. Confirm deletion?
               </span>
               <div class="flex gap-2">
                 <button mat-button color="warn" class="!text-xs !font-bold" (click)="deleteNode()">Confirm Delete</button>
@@ -193,76 +188,226 @@
             </div>
           }
 
-          <mat-card-content class="p-6 space-y-6">
+          <mat-card-content class="p-0">
 
-            <!-- Title & Topic -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div class="space-y-1 text-left">
-                <label class="text-xs font-bold text-slate-500">Title / Name</label>
-                <input type="text" [(ngModel)]="nodeForm.title" placeholder="e.g. Architecture Guidelines" [disabled]="!isEditing"
-                       class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 disabled:bg-slate-50 disabled:text-slate-500 transition-all" />
-              </div>
+            <mat-tab-group class="border-b border-slate-200">
 
-              <div class="space-y-1 text-left">
-                <label class="text-xs font-bold text-slate-500">Topic</label>
-                <input type="text" [(ngModel)]="nodeForm.topic" placeholder="e.g. engineering" [disabled]="!isEditing"
-                       class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 disabled:bg-slate-50 disabled:text-slate-500 transition-all" />
-              </div>
-            </div>
+              <!-- TAB 1: General Info -->
+              <mat-tab label="Editor">
+                 <div class="p-6 space-y-6">
+                    <!-- Title & Topic -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div class="space-y-1 text-left">
+                            <label class="text-xs font-bold text-slate-500">Title</label>
+                            <input type="text" [(ngModel)]="nodeForm.title" placeholder="e.g. Q3 Architecture Review" [disabled]="!isEditing"
+                                class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 disabled:bg-slate-50 disabled:text-slate-500 transition-all" />
+                        </div>
 
-            <!-- Description -->
-            <div class="space-y-1 text-left">
-              <label class="text-xs font-bold text-slate-500">Description</label>
-              <textarea rows="2" [(ngModel)]="nodeForm.description" placeholder="Short summary..." [disabled]="!isEditing"
-                        class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 disabled:bg-slate-50 disabled:text-slate-500 transition-all"></textarea>
-            </div>
+                        <div class="space-y-1 text-left">
+                            <label class="text-xs font-bold text-slate-500">Topic (Required)</label>
+                            <input type="text" [(ngModel)]="nodeForm.topic" placeholder="e.g. Architecture" [disabled]="!isEditing"
+                                class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 disabled:bg-slate-50 disabled:text-slate-500 transition-all" />
+                        </div>
+                    </div>
 
-            <!-- Tags -->
-            <div class="space-y-2 text-left">
-              <label class="text-xs font-bold text-slate-500 block">Tags</label>
-              @if (isEditing) {
-                <div class="flex gap-2 mb-2">
-                  <input type="text" placeholder="Add tag..." [(ngModel)]="newTag" (keyup.enter)="addTag()"
-                         class="flex-1 px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" />
-                  <button mat-stroked-button class="!rounded-xl !text-xs" (click)="addTag()">Add</button>
-                </div>
-              }
-              <div class="flex flex-wrap gap-1.5">
-                @for (tag of nodeForm.tags || []; track tag) {
-                  <mat-chip-row [removable]="isEditing" (removed)="removeTag(tag)" class="!bg-blue-50 !text-blue-700 !text-xs !font-bold">
-                    {{ tag }}
-                    @if (isEditing) {
-                      <button matChipRemove class="!text-blue-400 hover:!text-blue-600"><mat-icon>cancel</mat-icon></button>
-                    }
-                  </mat-chip-row>
-                }
-              </div>
-            </div>
+                    <!-- Description -->
+                    <div class="space-y-1 text-left">
+                        <label class="text-xs font-bold text-slate-500">Description</label>
+                        <input type="text" [(ngModel)]="nodeForm.description" placeholder="Short description..." [disabled]="!isEditing"
+                            class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 disabled:bg-slate-50 disabled:text-slate-500 transition-all" />
+                    </div>
 
-            <!-- Content -->
-            <div class="space-y-2 text-left pt-2">
-              <label class="text-xs font-bold text-slate-500 block">Content (Markdown)</label>
-              <div class="space-y-1">
-                @if (isEditing) {
-                  <textarea rows="16" [(ngModel)]="nodeForm.content" placeholder="Full knowledge document..."
-                            class="font-mono text-sm leading-relaxed text-slate-800 w-full px-3 py-2 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"></textarea>
-                } @else {
-                  <div class="prose prose-slate max-w-none text-sm leading-relaxed text-slate-800 bg-slate-50/55 border border-slate-200/80 rounded-xl p-4 min-h-[250px] overflow-y-auto"
-                       [innerHTML]="getRenderedMarkdown(nodeForm.content || '')">
+                    <!-- Tags -->
+                    <div class="space-y-2 text-left">
+                        <label class="text-xs font-bold text-slate-500 block">Tags</label>
+                        @if (isEditing) {
+                            <div class="flex gap-2 mb-2">
+                            <input type="text" placeholder="Add tag..." [(ngModel)]="newTag" (keyup.enter)="addTag()"
+                                    class="flex-1 px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" />
+                            <button mat-stroked-button class="!rounded-xl !text-xs" (click)="addTag()">Add</button>
+                            </div>
+                        }
+                        <div class="flex flex-wrap gap-1.5">
+                            @for (tag of nodeForm.tags || []; track tag) {
+                            <mat-chip-row [removable]="isEditing" (removed)="removeTag(tag)" class="!bg-blue-50 !text-blue-700 !text-xs !font-bold">
+                                {{ tag }}
+                                @if (isEditing) {
+                                <button matChipRemove class="!text-blue-400 hover:!text-blue-600"><mat-icon>cancel</mat-icon></button>
+                                }
+                            </mat-chip-row>
+                            }
+                        </div>
+                    </div>
+
+
+                    <!-- Raw Text Content -->
+                    <div class="space-y-2 text-left pt-2">
+                        <div class="flex justify-between items-center mb-1">
+                            <label class="text-xs font-bold text-slate-500 block">Raw Text Content (Required)</label>
+                        </div>
+                        <div class="space-y-1">
+                            <textarea rows="12" [(ngModel)]="nodeForm.content" placeholder="Enter knowledge text..." [disabled]="!isEditing"
+                                    class="font-mono text-sm leading-relaxed text-slate-800 w-full px-3 py-2 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 disabled:bg-slate-50 disabled:text-slate-500 transition-all"></textarea>
+                        </div>
+                    </div>
+                 </div>
+              </mat-tab>
+
+              <!-- TAB 2: Tuples Editor -->
+              <mat-tab label="Tuples">
+                  <div class="p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <div>
+                            <h3 class="text-sm font-bold text-slate-800 m-0">Knowledge Graph Tuples</h3>
+                            <p class="text-xs text-slate-500 m-0">Define explicit subject-predicate-object triples with confidence scores to ground agent reasoning.</p>
+                        </div>
+                        <button *ngIf="isEditing" mat-raised-button color="primary" class="!rounded-lg" (click)="addTuple()">
+                            <mat-icon>add</mat-icon> Add Tuple
+                        </button>
+                    </div>
+
+                    <div class="space-y-3">
+                        @for (tuple of nodeForm.tuples; track $index; let i = $index) {
+                            <article class="bg-white rounded-lg border border-slate-200 p-3 shadow-sm space-y-3 relative group">
+                                <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+                                    <div class="flex items-center gap-2">
+                                        <span class="w-5 h-5 rounded-full bg-slate-100 text-indigo-600 flex items-center justify-center text-[11px] font-bold">{{ i + 1 }}</span>
+                                    </div>
+                                    <div class="flex items-center gap-1.5">
+                                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
+                                            {{ tuple.confidence || 1.0 }}
+                                        </span>
+                                        <button *ngIf="isEditing" mat-icon-button class="!w-7 !h-7 !text-slate-400 hover:!text-red-600" (click)="removeTuple(i)">
+                                            <mat-icon class="!text-[18px]">delete_outline</mat-icon>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1">
+                                    <!-- Subject -->
+                                    <div class="relative rounded-lg border border-slate-200 bg-white px-3 pt-2.5 pb-1.5 focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500">
+                                        <label class="absolute text-[10px] font-bold text-slate-500 -top-2 left-2 bg-white px-1">Subject</label>
+                                        <input class="w-full bg-transparent border-0 p-0 text-xs font-mono text-slate-800 focus:ring-0 focus:outline-none" type="text" [(ngModel)]="tuple.subject" [disabled]="!isEditing"/>
+                                    </div>
+
+                                    <!-- Predicate -->
+                                    <div class="relative rounded-lg border border-indigo-200 bg-indigo-50/30 px-3 pt-2.5 pb-1.5 focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500">
+                                        <label class="absolute text-[10px] font-bold text-indigo-600 -top-2 left-2 bg-white px-1">Predicate</label>
+                                        <div class="flex items-center justify-between">
+                                            <input class="w-full bg-transparent border-0 p-0 text-xs font-mono text-indigo-700 font-semibold focus:ring-0 focus:outline-none" type="text" [(ngModel)]="tuple.predicate" [disabled]="!isEditing"/>
+                                            <mat-icon class="!text-[14px] text-indigo-500">link</mat-icon>
+                                        </div>
+                                    </div>
+
+                                    <!-- Object -->
+                                    <div class="relative rounded-lg border border-slate-200 bg-white px-3 pt-2.5 pb-1.5 focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500">
+                                        <label class="absolute text-[10px] font-bold text-slate-500 -top-2 left-2 bg-white px-1">Object / Value</label>
+                                        <input class="w-full bg-transparent border-0 p-0 text-xs font-mono text-slate-800 focus:ring-0 focus:outline-none" type="text" [(ngModel)]="tuple.object" [disabled]="!isEditing"/>
+                                    </div>
+                                </div>
+                                <div *ngIf="isEditing" class="flex justify-end pt-2">
+                                     <div class="flex items-center gap-2">
+                                        <label class="text-[10px] font-bold text-slate-500">Confidence (0.0 - 1.0)</label>
+                                        <input type="number" step="0.1" min="0" max="1" [(ngModel)]="tuple.confidence" class="w-16 px-2 py-1 text-xs border border-slate-200 rounded focus:outline-none focus:border-indigo-500">
+                                     </div>
+                                </div>
+                            </article>
+                        } @empty {
+                            <div class="text-center py-8 text-slate-400 text-xs italic bg-white border border-slate-200 rounded-xl">
+                                No tuples defined.
+                            </div>
+                        }
+                    </div>
                   </div>
-                }
-              </div>
-            </div>
+              </mat-tab>
+            </mat-tab-group>
 
           </mat-card-content>
         </mat-card>
       } @else {
-        <div class="flex flex-col items-center justify-center py-24 bg-white rounded-2xl border border-slate-200 shadow-sm text-slate-400 h-full">
-          <mat-icon class="!w-16 !h-16 !text-6xl text-slate-200 mb-4">library_books</mat-icon>
-          <h3 class="text-sm font-bold text-slate-700 m-0">No Knowledge Node Selected</h3>
-          <p class="text-xs text-slate-400 max-w-xs text-center mt-1">
-            Choose an item from the list, or create a new one to begin editing its content.
-          </p>
+        <!-- Dashboards -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 h-full">
+
+            <!-- RAG Search -->
+            <mat-card class="!rounded-2xl border border-slate-200/80 shadow-sm flex flex-col h-full overflow-hidden bg-white">
+                <mat-card-header class="p-4 border-b border-slate-100 shrink-0">
+                <mat-card-title class="text-sm font-bold text-slate-800 flex items-center gap-2">
+                    <mat-icon class="!w-4 !h-4 !text-base text-blue-600">search</mat-icon>
+                    Hybrid Vector RAG Search
+                </mat-card-title>
+                </mat-card-header>
+
+                <div class="p-4 pb-2 shrink-0">
+                <div class="flex gap-2">
+                    <mat-form-field appearance="outline" class="flex-1">
+                    <mat-label>Semantic Search Query</mat-label>
+                    <input matInput [(ngModel)]="ragSearchQuery" (keyup.enter)="runRagSearch()">
+                    </mat-form-field>
+                    <button mat-flat-button color="primary" class="h-[52px] !rounded-xl !font-bold" (click)="runRagSearch()">
+                    <mat-icon>search</mat-icon> Search
+                    </button>
+                </div>
+                </div>
+
+                <mat-card-content class="flex-1 min-h-0 overflow-y-auto px-4 pb-4 space-y-2">
+                @for (res of searchResults; track res.chunk_index) {
+                    <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1 hover:border-slate-300 transition-all">
+                    <div class="flex justify-between items-center text-xs text-slate-500 font-medium">
+                        <span class="font-bold text-slate-700">Chunk #{{ res.chunk_index }}</span>
+                        <span class="px-2 py-0.5 bg-blue-100 text-blue-800 rounded-md font-bold text-[10px]">
+                        Score: {{ (res.score * 100).toFixed(1) }}%
+                        </span>
+                    </div>
+                    <p class="text-xs text-slate-800 m-0 leading-relaxed">{{ res.chunk_text }}</p>
+                    </div>
+                } @empty {
+                    <div class="text-center py-12 text-slate-400 text-xs">
+                    No matching knowledge chunks found.
+                    </div>
+                }
+                </mat-card-content>
+            </mat-card>
+
+            <!-- Graph Traversal -->
+            <mat-card class="!rounded-2xl border border-slate-200/80 shadow-sm flex flex-col h-full overflow-hidden bg-white">
+                <mat-card-header class="p-4 border-b border-slate-100 shrink-0">
+                <mat-card-title class="text-sm font-bold text-slate-800 flex items-center gap-2">
+                    <mat-icon class="!w-4 !h-4 !text-base text-emerald-600">account_tree</mat-icon>
+                    SPO Tuple Graph Traversal
+                </mat-card-title>
+                </mat-card-header>
+
+                <div class="p-4 pb-2 shrink-0">
+                <div class="flex gap-2">
+                    <mat-form-field appearance="outline" class="flex-1">
+                    <mat-label>Subject Canonical Entity</mat-label>
+                    <input matInput [(ngModel)]="subjectQuery" (keyup.enter)="runTraverse()">
+                    </mat-form-field>
+                    <button mat-flat-button color="accent" class="h-[52px] !rounded-xl !font-bold" (click)="runTraverse()">
+                    <mat-icon>account_tree</mat-icon> Traverse
+                    </button>
+                </div>
+                </div>
+
+                <mat-card-content class="flex-1 min-h-0 overflow-y-auto px-4 pb-4 space-y-2">
+                @for (tuple of graphResults; track tuple.object) {
+                    <div class="p-3 bg-emerald-50/70 rounded-xl border border-emerald-200 flex items-center justify-between text-xs hover:border-emerald-300 transition-all">
+                    <div class="flex items-center space-x-2 font-mono flex-wrap gap-1">
+                        <span class="px-2 py-0.5 bg-emerald-200 text-emerald-900 rounded-md font-bold text-[11px]">{{ tuple.subject }}</span>
+                        <span class="text-emerald-700 font-semibold text-[11px]">─[{{ tuple.predicate }}]─►</span>
+                        <span class="px-2 py-0.5 bg-emerald-200 text-emerald-900 rounded-md font-bold text-[11px]">{{ tuple.object }}</span>
+                    </div>
+                    <span class="text-[10px] text-emerald-800 font-bold bg-emerald-100 px-2 py-0.5 rounded-md shrink-0 ml-2">
+                        Conf: {{ tuple.confidence }}
+                    </span>
+                    </div>
+                } @empty {
+                    <div class="text-center py-12 text-slate-400 text-xs">
+                    No relational graph tuples found.
+                    </div>
+                }
+                </mat-card-content>
+            </mat-card>
         </div>
       }
     </div>

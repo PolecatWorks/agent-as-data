@@ -9,3 +9,5 @@ node_modules/
 integration-tests/*.html
 integration-tests/*.xml
 .garden/
+integration-tests/.venv/
+integration-tests/reports/

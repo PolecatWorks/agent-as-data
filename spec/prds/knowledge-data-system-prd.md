@@ -20,6 +20,11 @@ The Knowledge & Data System in **Agent-As-Data (AAD)** serves as a persistent **
 - **Multi-Hop Graph Queries**: Traversal endpoint (`POST /{{api_prefix}}/v1/knowledge/graph/traverse`) to discover connected entities and conceptual dependencies.
 - **AI / LLM Integration**: Integration with AI via the `rig-core` crate and connection to an Ollama instance to process natural language queries over vector data (RAG).
 
+### 3. Knowledge Editor (BREAD)
+- **Interactive UI Workbench**: The Knowledge Inspector UI provides a two-pane layout: a left sidebar for discovering existing knowledge nodes, and a right workspace editor to modify the knowledge node directly.
+- **Full BREAD API**: Full support for listing (`GET /v1/knowledge`), retrieving (`GET /v1/knowledge/{id}`), updating (`PUT /v1/knowledge/{id}`), creating (`POST /v1/knowledge`), and deleting (`DELETE /v1/knowledge/{id}`).
+- **Graph Triple Editor**: Included in the UI is an explicit Knowledge Graph Triple editor which allows users to explicitly define schema components as Subject-Predicate-Object with adjustable confidence weights.
+
 ### 4. Quality & Performance Safeguards
 - **Entity Canonicalization & Synonym Resolution**: Vector similarity scans on subject/object names (`subject_canonical`, `object_canonical`) detect synonymous entities (e.g. `PostgreSQL` vs `Postgres`) to prevent graph fragmentation.
 - **Graph Tuples Confidence Scoring**: Every extracted tuple carries a mandatory `confidence` score (0.0 to 1.0) to filter noisy or low-certainty relationships during reasoning queries.
@@ -27,8 +32,6 @@ The Knowledge & Data System in **Agent-As-Data (AAD)** serves as a persistent **
 - **Automated Orphan & Decay Pruning**: Background pruning jobs purge unreferenced tuples with zero traversal hits and low confidence after a configurable retention period.
 - **HNSW Vector Acceleration**: `knowledge_embeddings` uses PostgreSQL HNSW vector indexing to maintain sub-millisecond similarity lookup speeds as the knowledge base grows.
 - **Reversible Migration Safeguards**: All DDL tables (`knowledge_nodes`, `knowledge_embeddings`, `knowledge_tuples`) and indices MUST be defined with paired forward (`.up.sql`) and reverse (`.down.sql`) migration scripts to support clean schema rollbacks.
-
-
 
 
 ## Knowledge System Flow
@@ -55,4 +58,3 @@ flowchart LR
 - [Agent-As-Data Core PRD](./agent-as-data-prd.md)
 - [Agent Registry & Execution Engine PRD](./agent-registry-execution-prd.md)
 - [Detailed Schema Specification](../specs/agent-schema-spec.md)
-
