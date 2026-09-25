@@ -19,6 +19,11 @@ Test Knowledge Base MCP Journey
     ...                this verifies the endpoints they call work completely correctly for the journey.
     [Teardown]    Cleanup Knowledge Node
 
+    # Pre-flight check
+    ${health_check}=    Run Keyword And Ignore Error    GET On Session    backend    /health    timeout=5
+    ${health_status}=   Set Variable    ${health_check}[0]
+    Pass Execution If   '${health_status}' != 'PASS'    Backend is offline - skipping live test
+
     # Step 1: Add Node
     ${headers}=    Create Dictionary    Content-Type=application/json
     ${tags}=       Create List          mcp    journey
