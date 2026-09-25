@@ -197,6 +197,13 @@ export interface Skill {
   implementation?: any;
 }
 
+export interface KnowledgeTupleInput {
+  subject: string;
+  predicate: string;
+  object: string;
+  confidence?: number;
+}
+
 export interface KnowledgeNode {
   id: string;
   topic: string;
@@ -205,6 +212,7 @@ export interface KnowledgeNode {
   tags: string[];
   content: string;
   metadata?: any;
+  tuples?: KnowledgeTupleInput[];
   created_at?: string;
   updated_at?: string;
 }
@@ -282,6 +290,10 @@ export class ApiService {
 
   deleteKnowledgeNode(id: string): Observable<any> {
     return this.http.delete(`${this.baseUrl}/knowledge/${id}`);
+  }
+
+  getKnowledgeTuples(id: string): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/knowledge/${id}/tuples`);
   }
 
   searchKnowledge(query: string): Observable<any[]> {

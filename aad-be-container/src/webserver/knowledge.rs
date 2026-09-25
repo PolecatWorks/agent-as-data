@@ -11,7 +11,7 @@ use uuid::Uuid;
 use crate::{
     models::{
         GraphTraverseRequest, GraphTraverseResult, IngestKnowledgeRequest, IngestKnowledgeResponse,
-        KnowledgeNode, KnowledgeSearchRequest, KnowledgeSearchResult, UpdateKnowledgeRequest,
+        KnowledgeNode, KnowledgeSearchRequest, KnowledgeSearchResult, UpdateKnowledgeRequest, KnowledgeTuple,
     },
     state::AppState,
 };
@@ -22,6 +22,7 @@ pub fn router() -> Router<AppState> {
         .route("/search", post(search_knowledge))
         .route("/graph/traverse", post(traverse_graph))
         .route("/{id}", get(get_knowledge).put(update_knowledge).delete(delete_knowledge))
+        .route("/{id}/tuples", get(get_knowledge_tuples))
 }
 
 pub fn chunk_text(text: &str, chunk_size: usize) -> Vec<String> {
@@ -158,6 +159,22 @@ pub async fn get_knowledge(
     }
 }
 
+
+pub async fn get_knowledge_tuples(
+    State(pool): State<PgPool>,
+    Path(id): Path<Uuid>,
+) -> Result<Json<Vec<KnowledgeTuple>>, (StatusCode, String)> {
+    let tuples = sqlx::query_as::<_, KnowledgeTuple>(
+        "SELECT * FROM knowledge_tuples WHERE source_node_id = $1"
+    )
+    .bind(id)
+    .fetch_all(&pool)
+    .await
+    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("DB Error: {}", e)))?;
+
+    Ok(Json(tuples))
+}
+
 pub async fn update_knowledge(
     State(pool): State<PgPool>,
     Path(id): Path<Uuid>,
@@ -243,6 +260,33 @@ pub async fn update_knowledge(
         }
     }
 
+    if let Some(tuples) = payload.tuples {
+        sqlx::query("DELETE FROM knowledge_tuples WHERE source_node_id = $1")
+            .bind(id)
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Delete tuples error: {}", e)))?;
+
+        for tuple in tuples {
+            let tuple_id = Uuid::new_v4();
+            let confidence = tuple.confidence.unwrap_or(1.0);
+            sqlx::query(
+                r#"
+                INSERT INTO knowledge_tuples (id, source_node_id, subject, predicate, object, confidence)
+                VALUES ($1, $2, $3, $4, $5, $6)
+                "#,
+            )
+            .bind(tuple_id)
+            .bind(id)
+            .bind(tuple.subject)
+            .bind(tuple.predicate)
+            .bind(tuple.object)
+            .bind(confidence)
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Tuple Insert Error: {}", e)))?;
+        }
+    }
     tx.commit().await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Commit Error: {}", e)))?;
 
     Ok(Json(updated_node))

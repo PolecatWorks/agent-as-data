@@ -33,6 +33,7 @@ pub struct UpdateKnowledgeRequest {
     pub tags: Option<Vec<String>>,
     pub content: Option<String>,
     pub metadata: Option<serde_json::Value>,
+    pub tuples: Option<Vec<KnowledgeTupleInput>>,
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
@@ -41,6 +42,19 @@ pub struct KnowledgeTupleInput {
     pub predicate: String,
     pub object: String,
     pub confidence: Option<f64>,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone, sqlx::FromRow)]
+pub struct KnowledgeTuple {
+    pub id: Uuid,
+    pub source_node_id: Option<Uuid>,
+    pub subject: String,
+    pub predicate: String,
+    pub object: String,
+    pub confidence: f64,
+    pub traversal_count: i32,
+    pub metadata: serde_json::Value,
+    pub created_at: chrono::DateTime<chrono::Utc>,
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
