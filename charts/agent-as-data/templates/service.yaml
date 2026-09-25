@@ -11,12 +11,6 @@ spec:
       targetPort: http
       protocol: TCP
       name: http
-{{- if ne (int .Values.service.port) 8080 }}
-    - port: 8080
-      targetPort: http
-      protocol: TCP
-      name: http-8080
-{{- end }}
     - port: {{ .Values.service.hamsPort }}
       targetPort: hams
       protocol: TCP
