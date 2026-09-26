@@ -1,88 +1,86 @@
-<div class="h-full w-full flex flex-row bg-slate-50 overflow-hidden">
+<div class="h-screen flex bg-[#f8fafc] font-sans">
 
-  <!-- Left Sidebar -->
-  <div [ngClass]="isSidebarCollapsed ? 'w-16' : 'w-72'" class="h-full bg-white border-r border-slate-200 shadow-sm flex flex-col transition-all duration-300 z-10 shrink-0 overflow-hidden">
+  <!-- Side Nav (Knowledge Browse) -->
+  <div class="border-r border-slate-200/80 bg-slate-50 flex flex-col transition-all duration-300 relative shadow-sm z-20 shrink-0"
+       [class.w-72]="!isSidebarCollapsed" [class.w-16]="isSidebarCollapsed">
 
-    <!-- Sidebar Header -->
-    <div class="p-4 border-b border-slate-100 flex items-center shrink-0 h-14" [ngClass]="isSidebarCollapsed ? 'justify-center px-0' : 'justify-between'">
-      <div class="flex items-center gap-2 overflow-hidden" *ngIf="!isSidebarCollapsed">
-        <div class="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white font-bold shrink-0">
-          <mat-icon class="!w-5 !h-5 !text-xl">library_books</mat-icon>
-        </div>
-        <span class="font-black text-slate-800 text-lg whitespace-nowrap">AAD Knowledge</span>
-      </div>
-      <button mat-icon-button (click)="toggleSidebar()" class="text-slate-400 hover:text-slate-700" [title]="isSidebarCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'">
-        <mat-icon>{{ isSidebarCollapsed ? 'chevron_right' : 'chevron_left' }}</mat-icon>
+    <!-- Header -->
+    <div class="h-14 flex items-center px-4 border-b border-slate-200/80 shrink-0 bg-white justify-between">
+      @if (!isSidebarCollapsed) {
+        <h2 class="text-sm font-black text-slate-800 m-0 uppercase tracking-wider flex items-center gap-2">
+          <mat-icon class="!w-4 !h-4 !text-base text-indigo-500">menu_book</mat-icon> Directory
+        </h2>
+      }
+      <button mat-icon-button (click)="toggleSidebar()" class="text-slate-400 hover:text-slate-600 !w-8 !h-8 transition-colors" [class.mx-auto]="isSidebarCollapsed">
+        <mat-icon class="!w-5 !h-5">{{ isSidebarCollapsed ? 'chevron_right' : 'chevron_left' }}</mat-icon>
       </button>
     </div>
 
-    <!-- Search -->
-    <div class="p-3 border-b border-slate-100 shrink-0" *ngIf="!isSidebarCollapsed">
-      <div class="relative">
-        <mat-icon class="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 !w-4 !h-4 !text-base">search</mat-icon>
-        <input type="text" placeholder="Search knowledge..."
-               class="w-full pl-9 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
-               [(ngModel)]="searchQuery" />
+    <!-- Search Box -->
+    @if (!isSidebarCollapsed) {
+      <div class="p-3 border-b border-slate-200/80 shrink-0 bg-slate-50">
+        <div class="relative group">
+          <mat-icon class="absolute left-3 top-2.5 text-slate-400 !w-4 !h-4 group-focus-within:text-indigo-500 transition-colors">search</mat-icon>
+          <input type="text" placeholder="Filter knowledge..." [(ngModel)]="searchQuery"
+                 class="w-full bg-white border border-slate-200 rounded-lg pl-9 pr-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-slate-700 font-medium placeholder-slate-400 shadow-sm" />
+        </div>
       </div>
-    </div>
+    }
 
-    <!-- Nodes List -->
-    <div class="flex-1 min-h-0 overflow-y-auto py-2">
-      <div *ngIf="getFilteredNodes().length === 0 && !isSidebarCollapsed" class="text-center py-8 text-slate-400 text-xs">
-        No matching knowledge found.
-      </div>
+    <!-- Knowledge List -->
+    <div class="flex-1 overflow-y-auto min-h-0 py-2">
+      @if (!isSidebarCollapsed) {
+        <div class="px-2 space-y-1">
+          @for (node of getFilteredNodes(); track node.id) {
+            <div class="px-3 py-2 rounded-lg cursor-pointer transition-all border group"
+                 [ngClass]="{
+                   'bg-white border-indigo-200 shadow-sm shadow-indigo-100/50': selectedNode?.id === node.id,
+                   'bg-transparent border-transparent hover:bg-slate-100/80': selectedNode?.id !== node.id
+                 }"
+                 (click)="selectNode(node)">
 
-      <div class="space-y-2 px-2 pb-2">
-        @for (node of getFilteredNodes(); track node.id) {
-          <div class="group p-3 rounded-xl border transition-all cursor-pointer bg-white"
-               [ngClass]="selectedNode?.id === node.id ? 'border-blue-500 shadow-sm ring-1 ring-blue-500/20' : 'border-slate-200 hover:border-slate-300'"
-               (click)="selectNode(node)"
-               [matTooltip]="node.title || node.topic"
-               matTooltipPosition="right"
-               [matTooltipDisabled]="!isSidebarCollapsed">
-
-            <!-- Expanded View -->
-            <div class="flex flex-col w-full" *ngIf="!isSidebarCollapsed">
-              <div class="flex justify-between items-start">
-                <div class="flex items-start gap-3 overflow-hidden flex-1">
-                  <mat-icon class="shrink-0 text-slate-400 mt-0.5"
-                            [ngClass]="{'text-blue-600': selectedNode?.id === node.id}">
-                    description
-                  </mat-icon>
-                  <div class="flex-1 min-w-0">
-                    <h5 class="text-sm font-bold text-slate-900 m-0 truncate leading-tight mt-0.5">{{ node.title || node.topic }}</h5>
-                  </div>
+              <div class="flex items-center gap-2 mb-1">
+                <mat-icon class="!w-4 !h-4 !text-base text-slate-400"
+                          [class.text-indigo-500]="selectedNode?.id === node.id">article</mat-icon>
+                <div class="font-bold text-xs truncate transition-colors"
+                     [ngClass]="selectedNode?.id === node.id ? 'text-indigo-700' : 'text-slate-700 group-hover:text-slate-900'">
+                  {{ node.title || node.topic }}
                 </div>
               </div>
 
-              <!-- Description -->
-              <p *ngIf="node.description" class="text-xs text-slate-500 m-0 mt-2 line-clamp-2 leading-relaxed">
-                {{ node.description }}
-              </p>
+              @if (node.description) {
+                <div class="text-[10px] text-slate-500 truncate ml-6 leading-tight">
+                  {{ node.description }}
+                </div>
+              }
 
-              <!-- Tags -->
-              <div *ngIf="node.tags && node.tags.length > 0" class="flex flex-wrap gap-1 mt-2">
-                @for (tag of node.tags; track tag) {
-                  <span class="px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded text-[9px] font-semibold">#{{ tag }}</span>
-                }
-              </div>
+              @if (node.tags && node.tags.length > 0) {
+                <div class="flex gap-1 ml-6 mt-1.5 overflow-hidden">
+                  @for (tag of node.tags | slice:0:3; track tag) {
+                    <span class="text-[9px] font-bold px-1.5 py-0.5 bg-slate-100 text-slate-500 rounded-md border border-slate-200/80 whitespace-nowrap">
+                      {{ tag }}
+                    </span>
+                  }
+                  @if (node.tags.length > 3) {
+                    <span class="text-[9px] font-bold px-1.5 py-0.5 text-slate-400">...</span>
+                  }
+                </div>
+              }
             </div>
-
-            <!-- Collapsed View -->
-            <div class="flex justify-center items-center" *ngIf="isSidebarCollapsed">
-               <mat-icon class="text-slate-400 transition-colors"
-                        [ngClass]="{'text-blue-600': selectedNode?.id === node.id}">
-                description
-              </mat-icon>
+          }
+          @if (getFilteredNodes().length === 0) {
+            <div class="text-xs text-slate-400 text-center py-6 px-4">
+              <mat-icon class="!w-6 !h-6 !text-2xl text-slate-300 mb-2">search_off</mat-icon><br/>
+              No knowledge found matching your filter.
             </div>
-          </div>
-        }
-      </div>
+          }
+        </div>
+      }
     </div>
   </div>
 
-  <!-- Right Area (Workspace) -->
-  <div class="flex-1 flex flex-col min-w-0 overflow-hidden bg-slate-50 relative">
+  <!-- Main View -->
+  <div class="flex-1 flex flex-col min-w-0 bg-[#f8fafc] relative">
 
     <!-- Top Bar -->
     <div class="h-14 bg-white border-b border-slate-200 flex items-center justify-between px-4 shrink-0 shadow-sm z-10">
@@ -114,6 +112,9 @@
 
       <!-- Right side of top bar (Actions) -->
       <div class="flex items-center gap-2">
+        <button mat-stroked-button class="!rounded-lg !px-4 !font-bold h-9 mr-2" (click)="openMarkdownImport()">
+          <mat-icon class="mr-1">auto_awesome</mat-icon> Import Markdown
+        </button>
         <button mat-flat-button color="primary" class="!rounded-lg !px-4 !font-bold h-9 mr-2" (click)="createNewNode()">
           <mat-icon class="mr-1">add</mat-icon> New Knowledge
         </button>
@@ -149,6 +150,91 @@
 
     <!-- Workspace Content (Scrollable) -->
     <div class="flex-1 min-h-0 overflow-y-auto p-6">
+
+      @if (showMarkdownImport) {
+        <mat-card class="!rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden bg-white mb-6">
+          <div class="p-6 bg-slate-50/80 border-b border-slate-200/60 flex justify-between items-center">
+            <div>
+              <h2 class="text-base font-black text-slate-800 m-0 flex items-center gap-2">
+                <mat-icon class="text-indigo-500">auto_awesome</mat-icon> AI Markdown Import
+              </h2>
+              <p class="text-xs text-slate-500 m-0 mt-1">Paste a document and let the AI extract structured knowledge nodes.</p>
+            </div>
+            <div class="flex gap-2">
+              <button mat-stroked-button class="!rounded-xl !font-bold" (click)="cancelMarkdownImport()" [disabled]="isAnalyzing">
+                Cancel
+              </button>
+              <button mat-flat-button color="primary" class="!rounded-xl !font-bold" (click)="analyzeMarkdown()" [disabled]="isAnalyzing || !markdownInput.trim()">
+                @if (isAnalyzing) {
+                  <mat-spinner diameter="20" class="mr-2 inline-block"></mat-spinner>
+                  Analyzing...
+                } @else {
+                  <ng-container><mat-icon>memory</mat-icon> Analyze Document</ng-container>
+                }
+              </button>
+            </div>
+          </div>
+
+          <mat-card-content class="p-6">
+            @if (importProposals.length === 0 && !isAnalyzing) {
+              <div class="space-y-2">
+                <label class="text-xs font-bold text-slate-500 block">Raw Markdown Text</label>
+                <textarea rows="15" [(ngModel)]="markdownInput" placeholder="# Company Guidelines&#10;&#10;Here are some unwritten rules..."
+                          class="font-mono text-sm leading-relaxed text-slate-800 w-full px-3 py-2 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"></textarea>
+              </div>
+            }
+
+            @if (isAnalyzing) {
+              <div class="flex flex-col items-center justify-center py-12 text-slate-500">
+                <mat-spinner diameter="40" class="mb-4"></mat-spinner>
+                <p class="text-sm font-bold text-slate-700">AI is reading the document...</p>
+                <p class="text-xs">Extracting concepts, titles, descriptions, and tags.</p>
+              </div>
+            }
+
+            @if (importProposals.length > 0 && !isAnalyzing) {
+              <div class="space-y-4">
+                <div class="flex justify-between items-end mb-2">
+                  <h3 class="text-sm font-bold text-slate-700 m-0">Found {{ importProposals.length }} Concepts</h3>
+                  <button mat-flat-button color="accent" class="!rounded-lg !font-bold" (click)="finalizeImport()">
+                    <mat-icon>check_circle</mat-icon> Finalize Import
+                  </button>
+                </div>
+
+                <div class="grid grid-cols-1 gap-4">
+                  @for (proposal of importProposals; track proposal.title; let i = $index) {
+                    <div class="border border-slate-200 rounded-xl p-4 bg-white flex gap-4 transition-all" [class.opacity-50]="!proposal.selected">
+                      <div class="pt-1">
+                        <mat-checkbox [(ngModel)]="proposal.selected" color="primary"></mat-checkbox>
+                      </div>
+                      <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-2 mb-1">
+                          <span class="text-[10px] font-bold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md">{{ proposal.topic }}</span>
+                          <h4 class="text-sm font-bold text-slate-800 m-0 truncate">{{ proposal.title }}</h4>
+                        </div>
+                        <p class="text-xs text-slate-600 mb-2">{{ proposal.description }}</p>
+
+                        <div class="flex flex-wrap gap-1 mb-3">
+                          @for (tag of proposal.tags; track tag) {
+                            <span class="text-[10px] font-bold px-1.5 py-0.5 bg-slate-100 text-slate-500 rounded-md border border-slate-200/80 whitespace-nowrap">
+                              {{ tag }}
+                            </span>
+                          }
+                        </div>
+
+                        <div class="text-xs font-mono text-slate-500 bg-slate-50 p-2 rounded-lg border border-slate-100 max-h-32 overflow-y-auto whitespace-pre-wrap">
+                          {{ proposal.content }}
+                        </div>
+                      </div>
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+          </mat-card-content>
+        </mat-card>
+      }
+
       @if (selectedNode || isEditing) {
         <mat-card class="!rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden bg-white">
           <div class="p-6 bg-slate-50/80 border-b border-slate-200/60 flex justify-between items-center">
@@ -256,12 +342,12 @@
 
           </mat-card-content>
         </mat-card>
-      } @else {
+      } @else if (!showMarkdownImport) {
         <div class="flex flex-col items-center justify-center py-24 bg-white rounded-2xl border border-slate-200 shadow-sm text-slate-400 h-full">
           <mat-icon class="!w-16 !h-16 !text-6xl text-slate-200 mb-4">library_books</mat-icon>
           <h3 class="text-sm font-bold text-slate-700 m-0">No Knowledge Node Selected</h3>
           <p class="text-xs text-slate-400 max-w-xs text-center mt-1">
-            Choose an item from the list, or create a new one to begin editing its content.
+            Choose an item from the list, import markdown, or create a new one to begin.
           </p>
         </div>
       }

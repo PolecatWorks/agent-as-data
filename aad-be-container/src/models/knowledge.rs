@@ -80,3 +80,22 @@ pub struct GraphTraverseResult {
     pub confidence: f64,
     pub depth: usize,
 }
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct AnalyzeMarkdownRequest {
+    pub markdown: String,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct KnowledgeNodeProposal {
+    pub topic: String,
+    pub title: String,
+    pub description: String,
+    pub tags: Vec<String>,
+    pub content: String,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct AnalyzeMarkdownResponse {
+    pub proposals: Vec<KnowledgeNodeProposal>,
+}

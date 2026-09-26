@@ -8,10 +8,14 @@ use axum::{
 use sqlx::{PgPool, Row};
 use uuid::Uuid;
 
+use rig_core::client::CompletionClient;
+use rig_core::completion::CompletionModel;
+
 use crate::{
     models::{
         GraphTraverseRequest, GraphTraverseResult, IngestKnowledgeRequest, IngestKnowledgeResponse,
         KnowledgeNode, KnowledgeSearchRequest, KnowledgeSearchResult, UpdateKnowledgeRequest,
+        AnalyzeMarkdownRequest, AnalyzeMarkdownResponse, KnowledgeNodeProposal
     },
     state::AppState,
 };
@@ -21,6 +25,7 @@ pub fn router() -> Router<AppState> {
         .route("/", get(list_knowledge).post(ingest_knowledge))
         .route("/search", post(search_knowledge))
         .route("/graph/traverse", post(traverse_graph))
+        .route("/analyze-markdown", post(analyze_markdown))
         .route("/{id}", get(get_knowledge).put(update_knowledge).delete(delete_knowledge))
 }
 
@@ -30,6 +35,72 @@ pub fn chunk_text(text: &str, chunk_size: usize) -> Vec<String> {
         .chunks(chunk_size)
         .map(|c| c.iter().collect::<String>())
         .collect()
+}
+
+pub async fn analyze_markdown(
+    State(state): State<AppState>,
+    Json(payload): Json<AnalyzeMarkdownRequest>,
+) -> Result<Json<AnalyzeMarkdownResponse>, (StatusCode, String)> {
+    let builder = rig_core::providers::ollama::Client::builder()
+        .base_url(&state.config.llm.ollama_url)
+        .api_key(rig_core::client::Nothing);
+
+    let ollama_client = builder.build().map_err(|e| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("Failed to initialize Ollama client: {}", e),
+        )
+    })?;
+
+    let model = ollama_client.completion_model(&state.config.llm.model);
+
+    let prompt = format!(
+        "You are an expert knowledge extraction system. Your task is to analyze the following Markdown text and extract distinct, self-contained \"Concepts\" or \"Topics\".\n\nFor each identified concept, generate a JSON object representing a Knowledge Node proposal. The output MUST be a JSON array of these objects.\n\nEach object must have the following keys:\n- \"topic\": A broad category or domain for the concept (string).\n- \"title\": A concise, descriptive title (string).\n- \"description\": A short summary of the concept (string).\n- \"tags\": An array of strings for categorization (array of strings).\n- \"content\": The specific portion of the original Markdown text that explains this concept (string). Retain the original markdown formatting for this field if possible.\n\nMarkdown Text:\n{}\n\nOutput ONLY a valid JSON array of objects. Do not include markdown code blocks like ```json around the output.",
+        payload.markdown
+    );
+
+    let request = model
+        .completion_request(&prompt)
+        .temperature(0.2)
+        .max_tokens(4096);
+
+    let response = tokio::time::timeout(std::time::Duration::from_secs(state.config.llm.timeout_secs), request.send())
+        .await
+        .map_err(|e| (StatusCode::GATEWAY_TIMEOUT, format!("LLM request timed out: {}", e)))?
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("LLM error: {}", e)))?;
+
+    if let Some(choice) = response.choice.first() {
+        if let rig_core::completion::message::AssistantContent::Text(text) = choice {
+            let content = text.text.trim();
+            // Try to strip markdown code blocks if the LLM included them despite instructions
+            let content = if content.starts_with("```json") {
+                content.trim_start_matches("```json").trim_end_matches("```").trim()
+            } else if content.starts_with("```") {
+                content.trim_start_matches("```").trim_end_matches("```").trim()
+            } else {
+                content
+            };
+
+            match serde_json::from_str::<Vec<KnowledgeNodeProposal>>(content) {
+                Ok(proposals) => {
+                    return Ok(Json(AnalyzeMarkdownResponse { proposals }));
+                }
+                Err(e) => {
+                    tracing::error!("Failed to parse LLM response as JSON: {}", e);
+                    tracing::error!("Raw LLM response: {}", content);
+                    return Err((
+                        StatusCode::INTERNAL_SERVER_ERROR,
+                        format!("Failed to parse LLM output: {}", e),
+                    ));
+                }
+            }
+        }
+    }
+
+    Err((
+        StatusCode::INTERNAL_SERVER_ERROR,
+        "Failed to extract knowledge from LLM response".to_string(),
+    ))
 }
 
 pub async fn ingest_knowledge(

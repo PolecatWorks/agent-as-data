@@ -8,12 +8,24 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatChipsModule } from '@angular/material/chips';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 import { RouterModule } from '@angular/router';
 import { ApiService, KnowledgeNode } from '../../services/api.service';
 import { ConceptGuideComponent, ConceptTabMapping } from '../concept-guide/concept-guide.component';
 import { APP_NAV_MENU_ITEMS } from '../../models/navigation';
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
+import { forkJoin } from 'rxjs';
+
+export interface KnowledgeNodeProposal {
+  topic: string;
+  title: string;
+  description: string;
+  tags: string[];
+  content: string;
+  selected?: boolean;
+}
 
 @Component({
   selector: 'app-knowledge-inspector',
@@ -28,6 +40,8 @@ import DOMPurify from 'dompurify';
     MatMenuModule,
     MatTooltipModule,
     MatChipsModule,
+    MatProgressSpinnerModule,
+    MatCheckboxModule,
     RouterModule,
     ConceptGuideComponent
   ],
@@ -44,6 +58,12 @@ export class KnowledgeInspectorComponent implements OnInit {
   showDeleteConfirm: boolean = false;
   nodeForm: Partial<KnowledgeNode> = {};
   newTag: string = '';
+
+  // Markdown Import state
+  showMarkdownImport: boolean = false;
+  markdownInput: string = '';
+  isAnalyzing: boolean = false;
+  importProposals: KnowledgeNodeProposal[] = [];
 
   menuItems = APP_NAV_MENU_ITEMS;
 
@@ -99,6 +119,7 @@ export class KnowledgeInspectorComponent implements OnInit {
     this.selectedNode = node;
     this.isEditing = false;
     this.showDeleteConfirm = false;
+    this.showMarkdownImport = false;
     this.nodeForm = JSON.parse(JSON.stringify(node));
   }
 
@@ -106,6 +127,7 @@ export class KnowledgeInspectorComponent implements OnInit {
     this.selectedNode = null;
     this.isEditing = true;
     this.showDeleteConfirm = false;
+    this.showMarkdownImport = false;
     this.nodeForm = {
       topic: 'general',
       title: '',
@@ -113,6 +135,58 @@ export class KnowledgeInspectorComponent implements OnInit {
       tags: [],
       content: ''
     };
+  }
+
+  openMarkdownImport(): void {
+    this.selectedNode = null;
+    this.isEditing = false;
+    this.showDeleteConfirm = false;
+    this.showMarkdownImport = true;
+    this.markdownInput = '';
+    this.importProposals = [];
+  }
+
+  cancelMarkdownImport(): void {
+    this.showMarkdownImport = false;
+    this.markdownInput = '';
+    this.importProposals = [];
+  }
+
+  analyzeMarkdown(): void {
+    if (!this.markdownInput.trim()) return;
+
+    this.isAnalyzing = true;
+    this.importProposals = [];
+
+    this.apiService.analyzeMarkdown(this.markdownInput).subscribe({
+      next: (res) => {
+        this.isAnalyzing = false;
+        this.importProposals = res.proposals.map(p => ({ ...p, selected: true }));
+      },
+      error: (err) => {
+        this.isAnalyzing = false;
+        console.error('Failed to analyze markdown', err);
+      }
+    });
+  }
+
+  finalizeImport(): void {
+    const selectedProposals = this.importProposals.filter(p => p.selected);
+    if (selectedProposals.length === 0) return;
+
+    const requests = selectedProposals.map(p =>
+      this.apiService.ingestKnowledge(p.topic, p.title, p.description, p.tags, p.content)
+    );
+
+    forkJoin(requests).subscribe({
+      next: () => {
+        this.cancelMarkdownImport();
+        this.loadNodes();
+      },
+      error: (err) => {
+        console.error('Failed to finalize import', err);
+      }
+    });
   }
 
   toggleSidebar(): void {

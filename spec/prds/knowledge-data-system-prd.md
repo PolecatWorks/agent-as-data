@@ -11,7 +11,8 @@ The Knowledge & Data System in **Agent-As-Data (AAD)** serves as a persistent **
 - **Semantic RAG Embeddings**: Automatic text chunking and vector indexing in `knowledge_embeddings` (`pgvector` with HNSW cosine similarity indices) to enable semantic vector queries (`POST /{{api_prefix}}/v1/knowledge/search`).
 - **Graph Relational Triples**: Relational tuple storage (`subject`, `predicate`, `object`, `confidence`, `metadata`) in `knowledge_tuples` to capture concept maps (e.g., `User -> belongs_to -> Tenant`).
 
-### 2. Knowledge Registry UI & Management (BREAD)
+### 2. Knowledge Registry UI ### 2. Knowledge Registry UI & Management (BREAD) Management (BREAD)
+- **AI Markdown Import**: Ability to paste raw markdown documents, analyze them via LLM to extract distinct knowledge concepts, and bulk ingest them after review.
 - **Unified UI/UX Structure**: Following the identical architectural structure of the Agency Registry, the Knowledge UI implements a dual-pane layout: a collapsible left sidebar for browsing knowledge nodes, and a right-side main workspace for creating, reading, and editing knowledge nodes.
 - **BREAD Operations**: Full Browse, Read, Edit, Add, and Delete capabilities over knowledge items directly from the UI, supporting edits to `title`, `description`, `content`, and `tags`.
 

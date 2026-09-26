@@ -288,6 +288,10 @@ export class ApiService {
     return this.http.post<any[]>(`${this.baseUrl}/knowledge/search`, { query, limit: 10 });
   }
 
+  analyzeMarkdown(markdown: string): Observable<{ proposals: any[] }> {
+    return this.http.post<{ proposals: any[] }>(`${this.baseUrl}/knowledge/analyze-markdown`, { markdown });
+  }
+
   ingestKnowledge(topic: string, title: string, description: string | undefined, tags: string[], content: string, tuples?: any[]): Observable<any> {
     return this.http.post(`${this.baseUrl}/knowledge`, { topic, title, description, tags, content, tuples });
   }
