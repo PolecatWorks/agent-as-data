@@ -22,6 +22,9 @@ graph TD
         RefactorStudio["6. Agent Refactoring & Compression Lab"]
         KnowledgeLab["7. Knowledge Base Lab & SPO Triples"]
         ToolManager["8. Remote Tool Manager"]
+        Workbench["9. Workbench Workspace"]
+        ContextSearch["10. Agent Context Discovery"]
+        KnowledgeExplorer["11. Knowledge Explorer & Relational Tuples Graph"]
     end
 
     subgraph Backend ["aad-be-container (Rust Microservice)"]
@@ -63,6 +66,7 @@ All views across the application must share an identical, standardized top bar (
   - `account_tree` -> `/network-visualizer` (Network Graph Visualizer)
   - `build_circle` -> `/refactoring-lab` (Refactoring & Compression Lab)
   - `library_books` -> `/knowledge-inspector` (Knowledge & SPO Tuple Inspector)
+  - `explore` -> `/knowledge-explorer` (Knowledge Explorer)
   - `search` -> `/agent-context` (Agent Context View)
   - `work` -> `/workbench` (Workbench)
 - **Top Bar Secondary Controls**: Divider line, layout/view toggle icon (`view_column`), and user profile avatar badge (`BG`).
@@ -85,6 +89,7 @@ A primary goal of the Agent-As-Data Studio is **absolute consistency across the 
   6. 🧪 **Testing Studio (`/interactive-testing`)**: **"Pre-Production Sandbox"** — Safe staging ground to preview outputs, inspect prompt guidelines, and verify trait compliance before going live.
   7. 🕸️ **Network Graph (`/network-visualizer`)**: **"Org Chart & Delegation Map"** — Interactive visualization of team hierarchies and trait interface relationships.
   8. 🛠️ **Refactoring Lab (`/refactoring-lab`)**: **"AI Governance & Quality Control"** — Automated detection of duplicate agents, overlapping skills, and rule contradictions.
+  9. 🧭 **Knowledge Explorer (`/knowledge-explorer`)**: **"Knowledge Graph & Ecosystem Map"** — Interactive visual network mapping the relationships between agents, skills, tools, traits, and knowledge nodes as Subject-Predicate-Object relation tuples.
 - **Zero Descriptive Divergence**: If an entity is described using a specific mental model on `/home`, every other view in the system (including top bar concept popovers and contextual help) must reinforce and build upon that exact same mental model rather than introducing competing synonyms or disparate framing.
 
 - **Interactive Testing Studio Alignment with Skills Layout**:
@@ -290,7 +295,25 @@ flowchart TD
   - **Direct Entity Navigation**: Features a dedicated **View Details** action on every card that navigates to `/agents/:id`, `/skills/:id`, `/traits/:id`, or `/tools/:id`.
   - **Result Deduplication**: Groups and deduplicates results by entity name/ID so that an entity matching across multiple fields (e.g. prompt and description) only appears once as its best match.
 
-### 11. Robot Framework Integration Testing Suite (Ref: `sward-warden/integration-tests`)
+### 11. Knowledge Explorer & System Relational Tuples Graph (`/knowledge-explorer`)
+- **Full Ecosystem Graph Canvas**: Powered by `vis-network`, rendering all Agents, Skills, Tools, Traits, and Knowledge Nodes in a shared physics-stabilized interactive network.
+- **Relational Tuples Representation**:
+  - Encodes connections as Subject-Predicate-Object (SPO) triples:
+    - Agent $\xrightarrow{\text{has\_skill}}$ Skill
+    - Agent $\xrightarrow{\text{uses\_tool}}$ Tool
+    - Agent $\xrightarrow{\text{delegates\_to}}$ Agent
+    - Agent $\xrightarrow{\text{implements}}$ Trait
+    - Skill $\xrightarrow{\text{uses\_tool}}$ Tool
+    - Skill $\xrightarrow{\text{composes\_skill}}$ Skill
+    - Skill $\xrightarrow{\text{implements}}$ Trait
+    - KnowledgeNode $\xrightarrow{\text{predicate}}$ Concept / Node (from `knowledge_tuples`)
+  - Graph edges display explicit directional arrows and predicate labels (e.g. `uses_tool`, `has_skill`, `implements`).
+  - Edge hover tooltips present full SPO triple syntax: `(Subject) —[Predicate]→ (Object)`.
+- **Entity Hydration**: Fully hydrates agents and skills upon load (retrieving attached skills, attached tools, attached agents, and implemented traits) to guarantee zero missing structural relations.
+- **Side Panel Tuples Inspector**: When an entity node is clicked, an inspector panel provides a dedicated **Relational Tuples** section showing all outbound and inbound tuples with quick-jump navigation.
+- **Predicate Filtering**: Controls to filter visible edges by predicate type (e.g., toggle `uses_tool`, `has_skill`, `implements`, or factual knowledge triples).
+
+### 12. Robot Framework Integration Testing Suite (Ref: `sward-warden/integration-tests`)
 - **Declarative User Journey Robot Tests**: `/integration-tests/tests/*.robot` test cases mapping 1-to-1 to all 12 user journeys, covering 24 tests total (all currently passing).
 - **Python Integration Libraries**: Custom Python helper modules (`AADRequests.py`) extending Robot Framework for authenticated REST requests, database seeding, and state verification.
 - **Idempotent Seed Test**: `test_seed_exemplar_data.robot` seeds the database with exemplar data using upsert semantics — safe to re-run at any time without constraint conflicts.
