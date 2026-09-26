@@ -1,5 +1,6 @@
 import { Component, OnInit, ElementRef, AfterViewInit, NgZone, ChangeDetectorRef } from '@angular/core';
 import { CommonModule, TitleCasePipe } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
@@ -29,6 +30,7 @@ export interface SystemTuple {
   standalone: true,
   imports: [
     CommonModule,
+    FormsModule,
     RouterModule,
     MatIconModule,
     MatButtonModule,
@@ -45,6 +47,15 @@ export class KnowledgeExplorerComponent implements OnInit, AfterViewInit {
   network: any;
   nodes: any = new DataSet([]);
   edges: any = new DataSet([]);
+
+  // Physics state
+  isPhysicsPanelOpen: boolean = false;
+  physicsOptions = {
+    gravitationalConstant: -28,
+    centralGravity: 0.005,
+    springLength: 220,
+    springConstant: 0.16
+  };
 
   // Tuple state
   allTuples: SystemTuple[] = [];
@@ -124,10 +135,10 @@ export class KnowledgeExplorerComponent implements OnInit, AfterViewInit {
       },
       physics: {
         forceAtlas2Based: {
-          gravitationalConstant: -28,
-          centralGravity: 0.005,
-          springLength: 220,
-          springConstant: 0.16
+          gravitationalConstant: this.physicsOptions.gravitationalConstant,
+          centralGravity: this.physicsOptions.centralGravity,
+          springLength: this.physicsOptions.springLength,
+          springConstant: this.physicsOptions.springConstant
         },
         maxVelocity: 146,
         solver: 'forceAtlas2Based',
@@ -654,6 +665,21 @@ export class KnowledgeExplorerComponent implements OnInit, AfterViewInit {
         return 'text-indigo-600';
       default:
         return 'text-slate-600';
+    }
+  }
+
+  updatePhysics(): void {
+    if (this.network) {
+      this.network.setOptions({
+        physics: {
+          forceAtlas2Based: {
+            gravitationalConstant: this.physicsOptions.gravitationalConstant,
+            centralGravity: this.physicsOptions.centralGravity,
+            springLength: this.physicsOptions.springLength,
+            springConstant: this.physicsOptions.springConstant
+          }
+        }
+      });
     }
   }
 }
