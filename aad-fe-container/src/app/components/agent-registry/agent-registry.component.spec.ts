@@ -16,11 +16,30 @@ describe('AgentRegistryComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [AgentRegistryComponent],
-      providers: [provideHttpClient(), provideAnimationsAsync(), provideRouter([]), { provide: ActivatedRoute, useValue: { queryParams: of({}), snapshot: { paramMap: { get: () => null } } } }, { provide: ApiService, useValue: { getAgents: () => of([]), getTraits: () => of({ids: []}), getTrait: () => of(null), getTools: () => of([]), getSkills: () => of([]) } }],
-      schemas: [NO_ERRORS_SCHEMA]
-    })
-    .compileComponents();
-
+      providers: [
+        provideHttpClient(),
+        provideAnimationsAsync(),
+        provideRouter([]),
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            queryParams: of({}),
+            snapshot: { paramMap: { get: () => null } },
+          },
+        },
+        {
+          provide: ApiService,
+          useValue: {
+            getAgents: () => of([]),
+            getTraits: () => of({ ids: [] }),
+            getTrait: () => of(null),
+            getTools: () => of([]),
+            getSkills: () => of([]),
+          },
+        },
+      ],
+      schemas: [NO_ERRORS_SCHEMA],
+    }).compileComponents();
 
     fixture = TestBed.createComponent(AgentRegistryComponent);
     component = fixture.componentInstance;
@@ -33,12 +52,12 @@ describe('AgentRegistryComponent', () => {
 
   it('should not add duplicate metadata tags', () => {
     component.agentForm = {
-      tags: ['security', 'audit']
+      tags: ['security', 'audit'],
     };
     component.newTag = 'security';
     component.addTag();
     expect(component.agentForm.tags).toEqual(['security', 'audit']);
-    
+
     component.newTag = 'new-tag';
     component.addTag();
     expect(component.agentForm.tags).toEqual(['security', 'audit', 'new-tag']);
@@ -55,28 +74,37 @@ describe('AgentRegistryComponent', () => {
         capability_requirements: [],
         behavioral_invariants: [],
         evaluation_criteria: [],
-        tags: []
-      }
+        tags: [],
+      },
     ];
 
-    expect(component.getTraitDescription('SecurityAuditor')).toBe('Vulnerability scanner.');
-    expect(component.getTraitDescription('NonExistent')).toBe('No description available');
+    expect(component.getTraitDescription('SecurityAuditor')).toBe(
+      'Vulnerability scanner.',
+    );
+    expect(component.getTraitDescription('NonExistent')).toBe(
+      'No description available',
+    );
   });
 
   it('should render the zero-footprint concept guide trigger and configuration in top bar', () => {
-    const trigger = fixture.nativeElement.querySelector('[data-testid="agents-concept-trigger"]');
+    const trigger = fixture.nativeElement.querySelector(
+      '[data-testid="agents-concept-trigger"]',
+    );
     expect(trigger).toBeTruthy();
     expect(trigger.textContent).toContain('What are Agents?');
 
     expect(component.conceptGuideMappings.length).toBe(3);
-    expect(component.conceptGuideMappings[0].title).toBe('1. System Prompt & Persona');
+    expect(component.conceptGuideMappings[0].title).toBe(
+      '1. System Prompt & Persona',
+    );
   });
 
   it('should render the workspace title as an interactive view switcher trigger with dropdown affordance', () => {
-    const switcher = fixture.nativeElement.querySelector('[data-testid="workspace-title-switcher"]');
+    const switcher = fixture.nativeElement.querySelector(
+      '[data-testid="workspace-title-switcher"]',
+    );
     expect(switcher).toBeTruthy();
     expect(switcher.textContent).toContain('Agents Registry');
     expect(switcher.textContent).toContain('expand_more');
   });
 });
-

@@ -1,4 +1,10 @@
-import { Component, Input, HostListener, ChangeDetectorRef, inject } from '@angular/core';
+import {
+  Component,
+  Input,
+  HostListener,
+  ChangeDetectorRef,
+  inject,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
@@ -15,7 +21,7 @@ export interface ConceptTabMapping {
   standalone: true,
   imports: [CommonModule, RouterModule, MatIconModule],
   templateUrl: './concept-guide.component.html',
-  styleUrls: ['./concept-guide.component.scss']
+  styleUrls: ['./concept-guide.component.scss'],
 })
 export class ConceptGuideComponent {
   private cdr = inject(ChangeDetectorRef);
@@ -30,7 +36,14 @@ export class ConceptGuideComponent {
   @Input() detailLink: string = '/detail';
   @Input() detailLinkLabel: string = 'Explore Architecture Blueprint';
   @Input() testIdPrefix: string = 'concept-guide';
-  @Input() accentColor: 'indigo' | 'purple' | 'blue' | 'emerald' | 'amber' | 'cyan' | 'slate' = 'indigo';
+  @Input() accentColor:
+    | 'indigo'
+    | 'purple'
+    | 'blue'
+    | 'emerald'
+    | 'amber'
+    | 'cyan'
+    | 'slate' = 'indigo';
 
   isOpen = false;
   isPinned = false;

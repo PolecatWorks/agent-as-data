@@ -3,8 +3,16 @@ import { provideHttpClient } from '@angular/common/http';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
 import { provideRouter } from '@angular/router';
 import { of } from 'rxjs';
-import { KnowledgeExplorerComponent, SystemTuple } from './knowledge-explorer.component';
-import { ApiService, Agent, Skill, KnowledgeNode } from '../../services/api.service';
+import {
+  KnowledgeExplorerComponent,
+  SystemTuple,
+} from './knowledge-explorer.component';
+import {
+  ApiService,
+  Agent,
+  Skill,
+  KnowledgeNode,
+} from '../../services/api.service';
 
 describe('KnowledgeExplorerComponent', () => {
   let component: KnowledgeExplorerComponent;
@@ -20,7 +28,7 @@ describe('KnowledgeExplorerComponent', () => {
     uses_traits: [],
     current_version: '1.0.0',
     owner_id: '00000000-0000-0000-0000-000000000000',
-    judge_threshold: 0.8
+    judge_threshold: 0.8,
   };
 
   const mockHydratedAgent: Agent = {
@@ -29,7 +37,7 @@ describe('KnowledgeExplorerComponent', () => {
     attached_tools: ['tool-1'],
     attached_agents: ['agent-2'],
     implements_traits: ['TraitAuditor'],
-    uses_traits: ['TraitSandbox']
+    uses_traits: ['TraitSandbox'],
   };
 
   const mockSkill: Skill = {
@@ -42,7 +50,7 @@ describe('KnowledgeExplorerComponent', () => {
     owner_id: '00000000-0000-0000-0000-000000000000',
     attached_tools: ['tool-1'],
     attached_skills: [],
-    implements_traits: ['TraitAuditor']
+    implements_traits: ['TraitAuditor'],
   };
 
   const mockTools = [
@@ -52,8 +60,8 @@ describe('KnowledgeExplorerComponent', () => {
       name: 'VulnerabilityScanner',
       transport_type: 'HTTP',
       endpoint_config: { description: 'Scans for CVEs', tags: ['cve'] },
-      cached_capabilities: { tools: [{ name: 'scan_cve' }] }
-    }
+      cached_capabilities: { tools: [{ name: 'scan_cve' }] },
+    },
   ];
 
   const mockTraits = {
@@ -67,7 +75,7 @@ describe('KnowledgeExplorerComponent', () => {
         capability_requirements: [],
         behavioral_invariants: [],
         evaluation_criteria: [],
-        tags: []
+        tags: [],
       },
       {
         id: 'trait-2',
@@ -78,9 +86,9 @@ describe('KnowledgeExplorerComponent', () => {
         capability_requirements: [],
         behavioral_invariants: [],
         evaluation_criteria: [],
-        tags: []
-      }
-    ]
+        tags: [],
+      },
+    ],
   };
 
   const mockKnowledgeNodes: KnowledgeNode[] = [
@@ -90,8 +98,8 @@ describe('KnowledgeExplorerComponent', () => {
       title: 'Company Security Guidelines',
       description: 'Standards for secure development',
       content: 'Never store raw secrets',
-      tags: ['security', 'compliance']
-    }
+      tags: ['security', 'compliance'],
+    },
   ];
 
   const mockKnowledgeTuples = [
@@ -101,8 +109,8 @@ describe('KnowledgeExplorerComponent', () => {
       subject: 'Company Security Guidelines',
       predicate: 'governs',
       object: 'SecurityAgent',
-      confidence: 0.95
-    }
+      confidence: 0.95,
+    },
   ];
 
   beforeEach(async () => {
@@ -113,7 +121,7 @@ describe('KnowledgeExplorerComponent', () => {
       'getTools',
       'getTraits',
       'getKnowledgeNodes',
-      'getKnowledgeTuples'
+      'getKnowledgeTuples',
     ]);
 
     apiServiceSpy.getAgents.and.returnValue(of([mockAgentSummary]));
@@ -130,8 +138,8 @@ describe('KnowledgeExplorerComponent', () => {
         provideHttpClient(),
         provideAnimationsAsync(),
         provideRouter([]),
-        { provide: ApiService, useValue: apiServiceSpy }
-      ]
+        { provide: ApiService, useValue: apiServiceSpy },
+      ],
     }).compileComponents();
 
     fixture = TestBed.createComponent(KnowledgeExplorerComponent);
@@ -144,7 +152,9 @@ describe('KnowledgeExplorerComponent', () => {
 
   it('should render the workspace title as an interactive view switcher trigger with dropdown affordance', () => {
     fixture.detectChanges();
-    const switcher = fixture.nativeElement.querySelector('[data-testid="workspace-title-switcher"]');
+    const switcher = fixture.nativeElement.querySelector(
+      '[data-testid="workspace-title-switcher"]',
+    );
     expect(switcher).toBeTruthy();
     expect(switcher.textContent).toContain('Knowledge Explorer');
     expect(switcher.textContent).toContain('expand_more');
@@ -160,24 +170,32 @@ describe('KnowledgeExplorerComponent', () => {
     const tuples = component.allTuples;
     expect(tuples.length).toBeGreaterThanOrEqual(4);
 
-    const hasSkillTuple = tuples.find(t => t.predicate === 'has_skill');
+    const hasSkillTuple = tuples.find((t) => t.predicate === 'has_skill');
     expect(hasSkillTuple).toBeTruthy();
     expect(hasSkillTuple?.subjectId).toBe('agent-1');
     expect(hasSkillTuple?.objectId).toBe('skill-1');
 
-    const usesToolTuple = tuples.find(t => t.predicate === 'uses_tool' && t.subjectId === 'agent-1');
+    const usesToolTuple = tuples.find(
+      (t) => t.predicate === 'uses_tool' && t.subjectId === 'agent-1',
+    );
     expect(usesToolTuple).toBeTruthy();
     expect(usesToolTuple?.objectId).toBe('tool-1');
 
-    const skillUsesToolTuple = tuples.find(t => t.predicate === 'uses_tool' && t.subjectId === 'skill-1');
+    const skillUsesToolTuple = tuples.find(
+      (t) => t.predicate === 'uses_tool' && t.subjectId === 'skill-1',
+    );
     expect(skillUsesToolTuple).toBeTruthy();
     expect(skillUsesToolTuple?.objectId).toBe('tool-1');
 
-    const implementsTuple = tuples.find(t => t.predicate === 'implements' && t.subjectId === 'agent-1');
+    const implementsTuple = tuples.find(
+      (t) => t.predicate === 'implements' && t.subjectId === 'agent-1',
+    );
     expect(implementsTuple).toBeTruthy();
     expect(implementsTuple?.objectId).toBe('trait-1');
 
-    const requiresTraitTuple = tuples.find(t => t.predicate === 'requires_trait');
+    const requiresTraitTuple = tuples.find(
+      (t) => t.predicate === 'requires_trait',
+    );
     expect(requiresTraitTuple).toBeTruthy();
     expect(requiresTraitTuple?.objectId).toBe('trait-2');
   });
@@ -204,14 +222,18 @@ describe('KnowledgeExplorerComponent', () => {
     expect(component.selectedNode).toBeTruthy();
     expect(component.outboundTuples.length).toBeGreaterThan(0);
 
-    const hasSkill = component.outboundTuples.find(t => t.predicate === 'has_skill');
+    const hasSkill = component.outboundTuples.find(
+      (t) => t.predicate === 'has_skill',
+    );
     expect(hasSkill).toBeTruthy();
     expect(hasSkill?.objectName).toBe('CodeAnalysisSkill');
 
     // Select the tool
     component.onNodeSelected('tool-1');
     expect(component.inboundTuples.length).toBeGreaterThanOrEqual(2); // Agent and Skill both use this tool
-    const agentInbound = component.inboundTuples.find(t => t.subjectId === 'agent-1');
+    const agentInbound = component.inboundTuples.find(
+      (t) => t.subjectId === 'agent-1',
+    );
     expect(agentInbound).toBeTruthy();
   });
 
@@ -223,7 +245,9 @@ describe('KnowledgeExplorerComponent', () => {
     component.setPredicateFilter('uses_tool');
     const filteredEdges = component.edges.get();
     expect(filteredEdges.length).toBeLessThan(totalEdges);
-    expect(filteredEdges.every((e: any) => e.predicate === 'uses_tool')).toBeTrue();
+    expect(
+      filteredEdges.every((e: any) => e.predicate === 'uses_tool'),
+    ).toBeTrue();
 
     // Reset to 'all'
     component.setPredicateFilter('all');

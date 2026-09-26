@@ -8,7 +8,7 @@ describe('DetailComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [DetailComponent, RouterModule.forRoot([])]
+      imports: [DetailComponent, RouterModule.forRoot([])],
     }).compileComponents();
 
     fixture = TestBed.createComponent(DetailComponent);
@@ -30,7 +30,9 @@ describe('DetailComponent', () => {
 
   it('should render the Trait Contract deep-dive section with implements vs uses comparison', () => {
     const compiled = fixture.nativeElement as HTMLElement;
-    const traitSection = compiled.querySelector('[data-testid="trait-deep-dive"]');
+    const traitSection = compiled.querySelector(
+      '[data-testid="trait-deep-dive"]',
+    );
     expect(traitSection).toBeTruthy();
     expect(compiled.textContent).toContain('implements_traits');
     expect(compiled.textContent).toContain('uses_traits');
@@ -38,14 +40,20 @@ describe('DetailComponent', () => {
 
   it('should render the 4 platform operational tenets', () => {
     const compiled = fixture.nativeElement as HTMLElement;
-    const tenetsSection = compiled.querySelector('[data-testid="platform-tenets"]');
+    const tenetsSection = compiled.querySelector(
+      '[data-testid="platform-tenets"]',
+    );
     expect(tenetsSection).toBeTruthy();
   });
 
   it('should render the workspace title view switcher dropdown trigger', () => {
     const compiled = fixture.nativeElement as HTMLElement;
-    const titleSwitcher = compiled.querySelector('[data-testid="workspace-title-switcher"]');
+    const titleSwitcher = compiled.querySelector(
+      '[data-testid="workspace-title-switcher"]',
+    );
     expect(titleSwitcher).toBeTruthy();
-    expect(titleSwitcher?.textContent).toContain('System Architecture & Technical Detail');
+    expect(titleSwitcher?.textContent).toContain(
+      'System Architecture & Technical Detail',
+    );
   });
 });
