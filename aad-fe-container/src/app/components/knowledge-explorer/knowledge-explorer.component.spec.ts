@@ -253,4 +253,31 @@ describe('KnowledgeExplorerComponent', () => {
     component.setPredicateFilter('all');
     expect(component.edges.get().length).toBe(totalEdges);
   });
+
+  it('should initialize with default physics options and allow updating physics', () => {
+    expect(component.physicsOptions).toEqual({
+      gravitationalConstant: -28,
+      centralGravity: 0.005,
+      springLength: 220,
+      springConstant: 0.16,
+    });
+    expect(component.isPhysicsPanelOpen).toBeFalse();
+
+    const setOptionsSpy = jasmine.createSpy('setOptions');
+    component.network = { setOptions: setOptionsSpy } as any;
+
+    component.physicsOptions.springLength = 300;
+    component.updatePhysics();
+
+    expect(setOptionsSpy).toHaveBeenCalledWith({
+      physics: {
+        forceAtlas2Based: {
+          gravitationalConstant: -28,
+          centralGravity: 0.005,
+          springLength: 300,
+          springConstant: 0.16,
+        },
+      },
+    });
+  });
 });
