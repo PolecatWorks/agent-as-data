@@ -24,11 +24,11 @@ describe('AgentContextComponent', () => {
           useValue: {
             paramMap: of({ get: () => null }),
             queryParams: of({}),
-            snapshot: { paramMap: { get: () => null } }
-          }
-        }
+            snapshot: { paramMap: { get: () => null } },
+          },
+        },
       ],
-      schemas: [NO_ERRORS_SCHEMA]
+      schemas: [NO_ERRORS_SCHEMA],
     }).compileComponents();
 
     router = TestBed.inject(Router);
@@ -45,14 +45,18 @@ describe('AgentContextComponent', () => {
 
   it('should render the workspace title view switcher dropdown trigger', () => {
     const compiled = fixture.nativeElement as HTMLElement;
-    const titleSwitcher = compiled.querySelector('[data-testid="workspace-title-switcher"]');
+    const titleSwitcher = compiled.querySelector(
+      '[data-testid="workspace-title-switcher"]',
+    );
     expect(titleSwitcher).toBeTruthy();
     expect(titleSwitcher?.textContent).toContain('Agent Context Search');
   });
 
   it('should render the zero-footprint concept guide for agent context', () => {
     const compiled = fixture.nativeElement as HTMLElement;
-    const trigger = compiled.querySelector('[data-testid="context-concept-trigger"]');
+    const trigger = compiled.querySelector(
+      '[data-testid="context-concept-trigger"]',
+    );
     expect(trigger).toBeTruthy();
     expect(trigger?.textContent).toContain('What is Context Search?');
   });
@@ -79,24 +83,31 @@ describe('AgentContextComponent', () => {
         field_name: 'description',
         content: 'deep web research',
         score: 0.95,
-        match_reason: 'Matched on entity description'
-      }
+        match_reason: 'Matched on entity description',
+      },
     ];
     fixture.detectChanges();
 
     const compiled = fixture.nativeElement as HTMLElement;
     expect(compiled.textContent).toContain('Autonomous Research Agent');
     expect(compiled.textContent).toContain('Matched on entity description');
-    expect(compiled.textContent).toContain('An agent that performs deep web research and synthesis.');
+    expect(compiled.textContent).toContain(
+      'An agent that performs deep web research and synthesis.',
+    );
     expect(compiled.textContent).not.toContain('test-agent-id-12345');
     expect(compiled.textContent).not.toContain('Semantic similarity');
 
-    const btn = compiled.querySelector('[data-testid="view-details-btn"]') as HTMLButtonElement;
+    const btn = compiled.querySelector(
+      '[data-testid="view-details-btn"]',
+    ) as HTMLButtonElement;
     expect(btn).toBeTruthy();
     expect(btn.textContent).toContain('View Details');
 
     btn.click();
-    expect(router.navigate).toHaveBeenCalledWith(['/agents', 'test-agent-id-12345']);
+    expect(router.navigate).toHaveBeenCalledWith([
+      '/agents',
+      'test-agent-id-12345',
+    ]);
   });
 
   it('should trigger search and prevent default newline when Enter is pressed without Shift', () => {
@@ -105,7 +116,10 @@ describe('AgentContextComponent', () => {
     spyOn(component, 'onSearch').and.callThrough();
     component.searchQuery = '  find rust agent  \n';
 
-    const event = new KeyboardEvent('keydown', { key: 'Enter', cancelable: true });
+    const event = new KeyboardEvent('keydown', {
+      key: 'Enter',
+      cancelable: true,
+    });
     spyOn(event, 'preventDefault');
 
     component.onKeydown(event);
@@ -113,12 +127,19 @@ describe('AgentContextComponent', () => {
     expect(event.preventDefault).toHaveBeenCalled();
     expect(component.onSearch).toHaveBeenCalled();
     expect(component.searchQuery).toBe('find rust agent');
-    expect(apiService.searchAgentContext).toHaveBeenCalledWith('find rust agent', 5);
+    expect(apiService.searchAgentContext).toHaveBeenCalledWith(
+      'find rust agent',
+      5,
+    );
   });
 
   it('should not trigger search or prevent default when Shift+Enter is pressed', () => {
     spyOn(component, 'onSearch');
-    const event = new KeyboardEvent('keydown', { key: 'Enter', shiftKey: true, cancelable: true });
+    const event = new KeyboardEvent('keydown', {
+      key: 'Enter',
+      shiftKey: true,
+      cancelable: true,
+    });
     spyOn(event, 'preventDefault');
 
     component.onKeydown(event);

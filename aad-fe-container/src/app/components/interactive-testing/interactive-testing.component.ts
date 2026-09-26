@@ -12,7 +12,10 @@ import { RouterModule } from '@angular/router';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { ApiService, Agent, Skill } from '../../services/api.service';
-import { ConceptGuideComponent, ConceptTabMapping } from '../concept-guide/concept-guide.component';
+import {
+  ConceptGuideComponent,
+  ConceptTabMapping,
+} from '../concept-guide/concept-guide.component';
 import { APP_NAV_MENU_ITEMS } from '../../models/navigation';
 
 export type TestEntityType = 'agent' | 'skill';
@@ -46,10 +49,10 @@ export interface TestEntity {
     MatMenuModule,
     MatTooltipModule,
     RouterModule,
-    ConceptGuideComponent
+    ConceptGuideComponent,
   ],
   templateUrl: './interactive-testing.component.html',
-  styleUrl: './interactive-testing.component.scss'
+  styleUrl: './interactive-testing.component.scss',
 })
 export class InteractiveTestingComponent implements OnInit {
   // Navigation Menu
@@ -60,20 +63,23 @@ export class InteractiveTestingComponent implements OnInit {
       icon: 'visibility',
       iconColor: 'text-indigo-600',
       title: '1. Prompt & Trait Inspector',
-      description: 'Live inspection of compiled system prompts, attached skills, and active trait contracts.'
+      description:
+        'Live inspection of compiled system prompts, attached skills, and active trait contracts.',
     },
     {
       icon: 'stream',
       iconColor: 'text-emerald-600',
       title: '2. Real-Time Token Streaming',
-      description: 'Low-latency Server-Sent Events (SSE) token streaming and step-by-step reasoning traces.'
+      description:
+        'Low-latency Server-Sent Events (SSE) token streaming and step-by-step reasoning traces.',
     },
     {
       icon: 'play_arrow',
       iconColor: 'text-blue-600',
       title: '3. Dynamic Sandbox Execution',
-      description: 'Safe pre-production execution with custom test inputs and runtime model switching.'
-    }
+      description:
+        'Safe pre-production execution with custom test inputs and runtime model switching.',
+    },
   ];
 
   // Data
@@ -97,7 +103,7 @@ export class InteractiveTestingComponent implements OnInit {
     'llama3.2:3b',
     'llama3.1',
     'mistral',
-    'deepseek-r1'
+    'deepseek-r1',
   ];
   selectedModel: string = 'qwen2.5-coder:14b';
 
@@ -116,8 +122,12 @@ export class InteractiveTestingComponent implements OnInit {
   ngOnInit(): void {
     this.isLoading = true;
     forkJoin({
-      agents: this.apiService.getAgents().pipe(catchError(() => of([] as Agent[]))),
-      skills: this.apiService.getSkills().pipe(catchError(() => of([] as Skill[])))
+      agents: this.apiService
+        .getAgents()
+        .pipe(catchError(() => of([] as Agent[]))),
+      skills: this.apiService
+        .getSkills()
+        .pipe(catchError(() => of([] as Skill[]))),
     }).subscribe({
       next: ({ agents, skills }) => {
         this.agents = agents as Agent[];
@@ -128,7 +138,9 @@ export class InteractiveTestingComponent implements OnInit {
         }
         this.isLoading = false;
       },
-      error: () => { this.isLoading = false; }
+      error: () => {
+        this.isLoading = false;
+      },
     });
   }
 
@@ -148,12 +160,12 @@ export class InteractiveTestingComponent implements OnInit {
     if (!text) return;
     navigator.clipboard.writeText(text);
     this.copiedPrompt = true;
-    setTimeout(() => this.copiedPrompt = false, 2000);
+    setTimeout(() => (this.copiedPrompt = false), 2000);
   }
 
   buildEntityList(): void {
     this.allEntities = [
-      ...this.agents.map(a => ({
+      ...this.agents.map((a) => ({
         id: a.id,
         name: a.name,
         type: 'agent' as TestEntityType,
@@ -165,9 +177,9 @@ export class InteractiveTestingComponent implements OnInit {
         attached_tools: a.attached_tools || [],
         model: a.model || 'qwen2.5-coder:14b',
         owner_id: a.owner_id,
-        implements_traits: a.implements_traits || []
+        implements_traits: a.implements_traits || [],
       })),
-      ...this.skills.map(s => ({
+      ...this.skills.map((s) => ({
         id: s.id!,
         name: s.name,
         type: 'skill' as TestEntityType,
@@ -179,19 +191,20 @@ export class InteractiveTestingComponent implements OnInit {
         attached_tools: s.attached_tools || [],
         model: 'qwen2.5-coder:14b',
         owner_id: s.owner_id,
-        implements_traits: s.implements_traits || []
-      }))
+        implements_traits: s.implements_traits || [],
+      })),
     ];
   }
 
   getFilteredEntities(): TestEntity[] {
     const q = this.searchQuery.toLowerCase().trim();
     if (!q) return this.allEntities;
-    return this.allEntities.filter(e =>
-      e.name.toLowerCase().includes(q) ||
-      (e.description && e.description.toLowerCase().includes(q)) ||
-      (e.tags && e.tags.some(t => t.toLowerCase().includes(q))) ||
-      e.type.toLowerCase().includes(q)
+    return this.allEntities.filter(
+      (e) =>
+        e.name.toLowerCase().includes(q) ||
+        (e.description && e.description.toLowerCase().includes(q)) ||
+        (e.tags && e.tags.some((t) => t.toLowerCase().includes(q))) ||
+        e.type.toLowerCase().includes(q),
     );
   }
 
@@ -206,26 +219,35 @@ export class InteractiveTestingComponent implements OnInit {
     if (!this.promptInput.trim() || !this.selectedEntity) return;
     this.isExecuting = true;
     this.finalOutput = '';
-    this.executionOutput = `[1/3] Initializing Rig execution runtime for ${this.selectedEntity.type} '${this.selectedEntity.name}'...\n` +
+    this.executionOutput =
+      `[1/3] Initializing Rig execution runtime for ${this.selectedEntity.type} '${this.selectedEntity.name}'...\n` +
       `[2/3] Connecting to Ollama runtime (model: ${this.selectedModel})...\n` +
       `[3/3] Ingesting system instructions and evaluating guardrails...\n`;
 
     const targetId = this.selectedEntity.id;
 
-    this.apiService.executeAgent(targetId, this.promptInput, this.webhookUrl || undefined, this.selectedModel).subscribe({
-      next: (res) => {
-        this.isExecuting = false;
-        this.finalOutput = res.output;
-        this.executionOutput += `\n[Status: ${res.status.toUpperCase()}]\n` +
-          `Execution ID: ${res.execution_id}\n` +
-          `Model: ${this.selectedModel}\n` +
-          `\n--- Streamed LLM Output ---\n` +
-          res.output;
-      },
-      error: (err) => {
-        this.isExecuting = false;
-        this.executionOutput += `\n[EXECUTION FAILED]: ${err.error || err.message || 'Server error or guardrail rejection'}`;
-      }
-    });
+    this.apiService
+      .executeAgent(
+        targetId,
+        this.promptInput,
+        this.webhookUrl || undefined,
+        this.selectedModel,
+      )
+      .subscribe({
+        next: (res) => {
+          this.isExecuting = false;
+          this.finalOutput = res.output;
+          this.executionOutput +=
+            `\n[Status: ${res.status.toUpperCase()}]\n` +
+            `Execution ID: ${res.execution_id}\n` +
+            `Model: ${this.selectedModel}\n` +
+            `\n--- Streamed LLM Output ---\n` +
+            res.output;
+        },
+        error: (err) => {
+          this.isExecuting = false;
+          this.executionOutput += `\n[EXECUTION FAILED]: ${err.error || err.message || 'Server error or guardrail rejection'}`;
+        },
+      });
   }
 }
