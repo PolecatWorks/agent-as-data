@@ -137,7 +137,7 @@ flowchart TD
     end
 
     subgraph Phase15 ["Phase 15: Knowledge Explorer Relational Tuples"]
-        Spec32["32-knowledge-explorer-relational-tuples-spec.md<br/>(Knowledge Explorer Relational Tuples UI)"]:::draft
+        Spec32["32-knowledge-explorer-relational-tuples-spec.md<br/>(Knowledge Explorer Relational Tuples UI)"]:::complete
     end
 
     Spec20 --> Spec21
@@ -192,7 +192,7 @@ flowchart TD
 | **Phase 12** | [29-knowledge-registry-ui-bread-spec.md](./29-knowledge-registry-ui-bread-spec.md) | `complete` | Knowledge Registry UI/UX parity, Data Model expansion (`description`, `tags`), and BREAD capabilities | [Knowledge PRD](../prds/knowledge-data-system-prd.md) | Phase 12 Spec (Depends on Spec 02 & 08) |
 | **Phase 13** | [30-workbench-tool-execution-cards-ui-spec.md](./30-workbench-tool-execution-cards-ui-spec.md) | `complete` | Workbench Tool Execution Cards UI & Structured Outcome Rendering | [Workspace Tools PRD](../prds/workspace-filesystem-tools-prd.md), [Workbench Bench & Thread PRD](../prds/workbench-bench-thread-prd.md) | Phase 13 Spec (Depends on Spec 17) |
 | **Phase 14** | [31-knowledge-mcp-journey-spec.md](./31-knowledge-mcp-journey-spec.md) | `draft` | Knowledge Base MCP Journey & Autonomous Tool Definitions | [Knowledge Base MCP Journey PRD](../prds/knowledge-mcp-journey-prd.md) | Phase 14 Spec (Depends on Spec 02 & Spec 24) |
-| **Phase 15** | [32-knowledge-explorer-relational-tuples-spec.md](./32-knowledge-explorer-relational-tuples-spec.md) | `draft` | Knowledge Explorer System Relational Tuples Graph & Inspection UI | [Knowledge PRD](../prds/knowledge-data-system-prd.md), [Agent UI PRD](../prds/agent-ui-testing-kit-prd.md) | Phase 15 Spec (Depends on Spec 02, 03, 08 & Spec 29) |
+| **Phase 15** | [32-knowledge-explorer-relational-tuples-spec.md](./32-knowledge-explorer-relational-tuples-spec.md) | `complete` | Knowledge Explorer System Relational Tuples Graph & Inspection UI | [Knowledge PRD](../prds/knowledge-data-system-prd.md), [Agent UI PRD](../prds/agent-ui-testing-kit-prd.md) | Phase 15 Spec (Depends on Spec 02, 03, 08 & Spec 29) |
 
 - [CLI Manifest Tool Spec](./cli-manifest-tool-spec.md)
 
