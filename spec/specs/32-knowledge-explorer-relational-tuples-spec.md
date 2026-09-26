@@ -1,6 +1,6 @@
 # Spec 32: Knowledge Explorer System Relational Tuples Graph & Inspection UI
 
-**Status**: `draft`
+**Status**: `complete`
 
 ## Overview & Scope
 This specification defines the frontend and data-handling implementation for **Knowledge Explorer System Relational Tuples** within **Agent-As-Data (AAD)** (`aad-fe-container`).
