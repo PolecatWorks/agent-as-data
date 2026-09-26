@@ -21,7 +21,11 @@ describe('SkillsRegistryComponent', () => {
         provideRouter([]),
         {
           provide: ActivatedRoute,
-          useValue: { params: of({}), queryParams: of({}), snapshot: { paramMap: { get: () => null } } }
+          useValue: {
+            params: of({}),
+            queryParams: of({}),
+            snapshot: { paramMap: { get: () => null } },
+          },
         },
         {
           provide: ApiService,
@@ -29,11 +33,11 @@ describe('SkillsRegistryComponent', () => {
             getSkills: () => of([]),
             getTools: () => of([]),
             getTraits: () => of({ ids: [] }),
-            getTrait: () => of(null)
-          }
-        }
+            getTrait: () => of(null),
+          },
+        },
       ],
-      schemas: [NO_ERRORS_SCHEMA]
+      schemas: [NO_ERRORS_SCHEMA],
     }).compileComponents();
 
     fixture = TestBed.createComponent(SkillsRegistryComponent);
@@ -46,21 +50,30 @@ describe('SkillsRegistryComponent', () => {
   });
 
   it('should render the zero-footprint concept guide trigger and configuration in top bar', () => {
-    const trigger = fixture.nativeElement.querySelector('[data-testid="skills-concept-trigger"]');
+    const trigger = fixture.nativeElement.querySelector(
+      '[data-testid="skills-concept-trigger"]',
+    );
     expect(trigger).toBeTruthy();
     expect(trigger.textContent).toContain('What are Skills?');
 
     expect(component.conceptGuideMappings.length).toBe(3);
-    expect(component.conceptGuideMappings[0].title).toBe('1. Procedural Instructions');
-    expect(component.conceptGuideMappings[1].title).toBe('2. Typed JSON Schemas');
-    expect(component.conceptGuideMappings[2].title).toBe('3. Trait Safety Verification');
+    expect(component.conceptGuideMappings[0].title).toBe(
+      '1. Procedural Instructions',
+    );
+    expect(component.conceptGuideMappings[1].title).toBe(
+      '2. Typed JSON Schemas',
+    );
+    expect(component.conceptGuideMappings[2].title).toBe(
+      '3. Trait Safety Verification',
+    );
   });
 
   it('should render the workspace title as an interactive view switcher trigger with dropdown affordance', () => {
-    const switcher = fixture.nativeElement.querySelector('[data-testid="workspace-title-switcher"]');
+    const switcher = fixture.nativeElement.querySelector(
+      '[data-testid="workspace-title-switcher"]',
+    );
     expect(switcher).toBeTruthy();
     expect(switcher.textContent).toContain('Skills Registry');
     expect(switcher.textContent).toContain('expand_more');
   });
 });
-

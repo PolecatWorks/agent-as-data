@@ -17,20 +17,20 @@ describe('TraitsRegistryComponent - Zero-Footprint Concept Guide', () => {
       'getTrait',
       'createTrait',
       'updateTrait',
-      'deleteTrait'
+      'deleteTrait',
     ]);
-    apiServiceSpy.getTraits.and.returnValue(of({ ids: [], pagination: { page: 1, size: 10 } }));
+    apiServiceSpy.getTraits.and.returnValue(
+      of({ ids: [], pagination: { page: 1, size: 10 } }),
+    );
 
     await TestBed.configureTestingModule({
       imports: [
         TraitsRegistryComponent,
         HttpClientTestingModule,
         RouterTestingModule,
-        NoopAnimationsModule
+        NoopAnimationsModule,
       ],
-      providers: [
-        { provide: ApiService, useValue: apiServiceSpy }
-      ]
+      providers: [{ provide: ApiService, useValue: apiServiceSpy }],
     }).compileComponents();
 
     fixture = TestBed.createComponent(TraitsRegistryComponent);
@@ -43,14 +43,18 @@ describe('TraitsRegistryComponent - Zero-Footprint Concept Guide', () => {
   });
 
   it('should render the concept guide trigger button in the top bar', () => {
-    const trigger = fixture.nativeElement.querySelector('[data-testid="traits-concept-trigger"]');
+    const trigger = fixture.nativeElement.querySelector(
+      '[data-testid="traits-concept-trigger"]',
+    );
     expect(trigger).toBeTruthy();
     expect(trigger.textContent).toContain('What are Traits?');
   });
 
   it('should keep concept guide closed by default with zero persistent footprint', () => {
     expect(component.isConceptGuideOpen).toBeFalse();
-    const popover = fixture.nativeElement.querySelector('[data-testid="traits-concept-popover"]');
+    const popover = fixture.nativeElement.querySelector(
+      '[data-testid="traits-concept-popover"]',
+    );
     expect(popover).toBeNull();
   });
 
@@ -61,7 +65,9 @@ describe('TraitsRegistryComponent - Zero-Footprint Concept Guide', () => {
     expect(component.isConceptGuideOpen).toBeTrue();
     expect(component.isConceptGuidePinned).toBeTrue();
 
-    const popover = fixture.nativeElement.querySelector('[data-testid="traits-concept-popover"]');
+    const popover = fixture.nativeElement.querySelector(
+      '[data-testid="traits-concept-popover"]',
+    );
     expect(popover).toBeTruthy();
   });
 
@@ -69,7 +75,9 @@ describe('TraitsRegistryComponent - Zero-Footprint Concept Guide', () => {
     component.showConceptGuide();
     fixture.detectChanges();
 
-    const popover = fixture.nativeElement.querySelector('[data-testid="traits-concept-popover"]');
+    const popover = fixture.nativeElement.querySelector(
+      '[data-testid="traits-concept-popover"]',
+    );
     expect(popover).toBeTruthy();
 
     const text = popover.textContent;
@@ -86,30 +94,39 @@ describe('TraitsRegistryComponent - Zero-Footprint Concept Guide', () => {
 
     expect(component.isConceptGuideOpen).toBeTrue();
 
-    const closeBtn = fixture.nativeElement.querySelector('[data-testid="traits-concept-close"]');
+    const closeBtn = fixture.nativeElement.querySelector(
+      '[data-testid="traits-concept-close"]',
+    );
     expect(closeBtn).toBeTruthy();
 
     closeBtn.click();
     fixture.detectChanges();
 
     expect(component.isConceptGuideOpen).toBeFalse();
-    expect(fixture.nativeElement.querySelector('[data-testid="traits-concept-popover"]')).toBeNull();
+    expect(
+      fixture.nativeElement.querySelector(
+        '[data-testid="traits-concept-popover"]',
+      ),
+    ).toBeNull();
   });
 
   it('should include a direct link to /detail for the architecture blueprint', () => {
     component.showConceptGuide();
     fixture.detectChanges();
 
-    const detailLink = fixture.nativeElement.querySelector('[data-testid="traits-concept-detail-link"]');
+    const detailLink = fixture.nativeElement.querySelector(
+      '[data-testid="traits-concept-detail-link"]',
+    );
     expect(detailLink).toBeTruthy();
     expect(detailLink.getAttribute('routerLink')).toBe('/detail');
   });
 
   it('should render the workspace title as an interactive view switcher trigger with dropdown affordance', () => {
-    const switcher = fixture.nativeElement.querySelector('[data-testid="workspace-title-switcher"]');
+    const switcher = fixture.nativeElement.querySelector(
+      '[data-testid="workspace-title-switcher"]',
+    );
     expect(switcher).toBeTruthy();
     expect(switcher.textContent).toContain('Traits Registry');
     expect(switcher.textContent).toContain('expand_more');
   });
 });
-

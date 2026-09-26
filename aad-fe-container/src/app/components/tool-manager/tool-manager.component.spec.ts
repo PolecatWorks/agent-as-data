@@ -15,10 +15,20 @@ describe('ToolManagerComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [ToolManagerComponent],
-      providers: [provideHttpClient(), provideAnimationsAsync(), { provide: ActivatedRoute, useValue: { paramMap: of({ get: () => null }), queryParams: of({}), snapshot: { paramMap: { get: () => null } } } }],
-      schemas: [NO_ERRORS_SCHEMA]
-    })
-    .compileComponents();
+      providers: [
+        provideHttpClient(),
+        provideAnimationsAsync(),
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            paramMap: of({ get: () => null }),
+            queryParams: of({}),
+            snapshot: { paramMap: { get: () => null } },
+          },
+        },
+      ],
+      schemas: [NO_ERRORS_SCHEMA],
+    }).compileComponents();
 
     fixture = TestBed.createComponent(ToolManagerComponent);
     component = fixture.componentInstance;
@@ -31,14 +41,18 @@ describe('ToolManagerComponent', () => {
 
   it('should render the workspace title view switcher dropdown trigger', () => {
     const compiled = fixture.nativeElement as HTMLElement;
-    const titleSwitcher = compiled.querySelector('[data-testid="workspace-title-switcher"]');
+    const titleSwitcher = compiled.querySelector(
+      '[data-testid="workspace-title-switcher"]',
+    );
     expect(titleSwitcher).toBeTruthy();
     expect(titleSwitcher?.textContent).toContain('Tools Registry');
   });
 
   it('should render the zero-footprint concept guide for tools', () => {
     const compiled = fixture.nativeElement as HTMLElement;
-    const trigger = compiled.querySelector('[data-testid="tools-concept-trigger"]');
+    const trigger = compiled.querySelector(
+      '[data-testid="tools-concept-trigger"]',
+    );
     expect(trigger).toBeTruthy();
     expect(trigger?.textContent).toContain('What are Tools?');
   });
@@ -52,21 +66,23 @@ describe('ToolManagerComponent', () => {
 
   it('should call apiService.syncTool when syncServer is invoked', () => {
     const apiService = TestBed.inject(ApiService);
-    spyOn(apiService, 'syncTool').and.returnValue(of({
-      id: 'tool-1',
-      server_name: 'test-mcp',
-      cached_tools_count: 3,
-      sync_status: 'synced',
-      last_synced_at: new Date().toISOString(),
-      last_sync_error: null
-    }));
+    spyOn(apiService, 'syncTool').and.returnValue(
+      of({
+        id: 'tool-1',
+        server_name: 'test-mcp',
+        cached_tools_count: 3,
+        sync_status: 'synced',
+        last_synced_at: new Date().toISOString(),
+        last_sync_error: null,
+      }),
+    );
     spyOn(apiService, 'getTools').and.returnValue(of([]));
 
     component.selectedServer = {
       id: 'tool-1',
       server_name: 'test-mcp',
       tools_count: 1,
-      sync_status: 'degraded'
+      sync_status: 'degraded',
     };
 
     component.syncServer();
@@ -82,10 +98,10 @@ describe('ToolManagerComponent', () => {
       inputSchema: {
         type: 'object',
         properties: {
-          name: { type: 'string', description: 'User name' }
+          name: { type: 'string', description: 'User name' },
         },
-        required: ['name']
-      }
+        required: ['name'],
+      },
     };
 
     component.openToolTester(mockTool);
@@ -100,20 +116,26 @@ describe('ToolManagerComponent', () => {
 
   it('should call apiService.testTool when executeToolTest is invoked', () => {
     const apiService = TestBed.inject(ApiService);
-    spyOn(apiService, 'testTool').and.returnValue(of({
-      success: true,
-      tool_name: 'hello',
-      output: 'Hello, Antigravity!',
-      raw_result: { content: [{ type: 'text', text: 'Hello, Antigravity!' }] },
-      latency_ms: 12
-    }));
+    spyOn(apiService, 'testTool').and.returnValue(
+      of({
+        success: true,
+        tool_name: 'hello',
+        output: 'Hello, Antigravity!',
+        raw_result: {
+          content: [{ type: 'text', text: 'Hello, Antigravity!' }],
+        },
+        latency_ms: 12,
+      }),
+    );
 
     component.selectedServer = { id: 'srv-1', server_name: 'test-srv' };
     component.activeTestTool = { name: 'hello' };
     component.testArgsJson = '{"name": "Antigravity"}';
 
     component.executeToolTest();
-    expect(apiService.testTool).toHaveBeenCalledWith('srv-1', 'hello', { name: 'Antigravity' });
+    expect(apiService.testTool).toHaveBeenCalledWith('srv-1', 'hello', {
+      name: 'Antigravity',
+    });
     expect(component.testResult).toBeTruthy();
     expect(component.testResult.success).toBeTrue();
     expect(component.testResult.output).toBe('Hello, Antigravity!');

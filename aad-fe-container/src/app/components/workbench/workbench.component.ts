@@ -1,4 +1,11 @@
-import { Component, OnInit, OnDestroy, HostListener, ViewChild, ElementRef } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  OnDestroy,
+  HostListener,
+  ViewChild,
+  ElementRef,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
@@ -7,40 +14,63 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { RouterModule, ActivatedRoute, Router } from '@angular/router';
-import { ApiService, Bench, Thread, Message, ThreadRun } from '../../services/api.service';
-import { ConceptGuideComponent, ConceptTabMapping } from '../concept-guide/concept-guide.component';
+import {
+  ApiService,
+  Bench,
+  Thread,
+  Message,
+  ThreadRun,
+} from '../../services/api.service';
+import {
+  ConceptGuideComponent,
+  ConceptTabMapping,
+} from '../concept-guide/concept-guide.component';
 import { APP_NAV_MENU_ITEMS } from '../../models/navigation';
 
 @Component({
   selector: 'app-workbench',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatCardModule, MatButtonModule, MatIconModule, MatMenuModule, MatTooltipModule, RouterModule, ConceptGuideComponent],
+  imports: [
+    CommonModule,
+    FormsModule,
+    MatCardModule,
+    MatButtonModule,
+    MatIconModule,
+    MatMenuModule,
+    MatTooltipModule,
+    RouterModule,
+    ConceptGuideComponent,
+  ],
   templateUrl: './workbench.component.html',
-  styleUrl: './workbench.component.scss'
+  styleUrl: './workbench.component.scss',
 })
 export class WorkbenchComponent implements OnInit, OnDestroy {
   @ViewChild('messageInput') messageInput?: ElementRef<HTMLTextAreaElement>;
-  @ViewChild('messagesContainer') messagesContainer?: ElementRef<HTMLDivElement>;
+  @ViewChild('messagesContainer')
+  messagesContainer?: ElementRef<HTMLDivElement>;
 
   readonly conceptGuideMappings: ConceptTabMapping[] = [
     {
       icon: 'folder',
       iconColor: 'text-indigo-600',
       title: '1. Sandboxed Filesystem',
-      description: 'Isolated bench files and assets safely partitioned per active project.'
+      description:
+        'Isolated bench files and assets safely partitioned per active project.',
     },
     {
       icon: 'chat',
       iconColor: 'text-blue-600',
       title: '2. Conversational Threads',
-      description: 'Multi-turn dialog, code editing, and tool execution history.'
+      description:
+        'Multi-turn dialog, code editing, and tool execution history.',
     },
     {
       icon: 'psychology',
       iconColor: 'text-amber-600',
       title: '3. Shared Bench Memory',
-      description: 'Working context, scratchpad notes, and persistent memory preserved across sessions.'
-    }
+      description:
+        'Working context, scratchpad notes, and persistent memory preserved across sessions.',
+    },
   ];
 
   benches: Bench[] = [];
@@ -86,7 +116,7 @@ export class WorkbenchComponent implements OnInit, OnDestroy {
   constructor(
     private apiService: ApiService,
     private route: ActivatedRoute,
-    private router: Router
+    private router: Router,
   ) {}
 
   ngOnInit(): void {
@@ -132,40 +162,51 @@ export class WorkbenchComponent implements OnInit, OnDestroy {
       next: (benches) => {
         this.benches = benches;
         if (this.benches.length === 0) {
-          this.apiService.createBench('Default Bench', undefined, 'Initial default workspace').subscribe({
-            next: (newBench) => {
-              this.benches = [newBench];
-              this.resolveRouting();
-            },
-            error: (err) => console.error('Failed to scaffold initial bench', err)
-          });
+          this.apiService
+            .createBench(
+              'Default Bench',
+              undefined,
+              'Initial default workspace',
+            )
+            .subscribe({
+              next: (newBench) => {
+                this.benches = [newBench];
+                this.resolveRouting();
+              },
+              error: (err) =>
+                console.error('Failed to scaffold initial bench', err),
+            });
         } else {
           this.resolveRouting();
         }
       },
-      error: (err) => console.error('Failed to load benches', err)
+      error: (err) => console.error('Failed to load benches', err),
     });
   }
 
   resolveRouting(): void {
-    this.route.paramMap.subscribe(params => {
+    this.route.paramMap.subscribe((params) => {
       const benchId = params.get('benchId');
       const threadId = params.get('threadId');
 
       if (!benchId) {
         if (this.benches.length > 0) {
           const targetBench = this.benches[0];
-          this.router.navigate(['/workbench', targetBench.id], { replaceUrl: true });
+          this.router.navigate(['/workbench', targetBench.id], {
+            replaceUrl: true,
+          });
         }
         return;
       }
 
-      const foundBench = this.benches.find(b => b.id === benchId);
+      const foundBench = this.benches.find((b) => b.id === benchId);
       if (foundBench) {
         this.activeBench = foundBench;
         this.loadBenchThreads(foundBench.id, threadId);
       } else if (this.benches.length > 0) {
-        this.router.navigate(['/workbench', this.benches[0].id], { replaceUrl: true });
+        this.router.navigate(['/workbench', this.benches[0].id], {
+          replaceUrl: true,
+        });
       }
     });
   }
@@ -175,21 +216,25 @@ export class WorkbenchComponent implements OnInit, OnDestroy {
       next: (threads) => {
         this.threads = threads;
         if (targetThreadId) {
-          const toSelect = this.threads.find(t => t.id === targetThreadId);
+          const toSelect = this.threads.find((t) => t.id === targetThreadId);
           if (toSelect) {
             this.loadThreadContent(toSelect);
           } else if (this.threads.length > 0) {
-            this.router.navigate(['/workbench', benchId, this.threads[0].id], { replaceUrl: true });
+            this.router.navigate(['/workbench', benchId, this.threads[0].id], {
+              replaceUrl: true,
+            });
           }
         } else if (this.threads.length > 0) {
-          this.router.navigate(['/workbench', benchId, this.threads[0].id], { replaceUrl: true });
+          this.router.navigate(['/workbench', benchId, this.threads[0].id], {
+            replaceUrl: true,
+          });
         } else {
           this.activeThread = null;
           this.activeThreadMessages = [];
           this.loadBenchFiles();
         }
       },
-      error: (err) => console.error('Failed to load bench threads', err)
+      error: (err) => console.error('Failed to load bench threads', err),
     });
   }
 
@@ -227,7 +272,7 @@ export class WorkbenchComponent implements OnInit, OnDestroy {
         this.isBenchDropdownOpen = false;
         this.selectBench(bench);
       },
-      error: (err) => console.error('Failed to create bench', err)
+      error: (err) => console.error('Failed to create bench', err),
     });
   }
 
@@ -250,14 +295,14 @@ export class WorkbenchComponent implements OnInit, OnDestroy {
         if (this.activeBench) {
           this.activeBench.name = updated.name;
         }
-        const b = this.benches.find(x => x.id === updated.id);
+        const b = this.benches.find((x) => x.id === updated.id);
         if (b) b.name = updated.name;
         this.isEditingBenchName = false;
       },
       error: (err) => {
         console.error('Failed to rename bench', err);
         this.isEditingBenchName = false;
-      }
+      },
     });
   }
 
@@ -279,7 +324,7 @@ export class WorkbenchComponent implements OnInit, OnDestroy {
 
     this.apiService.deleteBench(benchId).subscribe({
       next: () => {
-        this.benches = this.benches.filter(b => b.id !== benchId);
+        this.benches = this.benches.filter((b) => b.id !== benchId);
         this.isConfirmingDeleteBench = false;
         this.isBenchDropdownOpen = false;
         if (this.benches.length > 0) {
@@ -288,14 +333,14 @@ export class WorkbenchComponent implements OnInit, OnDestroy {
           this.loadBenches();
         }
       },
-      error: (err) => console.error('Failed to delete bench', err)
+      error: (err) => console.error('Failed to delete bench', err),
     });
   }
 
   getFilteredThreads(): Thread[] {
     const query = this.searchQuery.toLowerCase().trim();
     if (!query) return this.threads;
-    return this.threads.filter(t => t.title.toLowerCase().includes(query));
+    return this.threads.filter((t) => t.title.toLowerCase().includes(query));
   }
 
   createNewThread(): void {
@@ -306,7 +351,7 @@ export class WorkbenchComponent implements OnInit, OnDestroy {
         this.threads.unshift(thread);
         this.selectThread(thread);
       },
-      error: (err) => console.error('Failed to create thread', err)
+      error: (err) => console.error('Failed to create thread', err),
     });
   }
 
@@ -325,7 +370,7 @@ export class WorkbenchComponent implements OnInit, OnDestroy {
         this.scrollToBottom();
         this.focusMessageInput();
       },
-      error: (err) => console.error('Failed to load messages', err)
+      error: (err) => console.error('Failed to load messages', err),
     });
     this.loadBenchFiles();
     this.checkActiveRun(thread.id);
@@ -335,7 +380,12 @@ export class WorkbenchComponent implements OnInit, OnDestroy {
   checkActiveRun(threadId: string): void {
     this.apiService.getActiveThreadRun(threadId).subscribe({
       next: (run) => {
-        if (run && (run.status === 'running' || run.status === 'pending' || run.status === 'cancelling')) {
+        if (
+          run &&
+          (run.status === 'running' ||
+            run.status === 'pending' ||
+            run.status === 'cancelling')
+        ) {
           this.activeRun = run;
           this.isProcessing = true;
           this.startRunPolling(threadId);
@@ -348,7 +398,7 @@ export class WorkbenchComponent implements OnInit, OnDestroy {
         console.error('Failed to query active thread run', err);
         this.activeRun = null;
         this.isProcessing = false;
-      }
+      },
     });
   }
 
@@ -361,7 +411,12 @@ export class WorkbenchComponent implements OnInit, OnDestroy {
       }
       this.apiService.getActiveThreadRun(threadId).subscribe({
         next: (run) => {
-          if (!run || run.status === 'completed' || run.status === 'cancelled' || run.status === 'failed') {
+          if (
+            !run ||
+            run.status === 'completed' ||
+            run.status === 'cancelled' ||
+            run.status === 'failed'
+          ) {
             this.stopRunPolling();
             this.activeRun = null;
             this.isProcessing = false;
@@ -372,7 +427,11 @@ export class WorkbenchComponent implements OnInit, OnDestroy {
                 this.loadBenchFiles();
                 this.focusMessageInput();
               },
-              error: (err) => console.error('Failed to refresh messages after run completion', err)
+              error: (err) =>
+                console.error(
+                  'Failed to refresh messages after run completion',
+                  err,
+                ),
             });
           } else {
             this.activeRun = run;
@@ -384,7 +443,7 @@ export class WorkbenchComponent implements OnInit, OnDestroy {
           this.stopRunPolling();
           this.activeRun = null;
           this.isProcessing = false;
-        }
+        },
       });
     }, 1500);
   }
@@ -412,14 +471,15 @@ export class WorkbenchComponent implements OnInit, OnDestroy {
             this.loadBenchFiles();
             this.focusMessageInput();
           },
-          error: (err) => console.error('Failed to refresh messages after cancellation', err)
+          error: (err) =>
+            console.error('Failed to refresh messages after cancellation', err),
         });
       },
       error: (err) => {
         console.error('Failed to cancel active run', err);
         this.isProcessing = false;
         this.activeRun = null;
-      }
+      },
     });
   }
 
@@ -448,7 +508,7 @@ export class WorkbenchComponent implements OnInit, OnDestroy {
       error: (err) => {
         console.error('Failed to update thread title', err);
         this.editingThreadId = null;
-      }
+      },
     });
   }
 
@@ -471,7 +531,7 @@ export class WorkbenchComponent implements OnInit, OnDestroy {
 
     this.apiService.deleteThread(threadId).subscribe({
       next: () => {
-        this.threads = this.threads.filter(t => t.id !== threadId);
+        this.threads = this.threads.filter((t) => t.id !== threadId);
         this.isConfirmingDeleteThreadId = null;
         if (this.activeThread?.id === threadId) {
           this.activeThread = null;
@@ -483,7 +543,7 @@ export class WorkbenchComponent implements OnInit, OnDestroy {
           }
         }
       },
-      error: (err) => console.error('Failed to delete thread', err)
+      error: (err) => console.error('Failed to delete thread', err),
     });
   }
 
@@ -497,7 +557,7 @@ export class WorkbenchComponent implements OnInit, OnDestroy {
           this.selectedFileContent = '';
         }
       },
-      error: (err) => console.error('Failed to load bench files', err)
+      error: (err) => console.error('Failed to load bench files', err),
     });
     this.loadBenchMemory();
   }
@@ -506,10 +566,10 @@ export class WorkbenchComponent implements OnInit, OnDestroy {
     if (!this.activeBench) return;
     this.apiService.getBenchMemory(this.activeBench.id).subscribe({
       next: (memories) => {
-        const working = memories.find(m => m.memory_type === 'working');
+        const working = memories.find((m) => m.memory_type === 'working');
         this.benchWorkingMemoryContent = working ? working.content : '';
       },
-      error: (err) => console.error('Failed to load bench memory', err)
+      error: (err) => console.error('Failed to load bench memory', err),
     });
   }
 
@@ -517,22 +577,27 @@ export class WorkbenchComponent implements OnInit, OnDestroy {
     if (!this.activeBench) return;
     this.isSavingMemory = true;
     this.memorySaveStatus = 'Saving...';
-    this.apiService.upsertBenchWorkingMemory(this.activeBench.id, this.benchWorkingMemoryContent).subscribe({
-      next: () => {
-        this.isSavingMemory = false;
-        this.memorySaveStatus = 'Memory saved';
-        setTimeout(() => {
-          if (this.memorySaveStatus === 'Memory saved') {
-            this.memorySaveStatus = '';
-          }
-        }, 3000);
-      },
-      error: (err) => {
-        this.isSavingMemory = false;
-        this.memorySaveStatus = 'Save failed';
-        console.error('Failed to save bench memory', err);
-      }
-    });
+    this.apiService
+      .upsertBenchWorkingMemory(
+        this.activeBench.id,
+        this.benchWorkingMemoryContent,
+      )
+      .subscribe({
+        next: () => {
+          this.isSavingMemory = false;
+          this.memorySaveStatus = 'Memory saved';
+          setTimeout(() => {
+            if (this.memorySaveStatus === 'Memory saved') {
+              this.memorySaveStatus = '';
+            }
+          }, 3000);
+        },
+        error: (err) => {
+          this.isSavingMemory = false;
+          this.memorySaveStatus = 'Save failed';
+          console.error('Failed to save bench memory', err);
+        },
+      });
   }
 
   setRightTab(tab: 'files' | 'memory'): void {
@@ -555,7 +620,7 @@ export class WorkbenchComponent implements OnInit, OnDestroy {
         this.selectedFile = filename;
         this.selectedFileContent = res.content;
       },
-      error: (err) => console.error('Failed to read file', err)
+      error: (err) => console.error('Failed to read file', err),
     });
   }
 
@@ -569,23 +634,31 @@ export class WorkbenchComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.apiService.writeBenchFile(this.activeBench.id, filename, '').subscribe({
-      next: () => {
-        this.loadBenchFiles();
-        this.selectFile(filename);
-      },
-      error: (err) => console.error('Failed to create file', err)
-    });
+    this.apiService
+      .writeBenchFile(this.activeBench.id, filename, '')
+      .subscribe({
+        next: () => {
+          this.loadBenchFiles();
+          this.selectFile(filename);
+        },
+        error: (err) => console.error('Failed to create file', err),
+      });
   }
 
   saveFile(): void {
     if (!this.activeBench || !this.selectedFile) return;
-    this.apiService.writeBenchFile(this.activeBench.id, this.selectedFile, this.selectedFileContent).subscribe({
-      next: () => {
-        console.log(`Saved ${this.selectedFile}`);
-      },
-      error: (err) => console.error('Failed to save file', err)
-    });
+    this.apiService
+      .writeBenchFile(
+        this.activeBench.id,
+        this.selectedFile,
+        this.selectedFileContent,
+      )
+      .subscribe({
+        next: () => {
+          console.log(`Saved ${this.selectedFile}`);
+        },
+        error: (err) => console.error('Failed to save file', err),
+      });
   }
 
   deleteFile(filename: string, event: Event): void {
@@ -601,13 +674,17 @@ export class WorkbenchComponent implements OnInit, OnDestroy {
           }
           this.loadBenchFiles();
         },
-        error: (err) => console.error('Failed to delete file', err)
+        error: (err) => console.error('Failed to delete file', err),
       });
     }
   }
 
   sendMessage(): void {
-    if (!this.newMessageContent.trim() || !this.activeThread || this.isProcessing) {
+    if (
+      !this.newMessageContent.trim() ||
+      !this.activeThread ||
+      this.isProcessing
+    ) {
       return;
     }
 
@@ -621,7 +698,7 @@ export class WorkbenchComponent implements OnInit, OnDestroy {
       thread_id: threadId,
       role: 'user',
       content,
-      created_at: new Date().toISOString()
+      created_at: new Date().toISOString(),
     };
     this.activeThreadMessages.push(tempUserMsg);
     this.scrollToBottom();
@@ -633,14 +710,15 @@ export class WorkbenchComponent implements OnInit, OnDestroy {
       error: (err) => {
         console.error('Failed to send message', err);
         this.isProcessing = false;
-      }
+      },
     });
   }
 
   scrollToBottom(): void {
     setTimeout(() => {
       if (this.messagesContainer) {
-        this.messagesContainer.nativeElement.scrollTop = this.messagesContainer.nativeElement.scrollHeight;
+        this.messagesContainer.nativeElement.scrollTop =
+          this.messagesContainer.nativeElement.scrollHeight;
       }
     }, 50);
   }
@@ -664,14 +742,14 @@ export class WorkbenchComponent implements OnInit, OnDestroy {
         if (this.activeThread) {
           this.activeThread.title = updated.title;
         }
-        const found = this.threads.find(t => t.id === updated.id);
+        const found = this.threads.find((t) => t.id === updated.id);
         if (found) found.title = updated.title;
         this.isEditingTitle = false;
       },
       error: (err) => {
         console.error('Failed to update thread title', err);
         this.isEditingTitle = false;
-      }
+      },
     });
   }
 
@@ -693,22 +771,26 @@ export class WorkbenchComponent implements OnInit, OnDestroy {
     const trimmed = content.trim();
 
     // Pattern 1: Structured single line: Executed `<tool>` (success|failed): <message>
-    const structuredMatch = trimmed.match(/^Executed\s+`([^`]+)`\s+\((success|failed)\):\s*([\s\S]*)$/i);
+    const structuredMatch = trimmed.match(
+      /^Executed\s+`([^`]+)`\s+\((success|failed)\):\s*([\s\S]*)$/i,
+    );
     if (structuredMatch) {
       return {
         toolName: structuredMatch[1],
         success: structuredMatch[2].toLowerCase() === 'success',
-        message: structuredMatch[3].trim()
+        message: structuredMatch[3].trim(),
       };
     }
 
     // Pattern 2: Error execution: Attempted to execute tool `<tool>` but encountered an error: <message>
-    const errorMatch = trimmed.match(/^Attempted to execute tool\s+`([^`]+)`\s+but encountered an error:\s*([\s\S]*)$/i);
+    const errorMatch = trimmed.match(
+      /^Attempted to execute tool\s+`([^`]+)`\s+but encountered an error:\s*([\s\S]*)$/i,
+    );
     if (errorMatch) {
       return {
         toolName: errorMatch[1],
         success: false,
-        message: errorMatch[2].trim()
+        message: errorMatch[2].trim(),
       };
     }
 
@@ -720,7 +802,9 @@ export class WorkbenchComponent implements OnInit, OnDestroy {
 
       // Look for ```json ... ``` or raw {...}
       let jsonStr = '';
-      const codeblockMatch = remainder.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
+      const codeblockMatch = remainder.match(
+        /```(?:json)?\s*([\s\S]*?)\s*```/i,
+      );
       if (codeblockMatch) {
         jsonStr = codeblockMatch[1].trim();
       } else if (remainder.startsWith('{') && remainder.endsWith('}')) {
@@ -734,28 +818,33 @@ export class WorkbenchComponent implements OnInit, OnDestroy {
             return {
               toolName,
               success: parsed.success,
-              message: parsed.message || (parsed.success ? 'Operation succeeded.' : 'Operation failed.')
+              message:
+                parsed.message ||
+                (parsed.success ? 'Operation succeeded.' : 'Operation failed.'),
             };
           }
           if (Array.isArray(parsed.files)) {
             return {
               toolName,
               success: true,
-              message: parsed.files.length > 0 ? `Files: ${parsed.files.join(', ')}` : 'No files found.'
+              message:
+                parsed.files.length > 0
+                  ? `Files: ${parsed.files.join(', ')}`
+                  : 'No files found.',
             };
           }
           if (typeof parsed.content === 'string') {
             return {
               toolName,
               success: true,
-              message: parsed.content
+              message: parsed.content,
             };
           }
           if (typeof parsed.memory === 'string') {
             return {
               toolName,
               success: true,
-              message: parsed.memory || 'Bench memory retrieved.'
+              message: parsed.memory || 'Bench memory retrieved.',
             };
           }
         } catch {
@@ -767,7 +856,7 @@ export class WorkbenchComponent implements OnInit, OnDestroy {
         return {
           toolName,
           success: true,
-          message: remainder
+          message: remainder,
         };
       }
     }
@@ -781,4 +870,3 @@ export interface ToolExecutionDetails {
   success: boolean;
   message: string;
 }
-

@@ -8,7 +8,10 @@ import { MatMenuModule } from '@angular/material/menu';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { RouterModule } from '@angular/router';
 import { ApiService, Agent } from '../../services/api.service';
-import { ConceptGuideComponent, ConceptTabMapping } from '../concept-guide/concept-guide.component';
+import {
+  ConceptGuideComponent,
+  ConceptTabMapping,
+} from '../concept-guide/concept-guide.component';
 import { APP_NAV_MENU_ITEMS } from '../../models/navigation';
 
 @Component({
@@ -23,10 +26,10 @@ import { APP_NAV_MENU_ITEMS } from '../../models/navigation';
     MatMenuModule,
     MatTooltipModule,
     RouterModule,
-    ConceptGuideComponent
+    ConceptGuideComponent,
   ],
   templateUrl: './refactoring-lab.component.html',
-  styleUrl: './refactoring-lab.component.scss'
+  styleUrl: './refactoring-lab.component.scss',
 })
 export class RefactoringLabComponent implements OnInit {
   isScanning: boolean = false;
@@ -42,20 +45,23 @@ export class RefactoringLabComponent implements OnInit {
       icon: 'hub',
       iconColor: 'text-purple-600',
       title: '1. Overlap Cluster Detection',
-      description: 'Semantic clustering finding duplicated or closely related agent prompts across the workspace.'
+      description:
+        'Semantic clustering finding duplicated or closely related agent prompts across the workspace.',
     },
     {
       icon: 'content_cut',
       iconColor: 'text-indigo-600',
       title: '2. Redundant Skill Pruning',
-      description: 'Flags overlapping capabilities across skills to keep agent prompts lean and deterministic.'
+      description:
+        'Flags overlapping capabilities across skills to keep agent prompts lean and deterministic.',
     },
     {
       icon: 'gavel',
       iconColor: 'text-red-500',
       title: '3. Invariant Conflict Analysis',
-      description: 'Pre-flight compiler verification detecting contradictory behavioral invariants.'
-    }
+      description:
+        'Pre-flight compiler verification detecting contradictory behavioral invariants.',
+    },
   ];
 
   constructor(private apiService: ApiService) {}
@@ -63,7 +69,7 @@ export class RefactoringLabComponent implements OnInit {
   ngOnInit(): void {
     this.apiService.getAgents().subscribe({
       next: (agents) => {
-        agents.forEach(agent => {
+        agents.forEach((agent) => {
           if (agent.id) {
             this.agentsMap.set(agent.id, agent);
           }
@@ -72,7 +78,7 @@ export class RefactoringLabComponent implements OnInit {
       },
       error: () => {
         this.runScan();
-      }
+      },
     });
   }
 
@@ -101,18 +107,18 @@ export class RefactoringLabComponent implements OnInit {
           {
             cluster_id: 'cluster-security-audit',
             overlap_score: 0.92,
-            agents: ['SecurityAuditorAgent', 'CodeReviewerAgent']
-          }
+            agents: ['SecurityAuditorAgent', 'CodeReviewerAgent'],
+          },
         ];
         this.redundantAgents = ['LegacySecurityChecker'];
         this.deliberateContradictions = [
           {
             agent_a: 'OptimistCodeReviewer',
             agent_b: 'PessimistSecurityAuditor',
-            conflict_type: 'deliberate_viewpoint_contrast'
-          }
+            conflict_type: 'deliberate_viewpoint_contrast',
+          },
         ];
-      }
+      },
     });
   }
 }

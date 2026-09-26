@@ -13,9 +13,12 @@ describe('WorkbenchComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [WorkbenchComponent, HttpClientTestingModule, RouterModule.forRoot([])]
-    })
-    .compileComponents();
+      imports: [
+        WorkbenchComponent,
+        HttpClientTestingModule,
+        RouterModule.forRoot([]),
+      ],
+    }).compileComponents();
 
     fixture = TestBed.createComponent(WorkbenchComponent);
     component = fixture.componentInstance;
@@ -34,7 +37,7 @@ describe('WorkbenchComponent', () => {
       bench_id: 'bench-1',
       status: 'running',
       current_phase: 'thinking',
-      active_tool_name: null
+      active_tool_name: null,
     };
     spyOn(apiService, 'getActiveThreadRun').and.returnValue(of(mockRun));
 
@@ -50,7 +53,7 @@ describe('WorkbenchComponent', () => {
       bench_id: 'bench-1',
       owner_id: 'owner-1',
       title: 'Test Thread',
-      created_at: new Date().toISOString()
+      created_at: new Date().toISOString(),
     };
     component.activeThread = mockThread;
     component.isProcessing = true;
@@ -59,14 +62,30 @@ describe('WorkbenchComponent', () => {
       thread_id: 'thread-1',
       bench_id: 'bench-1',
       status: 'running',
-      current_phase: 'thinking'
+      current_phase: 'thinking',
     };
 
-    spyOn(apiService, 'cancelActiveThreadRun').and.returnValue(of({ message: 'Run cancelled', status: 'cancelled' }));
-    spyOn(apiService, 'getMessages').and.returnValue(of([
-      { id: 'm1', thread_id: 'thread-1', role: 'user', content: 'Hello', created_at: '' },
-      { id: 'm2', thread_id: 'thread-1', role: 'system', content: '[Action cancelled by user]', created_at: '' }
-    ]));
+    spyOn(apiService, 'cancelActiveThreadRun').and.returnValue(
+      of({ message: 'Run cancelled', status: 'cancelled' }),
+    );
+    spyOn(apiService, 'getMessages').and.returnValue(
+      of([
+        {
+          id: 'm1',
+          thread_id: 'thread-1',
+          role: 'user',
+          content: 'Hello',
+          created_at: '',
+        },
+        {
+          id: 'm2',
+          thread_id: 'thread-1',
+          role: 'system',
+          content: '[Action cancelled by user]',
+          created_at: '',
+        },
+      ]),
+    );
 
     component.cancelCurrentAction();
 
@@ -78,18 +97,28 @@ describe('WorkbenchComponent', () => {
   });
 
   it('should render the zero-footprint concept guide trigger and configuration in top bar', () => {
-    const trigger = fixture.nativeElement.querySelector('[data-testid="workbench-concept-trigger"]');
+    const trigger = fixture.nativeElement.querySelector(
+      '[data-testid="workbench-concept-trigger"]',
+    );
     expect(trigger).toBeTruthy();
     expect(trigger.textContent).toContain('What are Workbenches?');
 
     expect(component.conceptGuideMappings.length).toBe(3);
-    expect(component.conceptGuideMappings[0].title).toBe('1. Sandboxed Filesystem');
-    expect(component.conceptGuideMappings[1].title).toBe('2. Conversational Threads');
-    expect(component.conceptGuideMappings[2].title).toBe('3. Shared Bench Memory');
+    expect(component.conceptGuideMappings[0].title).toBe(
+      '1. Sandboxed Filesystem',
+    );
+    expect(component.conceptGuideMappings[1].title).toBe(
+      '2. Conversational Threads',
+    );
+    expect(component.conceptGuideMappings[2].title).toBe(
+      '3. Shared Bench Memory',
+    );
   });
 
   it('should render the workspace title as an interactive view switcher trigger with dropdown affordance', () => {
-    const switcher = fixture.nativeElement.querySelector('[data-testid="workspace-title-switcher"]');
+    const switcher = fixture.nativeElement.querySelector(
+      '[data-testid="workspace-title-switcher"]',
+    );
     expect(switcher).toBeTruthy();
     expect(switcher.textContent).toContain('Workbench');
     expect(switcher.textContent).toContain('expand_more');
@@ -97,7 +126,8 @@ describe('WorkbenchComponent', () => {
 
   describe('Tool Execution Cards', () => {
     it('should parse historical JSON codeblock tool execution message with success: true', () => {
-      const raw = 'Executed `write_file`:\n```json\n{"success":true,"message":"Successfully wrote to ben.md"}\n```';
+      const raw =
+        'Executed `write_file`:\n```json\n{"success":true,"message":"Successfully wrote to ben.md"}\n```';
       const parsed = component.parseToolExecution(raw);
       expect(parsed).not.toBeNull();
       expect(parsed?.toolName).toBe('write_file');
@@ -106,7 +136,8 @@ describe('WorkbenchComponent', () => {
     });
 
     it('should parse historical JSON codeblock tool execution message with success: false', () => {
-      const raw = 'Executed `delete_file`:\n```json\n{"success":false,"message":"File not found"}\n```';
+      const raw =
+        'Executed `delete_file`:\n```json\n{"success":false,"message":"File not found"}\n```';
       const parsed = component.parseToolExecution(raw);
       expect(parsed).not.toBeNull();
       expect(parsed?.toolName).toBe('delete_file');
@@ -125,7 +156,9 @@ describe('WorkbenchComponent', () => {
 
     it('should return null for standard user and assistant messages', () => {
       expect(component.parseToolExecution('Hello world')).toBeNull();
-      expect(component.parseToolExecution('I have created the file for you.')).toBeNull();
+      expect(
+        component.parseToolExecution('I have created the file for you.'),
+      ).toBeNull();
       expect(component.parseToolExecution('')).toBeNull();
     });
 
@@ -135,20 +168,23 @@ describe('WorkbenchComponent', () => {
         bench_id: 'bench-1',
         owner_id: 'owner-1',
         title: 'Test Thread',
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
       };
       component.activeThreadMessages = [
         {
           id: 'msg-1',
           thread_id: 'thread-1',
           role: 'assistant',
-          content: 'Executed `write_file`:\n```json\n{"success":true,"message":"Successfully wrote to ben.md"}\n```',
-          created_at: new Date().toISOString()
-        }
+          content:
+            'Executed `write_file`:\n```json\n{"success":true,"message":"Successfully wrote to ben.md"}\n```',
+          created_at: new Date().toISOString(),
+        },
       ];
       fixture.detectChanges();
 
-      const card = fixture.nativeElement.querySelector('[data-testid="tool-execution-card"]');
+      const card = fixture.nativeElement.querySelector(
+        '[data-testid="tool-execution-card"]',
+      );
       expect(card).toBeTruthy();
       expect(card.textContent).toContain('write_file');
       expect(card.textContent).toContain('Success');
@@ -157,6 +193,3 @@ describe('WorkbenchComponent', () => {
     });
   });
 });
-
-
-
