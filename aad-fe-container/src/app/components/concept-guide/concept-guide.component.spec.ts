@@ -1,5 +1,13 @@
-import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
-import { ConceptGuideComponent, ConceptTabMapping } from './concept-guide.component';
+import {
+  ComponentFixture,
+  TestBed,
+  fakeAsync,
+  tick,
+} from '@angular/core/testing';
+import {
+  ConceptGuideComponent,
+  ConceptTabMapping,
+} from './concept-guide.component';
 import { ActivatedRoute, provideRouter } from '@angular/router';
 
 describe('ConceptGuideComponent', () => {
@@ -11,26 +19,26 @@ describe('ConceptGuideComponent', () => {
       icon: 'build',
       iconColor: 'text-indigo-600',
       title: '1. Capability Requirements',
-      description: 'Tools, state access, and environment permissions.'
+      description: 'Tools, state access, and environment permissions.',
     },
     {
       icon: 'gavel',
       iconColor: 'text-red-500',
       title: '2. Behavioral Invariants',
-      description: 'Unbreakable corporate policy rules.'
+      description: 'Unbreakable corporate policy rules.',
     },
     {
       icon: 'fact_check',
       iconColor: 'text-emerald-600',
       title: '3. Evaluation Criteria & Guardrails',
-      description: 'Data protection and output grading.'
-    }
+      description: 'Data protection and output grading.',
+    },
   ];
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [ConceptGuideComponent],
-      providers: [provideRouter([])]
+      providers: [provideRouter([])],
     }).compileComponents();
 
     fixture = TestBed.createComponent(ConceptGuideComponent);
@@ -51,12 +59,16 @@ describe('ConceptGuideComponent', () => {
     expect(component).toBeTruthy();
     expect(component.isOpen).toBeFalse();
     expect(component.isPinned).toBeFalse();
-    const popover = fixture.nativeElement.querySelector('[data-testid="test-concept-popover"]');
+    const popover = fixture.nativeElement.querySelector(
+      '[data-testid="test-concept-popover"]',
+    );
     expect(popover).toBeNull();
   });
 
   it('should render the trigger button with configured label and icon', () => {
-    const trigger = fixture.nativeElement.querySelector('[data-testid="test-concept-trigger"]');
+    const trigger = fixture.nativeElement.querySelector(
+      '[data-testid="test-concept-trigger"]',
+    );
     expect(trigger).toBeTruthy();
     expect(trigger.textContent).toContain('What are Traits?');
   });
@@ -66,7 +78,9 @@ describe('ConceptGuideComponent', () => {
     fixture.detectChanges();
 
     expect(component.isOpen).toBeTrue();
-    const popover = fixture.nativeElement.querySelector('[data-testid="test-concept-popover"]');
+    const popover = fixture.nativeElement.querySelector(
+      '[data-testid="test-concept-popover"]',
+    );
     expect(popover).toBeTruthy();
 
     const text = popover.textContent;
@@ -124,7 +138,9 @@ describe('ConceptGuideComponent', () => {
     fixture.detectChanges();
     expect(component.isOpen).toBeTrue();
 
-    const closeBtn = fixture.nativeElement.querySelector('[data-testid="test-concept-close"]');
+    const closeBtn = fixture.nativeElement.querySelector(
+      '[data-testid="test-concept-close"]',
+    );
     expect(closeBtn).toBeTruthy();
 
     closeBtn.click();
@@ -132,7 +148,11 @@ describe('ConceptGuideComponent', () => {
 
     expect(component.isOpen).toBeFalse();
     expect(component.isPinned).toBeFalse();
-    expect(fixture.nativeElement.querySelector('[data-testid="test-concept-popover"]')).toBeNull();
+    expect(
+      fixture.nativeElement.querySelector(
+        '[data-testid="test-concept-popover"]',
+      ),
+    ).toBeNull();
   });
 
   it('should close when Escape key is pressed', () => {
@@ -150,7 +170,9 @@ describe('ConceptGuideComponent', () => {
     component.show();
     fixture.detectChanges();
 
-    const detailLink = fixture.nativeElement.querySelector('[data-testid="test-concept-detail-link"]');
+    const detailLink = fixture.nativeElement.querySelector(
+      '[data-testid="test-concept-detail-link"]',
+    );
     expect(detailLink).toBeTruthy();
     expect(detailLink.getAttribute('href')).toBe('/detail');
     expect(detailLink.textContent).toContain('Explore Trait Architecture');

@@ -56,10 +56,10 @@ export interface OperationalTenet {
     MatButtonModule,
     MatIconModule,
     MatMenuModule,
-    RouterModule
+    RouterModule,
   ],
   templateUrl: './detail.component.html',
-  styleUrl: './detail.component.scss'
+  styleUrl: './detail.component.scss',
 })
 export class DetailComponent {
   menuItems: NavMenuItem[] = APP_NAV_MENU_ITEMS;
@@ -77,8 +77,8 @@ export class DetailComponent {
       items: [
         'Semantic RAG chunks (pgvector)',
         'SPO graph relation tuples',
-        'Natural language context scoring'
-      ]
+        'Natural language context scoring',
+      ],
     },
     {
       step: 2,
@@ -93,8 +93,8 @@ export class DetailComponent {
         '3-Element Trait Contracts',
         'Skills Registry & JSON Schemas',
         'Declarative Agent Registry',
-        'Remote Tools & MCP Ingestion'
-      ]
+        'Remote Tools & MCP Ingestion',
+      ],
     },
     {
       step: 3,
@@ -108,8 +108,8 @@ export class DetailComponent {
       items: [
         'Mermaid delegation visualizer',
         'Duplication & cluster scan',
-        'Intentional contradiction rules'
-      ]
+        'Intentional contradiction rules',
+      ],
     },
     {
       step: 4,
@@ -123,8 +123,8 @@ export class DetailComponent {
       items: [
         'Real-time SSE token stream',
         'Local Rig / Ollama integration',
-        'Contract verification tester'
-      ]
+        'Contract verification tester',
+      ],
     },
     {
       step: 5,
@@ -139,9 +139,9 @@ export class DetailComponent {
         'Isolated bench filesystem',
         'Multi-turn Rig tool execution',
         'Bench working memory',
-        'Distributed action cancellation'
-      ]
-    }
+        'Distributed action cancellation',
+      ],
+    },
   ];
 
   traitPillars: TraitPillar[] = [
@@ -149,30 +149,37 @@ export class DetailComponent {
       title: 'Capability Requirements',
       icon: 'build',
       badge: 'Required Tools & Permissions',
-      description: 'The environmental access, system tools, or sensory inputs the agent must possess to satisfy this role.',
-      example: 'e.g. AST parser, read_file, git_read_only'
+      description:
+        'The environmental access, system tools, or sensory inputs the agent must possess to satisfy this role.',
+      example: 'e.g. AST parser, read_file, git_read_only',
     },
     {
       title: 'Behavioral Invariants',
       icon: 'gavel',
       badge: 'Unbreakable Constraints',
-      description: 'Strict non-negotiable rules the agent MUST ALWAYS or MUST NEVER violate during reasoning or action.',
-      example: 'e.g. MUST NEVER run untrusted binaries; MUST ALWAYS output valid JSON'
+      description:
+        'Strict non-negotiable rules the agent MUST ALWAYS or MUST NEVER violate during reasoning or action.',
+      example:
+        'e.g. MUST NEVER run untrusted binaries; MUST ALWAYS output valid JSON',
     },
     {
       title: 'Evaluation Rubrics',
       icon: 'fact_check',
       badge: 'Automated LLM Judge',
-      description: 'Objective semantic criteria used by automated LLM-as-a-Judge evaluators to score compliance (0.0 - 1.0).',
-      example: 'e.g. Pass threshold >= 0.85 on security vulnerability test suite'
+      description:
+        'Objective semantic criteria used by automated LLM-as-a-Judge evaluators to score compliance (0.0 - 1.0).',
+      example:
+        'e.g. Pass threshold >= 0.85 on security vulnerability test suite',
     },
     {
       title: 'Inherited Baseline Guardrails',
       icon: 'shield',
       badge: 'Mandatory Interceptors',
-      description: 'Pre-execution and post-execution guardrails automatically inherited by any agent implementing this trait.',
-      example: 'e.g. PII regex filtering, API key redaction, prompt injection shields'
-    }
+      description:
+        'Pre-execution and post-execution guardrails automatically inherited by any agent implementing this trait.',
+      example:
+        'e.g. PII regex filtering, API key redaction, prompt injection shields',
+    },
   ];
 
   workspaceCards: WorkspaceCard[] = [
@@ -181,147 +188,210 @@ export class DetailComponent {
       title: 'Workbench',
       category: 'Execution',
       icon: 'chat',
-      description: 'Project-scoped bench workspaces with multi-turn conversation threads, shared filesystem tools, bench memory, and distributed action cancellation.',
+      description:
+        'Project-scoped bench workspaces with multi-turn conversation threads, shared filesystem tools, bench memory, and distributed action cancellation.',
       path: '/workbench',
       actionText: 'Open Workbench',
-      colorClass: 'text-indigo-600 bg-indigo-50 border-indigo-200 hover:border-indigo-400',
+      colorClass:
+        'text-indigo-600 bg-indigo-50 border-indigo-200 hover:border-indigo-400',
       badge: 'Primary Execution',
-      capabilities: ['Bench Filesystem Isolation', 'Rig Multi-Turn Tool Loop', 'Thread Runs & Cancellation']
+      capabilities: [
+        'Bench Filesystem Isolation',
+        'Rig Multi-Turn Tool Loop',
+        'Thread Runs & Cancellation',
+      ],
     },
     {
       id: 'agents',
       title: 'Agent Registry & Builder',
       category: 'Registries',
       icon: 'smart_toy',
-      description: 'Compose declarative agent blueprints, configure LLM reasoning models, attach execution guardrails, and track immutable revision lineage.',
+      description:
+        'Compose declarative agent blueprints, configure LLM reasoning models, attach execution guardrails, and track immutable revision lineage.',
       path: '/agents',
       actionText: 'Browse Agents',
-      colorClass: 'text-blue-600 bg-blue-50 border-blue-200 hover:border-blue-400',
+      colorClass:
+        'text-blue-600 bg-blue-50 border-blue-200 hover:border-blue-400',
       badge: 'Declarative Spec',
-      capabilities: ['Immutable agent_revisions', 'Guardrail Interceptors', 'Trait Contract Bindings']
+      capabilities: [
+        'Immutable agent_revisions',
+        'Guardrail Interceptors',
+        'Trait Contract Bindings',
+      ],
     },
     {
       id: 'traits',
       title: 'Trait Contracts Registry',
       category: 'Registries',
       icon: 'verified',
-      description: 'Inspect and define abstract behavioral contracts ("Interfaces for AI") establishing capabilities, invariants, rubrics, and inherited guardrails.',
+      description:
+        'Inspect and define abstract behavioral contracts ("Interfaces for AI") establishing capabilities, invariants, rubrics, and inherited guardrails.',
       path: '/traits',
       actionText: 'Manage Traits',
-      colorClass: 'text-emerald-600 bg-emerald-50 border-emerald-200 hover:border-emerald-400',
+      colorClass:
+        'text-emerald-600 bg-emerald-50 border-emerald-200 hover:border-emerald-400',
       badge: 'Abstract Contracts',
-      capabilities: ['Decoupled Agent Delegation', 'Inherited Guardrails', 'Automated Verification']
+      capabilities: [
+        'Decoupled Agent Delegation',
+        'Inherited Guardrails',
+        'Automated Verification',
+      ],
     },
     {
       id: 'skills',
       title: 'Skills Registry',
       category: 'Registries',
       icon: 'extension',
-      description: 'Define deterministic skill routines with strict input/output JSON schemas and promote skills to full reasoning agents with one click.',
+      description:
+        'Define deterministic skill routines with strict input/output JSON schemas and promote skills to full reasoning agents with one click.',
       path: '/skills',
       actionText: 'Explore Skills',
-      colorClass: 'text-teal-600 bg-teal-50 border-teal-200 hover:border-teal-400',
+      colorClass:
+        'text-teal-600 bg-teal-50 border-teal-200 hover:border-teal-400',
       badge: 'Deterministic Tools',
-      capabilities: ['JSON Schema Validation', 'One-Click Promotion', 'Reusable Tool Attachment']
+      capabilities: [
+        'JSON Schema Validation',
+        'One-Click Promotion',
+        'Reusable Tool Attachment',
+      ],
     },
     {
       id: 'tools',
       title: 'Remote Tools & MCP',
       category: 'Registries',
       icon: 'dns',
-      description: 'Register external Model Context Protocol (MCP) servers over Stdio and SSE, browse cached argument schemas, and bind tools dynamically.',
+      description:
+        'Register external Model Context Protocol (MCP) servers over Stdio and SSE, browse cached argument schemas, and bind tools dynamically.',
       path: '/tools',
       actionText: 'Configure Tools',
-      colorClass: 'text-cyan-600 bg-cyan-50 border-cyan-200 hover:border-cyan-400',
+      colorClass:
+        'text-cyan-600 bg-cyan-50 border-cyan-200 hover:border-cyan-400',
       badge: 'MCP Protocol',
-      capabilities: ['Stdio & SSE Transports', 'Cached Argument Schemas', 'RAG Tool Discovery']
+      capabilities: [
+        'Stdio & SSE Transports',
+        'Cached Argument Schemas',
+        'RAG Tool Discovery',
+      ],
     },
     {
       id: 'interactive-testing',
       title: 'Interactive Testing Studio',
       category: 'Execution',
       icon: 'bug_report',
-      description: 'Test agents and skills with real-time SSE token streaming, inspect system prompts and instructions, and test dynamic trait mapping overrides.',
+      description:
+        'Test agents and skills with real-time SSE token streaming, inspect system prompts and instructions, and test dynamic trait mapping overrides.',
       path: '/interactive-testing',
       actionText: 'Launch Studio',
-      colorClass: 'text-amber-600 bg-amber-50 border-amber-200 hover:border-amber-400',
+      colorClass:
+        'text-amber-600 bg-amber-50 border-amber-200 hover:border-amber-400',
       badge: 'Live Playground',
-      capabilities: ['Real-Time SSE Streaming', 'Live Prompt Inspector', 'Contract Fit Verification']
+      capabilities: [
+        'Real-Time SSE Streaming',
+        'Live Prompt Inspector',
+        'Contract Fit Verification',
+      ],
     },
     {
       id: 'network-visualizer',
       title: 'Delegation Network Graph',
       category: 'Governance',
       icon: 'account_tree',
-      description: 'Visualize agent hierarchies, sub-agent delegation links, and skill dependencies in an interactive, filterable Mermaid network graph.',
+      description:
+        'Visualize agent hierarchies, sub-agent delegation links, and skill dependencies in an interactive, filterable Mermaid network graph.',
       path: '/network-visualizer',
       actionText: 'View Network Graph',
-      colorClass: 'text-purple-600 bg-purple-50 border-purple-200 hover:border-purple-400',
+      colorClass:
+        'text-purple-600 bg-purple-50 border-purple-200 hover:border-purple-400',
       badge: 'Topology Visualizer',
-      capabilities: ['Interactive Mermaid Graph', 'Multi-Hop Delegation', 'Trait Interface Filters']
+      capabilities: [
+        'Interactive Mermaid Graph',
+        'Multi-Hop Delegation',
+        'Trait Interface Filters',
+      ],
     },
     {
       id: 'refactoring-lab',
       title: 'Refactoring & Compression Lab',
       category: 'Governance',
       icon: 'build_circle',
-      description: 'Scan agent embeddings for semantic overlap and duplication, harmonize conflicting instructions, and codify intentional persona contradictions.',
+      description:
+        'Scan agent embeddings for semantic overlap and duplication, harmonize conflicting instructions, and codify intentional persona contradictions.',
       path: '/refactoring-lab',
       actionText: 'Open Refactoring Lab',
-      colorClass: 'text-violet-600 bg-violet-50 border-violet-200 hover:border-violet-400',
+      colorClass:
+        'text-violet-600 bg-violet-50 border-violet-200 hover:border-violet-400',
       badge: 'Optimization',
-      capabilities: ['Cluster Overlap Scanning', 'Harmonization Diffing', 'Contradiction Management']
+      capabilities: [
+        'Cluster Overlap Scanning',
+        'Harmonization Diffing',
+        'Contradiction Management',
+      ],
     },
     {
       id: 'knowledge-inspector',
       title: 'Knowledge Base Inspector',
       category: 'Knowledge',
       icon: 'library_books',
-      description: 'Explore the dual-store Enterprise Brain: query semantic vector chunks (pgvector) and traverse Subject-Predicate-Object (SPO) relationship tuples.',
+      description:
+        'Explore the dual-store Enterprise Brain: query semantic vector chunks (pgvector) and traverse Subject-Predicate-Object (SPO) relationship tuples.',
       path: '/knowledge-inspector',
       actionText: 'Query Knowledge',
       colorClass: 'text-sky-600 bg-sky-50 border-sky-200 hover:border-sky-400',
       badge: 'Enterprise Brain',
-      capabilities: ['Hybrid Vector Search', 'SPO Graph Tuples', 'Multi-Hop Entity Traversal']
+      capabilities: [
+        'Hybrid Vector Search',
+        'SPO Graph Tuples',
+        'Multi-Hop Entity Traversal',
+      ],
     },
     {
       id: 'agent-context',
       title: 'Agent Context Search',
       category: 'Knowledge',
       icon: 'search',
-      description: 'Natural language task context search that evaluates separated multi-embeddings (name, description, prompt) to score and match relevant agents.',
+      description:
+        'Natural language task context search that evaluates separated multi-embeddings (name, description, prompt) to score and match relevant agents.',
       path: '/agent-context',
       actionText: 'Search Context',
-      colorClass: 'text-slate-600 bg-slate-100 border-slate-300 hover:border-slate-500',
+      colorClass:
+        'text-slate-600 bg-slate-100 border-slate-300 hover:border-slate-500',
       badge: 'Semantic Scoring',
-      capabilities: ['Multi-Embedding Scoring', 'Configurable Trace Depth', 'Semantic Fit Feedback']
-    }
+      capabilities: [
+        'Multi-Embedding Scoring',
+        'Configurable Trace Depth',
+        'Semantic Fit Feedback',
+      ],
+    },
   ];
 
   operationalTenets: OperationalTenet[] = [
     {
       title: 'Zero Direct Runtime Env Vars',
       icon: 'settings_suggest',
-      description: 'All configuration is loaded fail-fast at startup via AppConfig with strict schema validation. No unvetted process defaults.',
-      guarantee: 'Fail-Fast Configuration'
+      description:
+        'All configuration is loaded fail-fast at startup via AppConfig with strict schema validation. No unvetted process defaults.',
+      guarantee: 'Fail-Fast Configuration',
     },
     {
       title: 'Deterministic Version Lineage',
       icon: 'history',
-      description: 'Modifying an agent creates an immutable agent_revisions record. Executions and client bindings remain completely reproducible.',
-      guarantee: 'Immutable History'
+      description:
+        'Modifying an agent creates an immutable agent_revisions record. Executions and client bindings remain completely reproducible.',
+      guarantee: 'Immutable History',
     },
     {
       title: 'Strict Entity Referencing',
       icon: 'link',
-      description: 'Non-null database foreign keys prevent orphaned execution traces. Deletions archive entities safely to preserve referential integrity.',
-      guarantee: 'Referential Integrity'
+      description:
+        'Non-null database foreign keys prevent orphaned execution traces. Deletions archive entities safely to preserve referential integrity.',
+      guarantee: 'Referential Integrity',
     },
     {
       title: 'Distributed Run Safety',
       icon: 'cancel',
-      description: 'Multi-turn agent runs execute asynchronously with pre-tool cancellation hooks (thread_runs) ensuring immediate, safe run halts.',
-      guarantee: 'Pre-Tool Cancellation'
-    }
+      description:
+        'Multi-turn agent runs execute asynchronously with pre-tool cancellation hooks (thread_runs) ensuring immediate, safe run halts.',
+      guarantee: 'Pre-Tool Cancellation',
+    },
   ];
 }

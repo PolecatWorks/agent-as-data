@@ -10,8 +10,15 @@ import { MatTabsModule } from '@angular/material/tabs';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatChipsModule } from '@angular/material/chips';
 import { RouterModule } from '@angular/router';
-import { ApiService, KnowledgeNode, KnowledgeTupleInput } from '../../services/api.service';
-import { ConceptGuideComponent, ConceptTabMapping } from '../concept-guide/concept-guide.component';
+import {
+  ApiService,
+  KnowledgeNode,
+  KnowledgeTupleInput,
+} from '../../services/api.service';
+import {
+  ConceptGuideComponent,
+  ConceptTabMapping,
+} from '../concept-guide/concept-guide.component';
 import { APP_NAV_MENU_ITEMS } from '../../models/navigation';
 
 @Component({
@@ -29,10 +36,10 @@ import { APP_NAV_MENU_ITEMS } from '../../models/navigation';
     MatTooltipModule,
     MatChipsModule,
     RouterModule,
-    ConceptGuideComponent
+    ConceptGuideComponent,
   ],
   templateUrl: './knowledge-inspector.component.html',
-  styleUrl: './knowledge-inspector.component.scss'
+  styleUrl: './knowledge-inspector.component.scss',
 })
 export class KnowledgeInspectorComponent implements OnInit {
   // Sidebar state
@@ -53,7 +60,7 @@ export class KnowledgeInspectorComponent implements OnInit {
     description: '',
     content: '',
     tags: [],
-    tuples: []
+    tuples: [],
   };
 
   // Dashboard / RAG / Graph Search State
@@ -70,20 +77,23 @@ export class KnowledgeInspectorComponent implements OnInit {
       icon: 'saved_search',
       iconColor: 'text-blue-600',
       title: '1. Semantic Vector Store',
-      description: 'High-dimensional vector embeddings for hybrid RAG search over documents and corporate policies.'
+      description:
+        'High-dimensional vector embeddings for hybrid RAG search over documents and corporate policies.',
     },
     {
       icon: 'hub',
       iconColor: 'text-indigo-600',
       title: '2. Knowledge Graph Triples',
-      description: 'Subject-Predicate-Object relation tuples connecting company concepts, teams, and data structures.'
+      description:
+        'Subject-Predicate-Object relation tuples connecting company concepts, teams, and data structures.',
     },
     {
       icon: 'cleaning_services',
       iconColor: 'text-emerald-600',
       title: '3. Entity Resolution & Pruning',
-      description: 'Canonical entity deduction and automated duplicate pruning ensuring reliable AI grounding.'
-    }
+      description:
+        'Canonical entity deduction and automated duplicate pruning ensuring reliable AI grounding.',
+    },
   ];
 
   constructor(private apiService: ApiService) {}
@@ -99,7 +109,7 @@ export class KnowledgeInspectorComponent implements OnInit {
   }
 
   loadNodes() {
-    this.apiService.getKnowledgeNodes().subscribe(nodes => {
+    this.apiService.getKnowledgeNodes().subscribe((nodes) => {
       this.nodes = nodes || [];
     });
   }
@@ -107,10 +117,11 @@ export class KnowledgeInspectorComponent implements OnInit {
   getFilteredNodes(): KnowledgeNode[] {
     if (!this.searchQuery) return this.nodes;
     const q = this.searchQuery.toLowerCase();
-    return this.nodes.filter(n =>
-      (n.title && n.title.toLowerCase().includes(q)) ||
-      n.topic.toLowerCase().includes(q) ||
-      (n.description && n.description.toLowerCase().includes(q))
+    return this.nodes.filter(
+      (n) =>
+        (n.title && n.title.toLowerCase().includes(q)) ||
+        n.topic.toLowerCase().includes(q) ||
+        (n.description && n.description.toLowerCase().includes(q)),
     );
   }
 
@@ -120,20 +131,23 @@ export class KnowledgeInspectorComponent implements OnInit {
     this.showDeleteConfirm = false;
 
     // Load tuples
-    this.apiService.getKnowledgeTuples(node.id).subscribe(tuples => {
-      this.nodeForm = {
-        ...node,
-        tuples: tuples.map(t => ({
-          subject: t.subject,
-          predicate: t.predicate,
-          object: t.object,
-          confidence: t.confidence
-        }))
-      };
-    }, error => {
-      // Fallback
-      this.nodeForm = { ...node, tuples: [] };
-    });
+    this.apiService.getKnowledgeTuples(node.id).subscribe(
+      (tuples) => {
+        this.nodeForm = {
+          ...node,
+          tuples: tuples.map((t) => ({
+            subject: t.subject,
+            predicate: t.predicate,
+            object: t.object,
+            confidence: t.confidence,
+          })),
+        };
+      },
+      (error) => {
+        // Fallback
+        this.nodeForm = { ...node, tuples: [] };
+      },
+    );
   }
 
   createNewNode() {
@@ -146,7 +160,7 @@ export class KnowledgeInspectorComponent implements OnInit {
       description: '',
       content: '',
       tags: [],
-      tuples: []
+      tuples: [],
     };
   }
 
@@ -173,39 +187,47 @@ export class KnowledgeInspectorComponent implements OnInit {
 
   deleteNode() {
     if (this.selectedNode) {
-      this.apiService.deleteKnowledgeNode(this.selectedNode.id).subscribe(() => {
-        this.loadNodes();
-        this.selectedNode = null;
-        this.isEditing = false;
-        this.showDeleteConfirm = false;
-      });
+      this.apiService
+        .deleteKnowledgeNode(this.selectedNode.id)
+        .subscribe(() => {
+          this.loadNodes();
+          this.selectedNode = null;
+          this.isEditing = false;
+          this.showDeleteConfirm = false;
+        });
     }
   }
 
   saveNode() {
     if (this.selectedNode) {
-        // Update
-        const payload = { ...this.nodeForm };
-        this.apiService.updateKnowledgeNode(this.selectedNode.id, payload).subscribe((updated) => {
-            this.selectedNode = updated;
-            this.isEditing = false;
-            this.loadNodes();
-            this.selectNode(updated);
+      // Update
+      const payload = { ...this.nodeForm };
+      this.apiService
+        .updateKnowledgeNode(this.selectedNode.id, payload)
+        .subscribe((updated) => {
+          this.selectedNode = updated;
+          this.isEditing = false;
+          this.loadNodes();
+          this.selectNode(updated);
         });
     } else {
-        // Create
-        this.apiService.ingestKnowledge(
-            this.nodeForm.topic || 'General',
-            this.nodeForm.title || '',
-            this.nodeForm.description,
-            this.nodeForm.tags || [],
-            this.nodeForm.content || '',
-            this.nodeForm.tuples
-        ).subscribe((res) => {
-            this.loadNodes();
-            this.isEditing = false;
-            // Fetch the newly created node to select it
-            this.apiService.getKnowledgeNode(res.id).subscribe(node => this.selectNode(node));
+      // Create
+      this.apiService
+        .ingestKnowledge(
+          this.nodeForm.topic || 'General',
+          this.nodeForm.title || '',
+          this.nodeForm.description,
+          this.nodeForm.tags || [],
+          this.nodeForm.content || '',
+          this.nodeForm.tuples,
+        )
+        .subscribe((res) => {
+          this.loadNodes();
+          this.isEditing = false;
+          // Fetch the newly created node to select it
+          this.apiService
+            .getKnowledgeNode(res.id)
+            .subscribe((node) => this.selectNode(node));
         });
     }
   }
@@ -222,24 +244,28 @@ export class KnowledgeInspectorComponent implements OnInit {
 
   removeTag(tag: string) {
     if (this.nodeForm.tags) {
-      this.nodeForm.tags = this.nodeForm.tags.filter(t => t !== tag);
+      this.nodeForm.tags = this.nodeForm.tags.filter((t) => t !== tag);
     }
   }
 
   // Tuples
   addTuple() {
-      if (!this.nodeForm.tuples) {
-          this.nodeForm.tuples = [];
-      }
-      this.nodeForm.tuples.push({ subject: '', predicate: '', object: '', confidence: 1.0 });
+    if (!this.nodeForm.tuples) {
+      this.nodeForm.tuples = [];
+    }
+    this.nodeForm.tuples.push({
+      subject: '',
+      predicate: '',
+      object: '',
+      confidence: 1.0,
+    });
   }
 
   removeTuple(index: number) {
-      if (this.nodeForm.tuples) {
-          this.nodeForm.tuples.splice(index, 1);
-      }
+    if (this.nodeForm.tuples) {
+      this.nodeForm.tuples.splice(index, 1);
+    }
   }
-
 
   // Dashboards
   runRagSearch(): void {
@@ -255,11 +281,12 @@ export class KnowledgeInspectorComponent implements OnInit {
         this.searchResults = [
           {
             chunk_index: 0,
-            chunk_text: 'Rust enforces memory safety via ownership, borrowing, and lifetime rules without requiring garbage collection.',
-            score: 0.94
-          }
+            chunk_text:
+              'Rust enforces memory safety via ownership, borrowing, and lifetime rules without requiring garbage collection.',
+            score: 0.94,
+          },
         ];
-      }
+      },
     });
   }
 
@@ -274,10 +301,20 @@ export class KnowledgeInspectorComponent implements OnInit {
       },
       error: () => {
         this.graphResults = [
-          { subject: 'SecurityAuditor', predicate: 'implements', object: 'SecurityTrait', confidence: 1.0 },
-          { subject: 'SecurityAuditor', predicate: 'uses_tool', object: 'RustMemoryScan', confidence: 0.95 }
+          {
+            subject: 'SecurityAuditor',
+            predicate: 'implements',
+            object: 'SecurityTrait',
+            confidence: 1.0,
+          },
+          {
+            subject: 'SecurityAuditor',
+            predicate: 'uses_tool',
+            object: 'RustMemoryScan',
+            confidence: 0.95,
+          },
         ];
-      }
+      },
     });
   }
 }
