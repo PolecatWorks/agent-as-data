@@ -4,6 +4,8 @@ pub mod agents;
 pub mod execution;
 pub mod fs;
 pub mod knowledge;
+pub mod knowledge_mcp;
+pub mod knowledge_mcp_handler;
 pub mod skills;
 pub mod threads;
 pub mod tools;
@@ -31,6 +33,7 @@ pub fn app_router(state: AppState) -> Router {
         .nest("/v1/traits", traits::router())
         .nest("/v1/agents/tools", tools::router())
         .nest("/v1/knowledge", knowledge::router())
+        .nest("/v1/knowledge/mcp", knowledge_mcp_handler::router())
         .nest("/v1", execution::router())
         .nest("/v1/benches", benches::router())
         .nest("/v1/benches", fs::router())
@@ -57,6 +60,8 @@ pub async fn start_webserver(
     config: &WebServiceConfig,
     ct: tokio_util::sync::CancellationToken,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    let _ = knowledge_mcp::DB_POOL.set(state.pool.clone());
+
     let app = app_router(state);
     let listener = tokio::net::TcpListener::bind(&config.address)
         .await

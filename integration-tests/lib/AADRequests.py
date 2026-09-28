@@ -248,7 +248,7 @@ class AADRequests:
     def delete_knowledge(self, node_id):
         resp = requests.delete(f"{self.base_url}/api/v1/knowledge/{node_id}", timeout=5)
         resp.raise_for_status()
-        return resp.status_code == 204
+        return resp.status_code in (200, 204)
 
     def _get_var(self, name, default=None):
         """Helper to get a variable from Robot Framework BuiltIn context or os.environ."""
