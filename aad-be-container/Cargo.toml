@@ -35,6 +35,8 @@ sqlx = { version = "0.8", features = ["postgres", "runtime-tokio-rustls", "chron
 uuid = { version = "1.11", features = ["serde", "v4"] }
 rig-core = "0.42.0"
 rig = { version = "0.42.0", features = ["agent"] }
+rmcp = { version = "3.5.0", features = ["server-side-http", "transport-streamable-http-server"] }
+schemars = { version = "1.2", features = ["uuid1", "chrono04"] }
 
 [dev-dependencies]
 tower = { version = "0.5", features = ["util"] }

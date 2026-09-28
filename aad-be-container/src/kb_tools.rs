@@ -170,10 +170,13 @@ pub struct KbNodeAddTool {
 #[derive(Deserialize)]
 pub struct KbNodeAddArgs {
     pub topic: String,
-    pub title: Option<String>,
-    pub description: Option<String>,
+    #[serde(default)]
+    pub title: String,
+    #[serde(default)]
+    pub description: String,
     pub content: String,
-    pub tags: Option<Vec<String>>,
+    #[serde(default)]
+    pub tags: Vec<String>,
 }
 
 #[derive(Serialize)]
@@ -249,7 +252,8 @@ pub struct KbNodeEditArgs {
     pub title: Option<String>,
     pub description: Option<String>,
     pub content: Option<String>,
-    pub tags: Option<Vec<String>>,
+    #[serde(default)]
+    pub tags: Vec<String>,
 }
 
 #[derive(Serialize)]
@@ -411,8 +415,9 @@ mod tests {
         let add_args: KbNodeAddArgs = serde_json::from_value(add_json).expect("deserialize add args");
         assert_eq!(add_args.topic, "test-topic");
         assert_eq!(add_args.content, "test-content");
-        assert_eq!(add_args.title.as_deref(), Some("Title"));
-        assert_eq!(add_args.tags.as_ref().unwrap().len(), 2);
+        assert_eq!(add_args.title, "Title");
+        assert_eq!(add_args.description, "");
+        assert_eq!(add_args.tags.len(), 2);
 
         let browse_json = json!({
             "query": "search term",

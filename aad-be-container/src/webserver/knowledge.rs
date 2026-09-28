@@ -13,9 +13,9 @@ use rig_core::completion::CompletionModel;
 
 use crate::{
     models::{
-        GraphTraverseRequest, GraphTraverseResult, IngestKnowledgeRequest, IngestKnowledgeResponse,
-        KnowledgeNode, KnowledgeSearchRequest, KnowledgeSearchResult, UpdateKnowledgeRequest,
-        KnowledgeTuple, AnalyzeMarkdownRequest, AnalyzeMarkdownResponse, KnowledgeNodeProposal
+        AnalyzeMarkdownRequest, AnalyzeMarkdownResponse, GraphTraverseRequest,
+        GraphTraverseResult, KnowledgeNode, KnowledgeNodeProposal, KnowledgeSearchRequest,
+        KnowledgeSearchResult, KnowledgeTuple, Triple,
     },
     state::AppState,
 };
@@ -106,21 +106,30 @@ pub async fn analyze_markdown(
 
 pub async fn ingest_knowledge(
     State(pool): State<PgPool>,
-    Json(payload): Json<IngestKnowledgeRequest>,
-) -> Result<(StatusCode, Json<IngestKnowledgeResponse>), (StatusCode, String)> {
-    let node_id = Uuid::new_v4();
+    Json(payload): Json<KnowledgeNode>,
+) -> Result<(StatusCode, Json<KnowledgeNode>), (StatusCode, String)> {
+    if payload.topic.trim().is_empty() || payload.content.trim().is_empty() {
+        return Err((StatusCode::BAD_REQUEST, "Topic and content are required".to_string()));
+    }
+
+    let node_id = payload.id.unwrap_or_else(Uuid::new_v4);
     metrics::counter!("knowledge_ingestion_total").increment(1);
 
     tracing::info!("Ingesting/Saving knowledge node '{:?}' (topic: '{}', ID: {})", payload.title, payload.topic, node_id);
-    let metadata = payload.metadata.unwrap_or_else(|| serde_json::json!({}));
+    let metadata = if payload.metadata.is_null() {
+        serde_json::json!({})
+    } else {
+        payload.metadata
+    };
 
-    let tags = payload.tags.unwrap_or_default();
+    let tags = payload.tags;
 
     // 1. Insert Node
-    sqlx::query(
+    let created_node = sqlx::query_as::<_, KnowledgeNode>(
         r#"
         INSERT INTO knowledge_nodes (id, topic, title, description, tags, content, metadata)
         VALUES ($1, $2, $3, $4, $5, $6, $7)
+        RETURNING id, topic, title, COALESCE(description, '') as description, tags, content, metadata, created_at, updated_at
         "#,
     )
     .bind(node_id)
@@ -130,13 +139,12 @@ pub async fn ingest_knowledge(
     .bind(&tags)
     .bind(&payload.content)
     .bind(metadata)
-    .execute(&pool)
+    .fetch_one(&pool)
     .await
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("DB Error: {}", e)))?;
 
     // 2. Chunk text and store mock vector embeddings
     let chunks = chunk_text(&payload.content, 200);
-    let chunks_created = chunks.len();
 
     for (idx, chunk) in chunks.iter().enumerate() {
         let chunk_id = Uuid::new_v4();
@@ -156,39 +164,27 @@ pub async fn ingest_knowledge(
     }
 
     // 3. Insert Tuples if provided
-    let mut tuples_created = 0;
-    if let Some(tuples) = payload.tuples {
-        tuples_created = tuples.len();
-        for tuple in tuples {
-            let tuple_id = Uuid::new_v4();
-            let confidence = tuple.confidence.unwrap_or(1.0);
-            sqlx::query(
-                r#"
-                INSERT INTO knowledge_tuples (id, source_node_id, subject, predicate, object, confidence)
-                VALUES ($1, $2, $3, $4, $5, $6)
-                "#,
-            )
-            .bind(tuple_id)
-            .bind(node_id)
-            .bind(tuple.subject)
-            .bind(tuple.predicate)
-            .bind(tuple.object)
-            .bind(confidence)
-            .execute(&pool)
-            .await
-            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Tuple Insert Error: {}", e)))?;
-        }
+    for tuple in payload.tuples {
+        let tuple_id = Uuid::new_v4();
+        let confidence = tuple.confidence.unwrap_or(1.0);
+        sqlx::query(
+            r#"
+            INSERT INTO knowledge_tuples (id, source_node_id, subject, predicate, object, confidence)
+            VALUES ($1, $2, $3, $4, $5, $6)
+            "#,
+        )
+        .bind(tuple_id)
+        .bind(node_id)
+        .bind(tuple.triple.subject)
+        .bind(tuple.triple.predicate)
+        .bind(tuple.triple.object)
+        .bind(confidence)
+        .execute(&pool)
+        .await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Tuple Insert Error: {}", e)))?;
     }
 
-    Ok((
-        StatusCode::CREATED,
-        Json(IngestKnowledgeResponse {
-            id: node_id,
-            topic: payload.topic,
-            chunks_created,
-            tuples_created,
-        }),
-    ))
+    Ok((StatusCode::CREATED, Json(created_node)))
 }
 
 pub async fn list_knowledge(
@@ -196,7 +192,7 @@ pub async fn list_knowledge(
 ) -> Result<Json<Vec<KnowledgeNode>>, (StatusCode, String)> {
     let nodes = sqlx::query_as::<_, KnowledgeNode>(
         r#"
-        SELECT id, topic, title, description, tags, content, metadata, created_at, updated_at
+        SELECT id, topic, title, COALESCE(description, '') as description, tags, content, metadata, created_at, updated_at
         FROM knowledge_nodes
         ORDER BY created_at DESC
         "#,
@@ -214,7 +210,7 @@ pub async fn get_knowledge(
 ) -> Result<Json<KnowledgeNode>, (StatusCode, String)> {
     let node = sqlx::query_as::<_, KnowledgeNode>(
         r#"
-        SELECT id, topic, title, description, tags, content, metadata, created_at, updated_at
+        SELECT id, topic, title, COALESCE(description, '') as description, tags, content, metadata, created_at, updated_at
         FROM knowledge_nodes
         WHERE id = $1
         "#
@@ -249,11 +245,11 @@ pub async fn get_knowledge_tuples(
 pub async fn update_knowledge(
     State(pool): State<PgPool>,
     Path(id): Path<Uuid>,
-    Json(payload): Json<UpdateKnowledgeRequest>,
+    Json(payload): Json<KnowledgeNode>,
 ) -> Result<Json<KnowledgeNode>, (StatusCode, String)> {
     let current_node = sqlx::query_as::<_, KnowledgeNode>(
         r#"
-        SELECT id, topic, title, description, tags, content, metadata, created_at, updated_at
+        SELECT id, topic, title, COALESCE(description, '') as description, tags, content, metadata, created_at, updated_at
         FROM knowledge_nodes
         WHERE id = $1
         "#
@@ -268,12 +264,16 @@ pub async fn update_knowledge(
         None => return Err((StatusCode::NOT_FOUND, "Knowledge node not found".to_string())),
     };
 
-    let new_topic = payload.topic.unwrap_or(current_node.topic);
-    let new_title = payload.title.or(current_node.title);
-    let new_description = payload.description.or(current_node.description);
-    let new_tags = payload.tags.unwrap_or(current_node.tags);
-    let new_content = payload.content.unwrap_or(current_node.content.clone());
-    let new_metadata = payload.metadata.unwrap_or(current_node.metadata);
+    let new_topic = if payload.topic.is_empty() { current_node.topic } else { payload.topic };
+    let new_title = if payload.title.trim().is_empty() { current_node.title } else { payload.title };
+    let new_description = if payload.description.trim().is_empty() { current_node.description } else { payload.description };
+    let new_tags = if payload.tags.is_empty() { current_node.tags } else { payload.tags };
+    let new_content = if payload.content.is_empty() { current_node.content.clone() } else { payload.content };
+    let new_metadata = if payload.metadata.is_null() || payload.metadata == serde_json::json!({}) {
+        current_node.metadata
+    } else {
+        payload.metadata
+    };
 
     let mut tx = pool.begin().await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Tx Error: {}", e)))?;
 
@@ -282,7 +282,7 @@ pub async fn update_knowledge(
         UPDATE knowledge_nodes
         SET topic = $1, title = $2, description = $3, tags = $4, content = $5, metadata = $6, updated_at = NOW()
         WHERE id = $7
-        RETURNING id, topic, title, description, tags, content, metadata, created_at, updated_at
+        RETURNING id, topic, title, COALESCE(description, '') as description, tags, content, metadata, created_at, updated_at
         "#
     )
     .bind(new_topic)
@@ -331,14 +331,14 @@ pub async fn update_knowledge(
         }
     }
 
-    if let Some(tuples) = payload.tuples {
+    if !payload.tuples.is_empty() {
         sqlx::query("DELETE FROM knowledge_tuples WHERE source_node_id = $1")
             .bind(id)
             .execute(&mut *tx)
             .await
             .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Delete tuples error: {}", e)))?;
 
-        for tuple in tuples {
+        for tuple in payload.tuples {
             let tuple_id = Uuid::new_v4();
             let confidence = tuple.confidence.unwrap_or(1.0);
             sqlx::query(
@@ -349,9 +349,9 @@ pub async fn update_knowledge(
             )
             .bind(tuple_id)
             .bind(id)
-            .bind(tuple.subject)
-            .bind(tuple.predicate)
-            .bind(tuple.object)
+            .bind(tuple.triple.subject)
+            .bind(tuple.triple.predicate)
+            .bind(tuple.triple.object)
             .bind(confidence)
             .execute(&mut *tx)
             .await
@@ -436,9 +436,11 @@ pub async fn traverse_graph(
     let results = rows
         .into_iter()
         .map(|r| GraphTraverseResult {
-            subject: r.get("subject"),
-            predicate: r.get("predicate"),
-            object: r.get("object"),
+            triple: Triple::new(
+                r.get::<String, _>("subject"),
+                r.get::<String, _>("predicate"),
+                r.get::<String, _>("object"),
+            ),
             confidence: r.get("confidence"),
             depth: max_depth,
         })
@@ -451,20 +453,25 @@ pub async fn traverse_graph(
 pub async fn delete_knowledge(
     State(pool): State<PgPool>,
     Path(id): Path<Uuid>,
-) -> Result<StatusCode, (StatusCode, String)> {
+) -> Result<Json<KnowledgeNode>, (StatusCode, String)> {
     tracing::info!("Deleting knowledge node: {}", id);
 
-    let result = sqlx::query("DELETE FROM knowledge_nodes WHERE id = $1")
-        .bind(id)
-        .execute(&pool)
-        .await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("DB Error: {}", e)))?;
+    let deleted_node = sqlx::query_as::<_, KnowledgeNode>(
+        r#"
+        DELETE FROM knowledge_nodes
+        WHERE id = $1
+        RETURNING id, topic, title, COALESCE(description, '') as description, tags, content, metadata, created_at, updated_at
+        "#
+    )
+    .bind(id)
+    .fetch_optional(&pool)
+    .await
+    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("DB Error: {}", e)))?;
 
-    if result.rows_affected() == 0 {
-        return Err((StatusCode::NOT_FOUND, "Knowledge node not found".to_string()));
+    match deleted_node {
+        Some(node) => Ok(Json(node)),
+        None => Err((StatusCode::NOT_FOUND, "Knowledge node not found".to_string())),
     }
-
-    Ok(StatusCode::NO_CONTENT)
 }
 
 #[cfg(test)]
