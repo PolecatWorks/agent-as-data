@@ -23,6 +23,7 @@ pub fn router() -> Router<AppState> {
         .route("/register", post(register_tool))
         .route("/{id}", delete(delete_tool))
         .route("/{id}/sync", post(sync_tool))
+        .route("/{id}/sync-embeddings", post(sync_tool_embeddings))
         .route("/{id}/test", post(test_tool_execution))
 }
 
@@ -272,6 +273,9 @@ pub async fn register_tool(
         final_id
     );
 
+    // Automatically sync tool embeddings with reverse references
+    sync_tool_capabilities_embeddings(&pool, final_id, &payload.server_name, &cached_capabilities).await;
+
     Ok((
         StatusCode::CREATED,
         Json(RegisterToolResponse {
@@ -336,6 +340,9 @@ pub async fn sync_tool(
             .execute(&pool)
             .await
             .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to update tool: {}", e)))?;
+
+            // Automatically sync tool embeddings with reverse references
+            sync_tool_capabilities_embeddings(&pool, id, &tool.server_name, &new_caps).await;
 
             Ok((
                 StatusCode::OK,
@@ -583,7 +590,73 @@ pub async fn delete_tool(
         .await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to delete MCP server: {}", e)))?;
 
+    // Purge embeddings for the deleted tool
+    let _ = crate::webserver::search::purge_entity_embeddings(&pool, id).await;
+
     Ok(StatusCode::NO_CONTENT)
+}
+
+pub async fn sync_tool_capabilities_embeddings(
+    pool: &PgPool,
+    tool_id: Uuid,
+    server_name: &str,
+    cached_capabilities: &serde_json::Value,
+) {
+    let mut fields: Vec<(&str, String)> = Vec::new();
+    if let Some(tools_arr) = cached_capabilities.get("tools").and_then(|t| t.as_array()) {
+        for t in tools_arr {
+            let tool_name = t.get("name").and_then(|n| n.as_str()).unwrap_or("");
+            let tool_desc = t.get("description").and_then(|d| d.as_str()).unwrap_or("");
+            if !tool_name.is_empty() {
+                fields.push(("tool_name", tool_name.to_string()));
+            }
+            if !tool_desc.is_empty() {
+                fields.push(("tool_description", tool_desc.to_string()));
+            }
+        }
+    }
+    let ref_fields: Vec<(&str, &str)> = fields.iter().map(|(k, v)| (*k, v.as_str())).collect();
+    let _ = crate::webserver::search::sync_entity_embeddings(
+        pool,
+        tool_id,
+        "tools",
+        server_name,
+        None,
+        &ref_fields,
+    )
+    .await;
+}
+
+pub async fn sync_tool_embeddings(
+    State(pool): State<PgPool>,
+    Path(id): Path<Uuid>,
+) -> Result<Json<crate::models::SyncEmbeddingsResponse>, (StatusCode, String)> {
+    let tool = sqlx::query_as::<_, Tool>(
+        r#"
+        SELECT id, server_name, transport_type, endpoint_config, cached_capabilities, owner_id, sync_policy, sync_status, last_synced_at, last_sync_error
+        FROM tools
+        WHERE id = $1
+        "#
+    )
+    .bind(id)
+    .fetch_optional(&pool)
+    .await
+    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Fetch Error: {}", e)))?
+    .ok_or_else(|| (StatusCode::NOT_FOUND, "Tool not found".to_string()))?;
+
+    sync_tool_capabilities_embeddings(&pool, id, &tool.server_name, &tool.cached_capabilities).await;
+
+    let count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM entity_embeddings WHERE entity_id = $1")
+        .bind(id)
+        .fetch_one(&pool)
+        .await
+        .unwrap_or(0);
+
+    Ok(Json(crate::models::SyncEmbeddingsResponse {
+        status: "success".to_string(),
+        entity_id: id,
+        embeddings_created: count as usize,
+    }))
 }
 
 #[cfg(test)]

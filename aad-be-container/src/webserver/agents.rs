@@ -108,6 +108,18 @@ pub async fn create_agent(
     response_agent.id = Some(agent_id);
     response_agent.current_version = current_version;
 
+    // 3. Automatically sync embeddings with reverse references
+    let prompt_str = payload.agent_definition.to_string();
+    let _ = crate::webserver::search::sync_entity_embeddings(
+        &pool,
+        agent_id,
+        "agents",
+        &payload.name,
+        Some(payload.description.as_str()),
+        &[("prompt", &prompt_str)],
+    )
+    .await;
+
     tracing::info!("Agent '{}' created successfully (ID: {})", payload.name, agent_id);
 
     Ok((StatusCode::CREATED, Json(response_agent)))
@@ -167,6 +179,19 @@ pub async fn update_agent(
 
         let mut response_agent = payload.clone();
         response_agent.id = Some(id);
+
+        // Automatically sync embeddings with reverse references
+        let prompt_str = payload.agent_definition.to_string();
+        let _ = crate::webserver::search::sync_entity_embeddings(
+            &pool,
+            id,
+            "agents",
+            &payload.name,
+            Some(payload.description.as_str()),
+            &[("prompt", &prompt_str)],
+        )
+        .await;
+
         tracing::info!("Agent '{}' updated successfully (ID: {})", payload.name, id);
         Ok(Json(response_agent))
     } else {
@@ -285,6 +310,9 @@ pub async fn delete_agent(
             .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Soft Delete Error: {}", e)))?;
         agent_res.0.archived_at = Some(chrono::Utc::now());
     }
+
+    // Purge embeddings for the deleted/archived agent
+    let _ = crate::webserver::search::purge_entity_embeddings(&pool, id).await;
 
     Ok(agent_res)
 }
@@ -587,49 +615,20 @@ pub async fn sync_agent_embeddings(
     };
 
     let name: String = agent_row.get("name");
-    let description: String = agent_row.try_get("description").unwrap_or_default();
+    let description: Option<String> = agent_row.try_get("description").ok();
     let agent_definition: serde_json::Value = agent_row.try_get("agent_definition").unwrap_or(serde_json::json!({}));
     let prompt_str = agent_definition.to_string();
 
-    // Clean up old embeddings
-    sqlx::query("DELETE FROM entity_embeddings WHERE entity_id = $1")
-        .bind(id)
-        .execute(&pool)
-        .await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Delete Old Error: {}", e)))?;
-
-    let mut count = 0;
-
-    // Insert Name
-    sqlx::query("INSERT INTO entity_embeddings (entity_id, entity_type, field_name, content) VALUES ($1, 'agents', 'name', $2)")
-        .bind(id)
-        .bind(&name)
-        .execute(&pool)
-        .await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Insert Name Error: {}", e)))?;
-    count += 1;
-
-    // Insert Description
-    if !description.is_empty() {
-        sqlx::query("INSERT INTO entity_embeddings (entity_id, entity_type, field_name, content) VALUES ($1, 'agents', 'description', $2)")
-            .bind(id)
-            .bind(&description)
-            .execute(&pool)
-            .await
-            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Insert Desc Error: {}", e)))?;
-        count += 1;
-    }
-
-    // Insert Prompt
-    if prompt_str != "{}" && prompt_str != "\"\"" && !prompt_str.is_empty() {
-        sqlx::query("INSERT INTO entity_embeddings (entity_id, entity_type, field_name, content) VALUES ($1, 'agents', 'prompt', $2)")
-            .bind(id)
-            .bind(&prompt_str)
-            .execute(&pool)
-            .await
-            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Insert Prompt Error: {}", e)))?;
-        count += 1;
-    }
+    let count = crate::webserver::search::sync_entity_embeddings(
+        &pool,
+        id,
+        "agents",
+        &name,
+        description.as_deref(),
+        &[("prompt", &prompt_str)],
+    )
+    .await
+    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Sync Error: {}", e)))?;
 
     Ok(Json(SyncEmbeddingsResponse {
         status: "success".to_string(),

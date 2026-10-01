@@ -1,6 +1,6 @@
 # Spec 34: Automated Entity Embeddings & Reverse References
 
-## Status: `draft`
+## Status: `complete`
 
 ## Primary PRD References
 - [Semantic Search Discovery PRD](../prds/semantic-search-page-prd.md)
