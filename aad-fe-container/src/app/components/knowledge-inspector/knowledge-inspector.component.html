@@ -35,6 +35,7 @@
       <div class="space-y-2 px-2 pb-2">
         @for (node of getFilteredNodes(); track node.id) {
           <div class="group p-3 rounded-xl border transition-all cursor-pointer bg-white"
+               [attr.data-testid]="'knowledge-item-' + node.id"
                [ngClass]="selectedNode?.id === node.id ? 'border-blue-500 shadow-sm ring-1 ring-blue-500/20' : 'border-slate-200 hover:border-slate-300'"
                (click)="selectNode(node)"
                [matTooltip]="node.title || node.topic"

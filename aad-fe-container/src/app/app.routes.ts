@@ -18,6 +18,7 @@ export const routes: Routes = [
   { path: 'network-visualizer/:type/:id', loadComponent: () => import('./components/network-visualizer/network-visualizer.component').then(m => m.NetworkVisualizerComponent) },
   { path: 'refactoring-lab', loadComponent: () => import('./components/refactoring-lab/refactoring-lab.component').then(m => m.RefactoringLabComponent) },
   { path: 'knowledge-inspector', loadComponent: () => import('./components/knowledge-inspector/knowledge-inspector.component').then(m => m.KnowledgeInspectorComponent) },
+  { path: 'knowledge-inspector/:id', loadComponent: () => import('./components/knowledge-inspector/knowledge-inspector.component').then(m => m.KnowledgeInspectorComponent) },
   { path: 'tools', loadComponent: () => import('./components/tool-manager/tool-manager.component').then(m => m.ToolManagerComponent) },
   { path: 'tools/:id', loadComponent: () => import('./components/tool-manager/tool-manager.component').then(m => m.ToolManagerComponent) },
   { path: 'workbench', loadComponent: () => import('./components/workbench/workbench.component').then(m => m.WorkbenchComponent) },

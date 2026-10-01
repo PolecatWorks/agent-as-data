@@ -202,6 +202,7 @@ flowchart TD
 | **Phase 16** | [33-knowledge-markdown-import-spec.md](./33-knowledge-markdown-import-spec.md) | `complete` | Knowledge Markdown Import via LLM Extraction | [Knowledge PRD](../prds/knowledge-data-system-prd.md) | Phase 16 Spec (Depends on Spec 29) |
 | **Phase 17** | [34-automated-entity-embeddings-and-reverse-references-spec.md](./34-automated-entity-embeddings-and-reverse-references-spec.md) | `complete` | Automated Entity Embeddings Lifecycle via BREAD Handlers, Reverse References, & UI Sync Button Removal | [Semantic Search Discovery PRD](../prds/semantic-search-page-prd.md), [Agent UI PRD](../prds/agent-ui-testing-kit-prd.md) | Phase 17 Spec (Depends on Spec 03, Spec 08, Spec 13) |
 | **Phase 18** | [35-knowledge-markdown-document-retention-spec.md](./35-knowledge-markdown-document-retention-spec.md) | `complete` | Knowledge Markdown Document Retention & Bidirectional Concept Provenance | [Knowledge PRD](../prds/knowledge-data-system-prd.md) | Phase 18 Spec (Depends on Spec 33) |
+| **Phase 19** | [36-knowledge-inspector-router-selection-spec.md](./36-knowledge-inspector-router-selection-spec.md) | `complete` | Knowledge Inspector Router State Synchronization & Deep Linking | [Knowledge PRD](../prds/knowledge-data-system-prd.md), [Agent UI PRD](../prds/agent-ui-testing-kit-prd.md) | Phase 19 Spec (Depends on Spec 29 & Spec 35) |
 
 - [CLI Manifest Tool Spec](./cli-manifest-tool-spec.md)
 
