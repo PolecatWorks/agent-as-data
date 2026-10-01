@@ -98,6 +98,16 @@ class AADRequests:
         resp.raise_for_status()
         return resp.json()
 
+    def import_document(self, payload):
+        resp = requests.post(f"{self.base_url}/api/v1/knowledge/import-document", json=payload, timeout=15)
+        resp.raise_for_status()
+        return resp.json()
+
+    def get_derived_concepts(self, node_id):
+        resp = requests.get(f"{self.base_url}/api/v1/knowledge/{node_id}/derived-concepts", timeout=10)
+        resp.raise_for_status()
+        return resp.json()
+
     def compile_agent(self, payload):
         resp = requests.post(f"{self.base_url}/api/v1/agents/compile", json=payload, timeout=15)
         resp.raise_for_status()

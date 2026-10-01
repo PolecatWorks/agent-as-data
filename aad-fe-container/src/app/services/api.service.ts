@@ -300,8 +300,23 @@ export class ApiService {
     return this.http.post<any[]>(`${this.baseUrl}/knowledge/search`, { query, limit: 10 });
   }
 
-  analyzeMarkdown(markdown: string): Observable<{ proposals: any[] }> {
-    return this.http.post<{ proposals: any[] }>(`${this.baseUrl}/knowledge/analyze-markdown`, { markdown });
+  analyzeMarkdown(markdown: string, suggestedTopic?: string): Observable<{ document?: any; proposals: any[] }> {
+    return this.http.post<{ document?: any; proposals: any[] }>(`${this.baseUrl}/knowledge/analyze-markdown`, {
+      markdown,
+      suggested_topic: suggestedTopic
+    });
+  }
+
+  importDocument(document: any, concepts: any[], createTuples: boolean = true): Observable<any> {
+    return this.http.post(`${this.baseUrl}/knowledge/import-document`, {
+      document,
+      concepts,
+      create_tuples: createTuples
+    });
+  }
+
+  getDerivedConcepts(id: string): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/knowledge/${id}/derived-concepts`);
   }
 
   ingestKnowledge(topic: string, title: string, description: string | undefined, tags: string[], content: string, tuples?: any[]): Observable<any> {

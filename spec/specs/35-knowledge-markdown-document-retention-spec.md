@@ -1,6 +1,6 @@
 # Spec 35: Knowledge Markdown Document Retention & Bidirectional Concept Provenance
 
-## Status: `draft`
+## Status: `complete`
 
 ## Primary PRD References
 - [Knowledge & Data System PRD](../prds/knowledge-data-system-prd.md)

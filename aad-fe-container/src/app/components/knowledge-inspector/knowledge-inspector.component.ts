@@ -90,7 +90,13 @@ export class KnowledgeInspectorComponent implements OnInit {
   showMarkdownImport: boolean = false;
   markdownInput: string = '';
   isAnalyzing: boolean = false;
-  importProposals: KnowledgeNodeProposal[] = [];
+  importDocumentProposal: KnowledgeNodeProposal | null = null;
+  saveSourceDocument: boolean = true;
+  importProposals: (KnowledgeNodeProposal & { selected?: boolean })[] = [];
+
+  // Derived concepts state
+  derivedConcepts: KnowledgeNode[] = [];
+  isLoadingDerivedConcepts: boolean = false;
 
   menuItems = APP_NAV_MENU_ITEMS;
 
@@ -152,6 +158,7 @@ export class KnowledgeInspectorComponent implements OnInit {
     this.isEditing = false;
     this.showDeleteConfirm = false;
     this.showMarkdownImport = false;
+    this.derivedConcepts = [];
 
     // Load tuples
     this.apiService.getKnowledgeTuples(node.id).subscribe(
@@ -171,6 +178,34 @@ export class KnowledgeInspectorComponent implements OnInit {
         this.nodeForm = { ...node, tuples: [] };
       },
     );
+
+    // Load derived concepts if this is a source document
+    if (node.metadata?.is_source_document) {
+      this.isLoadingDerivedConcepts = true;
+      this.apiService.getDerivedConcepts(node.id).subscribe({
+        next: (concepts) => {
+          this.derivedConcepts = concepts;
+          this.isLoadingDerivedConcepts = false;
+        },
+        error: () => {
+          this.derivedConcepts = [];
+          this.isLoadingDerivedConcepts = false;
+        },
+      });
+    }
+  }
+
+  navigateToNodeById(nodeId: string): void {
+    if (!nodeId) return;
+    const target = this.nodes.find((n) => n.id === nodeId);
+    if (target) {
+      this.selectNode(target);
+    } else {
+      this.apiService.getKnowledgeNode(nodeId).subscribe({
+        next: (node) => this.selectNode(node),
+        error: (err) => console.error('Failed to load node', err),
+      });
+    }
   }
 
   createNewNode() {
@@ -178,6 +213,7 @@ export class KnowledgeInspectorComponent implements OnInit {
     this.isEditing = true;
     this.showDeleteConfirm = false;
     this.showMarkdownImport = false;
+    this.derivedConcepts = [];
     this.nodeForm = {
       topic: '',
       title: '',
@@ -194,12 +230,15 @@ export class KnowledgeInspectorComponent implements OnInit {
     this.showDeleteConfirm = false;
     this.showMarkdownImport = true;
     this.markdownInput = '';
+    this.importDocumentProposal = null;
+    this.saveSourceDocument = true;
     this.importProposals = [];
   }
 
   cancelMarkdownImport(): void {
     this.showMarkdownImport = false;
     this.markdownInput = '';
+    this.importDocumentProposal = null;
     this.importProposals = [];
   }
 
@@ -208,36 +247,50 @@ export class KnowledgeInspectorComponent implements OnInit {
 
     this.isAnalyzing = true;
     this.importProposals = [];
+    this.importDocumentProposal = null;
 
     this.apiService.analyzeMarkdown(this.markdownInput).subscribe({
       next: (res) => {
         this.isAnalyzing = false;
-        this.importProposals = res.proposals.map((p: any) => ({ ...p, selected: true }));
+        this.importDocumentProposal = res.document || null;
+        this.importProposals = (res.proposals || []).map((p: any) => ({ ...p, selected: true }));
       },
       error: (err) => {
         this.isAnalyzing = false;
         console.error('Failed to analyze markdown', err);
-      }
+      },
     });
   }
 
   finalizeImport(): void {
-    const selectedProposals = this.importProposals.filter(p => p.selected);
-    if (selectedProposals.length === 0) return;
+    const selectedProposals = this.importProposals.filter((p) => p.selected);
+    if (!this.importDocumentProposal && selectedProposals.length === 0) return;
 
-    const requests = selectedProposals.map(p =>
-      this.apiService.ingestKnowledge(p.topic, p.title, p.description, p.tags, p.content)
-    );
+    if (this.saveSourceDocument && this.importDocumentProposal) {
+      this.apiService.importDocument(this.importDocumentProposal, selectedProposals, true).subscribe({
+        next: () => {
+          this.cancelMarkdownImport();
+          this.loadNodes();
+        },
+        error: (err) => {
+          console.error('Failed to finalize document import', err);
+        },
+      });
+    } else {
+      const requests = selectedProposals.map((p) =>
+        this.apiService.ingestKnowledge(p.topic, p.title, p.description, p.tags, p.content),
+      );
 
-    forkJoin(requests).subscribe({
-      next: () => {
-        this.cancelMarkdownImport();
-        this.loadNodes();
-      },
-      error: (err) => {
-        console.error('Failed to finalize import', err);
-      }
-    });
+      forkJoin(requests).subscribe({
+        next: () => {
+          this.cancelMarkdownImport();
+          this.loadNodes();
+        },
+        error: (err) => {
+          console.error('Failed to finalize import', err);
+        },
+      });
+    }
   }
 
   enableEdit() {
