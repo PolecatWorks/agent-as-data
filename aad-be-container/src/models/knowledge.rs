@@ -118,12 +118,14 @@ pub struct GraphTraverseResult {
     pub depth: usize,
 }
 
-#[derive(Deserialize, Serialize, Debug, Clone)]
+#[derive(Deserialize, Serialize, Debug, Clone, schemars::JsonSchema)]
 pub struct AnalyzeMarkdownRequest {
     pub markdown: String,
+    #[serde(default)]
+    pub suggested_topic: Option<String>,
 }
 
-#[derive(Deserialize, Serialize, Debug, Clone)]
+#[derive(Deserialize, Serialize, Debug, Clone, schemars::JsonSchema, PartialEq)]
 pub struct KnowledgeNodeProposal {
     pub topic: String,
     pub title: String,
@@ -132,9 +134,31 @@ pub struct KnowledgeNodeProposal {
     pub content: String,
 }
 
-#[derive(Deserialize, Serialize, Debug, Clone)]
+#[derive(Deserialize, Serialize, Debug, Clone, schemars::JsonSchema)]
 pub struct AnalyzeMarkdownResponse {
+    #[serde(default)]
+    pub document: Option<KnowledgeNodeProposal>,
     pub proposals: Vec<KnowledgeNodeProposal>,
+}
+
+fn default_true() -> bool {
+    true
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone, schemars::JsonSchema)]
+pub struct ImportDocumentRequest {
+    pub document: KnowledgeNodeProposal,
+    #[serde(default)]
+    pub concepts: Vec<KnowledgeNodeProposal>,
+    #[serde(default = "default_true")]
+    pub create_tuples: bool,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone, schemars::JsonSchema)]
+pub struct ImportDocumentResponse {
+    pub document: KnowledgeNode,
+    pub concepts: Vec<KnowledgeNode>,
+    pub tuples_created: usize,
 }
 
 // Deprecated type aliases kept for backwards compatibility

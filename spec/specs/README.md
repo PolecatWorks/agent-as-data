@@ -201,7 +201,7 @@ flowchart TD
 | **Phase 15** | [32-knowledge-explorer-relational-tuples-spec.md](./32-knowledge-explorer-relational-tuples-spec.md) | `complete` | Knowledge Explorer System Relational Tuples Graph & Inspection UI | [Knowledge PRD](../prds/knowledge-data-system-prd.md), [Agent UI PRD](../prds/agent-ui-testing-kit-prd.md) | Phase 15 Spec (Depends on Spec 02, 03, 08 & Spec 29) |
 | **Phase 16** | [33-knowledge-markdown-import-spec.md](./33-knowledge-markdown-import-spec.md) | `complete` | Knowledge Markdown Import via LLM Extraction | [Knowledge PRD](../prds/knowledge-data-system-prd.md) | Phase 16 Spec (Depends on Spec 29) |
 | **Phase 17** | [34-automated-entity-embeddings-and-reverse-references-spec.md](./34-automated-entity-embeddings-and-reverse-references-spec.md) | `complete` | Automated Entity Embeddings Lifecycle via BREAD Handlers, Reverse References, & UI Sync Button Removal | [Semantic Search Discovery PRD](../prds/semantic-search-page-prd.md), [Agent UI PRD](../prds/agent-ui-testing-kit-prd.md) | Phase 17 Spec (Depends on Spec 03, Spec 08, Spec 13) |
-| **Phase 18** | [35-knowledge-markdown-document-retention-spec.md](./35-knowledge-markdown-document-retention-spec.md) | `draft` | Knowledge Markdown Document Retention & Bidirectional Concept Provenance | [Knowledge PRD](../prds/knowledge-data-system-prd.md) | Phase 18 Spec (Depends on Spec 33) |
+| **Phase 18** | [35-knowledge-markdown-document-retention-spec.md](./35-knowledge-markdown-document-retention-spec.md) | `complete` | Knowledge Markdown Document Retention & Bidirectional Concept Provenance | [Knowledge PRD](../prds/knowledge-data-system-prd.md) | Phase 18 Spec (Depends on Spec 33) |
 
 - [CLI Manifest Tool Spec](./cli-manifest-tool-spec.md)
 

@@ -14,8 +14,9 @@ use rig_core::completion::CompletionModel;
 use crate::{
     models::{
         AnalyzeMarkdownRequest, AnalyzeMarkdownResponse, GraphTraverseRequest,
-        GraphTraverseResult, KnowledgeNode, KnowledgeNodeProposal, KnowledgeSearchRequest,
-        KnowledgeSearchResult, KnowledgeTuple, Triple,
+        GraphTraverseResult, ImportDocumentRequest, ImportDocumentResponse, KnowledgeNode,
+        KnowledgeNodeProposal, KnowledgeSearchRequest, KnowledgeSearchResult, KnowledgeTuple,
+        Triple,
     },
     state::AppState,
 };
@@ -26,8 +27,10 @@ pub fn router() -> Router<AppState> {
         .route("/search", post(search_knowledge))
         .route("/graph/traverse", post(traverse_graph))
         .route("/analyze-markdown", post(analyze_markdown))
+        .route("/import-document", post(import_document))
         .route("/{id}", get(get_knowledge).put(update_knowledge).delete(delete_knowledge))
         .route("/{id}/tuples", get(get_knowledge_tuples))
+        .route("/{id}/derived-concepts", get(get_derived_concepts))
 }
 
 pub fn chunk_text(text: &str, chunk_size: usize) -> Vec<String> {
@@ -36,6 +39,105 @@ pub fn chunk_text(text: &str, chunk_size: usize) -> Vec<String> {
         .chunks(chunk_size)
         .map(|c| c.iter().collect::<String>())
         .collect()
+}
+
+#[derive(serde::Deserialize, serde::Serialize, Debug, Clone)]
+struct LlmRawAnalysisOutput {
+    #[serde(default)]
+    document: Option<LlmDocumentMetadata>,
+    #[serde(default)]
+    proposals: Vec<KnowledgeNodeProposal>,
+}
+
+#[derive(serde::Deserialize, serde::Serialize, Debug, Clone)]
+struct LlmDocumentMetadata {
+    topic: Option<String>,
+    title: Option<String>,
+    description: Option<String>,
+    #[serde(default)]
+    tags: Option<Vec<String>>,
+}
+
+pub fn extract_markdown_metadata(markdown: &str, suggested_topic: Option<&str>) -> KnowledgeNodeProposal {
+    let mut title = String::new();
+    let mut description = String::new();
+
+    for line in markdown.lines() {
+        let trimmed = line.trim();
+        if trimmed.starts_with("# ") && title.is_empty() {
+            title = trimmed.trim_start_matches("# ").trim().to_string();
+        } else if trimmed.starts_with("## ") && title.is_empty() {
+            title = trimmed.trim_start_matches("## ").trim().to_string();
+        } else if !trimmed.is_empty() && !trimmed.starts_with('#') && description.is_empty() {
+            description = trimmed.chars().take(300).collect();
+        }
+    }
+
+    if title.is_empty() {
+        title = "Imported Document".to_string();
+    }
+    if description.is_empty() {
+        description = format!("Imported markdown document: {}", title);
+    }
+
+    let topic = suggested_topic.unwrap_or("document").to_string();
+    let tags = vec!["document".to_string(), "imported".to_string()];
+
+    KnowledgeNodeProposal {
+        topic,
+        title,
+        description,
+        tags,
+        content: markdown.to_string(),
+    }
+}
+
+pub fn parse_llm_markdown_analysis(
+    content: &str,
+    markdown: &str,
+    suggested_topic: Option<&str>,
+) -> Result<AnalyzeMarkdownResponse, String> {
+    let fallback_doc = extract_markdown_metadata(markdown, suggested_topic);
+
+    let parsed_val: serde_json::Value = serde_json::from_str(content)
+        .map_err(|e| format!("Invalid JSON: {}", e))?;
+
+    if parsed_val.is_array() {
+        let proposals: Vec<KnowledgeNodeProposal> = serde_json::from_value(parsed_val)
+            .map_err(|e| format!("Failed to parse proposals array: {}", e))?;
+        return Ok(AnalyzeMarkdownResponse {
+            document: Some(fallback_doc),
+            proposals,
+        });
+    }
+
+    if parsed_val.is_object() {
+        let structured: LlmRawAnalysisOutput = serde_json::from_value(parsed_val)
+            .map_err(|e| format!("Failed to parse structured markdown analysis: {}", e))?;
+
+        let doc = if let Some(meta) = structured.document {
+            KnowledgeNodeProposal {
+                topic: meta.topic.unwrap_or(fallback_doc.topic),
+                title: meta.title.unwrap_or(fallback_doc.title),
+                description: meta.description.unwrap_or(fallback_doc.description),
+                tags: if let Some(t) = meta.tags {
+                    if t.is_empty() { fallback_doc.tags } else { t }
+                } else {
+                    fallback_doc.tags
+                },
+                content: markdown.to_string(),
+            }
+        } else {
+            fallback_doc
+        };
+
+        return Ok(AnalyzeMarkdownResponse {
+            document: Some(doc),
+            proposals: structured.proposals,
+        });
+    }
+
+    Err("JSON was neither an object nor an array".to_string())
 }
 
 pub async fn analyze_markdown(
@@ -56,7 +158,17 @@ pub async fn analyze_markdown(
     let model = ollama_client.completion_model(&state.config.llm.model);
 
     let prompt = format!(
-        "You are an expert knowledge extraction system. Your task is to analyze the following Markdown text and extract distinct, self-contained \"Concepts\" or \"Topics\".\n\nFor each identified concept, generate a JSON object representing a Knowledge Node proposal. The output MUST be a JSON array of these objects.\n\nEach object must have the following keys:\n- \"topic\": A broad category or domain for the concept (string).\n- \"title\": A concise, descriptive title (string).\n- \"description\": A short summary of the concept (string).\n- \"tags\": An array of strings for categorization (array of strings).\n- \"content\": The specific portion of the original Markdown text that explains this concept (string). Retain the original markdown formatting for this field if possible.\n\nMarkdown Text:\n{}\n\nOutput ONLY a valid JSON array of objects. Do not include markdown code blocks like ```json around the output.",
+        "You are an expert knowledge extraction system. Your task is to analyze the following Markdown text and extract:\n\
+         1. Document summary metadata:\n\
+            - \"title\": A concise title for the overall document (e.g. from the primary heading).\n\
+            - \"topic\": A broad category or domain for the entire document.\n\
+            - \"description\": An executive summary of the whole document.\n\
+            - \"tags\": An array of categorization strings.\n\
+         2. Distinct, self-contained \"Concepts\" or \"Topics\" from the text.\n\
+            Each concept proposal must have: \"topic\", \"title\", \"description\", \"tags\", \"content\".\n\n\
+         Return a JSON object with keys \"document\" and \"proposals\".\n\n\
+         Markdown Text:\n{}\n\n\
+         Output ONLY a valid JSON object. Do not include markdown code blocks like ```json around the output.",
         payload.markdown
     );
 
@@ -82,10 +194,8 @@ pub async fn analyze_markdown(
                 content
             };
 
-            match serde_json::from_str::<Vec<KnowledgeNodeProposal>>(content) {
-                Ok(proposals) => {
-                    return Ok(Json(AnalyzeMarkdownResponse { proposals }));
-                }
+            match parse_llm_markdown_analysis(content, &payload.markdown, payload.suggested_topic.as_deref()) {
+                Ok(resp) => return Ok(Json(resp)),
                 Err(e) => {
                     tracing::error!("Failed to parse LLM response as JSON: {}", e);
                     tracing::error!("Raw LLM response: {}", content);
@@ -102,6 +212,178 @@ pub async fn analyze_markdown(
         StatusCode::INTERNAL_SERVER_ERROR,
         "Failed to extract knowledge from LLM response".to_string(),
     ))
+}
+
+pub async fn import_document(
+    State(pool): State<PgPool>,
+    Json(payload): Json<ImportDocumentRequest>,
+) -> Result<(StatusCode, Json<ImportDocumentResponse>), (StatusCode, String)> {
+    if payload.document.title.trim().is_empty() || payload.document.content.trim().is_empty() {
+        return Err((StatusCode::BAD_REQUEST, "Document title and content are required".to_string()));
+    }
+
+    let mut tx = pool.begin().await.map_err(|e| {
+        (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to start transaction: {}", e))
+    })?;
+
+    let doc_id = Uuid::new_v4();
+    let concept_ids: Vec<Uuid> = (0..payload.concepts.len()).map(|_| Uuid::new_v4()).collect();
+
+    let doc_meta = serde_json::json!({
+        "is_source_document": true,
+        "source_format": "markdown",
+        "content_length": payload.document.content.len(),
+        "child_concept_ids": concept_ids,
+    });
+
+    let created_doc = sqlx::query_as::<_, KnowledgeNode>(
+        r#"
+        INSERT INTO knowledge_nodes (id, topic, title, description, tags, content, metadata)
+        VALUES ($1, $2, $3, $4, $5, $6, $7)
+        RETURNING id, topic, title, COALESCE(description, '') as description, tags, content, metadata, created_at, updated_at
+        "#,
+    )
+    .bind(doc_id)
+    .bind(&payload.document.topic)
+    .bind(&payload.document.title)
+    .bind(&payload.document.description)
+    .bind(&payload.document.tags)
+    .bind(&payload.document.content)
+    .bind(doc_meta)
+    .fetch_one(&mut *tx)
+    .await
+    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to insert document: {}", e)))?;
+
+    // Embeddings for parent document
+    let doc_chunks = chunk_text(&payload.document.content, 200);
+    for (idx, chunk) in doc_chunks.iter().enumerate() {
+        let chunk_id = Uuid::new_v4();
+        sqlx::query(
+            r#"
+            INSERT INTO knowledge_embeddings (id, node_id, chunk_index, chunk_text)
+            VALUES ($1, $2, $3, $4)
+            "#,
+        )
+        .bind(chunk_id)
+        .bind(doc_id)
+        .bind(idx as i32)
+        .bind(chunk)
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Chunk Insert Error for Document: {}", e)))?;
+    }
+
+    let mut created_concepts = Vec::new();
+    let mut tuples_created = 0;
+
+    for (i, concept) in payload.concepts.iter().enumerate() {
+        let concept_id = concept_ids[i];
+        let child_meta = serde_json::json!({
+            "is_extracted_concept": true,
+            "source_document_id": doc_id,
+            "source_document_title": payload.document.title,
+        });
+
+        let created_concept = sqlx::query_as::<_, KnowledgeNode>(
+            r#"
+            INSERT INTO knowledge_nodes (id, topic, title, description, tags, content, metadata)
+            VALUES ($1, $2, $3, $4, $5, $6, $7)
+            RETURNING id, topic, title, COALESCE(description, '') as description, tags, content, metadata, created_at, updated_at
+            "#,
+        )
+        .bind(concept_id)
+        .bind(&concept.topic)
+        .bind(&concept.title)
+        .bind(&concept.description)
+        .bind(&concept.tags)
+        .bind(&concept.content)
+        .bind(child_meta)
+        .fetch_one(&mut *tx)
+        .await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to insert concept node: {}", e)))?;
+
+        // Concept embeddings
+        let concept_chunks = chunk_text(&concept.content, 200);
+        for (idx, chunk) in concept_chunks.iter().enumerate() {
+            let chunk_id = Uuid::new_v4();
+            sqlx::query(
+                r#"
+                INSERT INTO knowledge_embeddings (id, node_id, chunk_index, chunk_text)
+                VALUES ($1, $2, $3, $4)
+                "#,
+            )
+            .bind(chunk_id)
+            .bind(concept_id)
+            .bind(idx as i32)
+            .bind(chunk)
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Chunk Insert Error for Concept: {}", e)))?;
+        }
+
+        if payload.create_tuples {
+            let tuple_id = Uuid::new_v4();
+            let tuple_meta = serde_json::json!({
+                "provenance_type": "markdown_extraction",
+                "source_document_id": doc_id,
+                "child_concept_id": concept_id,
+            });
+
+            sqlx::query(
+                r#"
+                INSERT INTO knowledge_tuples (id, source_node_id, subject, predicate, object, confidence, metadata)
+                VALUES ($1, $2, $3, $4, $5, $6, $7)
+                "#,
+            )
+            .bind(tuple_id)
+            .bind(concept_id)
+            .bind(&concept.title)
+            .bind("derived_from")
+            .bind(&payload.document.title)
+            .bind(1.0f64)
+            .bind(tuple_meta)
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Tuple Insert Error: {}", e)))?;
+
+            tuples_created += 1;
+        }
+
+        created_concepts.push(created_concept);
+    }
+
+    tx.commit().await.map_err(|e| {
+        (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to commit transaction: {}", e))
+    })?;
+
+    Ok((
+        StatusCode::CREATED,
+        Json(ImportDocumentResponse {
+            document: created_doc,
+            concepts: created_concepts,
+            tuples_created,
+        }),
+    ))
+}
+
+pub async fn get_derived_concepts(
+    State(pool): State<PgPool>,
+    Path(id): Path<Uuid>,
+) -> Result<Json<Vec<KnowledgeNode>>, (StatusCode, String)> {
+    let concepts = sqlx::query_as::<_, KnowledgeNode>(
+        r#"
+        SELECT id, topic, title, COALESCE(description, '') as description, tags, content, metadata, created_at, updated_at
+        FROM knowledge_nodes
+        WHERE metadata->>'source_document_id' = $1
+        ORDER BY created_at ASC
+        "#,
+    )
+    .bind(id.to_string())
+    .fetch_all(&pool)
+    .await
+    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("DB Error: {}", e)))?;
+
+    Ok(Json(concepts))
 }
 
 pub async fn ingest_knowledge(
@@ -488,6 +770,76 @@ pub mod tests {
     #[test]
     fn test_knowledge_router_construction() {
         let _r: Router<AppState> = router();
+    }
+
+    #[test]
+    fn test_extract_markdown_metadata_with_h1() {
+        let md = "# System Architecture\n\nThis is an executive summary of the system architecture.\n\n## Section 1\nDetails here.";
+        let doc = extract_markdown_metadata(md, Some("engineering"));
+        assert_eq!(doc.title, "System Architecture");
+        assert_eq!(doc.topic, "engineering");
+        assert_eq!(doc.description, "This is an executive summary of the system architecture.");
+        assert_eq!(doc.tags, vec!["document".to_string(), "imported".to_string()]);
+        assert_eq!(doc.content, md);
+    }
+
+    #[test]
+    fn test_extract_markdown_metadata_fallback() {
+        let md = "No headers here at all, just plain text.";
+        let doc = extract_markdown_metadata(md, None);
+        assert_eq!(doc.title, "Imported Document");
+        assert_eq!(doc.topic, "document");
+        assert_eq!(doc.description, "No headers here at all, just plain text.");
+    }
+
+    #[test]
+    fn test_parse_analyze_markdown_llm_json_wrapped() {
+        let raw_json = r#"{
+            "document": {
+                "topic": "architecture",
+                "title": "Platform Blueprint",
+                "description": "Blueprint of the core platform.",
+                "tags": ["blueprint", "platform"]
+            },
+            "proposals": [
+                {
+                    "topic": "storage",
+                    "title": "Dual Store",
+                    "description": "Dual storage approach.",
+                    "tags": ["db"],
+                    "content": "Content here"
+                }
+            ]
+        }"#;
+
+        let res = parse_llm_markdown_analysis(raw_json, "# Platform Blueprint\nBody", None).expect("Should parse");
+        assert!(res.document.is_some());
+        let doc = res.document.unwrap();
+        assert_eq!(doc.title, "Platform Blueprint");
+        assert_eq!(doc.topic, "architecture");
+        assert_eq!(doc.content, "# Platform Blueprint\nBody");
+        assert_eq!(res.proposals.len(), 1);
+        assert_eq!(res.proposals[0].title, "Dual Store");
+    }
+
+    #[test]
+    fn test_parse_analyze_markdown_llm_array_fallback() {
+        let raw_json = r#"[
+            {
+                "topic": "storage",
+                "title": "Dual Store",
+                "description": "Dual storage approach.",
+                "tags": ["db"],
+                "content": "Content here"
+            }
+        ]"#;
+
+        let res = parse_llm_markdown_analysis(raw_json, "# Inferred Blueprint\nBody text.", Some("tech")).expect("Should parse");
+        assert!(res.document.is_some());
+        let doc = res.document.unwrap();
+        assert_eq!(doc.title, "Inferred Blueprint");
+        assert_eq!(doc.topic, "tech");
+        assert_eq!(res.proposals.len(), 1);
     }
 }
 
