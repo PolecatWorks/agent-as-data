@@ -56,7 +56,12 @@ All views across the application must share an identical, standardized top bar (
     3. **Architecture Bridge**: Contextual link to `/detail` (`Explore [Domain] Architecture →`) for engineering specifications.
   - **Reusable Component Architecture**: Implemented as a standalone, reusable Angular component (`<app-concept-guide>`) accepting typed configuration for badge, title, icon, trigger label, analogy, tab mappings, and architecture links to guarantee 100% visual and behavioral parity across all views.
 - **Primary View Action (Left of Menu)**: Contextual creation button styled consistently with a solid fill (`mat-flat-button color="primary"`), e.g., `+ New Trait`, `+ New Skill`, `+ New Agent`, or `+ New Thread`. Clicking this initializes a clean form in-place without triggering full route reloads.
-- **Secondary View Actions**: A secondary action button (`Sync Embeddings`) located on the top bar for both the Agent Registry and Skills Registry views. This action triggers the synchronization of the respective entity's embeddings into the vector database.
+- **Record-Level Action Bar**: Located within the entity inspector/detail editor panel header across all four core entity management workspaces (**Agent Registry**, **Skills Registry**, **Traits Registry**, and **Tool Manager**), containing actions that operate strictly on the selected record:
+  - **Edit Button** (`mat-stroked-button`): Enters form editing mode for the active entity.
+  - **Delete Button** (`mat-stroked-button color="warn"`): Prompts for confirmation and deletes/archives the active entity.
+  - **Promote / Demote Action** (`mat-stroked-button`): Converts Agent to Skill or Skill to Agent (Agent & Skills registries).
+  - **Remote Schema Sync (`Sync Now`)**: Specific to Tool Manager (`/tools`), queries the remote MCP endpoint (`POST /api/v1/agents/tools/{id}/sync`) to refresh cached JSON-RPC tool declarations.
+  - **Automated BREAD Embedding Management (Zero UI Sync Button)**: The platform automatically creates, refreshes, and purges entity vector embeddings directly within backend BREAD operations (Create, Edit, Delete). Because backend writes guarantee strong index consistency, manual "Sync Embeddings" buttons are omitted entirely from all UI navigation and action bars, keeping the workspace clutter-free.
 - **Global Navigation (Hamburger Menu)**: An `appMenu` triggered by a standard hamburger icon (`menu`) providing one-click routing across all top-level workspaces:
   - `verified` -> `/traits` (Trait Contracts)
   - `dns` -> `/tools` (Tools)
