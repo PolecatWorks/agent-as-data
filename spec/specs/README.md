@@ -153,6 +153,8 @@ flowchart TD
     Spec08 --> Spec29
     Spec17 --> Spec30
     Spec29 --> Spec32
+    Spec03 --> Spec34
+    Spec08 --> Spec34
 ```
 
 ## Index of Task Specifications
@@ -194,6 +196,7 @@ flowchart TD
 | **Phase 14** | [31-knowledge-mcp-journey-spec.md](./31-knowledge-mcp-journey-spec.md) | `draft` | Knowledge Base MCP Journey & Autonomous Tool Definitions | [Knowledge Base MCP Journey PRD](../prds/knowledge-mcp-journey-prd.md) | Phase 14 Spec (Depends on Spec 02 & Spec 24) |
 | **Phase 15** | [32-knowledge-explorer-relational-tuples-spec.md](./32-knowledge-explorer-relational-tuples-spec.md) | `complete` | Knowledge Explorer System Relational Tuples Graph & Inspection UI | [Knowledge PRD](../prds/knowledge-data-system-prd.md), [Agent UI PRD](../prds/agent-ui-testing-kit-prd.md) | Phase 15 Spec (Depends on Spec 02, 03, 08 & Spec 29) |
 | **Phase 16** | [33-knowledge-markdown-import-spec.md](./33-knowledge-markdown-import-spec.md) | `complete` | Knowledge Markdown Import via LLM Extraction | [Knowledge PRD](../prds/knowledge-data-system-prd.md) | Phase 16 Spec (Depends on Spec 29) |
+| **Phase 17** | [34-automated-entity-embeddings-and-reverse-references-spec.md](./34-automated-entity-embeddings-and-reverse-references-spec.md) | `draft` | Automated Entity Embeddings Lifecycle via BREAD Handlers, Reverse References, & UI Sync Button Removal | [Semantic Search Discovery PRD](../prds/semantic-search-page-prd.md), [Agent UI PRD](../prds/agent-ui-testing-kit-prd.md) | Phase 17 Spec (Depends on Spec 03, Spec 08, Spec 13) |
 
 - [CLI Manifest Tool Spec](./cli-manifest-tool-spec.md)
 

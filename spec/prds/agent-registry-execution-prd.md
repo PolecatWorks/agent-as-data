@@ -15,6 +15,7 @@ The **Agent Registry & Execution Engine** in **Agent-As-Data (AAD)** treats AI a
   - `execute_groups` (TEXT[]): Array of group names / IDs permitted to run/execute the agent.
 - **RBAC Delegation Context Inheritance**: When Agent A delegates to Agent B, the caller's identity (`caller_identity`) is inherited. Child invocation is rejected (`423 Forbidden`) if caller identity lacks `execute_groups` access to Agent B. Pre-delegation guardrails sanitize secrets/PII before cross-team transfer.
 - **Immutable Revisions**: Any modification increments the agent's version counter and creates an immutable snapshot in `agent_revisions`, ensuring execution determinism.
+- **Automated Entity Embeddings Synchronization & Purge**: Creation (`POST /agents`) and modification (`PUT /agents/:id`) automatically synchronize agent name, description, and persona prompt content to `entity_embeddings`. Deletion or archiving (`DELETE /agents/:id`) automatically purges associated embeddings so that retired agents are omitted from discovery. Record-level manual synchronization remains accessible via the agent detail action bar (`POST /agents/:id/sync-embeddings`).
 
 ### 2. Agent Traits, 3-Element Definition & Trait-Inherited Guardrails
 - **3-Element Agent Trait Specification (`implements_traits`)**: Agents declare adherence to abstract traits (e.g. `CodeReviewer`, `SecurityAuditor`, `Compiler`). Traits are authored independently from data-type schemas via three core elements:
@@ -57,8 +58,11 @@ For Istio-managed Kubernetes environments, AAD implements a **Multi-Tier Pull & 
   - Immediately dispatch HTTP POST `initialize` and `tools/list` to the MCP endpoint upon receiving `POST /{{api_prefix}}/v1/agents/tools/register`.
   - Validate that the target responds with `200 OK` and conformant JSON Schema v7 tool definitions. If unreachable or non-conformant, registration fails immediately with `422 Unprocessable Entity`.
   - Store `cached_capabilities`, `cached_tools_count`, `sync_status = 'synced'`, and `last_synced_at = NOW()` in the `tools` database record.
+  - Synchronize tool server name and capabilities into `entity_embeddings` with explicit reverse references (`origin_id = tools.id`, `origin_type = 'tools'`, `origin_uri = '/tools/{id}'`, `origin_name = tools.server_name`).
 - **Tier 2 — Explicit Manual & CI/CD Webhook Sync (`POST /{{api_prefix}}/v1/agents/tools/{id}/sync`)**:
-  - Expose a dedicated sync endpoint and UI action. When GitOps (FluxCD) or CI/CD deploys an updated image of an MCP server container, the deployment pipeline calls `/sync` to immediately re-index tool schemas without container restarts.
+  - Expose a dedicated schema sync endpoint and UI action. When GitOps (FluxCD) or CI/CD deploys an updated image of an MCP server container, the deployment pipeline calls `/sync` to immediately re-index tool schemas without container restarts.
+  - Retain backend embedding sync (`POST /{{api_prefix}}/v1/agents/tools/{id}/sync-embeddings`) for CLI/testing (no manual UI sync button is required as registration and tool discovery automatically update embeddings).
+  - On tool deletion (`DELETE /{{api_prefix}}/v1/agents/tools/{id}`), automatically cascade purge all associated embeddings from `entity_embeddings`.
 - **Tier 3 — Configurable Synchronization Policy (`sync_policy`)**:
   - Each registered tool record declares its `sync_policy`:
     - `manual` (Default for stable production microservices): Schemas are only refreshed on registration, edit, or explicit `/sync` webhook trigger.

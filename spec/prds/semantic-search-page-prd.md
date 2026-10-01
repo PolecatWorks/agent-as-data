@@ -64,6 +64,58 @@ sequenceDiagram
 - **Exact Match Elevation**: Verbatim substring matches are boosted to top rank with high confidence scores (`98%`), while multi-token matches scale appropriately between `60%` and `96%`.
 - **Entity Deduplication**: Query results utilize `DISTINCT ON (COALESCE(name, entity_id::text))` to ensure that an entity matching across multiple fields (e.g. both name and description) is returned only once with its highest-scoring match.
 
+## Automated Entity Embeddings Lifecycle via BREAD Operations & Reverse References
+
+To guarantee that semantic and natural language discovery always reflects current platform reality without manual operational friction, entity embeddings for all four core entities (**Agents, Skills, Traits, Tools**) are maintained synchronously and automatically within backend BREAD operations:
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant UI as Developer UI (/agents, /skills, /traits, /tools)
+    participant API as Backend REST Handler
+    participant DB as PostgreSQL (agents / skills / trait_contracts / tools)
+    participant VEC as PostgreSQL (entity_embeddings)
+
+    alt Record Created or Updated (POST / PUT)
+        UI->>API: Save Entity (Create / Edit Form)
+        API->>DB: Upsert entity record
+        API->>VEC: Purge prior embeddings for entity_id
+        API->>VEC: Insert fresh embeddings with reverse references (origin_id, origin_type, origin_uri, origin_name)
+        API-->>UI: 200 OK / 201 Created (Vector store strongly consistent)
+    else Record Deleted (DELETE)
+        UI->>API: Delete Entity
+        API->>DB: Delete record or set archived_at = NOW()
+        API->>VEC: Cascade / Purge embeddings WHERE entity_id = id
+        API-->>UI: 200 OK / 204 No Content (No stale vectors remaining)
+    end
+```
+
+### 1. Automated Lifecycle Synchronization across All Entities
+- **Agents (`/agents`)**:
+  - Automatically indexes `name`, `description`, and persona prompt (`agent_definition`) on `create_agent` and `update_agent`.
+  - Purged automatically upon soft-deletion/archival or hard deletion.
+- **Skills (`/skills`)**:
+  - Automatically indexes `name`, `description`, and instructions (`definition`) on `create_skill` and `update_skill`.
+  - Purged automatically upon deletion or migrated when promoted to an Agent.
+- **Traits (`/traits`)**:
+  - Automatically indexes `name`, `description`, `behavioral_invariants`, `evaluation_criteria`, and `capability_requirements` on `create_trait` and `update_trait`.
+  - Purged automatically upon deletion (`DELETE /traits/:id`).
+- **Tools (`/tools`)**:
+  - Automatically indexes `server_name` and individual tool names/descriptions extracted from `cached_capabilities` during `register_tool` or `sync_tool`.
+  - Purged automatically upon deletion (`DELETE /agents/tools/:id`).
+
+### 2. Embeddings Reverse References to Originating Entities
+Every embedding entry in `entity_embeddings` stores explicit reverse references back to its originating entity record:
+- **`origin_id` (UUID)**: The unique identifier of the source entity (`agent_id`, `skill_id`, `trait_id`, or `tool_id`).
+- **`origin_type` (VARCHAR)**: Canonical entity type (`agents`, `skills`, `traits`, `tools`).
+- **`origin_uri` (VARCHAR)**: Canonical frontend routing URI linking directly back to the originating record (e.g. `/agents/{id}`, `/skills/{id}`, `/traits/{id}`, `/tools/{id}`).
+- **`origin_name` (VARCHAR)**: Name of the originating entity at the time of indexing.
+- **Referential Integrity & Cascading Purge**: Embeddings are constrained by foreign keys with `ON DELETE CASCADE` (or transactional lifecycle triggers) to guarantee that removing an originating entity immediately eliminates all of its embeddings without leaving orphaned fragments in the vector index.
+
+### 3. Zero UI Sync Button (Frictionless Automation)
+- Because backend BREAD operations guarantee strong index consistency on write, no manual "Sync Embeddings" buttons exist in either the top navigation bars or per-record action bars.
+- Backend synchronization endpoints (`POST /api/v1/{agents,skills,traits,tools}/{id}/sync-embeddings`) are preserved for headless maintenance, automated testing, and CLI operations, but are not exposed in standard user workflows.
+
 ## Backend Route & API Contract
 
 ### Request: `POST /api/v1/agent-context/search` (and alias `/api/v1/agents/context/search`)
@@ -85,7 +137,11 @@ sequenceDiagram
     "field_name": "description",
     "content": "A detail-oriented accounting agent specialized in financial audits, general ledger reconciliation, and strict adherence to global financial regulations.",
     "score": 0.95,
-    "match_reason": "Matched on entity description"
+    "match_reason": "Matched on entity description",
+    "origin_id": "276e3a21-6c8d-45ad-a438-d0adf3afb6bb",
+    "origin_type": "agents",
+    "origin_uri": "/agents/276e3a21-6c8d-45ad-a438-d0adf3afb6bb",
+    "origin_name": "FinancialAuditorAgent"
   }
 ]
 ```
@@ -93,4 +149,5 @@ sequenceDiagram
 ## Cross References
 - [Agent UI & Testing Kit PRD](./agent-ui-testing-kit-prd.md)
 - [Agent Registry & Execution PRD](./agent-registry-execution-prd.md)
+- [Skills Registry Tools PRD](./skills-registry-tools-prd.md)
 - [Master PRD](./agent-as-data-prd.md)
