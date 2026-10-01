@@ -18,4 +18,8 @@ pub struct SemanticSearchResult {
     pub score: f64,
     pub match_reason: String,
     pub search_type: String,
+    pub origin_id: Option<Uuid>,
+    pub origin_type: Option<String>,
+    pub origin_uri: Option<String>,
+    pub origin_name: Option<String>,
 }

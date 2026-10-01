@@ -113,6 +113,18 @@ pub async fn create_skill(
     response_skill.id = Some(final_id);
     response_skill.current_version = current_version;
 
+    // Automatically sync embeddings with reverse references
+    let prompt_str = &payload.definition;
+    let _ = crate::webserver::search::sync_entity_embeddings(
+        &pool,
+        final_id,
+        "skills",
+        &payload.name,
+        Some(payload.description.as_str()),
+        &[("definition", prompt_str.as_str())],
+    )
+    .await;
+
     tracing::info!("Skill '{}' saved successfully (ID: {})", payload.name, final_id);
 
     Ok((StatusCode::CREATED, Json(response_skill)))
@@ -155,6 +167,19 @@ pub async fn update_skill(
 
     let mut response_skill = payload.clone();
     response_skill.current_version = current_version;
+
+    // Automatically sync embeddings with reverse references
+    let prompt_str = &payload.definition;
+    let _ = crate::webserver::search::sync_entity_embeddings(
+        &pool,
+        id,
+        "skills",
+        &payload.name,
+        Some(payload.description.as_str()),
+        &[("definition", prompt_str.as_str())],
+    )
+    .await;
+
     tracing::info!("Skill '{}' updated successfully (ID: {})", payload.name, id);
     Ok(Json(response_skill))
 }
@@ -169,6 +194,10 @@ pub async fn delete_skill(
         .execute(&pool)
         .await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Delete Skill Error: {}", e)))?;
+
+    // Purge embeddings for the deleted skill
+    let _ = crate::webserver::search::purge_entity_embeddings(&pool, id).await;
+
     Ok(StatusCode::NO_CONTENT)
 }
 
@@ -213,6 +242,18 @@ pub async fn promote_skill(
     .execute(&pool)
     .await
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Promote Error: {}", e)))?;
+
+    // Purge skill embeddings and sync under agents
+    let _ = crate::webserver::search::purge_entity_embeddings(&pool, id).await;
+    let _ = crate::webserver::search::sync_entity_embeddings(
+        &pool,
+        agent_id,
+        "agents",
+        &name,
+        Some(&description),
+        &[("prompt", &description)],
+    )
+    .await;
 
     Ok((
         StatusCode::CREATED,
@@ -295,48 +336,20 @@ pub async fn sync_skill_embeddings(
     };
 
     let name: String = skill_row.get("name");
-    let description: String = skill_row.try_get("description").unwrap_or_default();
-    let definition: String = skill_row.try_get("definition").unwrap_or_default();
+    let description: Option<String> = skill_row.try_get("description").ok();
+    let definition: Option<String> = skill_row.try_get("definition").ok();
+    let prompt_str = definition.unwrap_or_default();
 
-    // Clean up old embeddings
-    sqlx::query("DELETE FROM entity_embeddings WHERE entity_id = $1")
-        .bind(id)
-        .execute(&pool)
-        .await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Delete Old Error: {}", e)))?;
-
-    let mut count = 0;
-
-    // Insert Name
-    sqlx::query("INSERT INTO entity_embeddings (entity_id, entity_type, field_name, content) VALUES ($1, 'skills', 'name', $2)")
-        .bind(id)
-        .bind(&name)
-        .execute(&pool)
-        .await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Insert Name Error: {}", e)))?;
-    count += 1;
-
-    // Insert Description
-    if !description.is_empty() {
-        sqlx::query("INSERT INTO entity_embeddings (entity_id, entity_type, field_name, content) VALUES ($1, 'skills', 'description', $2)")
-            .bind(id)
-            .bind(&description)
-            .execute(&pool)
-            .await
-            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Insert Desc Error: {}", e)))?;
-        count += 1;
-    }
-
-    // Insert Definition (Prompt)
-    if !definition.is_empty() {
-        sqlx::query("INSERT INTO entity_embeddings (entity_id, entity_type, field_name, content) VALUES ($1, 'skills', 'prompt', $2)")
-            .bind(id)
-            .bind(&definition)
-            .execute(&pool)
-            .await
-            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Insert Def Error: {}", e)))?;
-        count += 1;
-    }
+    let count = crate::webserver::search::sync_entity_embeddings(
+        &pool,
+        id,
+        "skills",
+        &name,
+        description.as_deref(),
+        &[("definition", &prompt_str)],
+    )
+    .await
+    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Sync Error: {}", e)))?;
 
     Ok(Json(crate::models::SyncEmbeddingsResponse {
         status: "success".to_string(),
@@ -376,7 +389,7 @@ pub async fn ai_review_skill(
         let id: Uuid = row.try_get("entity_id").unwrap_or_default();
         let name: String = row.try_get("name").unwrap_or_default();
         let desc: String = row.try_get("description").unwrap_or_default();
-        let content: String = row.try_get("content").unwrap_or_default();
+        let _content: String = row.try_get("content").unwrap_or_default();
 
         // Don't include the target review skill in similarities if it matched
         if id == payload.reviewer_skill_id.unwrap_or_default() {

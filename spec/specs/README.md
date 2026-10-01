@@ -140,6 +140,10 @@ flowchart TD
         Spec32["32-knowledge-explorer-relational-tuples-spec.md<br/>(Knowledge Explorer Relational Tuples UI)"]:::complete
     end
 
+    subgraph Phase17 ["Phase 17: Automated Entity Embeddings & Reverse References"]
+        Spec34["34-automated-entity-embeddings-and-reverse-references-spec.md<br/>(Automated Entity Embeddings & Reverse References)"]:::complete
+    end
+
     Spec20 --> Spec21
     Spec21 --> Spec22
     Spec09 --> Spec23
@@ -196,7 +200,7 @@ flowchart TD
 | **Phase 14** | [31-knowledge-mcp-journey-spec.md](./31-knowledge-mcp-journey-spec.md) | `draft` | Knowledge Base MCP Journey & Autonomous Tool Definitions | [Knowledge Base MCP Journey PRD](../prds/knowledge-mcp-journey-prd.md) | Phase 14 Spec (Depends on Spec 02 & Spec 24) |
 | **Phase 15** | [32-knowledge-explorer-relational-tuples-spec.md](./32-knowledge-explorer-relational-tuples-spec.md) | `complete` | Knowledge Explorer System Relational Tuples Graph & Inspection UI | [Knowledge PRD](../prds/knowledge-data-system-prd.md), [Agent UI PRD](../prds/agent-ui-testing-kit-prd.md) | Phase 15 Spec (Depends on Spec 02, 03, 08 & Spec 29) |
 | **Phase 16** | [33-knowledge-markdown-import-spec.md](./33-knowledge-markdown-import-spec.md) | `complete` | Knowledge Markdown Import via LLM Extraction | [Knowledge PRD](../prds/knowledge-data-system-prd.md) | Phase 16 Spec (Depends on Spec 29) |
-| **Phase 17** | [34-automated-entity-embeddings-and-reverse-references-spec.md](./34-automated-entity-embeddings-and-reverse-references-spec.md) | `draft` | Automated Entity Embeddings Lifecycle via BREAD Handlers, Reverse References, & UI Sync Button Removal | [Semantic Search Discovery PRD](../prds/semantic-search-page-prd.md), [Agent UI PRD](../prds/agent-ui-testing-kit-prd.md) | Phase 17 Spec (Depends on Spec 03, Spec 08, Spec 13) |
+| **Phase 17** | [34-automated-entity-embeddings-and-reverse-references-spec.md](./34-automated-entity-embeddings-and-reverse-references-spec.md) | `complete` | Automated Entity Embeddings Lifecycle via BREAD Handlers, Reverse References, & UI Sync Button Removal | [Semantic Search Discovery PRD](../prds/semantic-search-page-prd.md), [Agent UI PRD](../prds/agent-ui-testing-kit-prd.md) | Phase 17 Spec (Depends on Spec 03, Spec 08, Spec 13) |
 
 - [CLI Manifest Tool Spec](./cli-manifest-tool-spec.md)
 

@@ -18,8 +18,8 @@ Journey 17 Preflight Verification
     Should Not Be Empty    ${BE_BASE_URL}
     Should Not Be Empty    ${FE_BASE_URL}
 
-Test Agent Context Search Roundtrip With Exact Keyword
-    [Documentation]    Create an agent with unique description and prompt, sync embeddings, and retrieve via /api/v1/agent-context/search.
+Test Agent Context Search Roundtrip With Exact Keyword And Reverse References
+    [Documentation]    Create an agent with unique description and prompt, verify immediate automated embedding indexing with reverse references, verify manual sync endpoint, verify update, and verify purge on delete.
     ${health}=    Check Health
     Pass Execution If    not ${health}    Backend is offline - skipping live test
 
@@ -29,26 +29,18 @@ Test Agent Context Search Roundtrip With Exact Keyword
     ${description}=   Set Variable    Specialized consultant for ${keyword} architecture and ingress routing.
     ${agent_def}=     Create Dictionary    role=infrastructure-consultant    specialty=${keyword}
 
-    # 1. Create the Agent
+    # 1. Create the Agent (Automated Embedding Sync via BREAD)
     ${payload}=    Create Dictionary    name=${agent_name}    description=${description}    owner_id=${TEST_OWNER_ID}    agent_definition=${agent_def}
     ${agent}=    Create Agent    ${payload}
     ${agent_id}=    Get From Dictionary    ${agent}    id
     Set Global Variable    ${AGENT_ID}    ${agent_id}
     Should Not Be Empty    ${agent_id}
 
-    # 2. Synchronize Embeddings for the Agent
-    ${sync_res}=    Sync Agent Embeddings    ${agent_id}
-    ${status}=    Get From Dictionary    ${sync_res}    status
-    Should Be Equal As Strings    ${status}    success
-    ${count}=    Get From Dictionary    ${sync_res}    embeddings_created
-    Should Be True    ${count} >= 2
-
-    # 3. Search for the unique keyword via Agent Context Search
+    # 2. Search immediately without manual sync - verify automated embedding indexing & reverse references
     ${results}=    Search Agent Context    query=${keyword}    depth=5
     ${result_count}=    Get Length    ${results}
     Should Be True    ${result_count} >= 1
 
-    # 4. Verify the top result matches the agent created
     ${top_result}=    Get From List    ${results}    0
     ${entity_id}=    Get From Dictionary    ${top_result}    entity_id
     Should Be Equal As Strings    ${entity_id}    ${agent_id}
@@ -62,7 +54,52 @@ Test Agent Context Search Roundtrip With Exact Keyword
     Should Not Be Empty    ${match_reason}
     Should Not Contain    ${match_reason}    Semantic similarity
 
+    # Verify Reverse Reference Metadata
+    ${origin_id}=    Get From Dictionary    ${top_result}    origin_id
+    Should Be Equal As Strings    ${origin_id}    ${agent_id}
+    ${origin_type}=    Get From Dictionary    ${top_result}    origin_type
+    Should Be Equal As Strings    ${origin_type}    agents
+    ${origin_uri}=    Get From Dictionary    ${top_result}    origin_uri
+    Should Be Equal As Strings    ${origin_uri}    /agents/${agent_id}
+    ${origin_name}=    Get From Dictionary    ${top_result}    origin_name
+    Should Be Equal As Strings    ${origin_name}    ${agent_name}
+
+    # 3. Synchronize Embeddings manually for the Agent (verify backwards-compatible CLI/test endpoint)
+    ${sync_res}=    Sync Agent Embeddings    ${agent_id}
+    ${status}=    Get From Dictionary    ${sync_res}    status
+    Should Be Equal As Strings    ${status}    success
+    ${count}=    Get From Dictionary    ${sync_res}    embeddings_created
+    Should Be True    ${count} >= 2
+
+    # 4. Update the Agent with a new keyword and verify automatic re-index
+    ${updated_keyword}=    Set Variable    UpdatedMeshRouter_${rand}
+    ${updated_desc}=    Set Variable    Updated controller for ${updated_keyword} protocols.
+    ${update_payload}=    Create Dictionary    name=${agent_name}    description=${updated_desc}    owner_id=${TEST_OWNER_ID}    agent_definition=${agent_def}
+    ${updated_agent}=    Update Agent    ${agent_id}    ${update_payload}
+
+    ${updated_results}=    Search Agent Context    query=${updated_keyword}    depth=5
+    ${updated_count}=    Get Length    ${updated_results}
+    Should Be True    ${updated_count} >= 1
+    ${updated_top}=    Get From List    ${updated_results}    0
+    ${updated_entity_id}=    Get From Dictionary    ${updated_top}    entity_id
+    Should Be Equal As Strings    ${updated_entity_id}    ${agent_id}
+
+    # 5. Delete the Agent and verify purge from search results
+    ${del_res}=    Delete Agent    ${agent_id}    hard=True
+    Set Global Variable    ${AGENT_ID}    ${EMPTY}
+
+    ${purged_results}=    Search Agent Context    query=${updated_keyword}    depth=5
+    ${found_deleted}=    Set Variable    ${FALSE}
+    FOR    ${res}    IN    @{purged_results}
+        ${id_val}=    Get From Dictionary    ${res}    entity_id
+        IF    '${id_val}' == '${agent_id}'
+            ${found_deleted}=    Set Variable    ${TRUE}
+        END
+    END
+    Should Not Be True    ${found_deleted}
+
     [Teardown]    Cleanup Agent    ${AGENT_ID}
+
 
 Test Natural Language Sentence Search With Multi-Word Stems
     [Documentation]    Test that natural language queries with stop words and stems retrieve conceptually matching agents.
@@ -165,6 +202,25 @@ Verify Agent Context Search UI And Navigation
     Wait For Elements State    input[placeholder="Search agents by name..."]    visible    timeout=10s
     ${current_url}=    Get Url
     Should Contain    ${current_url}    /agents/
+    [Teardown]    Close Browser
+
+Verify Sync Embeddings Button Removed From Registries
+    [Documentation]    Verify the "Sync Embeddings" button has been completely removed from Agent and Skill registries.
+    [Setup]    New Browser    chromium    headless=True
+    ${health}=    Check Health
+    Pass Execution If    not ${health}    Backend/Frontend is offline - skipping live test
+
+    # 1. Visit Agent Registry
+    New Page    ${FE_BASE_URL}/agents
+    Wait For Elements State    text=New Agent    visible    timeout=10s
+    ${agent_sync_btn_count}=    Get Element Count    button:has-text("Sync Embeddings")
+    Should Be Equal As Integers    ${agent_sync_btn_count}    0
+
+    # 2. Visit Skills Registry
+    New Page    ${FE_BASE_URL}/skills
+    Wait For Elements State    text=New Skill    visible    timeout=10s
+    ${skill_sync_btn_count}=    Get Element Count    button:has-text("Sync Embeddings")
+    Should Be Equal As Integers    ${skill_sync_btn_count}    0
     [Teardown]    Close Browser
 
 *** Keywords ***
