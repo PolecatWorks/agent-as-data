@@ -11,7 +11,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatCheckboxModule } from '@angular/material/checkbox';
-import { RouterModule } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import {
   ApiService,
   KnowledgeNode,
@@ -124,12 +124,25 @@ export class KnowledgeInspectorComponent implements OnInit {
     },
   ];
 
-  constructor(private apiService: ApiService) {}
+  constructor(
+    private apiService: ApiService,
+    private route: ActivatedRoute,
+    private router: Router,
+  ) {}
 
   ngOnInit(): void {
     this.loadNodes();
     this.runRagSearch();
     this.runTraverse();
+
+    this.route.paramMap.subscribe((params) => {
+      const id = params.get('id');
+      if (id) {
+        this.handleRouteSelection(id);
+      } else if (!this.isEditing && !this.showMarkdownImport) {
+        this.selectedNode = null;
+      }
+    });
   }
 
   toggleSidebar() {
@@ -139,7 +152,27 @@ export class KnowledgeInspectorComponent implements OnInit {
   loadNodes() {
     this.apiService.getKnowledgeNodes().subscribe((nodes) => {
       this.nodes = nodes || [];
+      const routeId = this.route.snapshot.paramMap.get('id');
+      if (routeId && (!this.selectedNode || this.selectedNode.id !== routeId)) {
+        this.handleRouteSelection(routeId);
+      }
     });
+  }
+
+  handleRouteSelection(id: string): void {
+    const existing = this.nodes.find((n) => n.id === id);
+    if (existing) {
+      this.selectNode(existing, false);
+    } else {
+      this.apiService.getKnowledgeNode(id).subscribe({
+        next: (node) => {
+          this.selectNode(node, false);
+        },
+        error: (err) => {
+          console.error('Failed to load knowledge node from route id', err);
+        },
+      });
+    }
   }
 
   getFilteredNodes(): KnowledgeNode[] {
@@ -153,12 +186,16 @@ export class KnowledgeInspectorComponent implements OnInit {
     );
   }
 
-  selectNode(node: KnowledgeNode) {
+  selectNode(node: KnowledgeNode, triggerNavigation: boolean = true) {
     this.selectedNode = node;
     this.isEditing = false;
     this.showDeleteConfirm = false;
     this.showMarkdownImport = false;
     this.derivedConcepts = [];
+
+    if (triggerNavigation) {
+      this.router.navigate(['/knowledge-inspector', node.id]);
+    }
 
     // Load tuples
     this.apiService.getKnowledgeTuples(node.id).subscribe(
@@ -197,15 +234,7 @@ export class KnowledgeInspectorComponent implements OnInit {
 
   navigateToNodeById(nodeId: string): void {
     if (!nodeId) return;
-    const target = this.nodes.find((n) => n.id === nodeId);
-    if (target) {
-      this.selectNode(target);
-    } else {
-      this.apiService.getKnowledgeNode(nodeId).subscribe({
-        next: (node) => this.selectNode(node),
-        error: (err) => console.error('Failed to load node', err),
-      });
-    }
+    this.router.navigate(['/knowledge-inspector', nodeId]);
   }
 
   createNewNode() {
@@ -214,6 +243,7 @@ export class KnowledgeInspectorComponent implements OnInit {
     this.showDeleteConfirm = false;
     this.showMarkdownImport = false;
     this.derivedConcepts = [];
+    this.router.navigate(['/knowledge-inspector']);
     this.nodeForm = {
       topic: '',
       title: '',
@@ -233,6 +263,7 @@ export class KnowledgeInspectorComponent implements OnInit {
     this.importDocumentProposal = null;
     this.saveSourceDocument = true;
     this.importProposals = [];
+    this.router.navigate(['/knowledge-inspector']);
   }
 
   cancelMarkdownImport(): void {
@@ -303,6 +334,8 @@ export class KnowledgeInspectorComponent implements OnInit {
     this.showDeleteConfirm = false;
     if (this.selectedNode) {
       this.selectNode(this.selectedNode);
+    } else {
+      this.router.navigate(['/knowledge-inspector']);
     }
   }
 
@@ -323,6 +356,7 @@ export class KnowledgeInspectorComponent implements OnInit {
           this.selectedNode = null;
           this.isEditing = false;
           this.showDeleteConfirm = false;
+          this.router.navigate(['/knowledge-inspector']);
         });
     }
   }

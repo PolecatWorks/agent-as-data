@@ -252,6 +252,11 @@ flowchart TD
 ### 7. Knowledge & SPO Tuple Inspector (`/knowledge-inspector`)
 - **Hybrid Knowledge Search**: RAG vector query input (`POST /{{api_prefix}}/v1/knowledge/search`) displaying semantic chunk similarity scores alongside Subject-Predicate-Object relation tuples (`knowledge_tuples`).
 - **Graph Traversal Tree**: Interactive multi-hop entity graph visualizer.
+- **Deep-Linking & Router Selection Synchronization (`/knowledge-inspector/:id`)**:
+  - Full URL synchronization parity with other entity registries (`/agents/:id`, `/traits/:id`, `/skills/:id`, `/tools/:id`).
+  - Selecting any knowledge item in the sidebar, derived concepts panel, or source document provenance badge updates the active route to `/knowledge-inspector/:id`.
+  - Deep-linking directly to `/knowledge-inspector/:id` highlights the selected card in the sidebar list and displays its content and tuples in the workspace editor.
+  - Creating a new item or deselecting routes back to `/knowledge-inspector`.
 
 ### 8. Remote Tool Manager (`/tools`)
 - **Tool Ingestion & Server Registration**: Form to register external MCP servers via stateless HTTP POST JSON-RPC 2.0 (`POST /{{api_prefix}}/v1/agents/tools/register`), architected for seamless routing across Istio Ingress Gateways and Kubernetes services. Eagerly validates connectivity and fetches tool capabilities on submission.

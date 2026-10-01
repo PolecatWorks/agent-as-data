@@ -15,6 +15,10 @@ The Knowledge & Data System in **Agent-As-Data (AAD)** serves as a persistent **
 - **AI Markdown Import & Full Document Retention**: Ability to paste or upload raw markdown documents, persist the complete source document as a root `knowledge_node`, analyze it via LLM to extract granular knowledge concepts, and bulk ingest both the source document and derived child concepts with full provenance tracking.
 - **Unified UI/UX Structure**: Following the identical architectural structure of the Agency Registry, the Knowledge UI implements a dual-pane layout: a collapsible left sidebar for browsing knowledge nodes, and a right-side main workspace for creating, reading, and editing knowledge nodes.
 - **BREAD Operations**: Full Browse, Read, Edit, Add, and Delete capabilities over knowledge items directly from the UI, supporting edits to `title`, `description`, `content`, and `tags`.
+- **Router State Synchronization & Deep Linking (`/knowledge-inspector/:id`)**:
+  - Parity with other registries (`/agents/:id`, `/traits/:id`, `/skills/:id`, `/tools/:id`): Selecting an item in the sidebar list, clicking a derived concept link, or clicking a source document badge immediately updates the browser URL to `/knowledge-inspector/:id`.
+  - Direct navigation, deep links, bookmarks, and browser forward/back buttons resolve the `:id` parameter, select the node, highlight the active item in the left sidebar, and hydrate the right-side inspection/editor view.
+  - Creating a new item or deselecting synchronizes the route back to `/knowledge-inspector`.
 
 ### 3. Markdown Document Retention & Concept Provenance
 - **Full Source Document Persistence**: When importing markdown, the complete document text is preserved intact in `knowledge_nodes` as a primary document node:

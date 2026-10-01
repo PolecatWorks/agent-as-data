@@ -2,7 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { provideHttpClient } from '@angular/common/http';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
-import { provideRouter } from '@angular/router';
+import { provideRouter, Router, ActivatedRoute } from '@angular/router';
 import { of } from 'rxjs';
 import { KnowledgeInspectorComponent } from './knowledge-inspector.component';
 import { ApiService } from '../../services/api.service';
@@ -217,5 +217,55 @@ describe('KnowledgeInspectorComponent', () => {
     );
     expect(chip).toBeTruthy();
     expect(chip.textContent).toContain('Master Architecture Doc');
+  });
+
+  it('should navigate to /knowledge-inspector/:id when selectNode is called with default triggerNavigation', () => {
+    const router = TestBed.inject(Router);
+    const navSpy = spyOn(router, 'navigate');
+    const node: any = { id: 'node-test-1', title: 'Test Node', topic: 'test', content: 'abc' };
+
+    component.selectNode(node);
+
+    expect(navSpy).toHaveBeenCalledWith(['/knowledge-inspector', 'node-test-1']);
+  });
+
+  it('should navigate to /knowledge-inspector/:id when navigateToNodeById is called', () => {
+    const router = TestBed.inject(Router);
+    const navSpy = spyOn(router, 'navigate');
+
+    component.navigateToNodeById('node-test-2');
+
+    expect(navSpy).toHaveBeenCalledWith(['/knowledge-inspector', 'node-test-2']);
+  });
+
+  it('should navigate to /knowledge-inspector when createNewNode is called', () => {
+    const router = TestBed.inject(Router);
+    const navSpy = spyOn(router, 'navigate');
+
+    component.createNewNode();
+
+    expect(navSpy).toHaveBeenCalledWith(['/knowledge-inspector']);
+  });
+
+  it('should select node when route param is provided via handleRouteSelection', () => {
+    const node: any = { id: 'node-param-1', title: 'Param Node', topic: 'test', content: 'abc', tags: [] };
+    component.nodes = [node];
+    spyOn(apiService, 'getKnowledgeTuples').and.returnValue(of([]));
+
+    component.handleRouteSelection('node-param-1');
+
+    expect(component.selectedNode).toEqual(node);
+    expect(component.nodeForm.title).toBe('Param Node');
+  });
+
+  it('should apply active selection styling to the matching node item in the sidebar', () => {
+    const node: any = { id: 'node-active-1', title: 'Active Node', topic: 'test', content: 'Active text', tags: [] };
+    component.nodes = [node];
+    component.selectedNode = node;
+    fixture.detectChanges();
+
+    const itemEl = fixture.nativeElement.querySelector('[data-testid="knowledge-item-node-active-1"]');
+    expect(itemEl).toBeTruthy();
+    expect(itemEl.classList).toContain('border-blue-500');
   });
 });
