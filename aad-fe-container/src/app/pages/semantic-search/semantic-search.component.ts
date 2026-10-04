@@ -1,3 +1,4 @@
+import { TopBarComponent } from '../../shared/top-bar/top-bar.component';
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -28,7 +29,7 @@ export interface SemanticSearchResult {
 @Component({
   selector: 'app-semantic-search',
   standalone: true,
-  imports: [
+  imports: [TopBarComponent, 
     CommonModule,
     FormsModule,
     MatFormFieldModule,

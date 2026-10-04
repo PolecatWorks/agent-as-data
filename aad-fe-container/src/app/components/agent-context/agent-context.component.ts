@@ -43,21 +43,21 @@ export class AgentContextComponent {
   readonly conceptGuideMappings: ConceptTabMapping[] = [
     {
       icon: 'search',
-      iconColor: 'text-indigo-600',
+      iconColor: 'text-primary',
       title: '1. Natural Language Task Context',
       description:
         'Searches vector embeddings and keyword indexes to discover relevant agent entities based on high-level task goals.',
     },
     {
       icon: 'tune',
-      iconColor: 'text-emerald-600',
+      iconColor: 'text-accent-success',
       title: '2. AST Trace Depth',
       description:
         'Configures structural subgraph traversal depth across agent skills, traits, and prompt boundaries.',
     },
     {
       icon: 'psychology',
-      iconColor: 'text-blue-600',
+      iconColor: 'text-primary',
       title: '3. Top Semantic Matches',
       description:
         'Ranks and previews matched agent components with entity type indicators and relevance scoring.',

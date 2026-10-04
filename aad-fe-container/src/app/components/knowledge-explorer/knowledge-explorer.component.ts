@@ -88,21 +88,21 @@ export class KnowledgeExplorerComponent implements OnInit, AfterViewInit {
   readonly conceptGuideMappings: ConceptTabMapping[] = [
     {
       icon: 'hub',
-      iconColor: 'text-indigo-600',
+      iconColor: 'text-primary',
       title: '1. Ecosystem Entity Nodes',
       description:
         'Interactive graph nodes representing Agents, Skills, Tools, Traits, and Knowledge documents.',
     },
     {
       icon: 'sync_alt',
-      iconColor: 'text-amber-600',
+      iconColor: 'text-accent-warning',
       title: '2. Relational Tuples (SPO Triples)',
       description:
         'Edges represent directional Subject-Predicate-Object relations (e.g., uses_tool, has_skill, implements).',
     },
     {
       icon: 'account_tree',
-      iconColor: 'text-emerald-600',
+      iconColor: 'text-accent-success',
       title: '3. Multi-Hop Graph Traversal',
       description:
         'Explore multi-step dependencies and navigate directly from selected entities to connected dependencies.',
@@ -789,13 +789,13 @@ export class KnowledgeExplorerComponent implements OnInit, AfterViewInit {
       case 'agent':
         return 'text-purple-600';
       case 'skill':
-        return 'text-amber-600';
+        return 'text-accent-warning';
       case 'tool':
-        return 'text-blue-600';
+        return 'text-primary';
       case 'trait':
-        return 'text-emerald-600';
+        return 'text-accent-success';
       case 'knowledge':
-        return 'text-indigo-600';
+        return 'text-primary';
       default:
         return 'text-slate-600';
     }

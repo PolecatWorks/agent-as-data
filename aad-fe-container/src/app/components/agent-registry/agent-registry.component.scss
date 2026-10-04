@@ -1,0 +1,36 @@
+/* Tailwind colors imported via class strategy. Ensure Tailwind has these colors in config, or we provide fallbacks */
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  font-size: 18px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #0b0e15;
+}
+::-webkit-scrollbar-thumb {
+  background: #1e293b;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #32353c;
+}
+
+/* Custom styling for mat-tabs to match dark theme if standard material theme conflicts */
+::ng-deep .custom-mat-tabs .mdc-tab__text-label {
+  color: #c2c6d6 !important; /* on-surface-variant */
+}
+::ng-deep .custom-mat-tabs .mdc-tab--active .mdc-tab__text-label {
+  color: #adc6ff !important; /* primary */
+}
+::ng-deep .custom-mat-tabs .mdc-tab-indicator__inner--theme-demo {
+  border-color: #adc6ff !important;
+}

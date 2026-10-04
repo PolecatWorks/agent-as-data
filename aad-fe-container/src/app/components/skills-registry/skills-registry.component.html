@@ -1,185 +1,199 @@
-<div class="h-full w-full flex flex-row bg-slate-50 overflow-hidden">
-
-  <!-- Left Sidebar -->
-  <div [ngClass]="isSidebarCollapsed ? 'w-16' : 'w-72'" class="h-full bg-white border-r border-slate-200 shadow-sm flex flex-col transition-all duration-300 z-10 shrink-0 overflow-hidden">
-
-    <!-- Sidebar Header -->
-    <div class="p-4 border-b border-slate-100 flex items-center shrink-0 h-14" [ngClass]="isSidebarCollapsed ? 'justify-center px-0' : 'justify-between'">
-      <div class="flex items-center gap-2 overflow-hidden" *ngIf="!isSidebarCollapsed">
-        <div class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white font-bold shrink-0">
-          <mat-icon class="!w-5 !h-5 !text-xl">build</mat-icon>
-        </div>
-        <span class="font-black text-slate-800 text-lg whitespace-nowrap">AAD</span>
-      </div>
-      <button mat-icon-button (click)="toggleSidebar()" class="text-slate-400 hover:text-slate-700" [title]="isSidebarCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'">
-        <mat-icon>{{ isSidebarCollapsed ? 'chevron_right' : 'chevron_left' }}</mat-icon>
+<div class="bg-slate-950 text-slate-100 antialiased flex flex-col h-screen overflow-hidden  text-sm select-none">
+<!-- ========================================================================= -->
+<!-- 1. TOP NAV BAR (Shared Components JSON Compliant)                         -->
+<!-- ========================================================================= -->
+<app-top-bar>
+<!-- Center/Right Search & Telemetry Badges -->
+<div class="hidden lg:flex items-center gap-3 flex-1 max-w-xl mx-6">
+<div class="relative w-full">
+<span class="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500 text-[18px]">search</span>
+<input class="w-full bg-slate-900-container-lowest border border-slate-700/60 rounded-lg pl-9 pr-12 py-1.5 text-xs  text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-indigo-500 transition-colors" placeholder="Query RDF triples, skill entities, and AST signatures..." type="text"/>
+<span class="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-mono text-slate-500 border border-slate-700 px-1 rounded bg-slate-900-container">⌘K</span>
+</div>
+<!-- Compact Status Indicators -->
+<div class="flex items-center gap-2 shrink-0 text-xs font-medium ">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-slate-900-container border border-slate-700/40 text-slate-100-variant text-[11px]">
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+          48 Active Skills
+        </span>
+<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-slate-900-container border border-slate-700/40 text-slate-100-variant text-[11px]">
+          142 Agents
+        </span>
+<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-slate-900-container border border-slate-700/40 text-slate-100-variant text-[11px]">
+          34 MCP Tools
+        </span>
+</div>
+</div>
+<!-- Trailing Actions Cluster -->
+<div class="flex items-center gap-2.5 shrink-0">
+<button class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded bg-slate-900-container border border-slate-700 text-xs font-medium  text-slate-100 hover:bg-slate-900-container-high transition-colors">
+<span class="material-symbols-outlined text-[16px]">file_download</span>
+        Export TTL / RDF
       </button>
-    </div>
-
-    <!-- Search -->
-    <div class="p-3 border-b border-slate-100 shrink-0" *ngIf="!isSidebarCollapsed">
-      <div class="relative">
-        <mat-icon class="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 !w-4 !h-4 !text-base">search</mat-icon>
-        <input type="text" placeholder="Search skills by name, tag..."
-               class="w-full pl-9 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
-               [(ngModel)]="searchQuery" />
-      </div>
-    </div>
-
-    <!-- Skill List -->
-    <div class="flex-1 min-h-0 overflow-y-auto py-2">
-      <div *ngIf="getFilteredSkills().length === 0 && !isSidebarCollapsed" class="text-center py-8 text-slate-400 text-xs">
-        No matching skills found.
-      </div>
-
-      <div class="space-y-2 px-2 pb-2">
-        @for (skill of getFilteredSkills(); track skill.id) {
-          <div class="group p-3 rounded-xl border transition-all cursor-pointer bg-white"
-               [ngClass]="selectedSkill?.id === skill.id ? 'border-indigo-500 shadow-sm ring-1 ring-indigo-500/20' : 'border-slate-200 hover:border-slate-300'"
-               (click)="selectSkill(skill)"
-               [matTooltip]="skill.name"
-               matTooltipPosition="right"
-               [matTooltipDisabled]="!isSidebarCollapsed">
-
-            <!-- Expanded View -->
-            <div class="flex flex-col w-full" *ngIf="!isSidebarCollapsed">
-              <div class="flex justify-between items-start">
-                <div class="flex items-start gap-3 overflow-hidden flex-1">
-                  <mat-icon class="shrink-0 text-slate-400 mt-0.5"
-                            [ngClass]="{'text-indigo-600': selectedSkill?.id === skill.id}">
-                    extension
-                  </mat-icon>
-                  <div class="flex-1 min-w-0">
-                    <h5 class="text-sm font-bold text-slate-900 m-0 truncate leading-tight mt-0.5">{{ skill.name }}</h5>
-                  </div>
-                </div>
-
-                <div class="flex items-center gap-1 ml-2 shrink-0">
-                  <span class="px-2.5 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded-md">
-                    v{{ skill.current_version }}
-                  </span>
-                </div>
-              </div>
-
-              <!-- Description -->
-              <p *ngIf="skill.description" class="text-xs text-slate-500 m-0 mt-2 line-clamp-2 leading-relaxed">
-                {{ skill.description }}
-              </p>
-
-              <!-- Attached Items Summary -->
-              <div class="flex gap-4 mt-2">
-                <span class="text-[10px] font-bold text-slate-400 flex items-center gap-1">
-                  <mat-icon class="!w-3 !h-3 !text-[12px] leading-3 text-indigo-400">extension</mat-icon>
-                  {{ skill.attached_skills?.length || 0 }} Skills
-                </span>
-                <span class="text-[10px] font-bold text-slate-400 flex items-center gap-1">
-                  <mat-icon class="!w-3 !h-3 !text-[12px] leading-3 text-blue-400">dns</mat-icon>
-                  {{ skill.attached_tools?.length || 0 }} Tools
-                </span>
-              </div>
-
-              <!-- Tags -->
-              <div *ngIf="skill.tags && skill.tags.length > 0" class="flex flex-wrap gap-1 pt-2">
-                @for (tag of skill.tags; track tag) {
-                  <span class="px-2 py-0.5 bg-slate-100 text-slate-600 text-[10px] font-mono rounded">
-                    #{{ tag }}
-                  </span>
-                }
-              </div>
-            </div>
-
-            <!-- Collapsed View -->
-            <div class="flex justify-center items-center" *ngIf="isSidebarCollapsed">
-               <mat-icon class="text-slate-400 transition-colors"
-                        [ngClass]="{'text-indigo-600': selectedSkill?.id === skill.id}">
-                extension
-              </mat-icon>
-            </div>
+<button class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded bg-indigo-600 text-white  text-lg hover:brightness-110 transition-all shadow-sm" (click)="startNewSkill()">
+<span class="material-symbols-outlined text-[18px]">add</span>
+        Register Skill
+      </button>
+<div class="h-4 w-[1px] bg-outline-variant mx-1"></div>
+<!-- Icon Actions -->
+<div class="flex items-center gap-1 text-slate-100-variant">
+<button class="p-1.5 rounded hover:bg-slate-900-container-high hover:text-slate-100 transition-colors" title="Sync Graph">
+<span class="material-symbols-outlined text-[18px]">refresh</span>
+</button>
+<button class="p-1.5 rounded hover:bg-slate-900-container-high hover:text-slate-100 transition-colors relative" title="Notifications">
+<span class="material-symbols-outlined text-[18px]">notifications</span>
+<span class="absolute top-1 right-1 w-1.5 h-1.5 bg-amber-500 rounded-full"></span>
+</button>
+<button class="p-1.5 rounded hover:bg-slate-900-container-high hover:text-slate-100 transition-colors" title="Help &amp; Docs">
+<span class="material-symbols-outlined text-[18px]">help</span>
+</button>
+</div>
+<!-- Developer Avatar -->
+<div class="flex items-center pl-1">
+<div class="w-8 h-8 rounded-full border border-indigo-500-container bg-slate-900-container-high flex items-center justify-center text-xs font-semibold text-indigo-400 overflow-hidden" title="User Developer Avatar">
+<span>OP</span>
+</div>
+</div>
+</div>
+</app-top-bar>
+<!-- ========================================================================= -->
+<!-- MAIN WORKSPACE LAYOUT (SideNav + Content Canvas)                          -->
+<!-- ========================================================================= -->
+<div class="flex flex-1 min-h-0 overflow-hidden">
+<!-- 2. LEFT SIDE NAV BAR (Shared Components Compliant) -->
+<aside class="flex flex-col h-full w-72 shrink-0 py-4 px-3 overflow-y-auto bg-slate-900-container-low dark:bg-slate-900-container-low border-r border-slate-700 dark:border-slate-700">
+<!-- Registry Hub Header -->
+<div class="px-2 pb-3 mb-2 border-b border-slate-700/40 flex items-center justify-between">
+<div>
+<div class="text-lg  font-semibold text-slate-100 flex items-center gap-1.5">
+<span class="material-symbols-outlined text-indigo-400 text-[18px]">hub</span>
+            Skills Registry
           </div>
-        }
-      </div>
-    </div>
-  </div>
-
-  <!-- Right Area (Workspace) -->
-  <div class="flex-1 flex flex-col min-w-0 overflow-hidden bg-slate-50 relative">
-
-    <!-- Top Bar -->
-    <div class="h-14 bg-white border-b border-slate-200 flex items-center justify-between px-4 shrink-0 shadow-sm z-10">
-      <!-- Left side of top bar (Title & View Switcher) -->
-      <div class="flex items-center gap-3">
-        <div class="flex items-center gap-1.5 px-2.5 py-1 -ml-2 rounded-lg hover:bg-slate-100 cursor-pointer transition-colors select-none group"
-             [matMenuTriggerFor]="appMenu"
-             data-testid="workspace-title-switcher"
-             title="Click to switch workspace">
-          <mat-icon class="text-indigo-600">extension</mat-icon>
-          <h1 class="text-lg font-black text-slate-800 m-0">Skills Registry</h1>
-          <mat-icon class="!w-4 !h-4 !text-base text-slate-400 group-hover:text-slate-700 transition-colors">expand_more</mat-icon>
-        </div>
-
-        <!-- Zero-Footprint Reusable Concept Guide -->
-        <app-concept-guide
-          badge="4. Standard Operating Procedures"
-          title="Standard Operating Procedures (Skills)"
-          icon="extension"
-          triggerLabel="What are Skills?"
-          analogyTitle="The SOP Analogy"
-          analogyText="Think of Skills like standard operating procedures (SOPs). They are modular, deterministic instruction packages with typed schemas that any authorized agent can invoke to execute specific tasks."
-          [tabMappings]="conceptGuideMappings"
-          detailLink="/detail"
-          detailLinkLabel="Explore Skill Architecture"
-          testIdPrefix="skills-concept">
-        </app-concept-guide>
-      </div>
-
-      <!-- Right side of top bar (Actions) -->
-      <div class="flex items-center gap-2">
-        <button mat-flat-button color="primary" class="!rounded-lg !px-4 !font-bold h-9 mr-2" (click)="startNewSkill()">
-          <mat-icon class="mr-1">add</mat-icon> New Skill
+<div class="text-xs  text-slate-500 mt-0.5">v1.4.2 Production</div>
+</div>
+<button class="text-indigo-400 hover:text-white-fixed bg-slate-900-container px-2 py-1 rounded text-[11px]  border border-slate-700/60 flex items-center gap-0.5">
+<span class="material-symbols-outlined text-[14px]">add</span>
+          New
         </button>
+</div>
+<!-- Primary Categories -->
+<div class="space-y-1 mb-4">
+<div class="px-2 py-1 text-[11px]  text-slate-500 uppercase tracking-wider">Skill Categories</div>
+<!-- Tab 1: All Skills (Active) -->
+<a class="flex items-center justify-between px-3 py-2 rounded-lg bg-slate-700/50 dark:bg-slate-700/50 text-slate-100 dark:text-slate-100 font-semibold text-xs font-medium  transition-all" href="#all">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[18px] text-indigo-400">hub</span>
+<span>All Skills</span>
+</div>
+<span class="px-2 py-0.5 text-[11px] rounded bg-slate-900 text-indigo-400 font-mono">48</span>
+</a>
+<!-- Tab 2: Code Analysis -->
+<a class="flex items-center justify-between px-3 py-2 rounded-lg text-slate-100-variant dark:text-slate-100-variant font-medium text-xs font-medium  hover:bg-slate-900-container-high transition-colors" href="#code">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[18px]">terminal</span>
+<span>Code Analysis</span>
+</div>
+<span class="px-1.5 py-0.2 text-[11px] text-slate-500 font-mono">14</span>
+</a>
+<!-- Tab 3: Semantic Reasoning -->
+<a class="flex items-center justify-between px-3 py-2 rounded-lg text-slate-100-variant dark:text-slate-100-variant font-medium text-xs font-medium  hover:bg-slate-900-container-high transition-colors" href="#semantic">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[18px]">psychology</span>
+<span>Semantic Reasoning</span>
+</div>
+<span class="px-1.5 py-0.2 text-[11px] text-slate-500 font-mono">11</span>
+</a>
+<!-- Tab 4: Data Extraction -->
+<a class="flex items-center justify-between px-3 py-2 rounded-lg text-slate-100-variant dark:text-slate-100-variant font-medium text-xs font-medium  hover:bg-slate-900-container-high transition-colors" href="#extraction">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[18px]">database</span>
+<span>Data Extraction</span>
+</div>
+<span class="px-1.5 py-0.2 text-[11px] text-slate-500 font-mono">9</span>
+</a>
+<!-- Tab 5: Verification & Safety -->
+<a class="flex items-center justify-between px-3 py-2 rounded-lg text-slate-100-variant dark:text-slate-100-variant font-medium text-xs font-medium  hover:bg-slate-900-container-high transition-colors" href="#safety">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[18px]">shield</span>
+<span>Verification &amp; Safety</span>
+</div>
+<span class="px-1.5 py-0.2 text-[11px] text-slate-500 font-mono">8</span>
+</a>
+<!-- Tab 6: Tool Wrappers -->
+<a class="flex items-center justify-between px-3 py-2 rounded-lg text-slate-100-variant dark:text-slate-100-variant font-medium text-xs font-medium  hover:bg-slate-900-container-high transition-colors" href="#tools">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[18px]">extension</span>
+<span>Tool Wrappers</span>
+</div>
+<span class="px-1.5 py-0.2 text-[11px] text-slate-500 font-mono">6</span>
+</a>
+</div>
+<!-- Status Facets -->
+<div class="space-y-1 mb-4 pt-2 border-t border-slate-700/30">
+<div class="px-2 py-1 text-[11px]  text-slate-500 uppercase tracking-wider">Lifecycle Status</div>
+<div class="flex items-center justify-between px-3 py-1.5 text-xs  text-slate-100-variant hover:text-slate-100">
+<span class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+            Verified / Production
+          </span>
+<span class="text-slate-500 font-mono text-xs">38</span>
+</div>
+<div class="flex items-center justify-between px-3 py-1.5 text-xs  text-slate-100-variant hover:text-slate-100">
+<span class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-amber-500"></span>
+            Experimental / Testing
+          </span>
+<span class="text-slate-500 font-mono text-xs">7</span>
+</div>
+<div class="flex items-center justify-between px-3 py-1.5 text-xs  text-slate-100-variant hover:text-slate-100">
+<span class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-outline"></span>
+            Deprecated
+          </span>
+<span class="text-slate-500 font-mono text-xs">3</span>
+</div>
+</div>
+<!-- Runtime Taxonomy Tags -->
+<div class="mb-4 pt-2 border-t border-slate-700/30">
+<div class="px-2 py-1 text-[11px]  text-slate-500 uppercase tracking-wider mb-1.5">Runtime Taxonomy</div>
+<div class="flex flex-wrap gap-1.5 px-2">
+<span class="px-2 py-0.5 text-[11px] font-mono rounded bg-slate-900-container border border-slate-700/50 text-slate-100-variant hover:border-indigo-500 cursor-pointer">#AST-Grep</span>
+<span class="px-2 py-0.5 text-[11px] font-mono rounded bg-slate-900-container border border-slate-700/50 text-slate-100-variant hover:border-indigo-500 cursor-pointer">#Vector-Sim</span>
+<span class="px-2 py-0.5 text-[11px] font-mono rounded bg-slate-900-container border border-slate-700/50 text-slate-100-variant hover:border-indigo-500 cursor-pointer">#RDF-Triples</span>
+<span class="px-2 py-0.5 text-[11px] font-mono rounded bg-slate-900-container border border-slate-700/50 text-slate-100-variant hover:border-indigo-500 cursor-pointer">#JSON-Schema</span>
+<span class="px-2 py-0.5 text-[11px] font-mono rounded bg-slate-900-container border border-slate-700/50 text-slate-100-variant hover:border-indigo-500 cursor-pointer">#Wasm-Sandbox</span>
+</div>
+</div>
+<!-- Footer Elements (JSON compliant) -->
+<div class="mt-auto pt-3 border-t border-slate-700/40 space-y-1">
+<div class="flex items-center justify-between px-3 py-1.5 text-[11px] text-slate-500 font-mono">
+<span>Cluster SLA:</span>
+<span class="text-emerald-500 font-semibold flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> 99.8%
+          </span>
+</div>
+<a class="flex items-center gap-3 px-3 py-1.5 rounded-lg text-slate-100-variant hover:bg-slate-900-container-high transition-colors text-xs font-medium " href="#settings">
+<span class="material-symbols-outlined text-[18px]">settings</span>
+          Settings
+        </a>
+<a class="flex items-center gap-3 px-3 py-1.5 rounded-lg text-slate-100-variant hover:bg-slate-900-container-high transition-colors text-xs font-medium " href="#docs">
+<span class="material-symbols-outlined text-[18px]">menu_book</span>
+          Documentation
+        </a>
+</div>
+</aside>
+<!-- 3. MAIN CONTENT VIEWPORT (Scrollable) -->
+<main class="flex-1 min-h-0 overflow-y-auto p-6 bg-slate-900 dark:bg-slate-900 flex flex-col gap-6">
 
-        <!-- Hamburger Menu for App Navigation -->
-        <button mat-icon-button [matMenuTriggerFor]="appMenu" aria-label="Menu" class="text-slate-500 hover:text-slate-800">
-          <mat-icon>menu</mat-icon>
-        </button>
-
-        <mat-menu #appMenu="matMenu">
-          @for (item of menuItems; track item.path) {
-            <a mat-menu-item [routerLink]="item.path" routerLinkActive="active-link">
-              <mat-icon>{{ item.icon }}</mat-icon>
-              <span>{{ item.label }}</span>
-            </a>
-          }
-        </mat-menu>
-
-        <div class="w-px h-6 bg-slate-200 mx-1"></div> <!-- Divider -->
-
-        <!-- View Toggle Icon (Mock) -->
-        <button mat-icon-button class="text-slate-500 hover:text-slate-800" title="Change View">
-          <mat-icon>view_column</mat-icon>
-        </button>
-
-        <!-- User Profile (Mock) -->
-        <button mat-icon-button class="ml-1">
-          <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-amber-400 to-orange-500 border-2 border-white shadow-sm flex items-center justify-center text-white font-bold text-sm">
-            BG
-          </div>
-        </button>
-      </div>
-    </div>
-
-    <!-- Workspace Content (Scrollable) -->
-    <div class="flex-1 min-h-0 overflow-y-auto p-6">
-      <!-- Right Content Panel: Skill Editor & Viewer -->
-          @if (selectedSkill || isEditing) {
-        <mat-card class="!rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
-          <div class="p-6 bg-slate-50/80 border-b border-slate-200/60 flex justify-between items-center">
+@if (selectedSkill || isEditing) {
+        <mat-card class="!rounded-2xl border border-slate-700/80 shadow-sm overflow-hidden">
+          <div class="p-6 bg-slate-800 border-b border-slate-700/60 flex justify-between items-center">
             <div>
-              <h2 class="text-base font-black text-slate-800 m-0">
+              <h2 class="text-base font-black text-slate-100 m-0">
                 {{ isEditing ? (selectedSkill ? 'Edit Skill Configuration' : 'Register New Skill') : 'Skill Blueprint' }}
               </h2>
               @if (selectedSkill) {
-                <p class="text-xs text-slate-400 m-0 mt-0.5">ID: {{ selectedSkill.id }}</p>
+                <p class="text-xs text-slate-500 m-0 mt-0.5">ID: {{ selectedSkill.id }}</p>
               }
             </div>
 
@@ -189,7 +203,7 @@
                   <button mat-stroked-button color="warn" class="!rounded-xl !font-semibold" (click)="confirmDeleteState()">
                     <mat-icon>delete</mat-icon> Delete
                   </button>
-                  <button mat-stroked-button class="!rounded-xl !font-semibold !text-indigo-600 !border-indigo-200 hover:!bg-indigo-50" (click)="promoteToAgent()">
+                  <button mat-stroked-button class="!rounded-xl !font-semibold !text-indigo-600 !border-indigo-200 hover:!bg-indigo-900/40" (click)="promoteToAgent()">
                     <mat-icon>bolt</mat-icon> Promote to Agent
                   </button>
                   <button mat-stroked-button class="!rounded-xl !font-semibold" (click)="enableEdit()">
@@ -206,7 +220,7 @@
                 }
               </div>
               @if (selectedSkill || skillForm.current_version) {
-                <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+                <span class="text-[10px] text-slate-500 font-bold uppercase tracking-wider">
                   Version: {{ selectedSkill?.current_version || skillForm.current_version }}
                 </span>
               }
@@ -232,13 +246,13 @@
               <div class="space-y-1 text-left">
                 <label class="text-xs font-bold text-slate-500">Name</label>
                 <input type="text" [(ngModel)]="skillForm.name" [disabled]="!isEditing"
-                       class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 disabled:bg-slate-50 disabled:text-slate-500 transition-all" />
+                       class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 disabled:bg-slate-950 disabled:text-slate-500 transition-all" />
               </div>
 
               <div class="space-y-1 text-left">
                 <label class="text-xs font-bold text-slate-500">Owner</label>
                 <input type="text" [(ngModel)]="skillForm.owner_id" [disabled]="!isEditing"
-                       class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 disabled:bg-slate-50 disabled:text-slate-500 transition-all" />
+                       class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 disabled:bg-slate-950 disabled:text-slate-500 transition-all" />
               </div>
             </div>
 
@@ -248,7 +262,7 @@
                 <label class="text-xs font-bold text-slate-500">Description</label>
                 @if (isEditing) {
                   <div class="flex items-center gap-2">
-                    <select [(ngModel)]="selectedReviewerSkillId" class="px-2 py-1 bg-white border border-slate-200 rounded-lg text-[10px] text-slate-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 max-w-[120px] truncate" [disabled]="isReviewing">
+                    <select [(ngModel)]="selectedReviewerSkillId" class="px-2 py-1 bg-slate-900 border border-slate-700 rounded-lg text-[10px] text-slate-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 max-w-[120px] truncate" [disabled]="isReviewing">
                       <option [value]="'NONE'">None (System Default)</option>
                       @for (s of skills; track s.id) {
                         @if (s.id !== selectedSkill?.id) {
@@ -265,17 +279,17 @@
               </div>
               <textarea rows="3" [(ngModel)]="skillForm.description" [disabled]="!isEditing"
                         placeholder="Describe the skill and its execution parameters..."
-                        class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 disabled:bg-slate-50 disabled:text-slate-500 transition-all"></textarea>
+                        class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 disabled:bg-slate-950 disabled:text-slate-500 transition-all"></textarea>
 
               @if (aiReviewResult) {
-                <div class="mt-3 p-4 bg-indigo-50/50 rounded-xl border border-indigo-100">
-                  <h4 class="text-xs font-bold text-indigo-900 mb-2 flex items-center gap-1">
+                <div class="mt-3 p-4 bg-indigo-900/20 rounded-xl border border-indigo-100">
+                  <h4 class="text-xs font-bold text-indigo-300 mb-2 flex items-center gap-1">
                     <mat-icon class="!w-4 !h-4 !text-[16px] !leading-4">auto_awesome</mat-icon> AI Review Results
                   </h4>
 
                   <div class="mb-3">
                     <strong class="text-[10px] text-slate-500 uppercase tracking-wider block mb-1">Feedback:</strong>
-                    <p class="text-xs text-slate-700 m-0">{{ aiReviewResult.feedback }}</p>
+                    <p class="text-xs text-slate-200 m-0">{{ aiReviewResult.feedback }}</p>
                   </div>
 
                   @if (aiReviewResult.similar_skills && aiReviewResult.similar_skills.length > 0) {
@@ -283,7 +297,7 @@
                       <strong class="text-[10px] text-slate-500 uppercase tracking-wider block mb-1">Similar Skills & Overlaps:</strong>
                       <ul class="m-0 pl-4 space-y-1">
                         @for (sim of aiReviewResult.similar_skills; track sim.id) {
-                          <li class="text-xs text-slate-700">
+                          <li class="text-xs text-slate-200">
                             <strong>{{ sim.name }}</strong>: {{ sim.overlap_reasoning || 'Semantic overlap detected.' }}
                           </li>
                         }
@@ -294,7 +308,7 @@
                   @if (aiReviewResult.suggested_rewrite) {
                     <div class="mb-3">
                       <strong class="text-[10px] text-slate-500 uppercase tracking-wider block mb-1">Suggested Rewrite:</strong>
-                      <div class="p-2 bg-white rounded-lg border border-indigo-100 text-xs text-slate-700 italic">
+                      <div class="p-2 bg-slate-900 rounded-lg border border-indigo-100 text-xs text-slate-200 italic">
                         {{ aiReviewResult.suggested_rewrite }}
                       </div>
                     </div>
@@ -313,13 +327,13 @@
               @if (isEditing) {
                 <div class="flex gap-2 mb-2">
                   <input type="text" placeholder="Add tag..." [(ngModel)]="newTagInput" (keyup.enter)="addTag()"
-                         class="flex-1 px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all" />
+                         class="flex-1 px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all" />
                   <button mat-stroked-button class="!rounded-xl !text-xs" (click)="addTag()">Add</button>
                 </div>
               }
               <div class="flex flex-wrap gap-1.5">
                 @for (tag of skillForm.tags; track tag) {
-                  <mat-chip-row [removable]="isEditing" (removed)="removeTag(tag)" class="!bg-indigo-50 !text-indigo-700 !text-xs !font-bold">
+                  <mat-chip-row [removable]="isEditing" (removed)="removeTag(tag)" class="!bg-indigo-900/40 !text-indigo-400 !text-xs !font-bold">
                     {{ tag }}
                     @if (isEditing) {
                       <button matChipRemove class="!text-indigo-400 hover:!text-indigo-600"><mat-icon>cancel</mat-icon></button>
@@ -335,176 +349,206 @@
               @if (isEditing) {
                 <textarea rows="8" [(ngModel)]="skillForm.definition"
                           placeholder="Define the execution logic, rules, and behavior guidelines for this skill..."
-                          class="font-mono text-sm leading-relaxed text-slate-800 w-full px-3 py-2 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"></textarea>
+                          class="font-mono text-sm leading-relaxed text-slate-100 w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"></textarea>
               } @else {
-                <div class="prose prose-slate max-w-none text-sm leading-relaxed text-slate-800 bg-slate-50/55 border border-slate-200/80 rounded-xl p-4 min-h-[150px] overflow-y-auto"
+                <div class="prose prose-invert max-w-none text-sm leading-relaxed text-slate-100 bg-slate-900/55 border border-slate-700/80 rounded-xl p-4 min-h-[150px] overflow-y-auto"
                      [innerHTML]="getRenderedMarkdown(skillForm.definition || '')">
                 </div>
               }
             </div>
 
-            <!-- Dedicated Tabs -->
-            <mat-tab-group class="border-b border-slate-200 pt-6">
-
-              <!-- Tab 1: Capabilities & Traits -->
-              <mat-tab label="Capabilities & Traits">
-                <div class="pt-6 space-y-6">
-                  <!-- Section 2: Referred Tools -->
-                  <div class="p-5 bg-blue-50/30 rounded-xl border border-blue-200/50 space-y-3">
-                    <h4 class="text-sm font-bold text-blue-950 m-0 flex items-center gap-2">🛠️ Tools & System APIs</h4>
-                    
-                    @if (isEditing) {
-                      <div class="space-y-2">
-                        <input type="text" [(ngModel)]="toolSearchQuery" placeholder="Filter registered tools by name..."
-                               class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all" />
-
-                        <div class="flex flex-wrap gap-2 p-3 bg-white rounded-xl border border-slate-200 max-h-36 overflow-y-auto">
-                          @for (m of getFilteredAvailableTools(); track m.id) {
-                            <button mat-stroked-button color="primary" class="!rounded-lg !text-xs !font-bold" [matTooltip]="getToolDescription(m.id)" (click)="attachTool(m.id)">
-                              + {{ m.server_name }}
-                            </button>
-                          } @empty {
-                            <span class="text-xs text-slate-400 italic">No tools available to attach.</span>
-                          }
-                        </div>
-                      </div>
-                    }
-
-                    <div class="space-y-1.5 pt-2">
-                      <div class="flex flex-wrap gap-2">
-                        @for (mcpId of skillForm.attached_tools || []; track mcpId) {
-                          <span class="px-3 py-1 bg-blue-100 text-blue-900 font-bold text-xs rounded-xl flex items-center gap-2 border border-blue-200" [matTooltip]="getToolDescription(mcpId)">
-                            🛠️ {{ getToolName(mcpId) }}
-                            @if (isEditing) {
-                              <button class="text-blue-700 hover:text-red-600 font-bold border-none bg-transparent cursor-pointer text-sm" (click)="detachTool(mcpId)">×</button>
-                            }
-                          </span>
-                        } @empty {
-                          <span class="text-xs text-slate-400 italic">No tools attached.</span>
-                        }
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- Section 1: Referred Skills -->
-                  <div class="p-5 bg-indigo-50/30 rounded-xl border border-indigo-200/50 space-y-3">
-                    <h4 class="text-sm font-bold text-indigo-950 m-0 flex items-center gap-2">⚡ Skill Packages</h4>
-                    
-                    @if (isEditing) {
-                      <div class="space-y-2">
-                        <input type="text" [(ngModel)]="skillSearchQuery" placeholder="Filter registered skills by name or description..."
-                               class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all" />
-
-                        <div class="flex flex-wrap gap-2 p-3 bg-white rounded-xl border border-slate-200 max-h-36 overflow-y-auto">
-                          @for (s of getFilteredAvailableSkills(); track s.id) {
-                            <button mat-stroked-button color="primary" class="!rounded-lg !text-xs !font-bold" [matTooltip]="s.description || 'No description available'" (click)="attachSkill(s.id!)">
-                              + {{ s.name }}
-                            </button>
-                          } @empty {
-                            <span class="text-xs text-slate-400 italic">No skills available to attach.</span>
-                          }
-                        </div>
-                      </div>
-                    }
-
-                    <div class="space-y-1.5 pt-2">
-                      <div class="flex flex-wrap gap-2">
-                        @for (skillId of skillForm.attached_skills || []; track skillId) {
-                          <span class="px-3 py-1 bg-indigo-100 text-indigo-900 font-bold text-xs rounded-xl flex items-center gap-2 border border-indigo-200" [matTooltip]="getSkillName(skillId)">
-                            ⚡ {{ getSkillName(skillId) }}
-                            @if (isEditing) {
-                              <button class="text-indigo-700 hover:text-red-600 font-bold border-none bg-transparent cursor-pointer text-sm" (click)="detachSkill(skillId)">×</button>
-                            }
-                          </span>
-                        } @empty {
-                          <span class="text-xs text-slate-400 italic">No skills attached.</span>
-                        }
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- Section 3: Implemented Trait Contracts -->
-                  <div class="p-5 bg-emerald-50/50 rounded-xl border border-emerald-200/80 space-y-4">
-                    <div>
-                      <h4 class="text-sm font-bold text-emerald-950 m-0 flex items-center gap-2">🛡️ Trait Contracts</h4>
-                    </div>
-                    
-                    @if (isEditing) {
-                      <div class="space-y-2">
-                        <div class="relative">
-                          <input type="text" [(ngModel)]="traitSearchQuery" placeholder="Search registered traits..."
-                                 class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all" />
-                        </div>
-
-                        <div class="flex flex-wrap gap-2 p-3 bg-white rounded-xl border border-slate-200 max-h-36 overflow-y-auto">
-                          @for (t of filteredTraitsCatalog; track t) {
-                            <button mat-stroked-button color="primary" class="!rounded-lg !text-xs !font-bold" [matTooltip]="getTraitDescription(t)" (click)="attachTraitFromCatalog(t)">
-                              + {{ t }}
-                            </button>
-                          } @empty {
-                            <span class="text-xs text-slate-400 italic">No traits available to attach.</span>
-                          }
-                        </div>
-                      </div>
-                    }
-
-                    <div class="space-y-2 pt-2 border-t border-slate-200">
-                      <div class="flex flex-wrap gap-2">
-                        @for (trait of skillForm.implements_traits || []; track trait) {
-                          <span class="px-3 py-1 bg-emerald-100 text-emerald-800 font-bold text-xs rounded-xl flex items-center gap-2 border border-emerald-200" [matTooltip]="getTraitDescription(trait)">
-                            🛡️ {{ trait }}
-                            @if (isEditing) {
-                              <button class="text-emerald-600 hover:text-red-600 font-bold border-none bg-transparent cursor-pointer text-sm" (click)="removeTrait(trait)">×</button>
-                            }
-                          </span>
-                        } @empty {
-                          <span class="text-xs text-slate-400 italic">No traits attached.</span>
-                        }
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </mat-tab>
-
-              <!-- Tab 2: Schemas & Mappings -->
-              <mat-tab label="Schemas & Mappings">
-                <div class="pt-6 space-y-6">
-                  <!-- JSON Input Schema -->
-                  <div class="space-y-1 text-left">
-                    <label class="text-xs font-bold text-slate-600 block">Deterministic Input Schema (JSON)</label>
-                    <textarea rows="6" [(ngModel)]="inputSchemaStr" [disabled]="!isEditing"
-                              class="w-full font-mono px-3 py-2 bg-slate-900 text-emerald-400 border border-slate-800 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 disabled:opacity-90 disabled:bg-slate-950 transition-all"></textarea>
-                  </div>
-
-                  <!-- JSON Output Schema -->
-                  <div class="space-y-1 text-left">
-                    <label class="text-xs font-bold text-slate-600 block">Deterministic Output Schema (JSON)</label>
-                    <textarea rows="6" [(ngModel)]="outputSchemaStr" [disabled]="!isEditing"
-                              class="w-full font-mono px-3 py-2 bg-slate-900 text-emerald-400 border border-slate-800 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 disabled:opacity-90 disabled:bg-slate-950 transition-all"></textarea>
-                  </div>
-
-                  <!-- JSON Implementation / Mappings -->
-                  <div class="space-y-1 text-left">
-                    <label class="text-xs font-bold text-slate-600 block">Implementation Configuration / Mappings (JSON)</label>
-                    <textarea rows="6" [(ngModel)]="implementationStr" [disabled]="!isEditing"
-                              class="w-full font-mono px-3 py-2 bg-slate-900 text-indigo-300 border border-slate-800 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 disabled:opacity-90 disabled:bg-slate-950 transition-all"></textarea>
-                  </div>
-                </div>
-              </mat-tab>
-
-            </mat-tab-group>
-
-          </mat-card-content>
-        </mat-card>
-      } @else {
-        <div class="flex flex-col items-center justify-center py-24 bg-white rounded-2xl border border-slate-200 shadow-sm text-slate-400">
-          <mat-icon class="!w-16 !h-16 !text-6xl text-slate-200 mb-4">extension_off</mat-icon>
-          <h3 class="text-sm font-bold text-slate-700 m-0">No Skill Selected</h3>
-          <p class="text-xs text-slate-400 max-w-xs text-center mt-1">
-            Choose a skill from the list, or register a new one to begin editing its blueprint configuration.
-          </p>
-        </div>
-      }
-    </div>
-  </div>
+      </mat-card-content>
+    </mat-card>
+  } @else {
+<!-- Viewport Header Section -->
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-700/40">
+<div>
+<div class="flex items-center gap-2.5">
+<h1 class="text-2xl  font-bold text-slate-100 tracking-tight">Skills Registry</h1>
+<span class="px-2 py-0.5 rounded text-[11px] font-mono bg-slate-700/50 text-slate-200 border border-slate-700">v2.4.0-verified</span>
+<span class="inline-flex items-center gap-1 text-[11px]  text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Live Sync
+            </span>
 </div>
+<p class="text-sm  text-slate-100-variant mt-1 max-w-3xl">
+            Declarative atomic capabilities and deterministic evaluation schemas mapped to agent runtimes and RDF knowledge graphs.
+          </p>
+</div>
+<div class="flex items-center gap-2.5 shrink-0">
+<button class="inline-flex items-center gap-1.5 px-3 py-2 rounded bg-slate-900-container border border-slate-700 text-xs font-medium  text-slate-100 hover:bg-slate-900-container-high transition-colors">
+<span class="material-symbols-outlined text-[18px]">schema</span>
+            Export Schema
+          </button>
+<button class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded bg-indigo-600 text-white  text-lg hover:brightness-110 transition-all shadow-sm" (click)="startNewSkill()">
+<span class="material-symbols-outlined text-[18px]">add</span>
+            Register Skill
+          </button>
+</div>
+</div>
+<!-- KPI Metrics Strip (4 Cards) -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+<!-- KPI 1 -->
+<div class="p-4 rounded-lg bg-slate-900-container-low border border-slate-700/50 hover:border-slate-700 transition-colors">
+<div class="flex items-center justify-between text-slate-500 text-xs font-medium ">
+<span>Active Skills</span>
+<span class="material-symbols-outlined text-indigo-400 text-[18px]">hub</span>
+</div>
+<div class="mt-2 flex items-baseline gap-2">
+<span class="text-2xl font-bold font-mono text-slate-100">48</span>
+<span class="text-[11px] text-emerald-500 font-mono">+4 this week</span>
+</div>
+<div class="text-[11px] text-slate-100-variant  mt-1">Distributed across 18 namespaces</div>
+</div>
+<!-- KPI 2 -->
+<div class="p-4 rounded-lg bg-slate-900-container-low border border-slate-700/50 hover:border-slate-700 transition-colors">
+<div class="flex items-center justify-between text-slate-500 text-xs font-medium ">
+<span>Bound Agents</span>
+<span class="material-symbols-outlined text-indigo-400 text-[18px]">smart_toy</span>
+</div>
+<div class="mt-2 flex items-baseline gap-2">
+<span class="text-2xl font-bold font-mono text-slate-100">142</span>
+<span class="text-[11px] text-emerald-500 font-mono">100% Synced</span>
+</div>
+<div class="text-[11px] text-slate-100-variant  mt-1">Autonomous cluster swarms</div>
+</div>
+<!-- KPI 3 -->
+<div class="p-4 rounded-lg bg-slate-900-container-low border border-slate-700/50 hover:border-slate-700 transition-colors">
+<div class="flex items-center justify-between text-slate-500 text-xs font-medium ">
+<span>Benchmark Pass Rate</span>
+<span class="material-symbols-outlined text-emerald-500 text-[18px]">verified</span>
+</div>
+<div class="mt-2 flex items-baseline gap-2">
+<span class="text-2xl font-bold font-mono text-emerald-500">99.4%</span>
+<span class="text-[11px] text-slate-500 font-mono">0.02% drift</span>
+</div>
+<div class="text-[11px] text-slate-100-variant  mt-1">Deterministic SLA validation</div>
+</div>
+<!-- KPI 4 -->
+<div class="p-4 rounded-lg bg-slate-900-container-low border border-slate-700/50 hover:border-slate-700 transition-colors">
+<div class="flex items-center justify-between text-slate-500 text-xs font-medium ">
+<span>24h Invocations</span>
+<span class="material-symbols-outlined text-orange-400 text-[18px]">bolt</span>
+</div>
+<div class="mt-2 flex items-baseline gap-2">
+<span class="text-2xl font-bold font-mono text-slate-100">3.8M</span>
+<span class="text-[11px] text-indigo-400 font-mono">38ms avg</span>
+</div>
+<div class="text-[11px] text-slate-100-variant  mt-1">Zero dropped RPC dispatches</div>
+</div>
+</div>
+<!-- Filter, Search, and Display Control Bar -->
+<div class="flex flex-col sm:flex-row items-center justify-between gap-3 p-2 bg-slate-900-container-low rounded-lg border border-slate-700/50">
+<div class="relative w-full sm:w-96">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-[18px]">search</span>
+<input class="w-full bg-slate-900-container-lowest border border-slate-700/40 rounded pl-9 pr-3 py-1.5 text-xs  text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-indigo-500" placeholder="Filter by skill name, capability schema, or input/output type..." type="text" [(ngModel)]="searchQuery"/>
+</div>
+<div class="flex items-center gap-2.5 w-full sm:w-auto justify-end">
+<select class="bg-slate-900-container border border-slate-700/60 rounded px-2.5 py-1.5 text-xs font-medium  text-slate-100 focus:outline-none">
+<option>Sort by: Most Used</option>
+<option>Sort by: Recently Updated</option>
+<option>Sort by: SLA Benchmark Score</option>
+<option>Sort by: Latency (Fastest)</option>
+</select>
+<!-- Grid / Table View Toggle -->
+<div class="flex items-center bg-slate-900-container-lowest p-0.5 rounded border border-slate-700/60">
+<button class="p-1 rounded bg-slate-700/50 text-slate-100" title="Grid View">
+<span class="material-symbols-outlined text-[16px]">grid_view</span>
+</button>
+<button class="p-1 rounded text-slate-500 hover:text-slate-100" title="Table View">
+<span class="material-symbols-outlined text-[16px]">table_rows</span>
+</button>
+</div>
+</div>
+</div>
+<!-- 4. SKILLS CARDS GRID (3-Column Layout with 6 Rich Cards) -->
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+
+@for (skill of getFilteredSkills(); track skill.id) {
+<div class="rounded-lg bg-slate-800/50 border border-slate-700/60 hover:border-indigo-500/50 transition-all p-4 flex flex-col justify-between group cursor-pointer" (click)="selectSkill(skill)">
+<div>
+<div class="flex items-start justify-between gap-2">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded bg-slate-800 flex items-center justify-center border border-slate-700 text-indigo-400 group-hover:border-indigo-400 transition-colors">
+<span class="material-symbols-outlined text-[22px]">extension</span>
+</div>
+<div>
+<h3 class=" text-lg text-slate-100 font-semibold group-hover:text-indigo-400 transition-colors leading-snug">{{ skill.name }}</h3>
+<div class="flex items-center gap-2 mt-0.5">
+<span class="font-mono text-[11px] text-slate-500">{{ skill.id }}</span>
+<span class="px-1.5 py-0.2 text-[10px] font-mono bg-slate-800 border border-slate-700 rounded text-slate-400">v{{ skill.current_version }}</span>
+</div>
+</div>
+</div>
+</div>
+<p class="text-xs text-slate-400 mt-3 line-clamp-2">
+  {{ skill.description || 'No description provided.' }}
+</p>
+<div class="flex flex-wrap gap-1.5 mt-3">
+<span class="px-2 py-0.5 rounded bg-slate-800 text-xs text-slate-400 font-mono text-[11px] border border-slate-700/40">{{ skill.attached_skills?.length || 0 }} Bound Skills</span>
+<span class="px-2 py-0.5 rounded bg-slate-800 text-xs text-slate-400 font-mono text-[11px] border border-slate-700/40">{{ skill.attached_tools?.length || 0 }} MCP Tools</span>
+</div>
+</div>
+<div class="mt-4 pt-3 border-t border-slate-700/40">
+<div class="flex items-center justify-between">
+<a class="text-xs font-medium text-indigo-400 hover:underline flex items-center gap-1" (click)="$event.stopPropagation(); selectSkill(skill)">
+  View Details
+  <span class="material-symbols-outlined text-[14px]">arrow_forward</span>
+</a>
+</div>
+</div>
+</div>
+}
+@empty {
+  <div class="col-span-1 md:col-span-2 xl:col-span-3 text-center py-12 text-slate-500">
+    No skills match your search.
+  </div>
+}
+
+</div>
+<!-- 5. BOTTOM LIVE TELEMETRY / STREAM TICKER -->
+<div class="rounded-lg bg-slate-900-container-lowest border border-slate-700/60 p-3 font-mono text-xs mt-auto">
+<div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-700/30">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+<span class="text-slate-100 font-semibold">Live Skill Execution Stream:</span>
+<span class="text-emerald-500 font-mono">[LISTENING / READY]</span>
+</div>
+<div class="flex items-center gap-3 text-slate-500 text-[11px]">
+<span>Filter: RPC+SPO</span>
+<span>Channel: #agent-runtime-main</span>
+<button class="hover:text-slate-100 flex items-center gap-0.5">
+<span class="material-symbols-outlined text-[14px]">pause</span> Pause
+            </button>
+</div>
+</div>
+<div class="space-y-1.5 text-slate-100-variant font-mono text-[11px]">
+<div class="flex items-center gap-3 hover:bg-slate-900-container-low px-2 py-0.5 rounded transition-colors">
+<span class="text-slate-500">18:42:09.112</span>
+<span class="text-indigo-400 font-medium">DISPATCH</span>
+<span class="text-slate-100">agent:lead-orchestrator-9</span>
+<span class="text-slate-500">-&gt;</span>
+<span class="text-amber-500">skill:ast-vuln-scan</span>
+<span class="text-slate-500 truncate">args: &#123; target: "auth_middleware.rs", depth: 3 &#125;</span>
+<span class="ml-auto text-emerald-500">OK [34ms]</span>
+</div>
+<div class="flex items-center gap-3 hover:bg-slate-900-container-low px-2 py-0.5 rounded transition-colors">
+<span class="text-slate-500">18:42:08.984</span>
+<span class="text-secondary font-medium">ASSERT_SPO</span>
+<span class="text-slate-100">skill:rdf-triplet-gen</span>
+<span class="text-slate-500">-&gt;</span>
+<span class="text-orange-400">graph:knowledge-core</span>
+<span class="text-slate-500 truncate">&lt;agent:coder-3&gt; &lt;dependsOn&gt; &lt;spec:mcp-v2&gt;</span>
+<span class="ml-auto text-emerald-500">COMMITTED</span>
+</div>
+<div class="flex items-center gap-3 hover:bg-slate-900-container-low px-2 py-0.5 rounded transition-colors">
+<span class="text-slate-500">18:42:08.420</span>
+<span class="text-indigo-400 font-medium">EVAL_SLA</span>
+<span class="text-slate-100">skill:auth-scope-guard</span>
+<span class="text-slate-500">-&gt;</span>
+<span class="text-slate-500">Deterministic verification bench passed across 12 swarms (100% SLA)</span>
+<span class="ml-auto text-emerald-500">PASS [18ms]</span>
+</div>
+</div>
+</div>
+
+}

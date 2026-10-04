@@ -1,155 +1,550 @@
-<div class="h-full w-full flex flex-col bg-slate-50 overflow-hidden">
-  <!-- Top Bar (Standard Global Top Bar - Clean & Non-Redundant) -->
-  <div class="h-14 bg-white border-b border-slate-200 flex items-center justify-between px-6 shrink-0 shadow-sm z-10">
-    <!-- Left side of top bar (Title & View Switcher) -->
-    <div class="flex items-center gap-1.5 px-2.5 py-1 -ml-2 rounded-lg hover:bg-slate-100 cursor-pointer transition-colors select-none group"
-         [matMenuTriggerFor]="appMenu"
-         data-testid="workspace-title-switcher"
-         title="Click to switch workspace">
-      <div class="p-1.5 bg-indigo-50 text-indigo-600 rounded-lg flex items-center justify-center">
-        <mat-icon class="!w-5 !h-5 !text-lg">home</mat-icon>
-      </div>
-      <h1 class="text-base font-black text-slate-800 m-0 tracking-tight">Agent-As-Data Studio</h1>
-      <mat-icon class="!w-4 !h-4 !text-base text-slate-400 group-hover:text-slate-700 transition-colors">expand_more</mat-icon>
-    </div>
+<div class="bg-background text-on-surface font-body-md text-body-md h-screen w-screen overflow-hidden flex flex-col antialiased selection:bg-primary selection:text-on-primary dark">
+<app-top-bar>
+<!-- Right Controls & Workspace Switcher -->
+<div class="flex items-center gap-3">
 
-    <!-- Right side of top bar (Menu + Profile) -->
-    <div class="flex items-center gap-2">
-      <!-- Hamburger Menu for App Navigation -->
-      <button mat-icon-button [matMenuTriggerFor]="appMenu" aria-label="Menu" class="text-slate-500 hover:text-slate-800">
-        <mat-icon>menu</mat-icon>
-      </button>
+  <!-- Old Workspace Switcher adapted for Right Side -->
+  <div class="flex items-center gap-2 cursor-pointer group mr-4"
+       [matMenuTriggerFor]="appMenu"
+       data-testid="workspace-title-switcher"
+       title="Click to switch workspace">
+    <span class="material-symbols-outlined text-primary" data-icon="hub">hub</span>
+    <span class="font-headline-sm text-headline-sm font-bold text-primary tracking-tight">AgentHub</span>
+    <span class="px-2 py-0.5 rounded text-primary font-code text-code bg-surface-container-high border border-border-subtle ml-1">OS-Studio</span>
+    <mat-icon class="!w-4 !h-4 !text-base text-slate-400 group-hover:text-slate-700 transition-colors">expand_more</mat-icon>
+  </div>
+  <mat-menu #appMenu="matMenu">
+    @for (item of menuItems; track item.path) {
+      <a mat-menu-item [routerLink]="item.path">
+        <mat-icon>{{ item.icon }}</mat-icon>
+        <span>{{ item.label }}</span>
+      </a>
+    }
+  </mat-menu>
 
-      <mat-menu #appMenu="matMenu">
-        @for (item of menuItems; track item.path) {
-          <a mat-menu-item [routerLink]="item.path">
-            <mat-icon>{{ item.icon }}</mat-icon>
-            <span>{{ item.label }}</span>
-          </a>
-        }
-      </mat-menu>
-
-      <div class="w-px h-6 bg-slate-200 mx-1"></div>
-
-      <!-- User Profile Avatar -->
-      <button mat-icon-button class="ml-1">
-        <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-amber-400 to-orange-500 border-2 border-white shadow-sm flex items-center justify-center text-white font-bold text-sm">
-          BG
-        </div>
-      </button>
-    </div>
+  <!-- Status Chip -->
+  <div class="hidden xl:flex items-center gap-2 px-2.5 py-1 rounded-full bg-surface-container border border-border-subtle">
+    <span class="w-2 h-2 rounded-full bg-accent-success animate-pulse"></span>
+    <span class="font-code text-code text-on-surface-variant">Active Ontology: <strong class="text-on-surface font-semibold">v3.2.1</strong> • All Nodes Synced</span>
+  </div>
+  
+  <!-- Docs Button -->
+  <a class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border-subtle bg-surface-container-low hover:bg-surface-container text-on-surface font-label-md text-label-md transition-colors duration-150" href="#">
+    <span class="material-symbols-outlined text-[16px]">menu_book</span>
+    Docs
+  </a>
+  
+  <!-- Trailing Icon Actions -->
+  <div class="flex items-center gap-1 text-on-surface-variant">
+    <button class="p-2 rounded-lg hover:bg-surface-container hover:text-on-surface transition-colors duration-150 relative" title="Notifications">
+      <span class="material-symbols-outlined text-[20px]">notifications</span>
+      <span class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-primary ring-2 ring-surface"></span>
+    </button>
+    <button class="p-2 rounded-lg hover:bg-surface-container hover:text-on-surface transition-colors duration-150" title="Terminal Logs">
+      <span class="material-symbols-outlined text-[20px]">terminal</span>
+    </button>
+    <button class="p-2 rounded-lg hover:bg-surface-container hover:text-on-surface transition-colors duration-150" title="Tune Settings">
+      <span class="material-symbols-outlined text-[20px]">tune</span>
+    </button>
+  </div>
+  
+  <!-- Primary CTA: Deploy Entity -->
+  <button class="flex items-center gap-2 bg-primary-container hover:bg-primary text-on-primary-container px-3.5 py-1.5 rounded-lg font-label-md text-label-md font-semibold transition-all duration-150 shadow-sm active:scale-98">
+    <span class="material-symbols-outlined text-[18px]">add_circle</span>
+    Deploy Entity
+  </button>
+  
+  <!-- User Profile Avatar -->
+  <div class="w-8 h-8 rounded-full border border-border-subtle bg-surface-container-high flex items-center justify-center text-primary font-headline-sm text-headline-sm overflow-hidden" title="User profile avatar">
+    <span class="material-symbols-outlined text-[20px]">account_circle</span>
   </div>
 
-  <!-- Content Container (Scrollable) -->
-  <div class="flex-1 min-h-0 overflow-y-auto p-6 space-y-8 max-w-6xl w-full mx-auto">
+</div>
+</app-top-bar>
 
-    <!-- Hero / Welcome Banner (Jargon-Free Business Overview) -->
-    <div class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 text-white p-8 sm:p-10 shadow-xl border border-slate-800">
-      <div class="absolute -right-16 -top-16 w-80 h-80 rounded-full bg-indigo-500/10 blur-3xl pointer-events-none"></div>
-
-      <div class="relative z-10 max-w-2xl space-y-3">
-        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-xs font-semibold">
-          <mat-icon class="!w-4 !h-4 !text-sm">auto_awesome</mat-icon> Enterprise AI Workspace
+<div class="flex flex-1 min-h-0 w-full overflow-hidden">
+<aside class="flex flex-col justify-between h-full w-72 p-4 border-r border-border-subtle bg-surface select-none flex-shrink-0">
+<!-- Top Section of Sidebar -->
+<div class="space-y-4">
+<!-- Workspace Identification Header -->
+<div class="flex items-center gap-3 px-2 py-1.5">
+<div class="w-9 h-9 rounded-lg bg-surface-container-high border border-border-subtle flex items-center justify-center text-primary">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">schema</span>
+</div>
+<div class="min-w-0">
+<div class="font-headline-sm text-headline-sm font-semibold text-on-surface truncate">AgentHub Workspace</div>
+<div class="font-code text-code text-on-surface-variant truncate">v2.4.0 • Semantic RDF</div>
+</div>
+</div>
+<!-- Action Button in Nav -->
+<button class="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg border border-border-subtle bg-surface-container-low hover:bg-surface-container text-primary font-label-md text-label-md transition-colors duration-150">
+<span class="material-symbols-outlined text-[18px]">add</span>
+          New Pipeline
+        </button>
+<!-- Navigation Tab Links -->
+<div class="space-y-1 pt-1">
+<div class="px-3 py-1 font-label-md text-label-md text-outline uppercase tracking-wider font-semibold">Core Spaces</div>
+<!-- Tab 1: Overview / Home (Active Tab) -->
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg bg-surface-container-high text-primary font-headline-sm text-headline-sm border-l-2 border-primary transition-colors duration-150" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">hub</span>
+<span>Lifecycle Flow</span>
+</a>
+<!-- Tab 2: Discovery Space -->
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-on-surface-variant font-body-md text-body-md hover:text-on-surface hover:bg-surface-container-low transition-colors duration-150" href="#">
+<span class="material-symbols-outlined">explore</span>
+<span>Discovery &amp; Catalog</span>
+</a>
+<!-- Tab 3: Definition Schema -->
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-on-surface-variant font-body-md text-body-md hover:text-on-surface hover:bg-surface-container-low transition-colors duration-150" href="#">
+<span class="material-symbols-outlined">schema</span>
+<span>Definition Schema</span>
+</a>
+<!-- Tab 4: Knowledge & RDF -->
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-on-surface-variant font-body-md text-body-md hover:text-on-surface hover:bg-surface-container-low transition-colors duration-150" href="#">
+<span class="material-symbols-outlined">account_tree</span>
+<span>Synthesis &amp; RDF</span>
+</a>
+<!-- Tab 5: Verification Bench -->
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-on-surface-variant font-body-md text-body-md hover:text-on-surface hover:bg-surface-container-low transition-colors duration-150" href="#">
+<span class="material-symbols-outlined">fact_check</span>
+<span>Verification Bench</span>
+</a>
+<!-- Tab 6: Execution Nodes -->
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-on-surface-variant font-body-md text-body-md hover:text-on-surface hover:bg-surface-container-low transition-colors duration-150" href="#">
+<span class="material-symbols-outlined">rocket_launch</span>
+<span>Execution Nodes</span>
+</a>
+</div>
+</div>
+<!-- Bottom / Footer of Sidebar -->
+<div class="border-t border-border-subtle pt-4 space-y-2">
+<!-- System Status Indicator Card -->
+<div class="px-3 py-2.5 rounded-lg bg-surface-container-low border border-border-subtle">
+<div class="flex items-center justify-between mb-1">
+<span class="font-label-md text-label-md text-on-surface font-medium">Cluster Status</span>
+<span class="flex items-center gap-1 font-code text-[11px] text-accent-success">
+<span class="w-1.5 h-1.5 rounded-full bg-accent-success"></span>
+              Healthy
+            </span>
+</div>
+<div class="font-code text-code text-on-surface-variant">10/10 Nodes Online</div>
+</div>
+<!-- Footer Navigation Items -->
+<div class="space-y-0.5 pt-1">
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-on-surface-variant font-body-sm text-body-sm hover:text-on-surface hover:bg-surface-container-low transition-colors duration-150" href="#">
+<span class="material-symbols-outlined text-[18px]">terminal</span>
+<span>Environment Logs</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-on-surface-variant font-body-sm text-body-sm hover:text-on-surface hover:bg-surface-container-low transition-colors duration-150" href="#">
+<span class="material-symbols-outlined text-[18px]">settings</span>
+<span>System Settings</span>
+</a>
+</div>
+</div>
+</aside>
+<main class="flex-1 min-h-0 overflow-y-auto p-6 space-y-8 bg-background">
+<!-- A. PLATFORM HEADER BANNER -->
+<section class="relative overflow-hidden rounded-xl border border-border-subtle bg-surface-container-low p-6 md:p-8">
+<!-- Subtle gradient background sheen -->
+<div class="absolute -right-24 -top-24 w-96 h-96 bg-primary/5 rounded-full blur-3xl pointer-events-none"></div>
+<div class="absolute right-48 -bottom-24 w-64 h-64 bg-primary-container/10 rounded-full blur-2xl pointer-events-none"></div>
+<div class="relative z-10 flex flex-col xl:flex-row xl:items-center xl:justify-between gap-6">
+<div class="space-y-3 max-w-3xl">
+<div class="flex items-center gap-2">
+<span class="px-2.5 py-0.5 rounded-full border border-primary/30 bg-primary/10 text-primary font-code text-code">RDF Graph v3.2.1-Ready</span>
+<span class="text-outline-variant font-code text-code">• Distributed Execution Mesh</span>
+</div>
+<h1 class="font-headline-lg text-headline-lg text-on-surface font-bold tracking-tight">
+              Agent-As-Data Operating System
+            </h1>
+<p class="font-body-md text-body-md text-on-surface-variant leading-relaxed">
+              Treating AI agents, capabilities, and knowledge graphs as first-class queryable, versioned semantic data. Transform unstructured agent reasoning into verified, deterministic RDF triples and observable runtime contracts.
+            </p>
+<!-- Quick Stats Pill Bar -->
+<div class="flex flex-wrap items-center gap-3 pt-2">
+<div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface-container border border-border-subtle font-code text-code">
+<span class="material-symbols-outlined text-primary text-[16px]">account_tree</span>
+<span class="text-on-surface font-semibold">1,248</span>
+<span class="text-on-surface-variant">Knowledge Nodes</span>
+</div>
+<div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface-container border border-border-subtle font-code text-code">
+<span class="material-symbols-outlined text-accent-success text-[16px]">smart_toy</span>
+<span class="text-on-surface font-semibold">42</span>
+<span class="text-on-surface-variant">Active Agents</span>
+</div>
+<div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface-container border border-border-subtle font-code text-code">
+<span class="material-symbols-outlined text-secondary text-[16px]">bolt</span>
+<span class="text-on-surface font-semibold">38</span>
+<span class="text-on-surface-variant">Atomic Skills</span>
+</div>
+<div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface-container border border-border-subtle font-code text-code">
+<span class="material-symbols-outlined text-tertiary text-[16px]">dns</span>
+<span class="text-on-surface font-semibold">18</span>
+<span class="text-on-surface-variant">MCP Servers</span>
+</div>
+<div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface-container border border-border-subtle font-code text-code">
+<span class="material-symbols-outlined text-primary-fixed-dim text-[16px]">dataset</span>
+<span class="text-on-surface font-semibold">1.68M</span>
+<span class="text-on-surface-variant">Vectors Indexed</span>
+</div>
+</div>
+</div>
+<!-- Fast Action Buttons -->
+<div class="flex flex-col sm:flex-row xl:flex-col gap-2.5 flex-shrink-0">
+<button routerLink="/detail" class="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-primary-container text-on-primary-container font-label-md text-label-md font-semibold hover:bg-primary transition-all duration-150 shadow-sm active:scale-98">
+<span class="material-symbols-outlined text-[18px]">play_circle</span>
+              New Semantic Pipeline
+            </button>
+<button class="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high border border-border-subtle text-on-surface font-label-md text-label-md transition-colors duration-150">
+<span class="material-symbols-outlined text-[18px]">file_upload</span>
+              Import Schema / RDF
+            </button>
+<button class="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high border border-border-subtle text-on-surface-variant hover:text-on-surface font-label-md text-label-md transition-colors duration-150">
+<span class="material-symbols-outlined text-[18px]">troubleshoot</span>
+              Run Cluster Diagnostic
+            </button>
+</div>
+</div>
+</section>
+<!-- B. 5-STAGE SYSTEM LIFECYCLE FLOW SECTION -->
+<section class="space-y-4">
+<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+<div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[20px]">swap_calls</span>
+<h2 class="font-headline-md text-headline-md text-on-surface font-semibold">System Lifecycle Architecture</h2>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+              End-to-end provenance and dataflow from ontological concept discovery to production telemetry.
+            </p>
+</div>
+<div class="flex items-center gap-3">
+<span class="font-code text-code text-on-surface-variant flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-accent-success animate-ping"></span>
+              Live Pipeline Stream: <strong class="text-primary">14.2k evt/s</strong>
+</span>
+</div>
+</div>
+<!-- Lifecycle Visual Flow Nodes -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3 relative">
+<!-- Stage 1: Discovery & Ingestion -->
+<div class="rounded-xl border border-border-subtle bg-surface-card p-4 flex flex-col justify-between hover:border-outline-variant transition-colors duration-150 group">
+<div class="space-y-3">
+<div class="flex items-center justify-between">
+<span class="px-2 py-0.5 rounded bg-surface-container border border-border-subtle font-code text-[11px] text-primary">Stage 01</span>
+<span class="flex items-center gap-1 font-code text-[11px] text-accent-success">
+<span class="w-1.5 h-1.5 rounded-full bg-accent-success"></span>
+                  Synced
+                </span>
+</div>
+<div class="flex items-center gap-2.5">
+<div class="p-2 rounded-lg bg-surface-container text-primary">
+<span class="material-symbols-outlined text-[20px]">explore</span>
+</div>
+<div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface font-semibold leading-tight">Discovery &amp; Ingestion</h3>
+<span class="font-code text-[11px] text-outline">Semantic Sources</span>
+</div>
+</div>
+<div class="space-y-1.5 pt-2 border-t border-border-subtle/70">
+<div class="flex items-center gap-1.5 text-body-sm text-on-surface-variant font-body-sm">
+<span class="w-1 h-1 rounded-full bg-primary"></span>
+                  Semantic Intent Search
+                </div>
+<div class="flex items-center gap-1.5 text-body-sm text-on-surface-variant font-body-sm">
+<span class="w-1 h-1 rounded-full bg-primary"></span>
+                  AST Source Parsers
+                </div>
+<div class="flex items-center gap-1.5 text-body-sm text-on-surface-variant font-body-sm">
+<span class="w-1 h-1 rounded-full bg-primary"></span>
+                  Vector Cosine Sim
+                </div>
+<div class="flex items-center gap-1.5 text-body-sm text-on-surface-variant font-body-sm">
+<span class="w-1 h-1 rounded-full bg-primary"></span>
+                  Raw Doc Ingestion
+                </div>
+</div>
+</div>
+<div class="mt-4 pt-2 border-t border-border-subtle flex items-center justify-between text-outline font-code text-[11px]">
+<span>Throughput</span>
+<span class="text-on-surface font-medium">3.8k docs/s</span>
+</div>
+</div>
+<!-- Stage 2: Definition & Schema -->
+<div class="rounded-xl border border-border-subtle bg-surface-card p-4 flex flex-col justify-between hover:border-outline-variant transition-colors duration-150 group">
+<div class="space-y-3">
+<div class="flex items-center justify-between">
+<span class="px-2 py-0.5 rounded bg-surface-container border border-border-subtle font-code text-[11px] text-secondary">Stage 02</span>
+<span class="flex items-center gap-1 font-code text-[11px] text-primary">
+<span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
+                  Canonical
+                </span>
+</div>
+<div class="flex items-center gap-2.5">
+<div class="p-2 rounded-lg bg-surface-container text-secondary">
+<span class="material-symbols-outlined text-[20px]">schema</span>
+</div>
+<div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface font-semibold leading-tight">Definition &amp; Schema</h3>
+<span class="font-code text-[11px] text-outline">Constrained Trait</span>
+</div>
+</div>
+<div class="space-y-1.5 pt-2 border-t border-border-subtle/70">
+<div class="flex items-center gap-1.5 text-body-sm text-on-surface-variant font-body-sm">
+<span class="w-1 h-1 rounded-full bg-secondary"></span>
+                  Agent Blueprint Defs
+                </div>
+<div class="flex items-center gap-1.5 text-body-sm text-on-surface-variant font-body-sm">
+<span class="w-1 h-1 rounded-full bg-secondary"></span>
+                  Trait &amp; Bounds Policies
+                </div>
+<div class="flex items-center gap-1.5 text-body-sm text-on-surface-variant font-body-sm">
+<span class="w-1 h-1 rounded-full bg-secondary"></span>
+                  Jinja System Prompts
+                </div>
+<div class="flex items-center gap-1.5 text-body-sm text-on-surface-variant font-body-sm">
+<span class="w-1 h-1 rounded-full bg-secondary"></span>
+                  Guardrail Safety Rules
+                </div>
+</div>
+</div>
+<div class="mt-4 pt-2 border-t border-border-subtle flex items-center justify-between text-outline font-code text-[11px]">
+<span>Schemas Loaded</span>
+<span class="text-on-surface font-medium">94 Active</span>
+</div>
+</div>
+<!-- Stage 3: Synthesis & Grounding -->
+<div class="rounded-xl border border-primary/40 bg-surface-card p-4 flex flex-col justify-between hover:border-primary transition-colors duration-150 shadow-sm relative overflow-hidden">
+<div class="absolute top-0 right-0 w-16 h-16 bg-primary/5 rounded-bl-full pointer-events-none"></div>
+<div class="space-y-3">
+<div class="flex items-center justify-between">
+<span class="px-2 py-0.5 rounded bg-primary/10 border border-primary/30 font-code text-[11px] text-primary">Stage 03</span>
+<span class="flex items-center gap-1 font-code text-[11px] text-primary">
+<span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
+                  Active Graph
+                </span>
+</div>
+<div class="flex items-center gap-2.5">
+<div class="p-2 rounded-lg bg-surface-container text-primary">
+<span class="material-symbols-outlined text-[20px]">account_tree</span>
+</div>
+<div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface font-semibold leading-tight">Synthesis &amp; Grounding</h3>
+<span class="font-code text-[11px] text-outline">Triple Derivation</span>
+</div>
+</div>
+<div class="space-y-1.5 pt-2 border-t border-border-subtle/70">
+<div class="flex items-center gap-1.5 text-body-sm text-on-surface-variant font-body-sm">
+<span class="w-1 h-1 rounded-full bg-primary"></span>
+                  RDF Triplet Extraction
+                </div>
+<div class="flex items-center gap-1.5 text-body-sm text-on-surface-variant font-body-sm">
+<span class="w-1 h-1 rounded-full bg-primary"></span>
+                  S-P-O Relationship Link
+                </div>
+<div class="flex items-center gap-1.5 text-body-sm text-on-surface-variant font-body-sm">
+<span class="w-1 h-1 rounded-full bg-primary"></span>
+                  Turtle (.ttl) Serializer
+                </div>
+<div class="flex items-center gap-1.5 text-body-sm text-on-surface-variant font-body-sm">
+<span class="w-1 h-1 rounded-full bg-primary"></span>
+                  OWL Ontology Axioms
+                </div>
+</div>
+</div>
+<div class="mt-4 pt-2 border-t border-border-subtle flex items-center justify-between text-outline font-code text-[11px]">
+<span>Triple Density</span>
+<span class="text-on-surface font-medium">84.2k SPO/h</span>
+</div>
+</div>
+<!-- Stage 4: Verification & Bench -->
+<div class="rounded-xl border border-border-subtle bg-surface-card p-4 flex flex-col justify-between hover:border-outline-variant transition-colors duration-150 group">
+<div class="space-y-3">
+<div class="flex items-center justify-between">
+<span class="px-2 py-0.5 rounded bg-surface-container border border-border-subtle font-code text-[11px] text-secondary">Stage 04</span>
+<span class="flex items-center gap-1 font-code text-[11px] text-accent-success">
+<span class="w-1.5 h-1.5 rounded-full bg-accent-success"></span>
+                  Passed 99.4%
+                </span>
+</div>
+<div class="flex items-center gap-2.5">
+<div class="p-2 rounded-lg bg-surface-container text-accent-success">
+<span class="material-symbols-outlined text-[20px]">fact_check</span>
+</div>
+<div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface font-semibold leading-tight">Verification &amp; Bench</h3>
+<span class="font-code text-[11px] text-outline">AST &amp; Sandbox Eval</span>
+</div>
+</div>
+<div class="space-y-1.5 pt-2 border-t border-border-subtle/70">
+<div class="flex items-center gap-1.5 text-body-sm text-on-surface-variant font-body-sm">
+<span class="w-1 h-1 rounded-full bg-accent-success"></span>
+                  AST Taint Analyzers
+                </div>
+<div class="flex items-center gap-1.5 text-body-sm text-on-surface-variant font-body-sm">
+<span class="w-1 h-1 rounded-full bg-accent-success"></span>
+                  Interactive Sandbox Run
+                </div>
+<div class="flex items-center gap-1.5 text-body-sm text-on-surface-variant font-body-sm">
+<span class="w-1 h-1 rounded-full bg-accent-success"></span>
+                  SSE Stream Tracing
+                </div>
+<div class="flex items-center gap-1.5 text-body-sm text-on-surface-variant font-body-sm">
+<span class="w-1 h-1 rounded-full bg-accent-success"></span>
+                  Automated Benchmarks
+                </div>
+</div>
+</div>
+<div class="mt-4 pt-2 border-t border-border-subtle flex items-center justify-between text-outline font-code text-[11px]">
+<span>Mean TTFT</span>
+<span class="text-on-surface font-medium">142ms</span>
+</div>
+</div>
+<!-- Stage 5: Deployment & Execution -->
+<div class="rounded-xl border border-border-subtle bg-surface-card p-4 flex flex-col justify-between hover:border-outline-variant transition-colors duration-150 group">
+<div class="space-y-3">
+<div class="flex items-center justify-between">
+<span class="px-2 py-0.5 rounded bg-surface-container border border-border-subtle font-code text-[11px] text-tertiary">Stage 05</span>
+<span class="flex items-center gap-1 font-code text-[11px] text-accent-success">
+<span class="w-1.5 h-1.5 rounded-full bg-accent-success"></span>
+                  Live Ready
+                </span>
+</div>
+<div class="flex items-center gap-2.5">
+<div class="p-2 rounded-lg bg-surface-container text-tertiary">
+<span class="material-symbols-outlined text-[20px]">rocket_launch</span>
+</div>
+<div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface font-semibold leading-tight">Deployment &amp; Exec</h3>
+<span class="font-code text-[11px] text-outline">MCP Runtime Mesh</span>
+</div>
+</div>
+<div class="space-y-1.5 pt-2 border-t border-border-subtle/70">
+<div class="flex items-center gap-1.5 text-body-sm text-on-surface-variant font-body-sm">
+<span class="w-1 h-1 rounded-full bg-tertiary"></span>
+                  MCP Server Gateway
+                </div>
+<div class="flex items-center gap-1.5 text-body-sm text-on-surface-variant font-body-sm">
+<span class="w-1 h-1 rounded-full bg-tertiary"></span>
+                  Worker Node Swarms
+                </div>
+<div class="flex items-center gap-1.5 text-body-sm text-on-surface-variant font-body-sm">
+<span class="w-1 h-1 rounded-full bg-tertiary"></span>
+                  JSON-RPC Dispatches
+                </div>
+<div class="flex items-center gap-1.5 text-body-sm text-on-surface-variant font-body-sm">
+<span class="w-1 h-1 rounded-full bg-tertiary"></span>
+                  Realtime Observability
+                </div>
+</div>
+</div>
+<div class="mt-4 pt-2 border-t border-border-subtle flex items-center justify-between text-outline font-code text-[11px]">
+<span>Invocations</span>
+<span class="text-on-surface font-medium">1.2M / 24h</span>
+</div>
+</div>
+</div>
+</section>
+<!-- C. 10-MODULE PLATFORM LAUNCHPAD MATRIX -->\n<section class="space-y-4">\n<!-- Matrix Toolbar & Filters -->
+<div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-border-subtle pb-3">
+<div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[22px]">grid_view</span>
+<h2 class="font-headline-md text-headline-md text-on-surface font-semibold">Platform Capability Modules</h2>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+              Modular components spanning semantic authoring, runtime validation, and distributed MCP execution.
+            </p>
+</div>
+<!-- Filter Tags -->
+<div class="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0">
+<button class="px-3 py-1 rounded-lg bg-surface-container-high text-primary font-label-md text-label-md font-semibold border border-primary/30 whitespace-nowrap">
+              All 10 Modules
+            </button>
+<button class="px-3 py-1 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface font-label-md text-label-md border border-border-subtle whitespace-nowrap transition-colors duration-150">
+              Core Architecture
+            </button>
+<button class="px-3 py-1 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface font-label-md text-label-md border border-border-subtle whitespace-nowrap transition-colors duration-150">
+              Testing &amp; Verification
+            </button>
+<button class="px-3 py-1 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface font-label-md text-label-md border border-border-subtle whitespace-nowrap transition-colors duration-150">
+              Protocols &amp; Infrastructure
+            </button>
+</div>
+</div>
+<!-- Dynamic Modules Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5 gap-4">
+  @for (pillar of pillars; track pillar.path) {
+    <a [routerLink]="pillar.path" data-testid="pillar-link" class="rounded-xl border border-border-subtle bg-surface-card p-4 flex flex-col justify-between hover:border-primary/50 transition-all duration-150 hover:-translate-y-0.5 group cursor-pointer" [ngClass]="pillar.borderClass">
+      <div class="space-y-3">
+        <div class="flex items-center justify-between">
+          <div class="p-2 rounded-lg bg-surface-container text-primary group-hover:bg-primary-container group-hover:text-on-primary-container transition-colors duration-150" [ngClass]="pillar.accentClass">
+            <span class="material-symbols-outlined text-[20px]" [attr.data-icon]="pillar.icon">{{ pillar.icon }}</span>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span class="font-code text-[11px] px-1.5 py-0.5 rounded bg-surface-container border border-border-subtle text-primary">{{ pillar.badge }}</span>
+          </div>
         </div>
-        <h2 class="text-2xl sm:text-4xl font-black tracking-tight text-white m-0 leading-tight">
-          Turn Company Knowledge Into Trusted AI Teammates
-        </h2>
-        <p class="text-sm sm:text-base text-slate-300 leading-relaxed m-0 font-normal">
-          Company knowledge shouldn't stay trapped in scattered documents or individual heads. Agent-As-Data transforms your organization's wisdom into certified, reliable AI colleagues who follow strict corporate rules and collaborate with you on projects.
-        </p>
-      </div>
-    </div>
-
-    <!-- The 4 Sequential Pillars (Each link represented exactly once) -->
-    <div class="space-y-4">
-      <div class="flex items-center justify-between">
         <div>
-          <h3 class="text-base font-bold text-slate-800 m-0">
-            How Agent-As-Data Works
-          </h3>
-          <p class="text-xs text-slate-500 m-0">
-            From company documents to safe, active AI teamwork
+          <h4 class="font-headline-sm text-headline-sm text-on-surface font-semibold group-hover:text-primary transition-colors duration-150">{{ pillar.title }}</h4>
+          <p class="font-body-sm text-body-sm text-on-surface-variant mt-1 line-clamp-2">
+            {{ pillar.lead }} {{ pillar.description }}
           </p>
         </div>
-        <span class="text-[11px] font-semibold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-full border border-slate-200">
-          4 Core Areas
+        <div class="flex flex-wrap gap-1.5 pt-1">
+          @for (point of pillar.keyPoints; track point) {
+            <span class="font-code text-[10px] px-2 py-0.5 rounded bg-surface-container text-on-surface-variant border border-border-subtle">{{ point }}</span>
+          }
+        </div>
+      </div>
+      <div class="pt-4 mt-3 border-t border-border-subtle flex items-center justify-between">
+        <span class="font-code text-[11px] text-accent-success flex items-center gap-1">
+          <span class="w-1.5 h-1.5 rounded-full bg-accent-success"></span>
+          Active Editor
+        </span>
+        <span class="font-label-md text-label-md text-primary group-hover:underline flex items-center gap-1">
+          {{ pillar.actionText }} <span class="material-symbols-outlined text-[14px]">arrow_forward</span>
         </span>
       </div>
-
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        @for (pillar of pillars; track pillar.path) {
-          <div class="rounded-2xl border bg-white shadow-xs hover:shadow-md transition-all duration-200 flex flex-col justify-between overflow-hidden"
-               [ngClass]="pillar.borderClass">
-            
-            <!-- Card Header: Left aligned, generous padding, icon + badge + title -->
-            <div class="p-6 pb-4 border-b border-slate-100 flex items-start gap-4">
-              <div class="w-12 h-12 rounded-xl bg-gradient-to-tr text-white flex items-center justify-center shadow-xs shrink-0 mt-0.5"
-                   [ngClass]="pillar.accentClass">
-                <mat-icon class="!w-6 !h-6 !text-2xl">{{ pillar.icon }}</mat-icon>
-              </div>
-              <div class="min-w-0 flex-1">
-                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">
-                  {{ pillar.badge }}
-                </span>
-                <h4 class="text-base sm:text-lg font-bold text-slate-900 m-0 tracking-tight leading-snug">
-                  {{ pillar.title }}
-                </h4>
-              </div>
-            </div>
-
-            <!-- Card Body: Clear typography, checklist, button -->
-            <div class="p-6 pt-5 flex-1 flex flex-col justify-between space-y-5">
-              <div class="space-y-2">
-                <p class="text-xs sm:text-sm font-semibold text-slate-800 m-0 leading-snug">
-                  {{ pillar.lead }}
-                </p>
-                <p class="text-xs text-slate-500 leading-relaxed m-0">
-                  {{ pillar.description }}
-                </p>
-              </div>
-
-              <!-- Key Benefits Checklist -->
-              <div class="space-y-2 py-3 border-t border-slate-100">
-                @for (point of pillar.keyPoints; track point) {
-                  <div class="text-xs text-slate-600 flex items-center gap-2.5">
-                    <mat-icon class="!w-4 !h-4 !text-sm text-emerald-500 shrink-0">check_circle</mat-icon>
-                    <span class="leading-tight">{{ point }}</span>
-                  </div>
-                }
-              </div>
-
-              <!-- Action Link (The SINGLE link for this destination) -->
-              <div class="pt-1">
-                <a [routerLink]="pillar.path"
-                   data-testid="pillar-link"
-                   class="group flex items-center justify-center w-full px-4 py-3 rounded-xl font-semibold text-xs sm:text-sm text-white shadow-xs transition-all duration-150 gap-2 bg-gradient-to-r hover:opacity-95 active:scale-[0.99]"
-                   [ngClass]="pillar.accentClass">
-                  <span>{{ pillar.actionText }}</span>
-                  <mat-icon class="!w-4 !h-4 !text-base transition-transform duration-150 group-hover:translate-x-1">arrow_forward</mat-icon>
-                </a>
-              </div>
-            </div>
-          </div>
-        }
-      </div>
-    </div>
-
-    <!-- Technical Bridge Banner (The SINGLE link to /detail) -->
-    <div class="p-6 rounded-2xl bg-slate-900 text-white border border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-md">
-      <div class="space-y-1 text-center sm:text-left">
-        <h4 class="text-sm font-bold text-white m-0 flex items-center gap-2 justify-center sm:justify-start">
-          <mat-icon class="text-indigo-400">account_tree</mat-icon> For Software Engineers & Systems Architects
-        </h4>
-        <p class="text-xs text-slate-400 m-0">
-          Looking for the technical blueprint? Explore the 5-stage lifecycle data flow, Trait Contract code contracts, and 10-module capability matrix.
-        </p>
-      </div>
-      <a routerLink="/detail"
-         class="group inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 transition-all duration-150 shrink-0">
-        <span>View Architecture Detail</span>
-        <mat-icon class="!w-4 !h-4 !text-sm text-indigo-400 transition-transform duration-150 group-hover:translate-x-1">arrow_forward</mat-icon>
-      </a>
-    </div>
-
-  </div>
+    </a>
+  }
+</div>
+\n</section>\n<!-- TERMINAL & LIVE ENGINE ACTIVITY PANEL (Developer tool console flair) -->
+<section class="rounded-xl border border-border-subtle bg-surface-container-lowest overflow-hidden">
+<div class="flex items-center justify-between px-4 py-2.5 bg-surface-container-low border-b border-border-subtle">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[18px]">terminal</span>
+<span class="font-code text-code font-semibold text-on-surface">AgentHub Semantic Kernel Realtime Log</span>
+<span class="font-code text-[11px] px-2 py-0.5 rounded bg-surface-container text-accent-success border border-border-subtle">IDLE_DISPATCH</span>
+</div>
+<div class="flex items-center gap-3 font-code text-[11px] text-on-surface-variant">
+<span class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-accent-success"></span> SSE Connected</span>
+<span class="text-outline">Port: 8443</span>
+</div>
+</div>
+<div class="p-4 font-code text-code space-y-1.5 text-on-surface-variant bg-surface-dark overflow-x-auto">
+<div class="flex items-start gap-3">
+<span class="text-outline select-none">16:42:08.012</span>
+<span class="text-primary font-medium">[RDF_SYNTHESIS]</span>
+<span>Extracted 124 Subject-Predicate-Object triples from AST parse tree &lt;ast:WorkerSentinel&gt;</span>
+</div>
+<div class="flex items-start gap-3">
+<span class="text-outline select-none">16:42:08.241</span>
+<span class="text-accent-success font-medium">[GUARD_VERIFY]</span>
+<span>Policy check `sec:BoundaryAssertion` evaluated with 0 violations. Hash: 0x9f4a...88e1</span>
+</div>
+<div class="flex items-start gap-3">
+<span class="text-outline select-none">16:42:08.890</span>
+<span class="text-secondary font-medium">[MCP_ROUTER]</span>
+<span>JSON-RPC 2.0 dispatch executed on stdio://mcp-server-filesystem. Status: 200 OK (18ms)</span>
+</div>
+<div class="flex items-start gap-3">
+<span class="text-outline select-none">16:42:09.115</span>
+<span class="text-primary-fixed-dim font-medium">[OBSERVABILITY]</span>
+<span>Telemetry flushed: 14.2k evt/s, cluster memory footprint stable at 38.4% capacity.</span>
+</div>
+</div>
+</section>
+</main>
+</div>
 </div>

@@ -62,7 +62,7 @@ export class TraitsRegistryComponent implements OnInit {
   readonly conceptGuideMappings: ConceptTabMapping[] = [
     {
       icon: 'build',
-      iconColor: 'text-indigo-600',
+      iconColor: 'text-primary',
       title: '1. Capability Requirements',
       description:
         'Tools, state access, and environment permissions the agent must possess to execute this role.',
@@ -76,7 +76,7 @@ export class TraitsRegistryComponent implements OnInit {
     },
     {
       icon: 'fact_check',
-      iconColor: 'text-emerald-600',
+      iconColor: 'text-accent-success',
       title: '3. Evaluation Criteria & Guardrails',
       description:
         'Built-in data & password protection, output grading rubrics, and automated safety fences.',

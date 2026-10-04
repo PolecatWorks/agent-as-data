@@ -1,151 +1,548 @@
-<div class="h-full flex flex-col bg-slate-50">
-  <div class="h-14 bg-white border-b border-slate-200 flex items-center justify-between px-4 shrink-0 shadow-sm z-10">
-    <div class="flex items-center gap-3">
-      <div class="flex items-center gap-1.5 px-2.5 py-1 -ml-2 rounded-lg hover:bg-slate-100 cursor-pointer transition-colors select-none group"
-           [matMenuTriggerFor]="appMenu"
-           data-testid="workspace-title-switcher"
-           title="Click to switch workspace">
-        <mat-icon class="text-indigo-600">search</mat-icon>
-        <h1 class="text-lg font-black text-slate-800 m-0">Agent Context Search</h1>
-        <mat-icon class="!w-4 !h-4 !text-base text-slate-400 group-hover:text-slate-700 transition-colors">expand_more</mat-icon>
-      </div>
+<div class="bg-background text-on-background h-full min-h-0 flex flex-col font-body-md text-body-md antialiased overflow-hidden dark">
+<header class="flex justify-between items-center w-full px-space-lg h-14 bg-surface-dim border-b border-border-subtle z-40 shrink-0">
+<div class="flex items-center gap-space-md">
+<div class="flex items-center gap-1.5 px-2.5 py-1 -ml-2 rounded-lg hover:bg-surface-container cursor-pointer transition-colors select-none group"
+     [matMenuTriggerFor]="appMenu"
+     data-testid="workspace-title-switcher"
+     title="Click to switch workspace">
+<span class="material-symbols-outlined text-primary text-[20px]" data-icon="memory">memory</span>
+<span class="font-headline-sm text-headline-sm font-semibold text-on-surface tracking-tight">AgentHub</span>
+<span class="text-outline-variant font-code text-code">/</span>
+<span class="text-on-surface-variant font-label-md text-label-md">Workspaces &gt; Agent Context &amp; Memory</span>
+<mat-icon class="!w-4 !h-4 !text-base text-outline-variant group-hover:text-on-surface transition-colors">expand_more</mat-icon>
+</div>
 
-      <!-- Zero-Footprint Concept Guide -->
-      <app-concept-guide
-        badge="Semantic Context Discovery"
-        title="Context Discovery (Agent Context)"
-        icon="search"
-        triggerLabel="What is Context Search?"
-        analogyTitle="The Semantic Matcher Analogy"
-        analogyText="Think of Context Discovery like an intelligent semantic routing engine. It translates natural language task requirements into the exact subgraphs of skills and agents needed to fulfill the job."
-        [tabMappings]="conceptGuideMappings"
-        detailLink="/detail"
-        detailLinkLabel="Explore Semantic Architecture"
-        testIdPrefix="context-concept">
-      </app-concept-guide>
-    </div>
+<!-- Zero-Footprint Concept Guide -->
+<app-concept-guide
+  badge="Semantic Context Discovery"
+  title="Context Discovery (Agent Context)"
+  icon="search"
+  triggerLabel="What is Context Search?"
+  analogyTitle="The Semantic Matcher Analogy"
+  analogyText="Think of Context Discovery like an intelligent semantic routing engine. It translates natural language task requirements into the exact subgraphs of skills and agents needed to fulfill the job."
+  [tabMappings]="conceptGuideMappings"
+  detailLink="/detail"
+  detailLinkLabel="Explore Semantic Architecture"
+  testIdPrefix="context-concept">
+</app-concept-guide>
 
-    <!-- Right Actions -->
+<!-- Agent Switcher Capsule -->
+<div class="hidden lg:flex items-center bg-surface-container border border-border-subtle rounded-lg px-2 py-1 gap-2">
+<span class="w-2 h-2 rounded-full bg-accent-success animate-pulse"></span>
+<span class="text-primary font-code text-code font-semibold">Agent: AutoRefactor-v2.4</span>
+<span class="text-on-surface-variant font-code text-[11px] bg-surface-dim px-1.5 py-0.5 rounded border border-border-subtle">PID: 8812</span>
+<span class="text-outline text-[11px] font-body-sm">Claude-3.5 Sonnet</span>
+<button class="text-on-surface-variant hover:text-on-surface flex items-center">
+<span class="material-symbols-outlined text-[16px]" data-icon="arrow_drop_down">arrow_drop_down</span>
+</button>
+</div>
+</div>
+<!-- Center: Operational Telemetry Stream Badges -->
+<div class="hidden xl:flex items-center gap-space-md">
+<!-- Cluster Status -->
+<div class="flex items-center gap-1.5 font-label-md text-label-md text-on-surface-variant">
+<span class="material-symbols-outlined text-accent-success text-[16px]" data-icon="dns">dns</span>
+<span>Cluster: Running</span>
+<span class="text-accent-success font-code text-code font-medium">(10/10 nodes)</span>
+</div>
+<div class="h-3 w-px bg-border-subtle"></div>
+<!-- Tokens Status -->
+<div class="flex items-center gap-1.5 font-label-md text-label-md text-on-surface-variant">
+<span class="material-symbols-outlined text-primary text-[16px]" data-icon="speed">speed</span>
+<span>Context: <span class="font-code text-code text-on-surface font-medium">48,250</span> / 128,000 tok</span>
+<span class="text-primary-container font-code text-[11px] font-semibold bg-surface-container px-1.5 py-0.5 rounded">37.7%</span>
+</div>
+<div class="h-3 w-px bg-border-subtle"></div>
+<!-- Latency & Drift -->
+<div class="flex items-center gap-1.5 font-label-md text-label-md text-on-surface-variant">
+<span class="material-symbols-outlined text-accent-warning text-[16px]" data-icon="timelapse">timelapse</span>
+<span class="font-code text-code text-on-surface">142ms</span>
+<span class="text-outline-variant">|</span>
+<span class="text-accent-success font-code text-code">Zero Drift</span>
+</div>
+</div>
+<!-- Right: Trailing Actions -->
+<div class="flex items-center gap-2">
+<!-- Icon Actions -->
+<div class="flex items-center gap-1 mr-1">
+<button class="p-1.5 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors duration-150" title="Refresh State">
+<span class="material-symbols-outlined text-[18px]" data-icon="refresh">refresh</span>
+</button>
+<button class="p-1.5 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors duration-150" title="Tune Parameters">
+<span class="material-symbols-outlined text-[18px]" data-icon="tune">tune</span>
+</button>
+<button class="p-1.5 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors duration-150" title="Open Agent Terminal">
+<span class="material-symbols-outlined text-[18px]" data-icon="terminal">terminal</span>
+</button>
+</div>
+<div class="h-4 w-px bg-border-subtle"></div>
+
+<!-- App Menu Hamburger -->
+<button mat-icon-button [matMenuTriggerFor]="appMenu" aria-label="Menu" class="text-on-surface-variant hover:text-on-surface">
+  <mat-icon>menu</mat-icon>
+</button>
+
+<mat-menu #appMenu="matMenu">
+  @for (item of menuItems; track item.path) {
+    <a mat-menu-item [routerLink]="item.path" routerLinkActive="active-link">
+      <mat-icon>{{ item.icon }}</mat-icon>
+      <span>{{ item.label }}</span>
+    </a>
+  }
+</mat-menu>
+
+<!-- Action Buttons -->
+<button class="px-2.5 py-1 text-on-surface-variant hover:text-on-surface hover:bg-surface-container border border-border-subtle rounded font-label-md text-label-md transition-colors duration-150 flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]" data-icon="file_download">file_download</span>
+<span class="hidden sm:inline">Export Snapshot (.json/.ttl)</span>
+</button>
+<button class="px-2.5 py-1 bg-surface-container-high hover:bg-surface-variant text-on-surface border border-border-subtle rounded font-label-md text-label-md transition-colors duration-150 flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px] text-accent-warning" data-icon="pause_circle">pause_circle</span>
+<span>Pause Stream</span>
+</button>
+<button class="px-3 py-1 bg-primary text-on-primary font-semibold rounded font-label-md text-label-md hover:bg-primary-fixed-dim transition-colors duration-150 flex items-center gap-1 active:opacity-80">
+<span class="material-symbols-outlined text-[16px]" data-icon="play_arrow">play_arrow</span>
+<span>Execute Step</span>
+</button>
+<div class="w-8 h-8 rounded-full bg-surface-container border border-border-subtle flex items-center justify-center text-on-surface font-bold text-xs ml-2">
+  U
+</div>
+</div>
+</header>
+<!-- ==================== 2. WORKSPACE BODY (SideNav + Multi-Pane Content) ==================== -->
+<div class="flex flex-1 min-h-0 relative overflow-hidden">
+<!-- ==================== LEFT SIDENAV (Shared Component: SideNavBar) ==================== -->
+<aside class="w-72 h-full bg-surface-container-lowest border-r border-border-subtle flex flex-col justify-between p-space-md z-30 shrink-0">
+<div class="flex flex-col gap-space-md">
+<!-- Header Matrix Indicator -->
+<div class="flex items-center gap-space-sm pb-space-sm border-b border-border-subtle">
+<div class="w-8 h-8 rounded bg-surface-container flex items-center justify-center border border-border-subtle">
+<span class="material-symbols-outlined text-primary text-[20px]" data-icon="psychology" data-weight="fill" style="font-variation-settings: 'FILL' 1;">psychology</span>
+</div>
+<div class="flex flex-col">
+<span class="font-headline-sm text-headline-sm font-semibold text-primary">Context Core</span>
+<span class="font-code text-code text-outline text-[11px]">v1.4.2 active</span>
+</div>
+</div>
+<!-- Primary Navigation Tabs -->
+<nav class="flex flex-col gap-1">
+<!-- Active Nav Item: Running Context -->
+<a class="flex items-center gap-space-sm bg-surface-container text-primary font-label-md text-label-md rounded-lg px-space-md py-space-sm border-l-2 border-primary transition-all duration-150" href="#">
+<span class="material-symbols-outlined text-[18px]" data-icon="memory">memory</span>
+<span>Running Context</span>
+</a>
+<!-- Inactive: Memory Buffers -->
+<a class="flex items-center gap-space-sm text-on-surface-variant font-label-md text-label-md rounded-lg px-space-md py-space-sm hover:bg-surface-container-low hover:text-on-surface transition-colors duration-150" href="#">
+<span class="material-symbols-outlined text-[18px]" data-icon="history">history</span>
+<span>Memory Buffers</span>
+</a>
+<!-- Inactive: Thought Trace -->
+<a class="flex items-center gap-space-sm text-on-surface-variant font-label-md text-label-md rounded-lg px-space-md py-space-sm hover:bg-surface-container-low hover:text-on-surface transition-colors duration-150" href="#">
+<span class="material-symbols-outlined text-[18px]" data-icon="psychology">psychology</span>
+<span>Thought Trace</span>
+</a>
+<!-- Inactive: Knowledge Bindings -->
+<a class="flex items-center gap-space-sm text-on-surface-variant font-label-md text-label-md rounded-lg px-space-md py-space-sm hover:bg-surface-container-low hover:text-on-surface transition-colors duration-150" href="#">
+<span class="material-symbols-outlined text-[18px]" data-icon="hub">hub</span>
+<span>Knowledge Bindings</span>
+</a>
+<!-- Inactive: Context Pruning -->
+<a class="flex items-center gap-space-sm text-on-surface-variant font-label-md text-label-md rounded-lg px-space-md py-space-sm hover:bg-surface-container-low hover:text-on-surface transition-colors duration-150" href="#">
+<span class="material-symbols-outlined text-[18px]" data-icon="content_cut">content_cut</span>
+<span>Context Pruning</span>
+</a>
+</nav>
+<!-- Active Agent Profile Card -->
+<div class="bg-surface-container-low border border-border-subtle rounded-xl p-3 flex flex-col gap-2.5 mt-2">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary text-[18px]" data-icon="smart_toy">smart_toy</span>
+<span class="font-headline-sm text-[13px] font-semibold text-on-surface">AutoRefactor-v2.4</span>
+</div>
+<span class="px-1.5 py-0.5 rounded bg-surface-container text-accent-success font-code text-[10px] font-medium border border-border-subtle">LIVE</span>
+</div>
+<!-- Micro Stats Grid -->
+<div class="grid grid-cols-3 gap-1.5 pt-1 border-t border-border-subtle/60 text-center font-code text-[11px]">
+<div class="bg-surface-dim/70 rounded p-1">
+<div class="text-outline text-[9px] uppercase tracking-wider">Uptime</div>
+<div class="text-on-surface font-semibold mt-0.5">42m</div>
+</div>
+<div class="bg-surface-dim/70 rounded p-1">
+<div class="text-outline text-[9px] uppercase tracking-wider">Tools</div>
+<div class="text-primary font-semibold mt-0.5">14</div>
+</div>
+<div class="bg-surface-dim/70 rounded p-1">
+<div class="text-outline text-[9px] uppercase tracking-wider">Mutations</div>
+<div class="text-tertiary font-semibold mt-0.5">3</div>
+</div>
+</div>
+<div class="flex items-center justify-between text-outline text-[11px] font-code pt-0.5">
+<span>Graph Sync: Verified</span>
+<span class="material-symbols-outlined text-accent-success text-[14px]" data-icon="check_circle">check_circle</span>
+</div>
+</div>
+</div>
+<!-- SideNavBar Footer Actions & Links -->
+<div class="flex flex-col gap-2 pt-space-sm border-t border-border-subtle">
+<button class="w-full py-1.5 px-3 bg-surface-container hover:bg-surface-variant text-on-surface-variant hover:text-on-surface rounded font-label-md text-label-md flex items-center justify-center gap-1.5 transition-colors border border-border-subtle">
+<span class="material-symbols-outlined text-[16px] text-accent-warning" data-icon="delete_sweep">delete_sweep</span>
+<span>Clear Scratchpad</span>
+</button>
+<a class="flex items-center gap-space-sm text-on-surface-variant font-label-md text-label-md rounded-lg px-space-md py-1.5 hover:bg-surface-container-low hover:text-on-surface transition-colors duration-150" href="#">
+<span class="material-symbols-outlined text-[18px]" data-icon="menu_book">menu_book</span>
+<span>Documentation</span>
+</a>
+<a class="flex items-center gap-space-sm text-on-surface-variant font-label-md text-label-md rounded-lg px-space-md py-1.5 hover:bg-surface-container-low hover:text-on-surface transition-colors duration-150" href="#">
+<span class="material-symbols-outlined text-[18px]" data-icon="settings">settings</span>
+<span>Settings</span>
+</a>
+</div>
+</aside>
+<!-- ==================== MAIN WORKSPACE MULTI-PANE INTERFACE ==================== -->
+<main class="flex-1 min-h-0 grid grid-cols-12 overflow-hidden bg-surface">
+<!-- ==================== LEFT / CENTER COLUMN: RUNNING CONTEXT & THOUGHT TRACE (7 COLS) ==================== -->
+<section class="col-span-12 xl:col-span-7 flex flex-col h-full border-r border-border-subtle overflow-hidden">
+<!-- Context Window Telemetry Banner -->
+<div class="bg-surface-container-lowest p-space-md border-b border-border-subtle shrink-0">
+<div class="flex items-center justify-between mb-2">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[18px]" data-icon="pie_chart">pie_chart</span>
+<h2 class="font-headline-sm text-headline-sm font-semibold text-on-surface">Context Window Allocation</h2>
+<span class="font-code text-code text-outline text-[11px]">(48,250 / 128,000 Tokens)</span>
+</div>
+<button class="px-2.5 py-1 text-[11px] font-label-md bg-surface-container hover:bg-surface-variant text-primary border border-border-subtle rounded flex items-center gap-1 transition-colors">
+<span class="material-symbols-outlined text-[14px]" data-icon="compress">compress</span>
+<span>Compact Window (Lossless)</span>
+</button>
+</div>
+<!-- Segmented Progress Bar -->
+<div class="w-full h-3 bg-surface-dark rounded-full overflow-hidden flex border border-border-subtle">
+<!-- System Prompt: 4,120 tok (~3.2%) -->
+<div class="bg-primary hover:opacity-90 transition-opacity" style="width: 3.2%" title="System Prompt: 4,120 tok"></div>
+<!-- Ontological Schema & Tool Defs: 8,420 tok (~6.6%) -->
+<div class="bg-primary-container hover:opacity-90 transition-opacity" style="width: 6.6%" title="Schema &amp; Tool Defs: 8,420 tok"></div>
+<!-- Episodic Memory: 12,500 tok (~9.8%) -->
+<div class="bg-tertiary-container hover:opacity-90 transition-opacity" style="width: 9.8%" title="Episodic Memory: 12,500 tok"></div>
+<!-- Dynamic Working Scratchpad: 18,210 tok (~14.2%) -->
+<div class="bg-accent-warning hover:opacity-90 transition-opacity" style="width: 14.2%" title="Dynamic Scratchpad: 18,210 tok"></div>
+<!-- Free Capacity: 79,750 tok (~66.2%) -->
+<div class="bg-surface-variant/40 hover:opacity-90 transition-opacity" style="width: 66.2%" title="Free Capacity: 79,750 tok"></div>
+</div>
+<!-- Telemetry Legend -->
+<div class="flex flex-wrap items-center justify-between gap-y-1 gap-x-3 mt-2 text-[11px] font-code text-on-surface-variant">
+<div class="flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-primary"></span>
+<span>System Prompt: <strong class="text-on-surface">4,120</strong></span>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-primary-container"></span>
+<span>Schema &amp; Tools: <strong class="text-on-surface">8,420</strong></span>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-tertiary-container"></span>
+<span>Episodic: <strong class="text-on-surface">12,500</strong></span>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-accent-warning"></span>
+<span>Scratchpad: <strong class="text-on-surface">18,210</strong></span>
+</div>
+<div class="flex items-center gap-1.5 text-outline">
+<span class="w-2 h-2 rounded-full bg-surface-variant"></span>
+<span>Free: <strong class="text-outline">79,750 tok</strong></span>
+</div>
+</div>
+</div>
+<!-- Upper Middle: Real-Time Thought Trace Stream -->
+<div class="flex-1 min-h-0 flex flex-col bg-surface-dark overflow-hidden">
+<div class="px-space-md py-2 bg-surface-dim border-b border-border-subtle flex items-center justify-between shrink-0">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[18px]" data-icon="psychology">psychology</span>
+<span class="font-headline-sm text-body-md font-semibold text-on-surface">Active Thought Trace Stream</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-code bg-surface-container text-accent-success border border-border-subtle flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-accent-success animate-ping"></span> STREAMING
+              </span>
+</div>
+<div class="flex items-center gap-2 text-outline font-code text-[11px]">
+<span>Sampling Temp: 0.2</span>
+<span>•</span>
+<span>Top-P: 0.95</span>
+</div>
+</div>
+<!-- Thought Trace Scrollable Container -->
+<div class="flex-1 overflow-y-auto p-4 space-y-3 font-code text-code">
+<!-- Step 14 -->
+<div class="bg-surface-card border border-border-subtle rounded-lg p-3 hover:border-outline-variant transition-colors">
+<div class="flex items-center justify-between mb-1.5">
+<div class="flex items-center gap-2">
+<span class="text-primary font-semibold">Step 14</span>
+<span class="px-1.5 py-0.5 bg-secondary-container text-secondary font-code text-[10px] rounded uppercase font-medium">Thought / Decompose</span>
+</div>
+<span class="text-outline text-[11px]">10:44:12.108</span>
+</div>
+<p class="text-on-surface-variant font-code text-[12px] leading-relaxed">
+                Analyzing AST taint sink in <code class="text-secondary bg-surface-dim px-1 py-0.5 rounded">auth/token_verifier.ts</code>. Parameter <code class="text-tertiary">req.body.token</code> propagates unescaped into sql query.
+              </p>
+</div>
+<!-- Step 15 -->
+<div class="bg-surface-card border border-border-subtle rounded-lg p-3 hover:border-outline-variant transition-colors">
+<div class="flex items-center justify-between mb-1.5">
+<div class="flex items-center gap-2">
+<span class="text-primary font-semibold">Step 15</span>
+<span class="px-1.5 py-0.5 bg-surface-container-high text-tertiary font-code text-[10px] rounded uppercase font-medium">Memory Recall</span>
+</div>
+<span class="text-outline text-[11px]">10:44:12.380</span>
+</div>
+<p class="text-on-surface-variant font-code text-[12px] leading-relaxed">
+                Recalled episodic rule <code class="text-accent-success font-semibold">sec:ASTVulnerabilityRule</code> (<span class="text-accent-success">99.4% confidence</span>) from HNSW vector index <code class="text-outline-variant text-[11px]">idx_cwe_rules_v4</code>.
+              </p>
+</div>
+<!-- Step 16 -->
+<div class="bg-surface-card border border-border-subtle rounded-lg p-3 hover:border-outline-variant transition-colors">
+<div class="flex items-center justify-between mb-1.5">
+<div class="flex items-center gap-2">
+<span class="text-primary font-semibold">Step 16</span>
+<span class="px-1.5 py-0.5 bg-primary-container/20 text-primary-fixed-dim font-code text-[10px] rounded uppercase font-medium">Tool Invocation</span>
+</div>
+<span class="text-outline text-[11px]">10:44:12.822</span>
+</div>
+<div class="bg-surface-dim p-2 rounded border border-border-subtle/80 mb-1">
+<code class="text-primary font-semibold">mcp:ast_query_parser(node="TaggedTemplateExpression")</code>
+</div>
+<p class="text-on-surface-variant text-[12px]">
+                Returned AST node <span class="text-tertiary font-semibold">#412</span> with 2 child tokens.
+              </p>
+</div>
+<!-- Step 17 (Active Hypothesis) -->
+<div class="bg-surface-card border-l-4 border-l-primary border border-border-subtle rounded-lg p-3 hover:border-outline-variant transition-colors">
+<div class="flex items-center justify-between mb-1.5">
+<div class="flex items-center gap-2">
+<span class="text-primary font-bold">Step 17</span>
+<span class="px-1.5 py-0.5 bg-primary-container text-on-primary-container font-code text-[10px] rounded uppercase font-bold">Active Hypothesis</span>
+<span class="w-2 h-2 rounded-full bg-accent-success animate-ping"></span>
+</div>
+<span class="text-outline text-[11px]">10:44:13.004</span>
+</div>
+<p class="text-on-surface font-code text-[12px] leading-relaxed">
+                Formulating parameterized SQL rewrite using <code class="text-accent-success bg-surface-dim px-1.5 py-0.5 rounded border border-border-subtle">sql`SELECT * FROM users WHERE token = $&#123;token&#125;`</code>. Validating against PostgreSQL 16 schema dialect.
+              </p>
+</div>
+</div>
+</div>
+<!-- Lower Section: Interactive Scratchpad & Working Notes Editor -->
+<div class="h-64 border-t border-border-subtle bg-surface-dim flex flex-col shrink-0">
+<div class="px-space-md py-1.5 bg-surface-container-lowest border-b border-border-subtle flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-outline text-[16px]" data-icon="edit_note">edit_note</span>
+<span class="font-headline-sm text-body-sm font-semibold text-on-surface">Interactive Scratchpad / Working Notes</span>
+</div>
+<!-- Format Preview Switcher -->
+<div class="flex items-center bg-surface-dim rounded border border-border-subtle p-0.5">
+<button class="px-2 py-0.5 rounded text-[11px] font-code bg-surface-container text-primary font-medium">Markdown</button>
+<button class="px-2 py-0.5 rounded text-[11px] font-code text-on-surface-variant hover:text-on-surface">JSON</button>
+<button class="px-2 py-0.5 rounded text-[11px] font-code text-on-surface-variant hover:text-on-surface">Turtle (.ttl)</button>
+</div>
+</div>
+<!-- Code Editor Console -->
+<div class="flex-1 p-3 font-code text-[12px] overflow-y-auto leading-relaxed bg-surface-dark select-text">
+<div class="text-outline-variant">// Working buffer: current synthesis state for refactoring sequence</div>
+<div class="text-on-surface"><span class="text-tertiary">&#64;target:</span> <span class="text-secondary">"src/auth/token_verifier.ts"</span></div>
+<div class="text-on-surface"><span class="text-tertiary">&#64;taint_trace:</span> [req.body.token -&gt; AST#412 -&gt; RawQueryExec]</div>
+<div class="text-accent-warning"># Patch Proposal:</div>
+<div class="text-outline">- Import &#123; sql &#125; from 'slonik';</div>
+<div class="text-accent-success">+ const sanitizedQuery = sql`SELECT id, role, expired FROM sessions WHERE token = $&#123;rawToken&#125;;`;</div>
+<div class="text-accent-success">+ const session = await pool.one(sanitizedQuery);</div>
+<div class="text-on-surface"><span class="text-primary">&#64;assertion:</span> CWE-89 mitigation confirmed via rule sec:ASTVulnerabilityRule.</div>
+</div>
+</div>
+</section>
+<!-- ==================== RIGHT COLUMN: WORKING MEMORY BUFFERS & GRAPH BINDINGS (5 COLS) ==================== -->
+<section class="col-span-12 xl:col-span-5 flex flex-col h-full bg-surface-container-lowest overflow-hidden">
+<!-- Header Strip -->
+<div class="px-space-md py-2.5 bg-surface-dim border-b border-border-subtle flex items-center justify-between shrink-0">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[18px]" data-icon="hub">hub</span>
+<span class="font-headline-sm text-body-md font-semibold text-on-surface">Memory Stores &amp; Graph Bindings</span>
+</div>
+<span class="text-outline font-code text-[11px]">Sync Rate: 10Hz</span>
+</div>
+<div class="flex-1 min-h-0 overflow-y-auto p-4 space-y-4">
+<!-- Card 1: Short-Term Scratchpad Buffer -->
+<div class="bg-surface-card border border-border-subtle rounded-xl p-3.5 flex flex-col gap-2.5">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-accent-warning text-[18px]" data-icon="data_object">data_object</span>
+<span class="font-headline-sm text-[13px] font-semibold text-on-surface">Short-term Working Scratchpad Buffer</span>
+</div>
+<span class="font-code text-[10px] text-outline px-1.5 py-0.5 rounded bg-surface-dim border border-border-subtle">3 Key-Values Active</span>
+</div>
+<div class="space-y-1.5 font-code text-code">
+<div class="bg-surface-dim p-2 rounded border border-border-subtle flex items-center justify-between">
+<span class="text-tertiary">active_taint_var:</span>
+<span class="text-on-surface font-semibold bg-surface-card px-1.5 py-0.5 rounded">rawToken</span>
+</div>
+<div class="bg-surface-dim p-2 rounded border border-border-subtle flex items-center justify-between">
+<span class="text-tertiary">sink_function:</span>
+<span class="text-error font-semibold bg-surface-card px-1.5 py-0.5 rounded">db.unsafeExecute</span>
+</div>
+<div class="bg-surface-dim p-2 rounded border border-border-subtle flex items-center justify-between">
+<span class="text-tertiary">remediation_strategy:</span>
+<span class="text-accent-success font-semibold bg-surface-card px-1.5 py-0.5 rounded">parameterize</span>
+</div>
+</div>
+</div>
+<!-- Semantic Context Discovery Search Input -->
+<div class="bg-surface-card border border-border-subtle rounded-xl p-3.5 flex flex-col gap-3">
+  <div class="flex items-center justify-between">
     <div class="flex items-center gap-2">
-      <!-- Hamburger Menu for App Navigation -->
-      <button mat-icon-button [matMenuTriggerFor]="appMenu" aria-label="Menu" class="text-slate-500 hover:text-slate-800">
-        <mat-icon>menu</mat-icon>
+      <mat-icon class="text-primary text-[18px]">search</mat-icon>
+      <h2 class="font-headline-sm text-[13px] font-semibold text-on-surface m-0">Semantic Context Discovery</h2>
+    </div>
+  </div>
+  
+  <div class="flex flex-col gap-2">
+    <textarea [(ngModel)]="searchQuery" rows="3"
+              class="w-full bg-surface-dim border border-border-subtle rounded-md p-2 text-on-surface font-code text-[12px] focus:outline-none focus:border-primary transition-colors resize-none"
+              placeholder="e.g. I need an agent that can review Rust code and check for security vulnerabilities"
+              (keydown)="onKeydown($event)"></textarea>
+
+    <div class="flex items-center justify-between gap-4 mt-1">
+      <div class="flex-1">
+        <label class="text-[11px] font-semibold text-on-surface-variant mb-1 block">Trace Depth: {{traceDepth}}</label>
+        <mat-slider class="w-full" min="1" max="20" step="1" discrete>
+          <input matSliderThumb [(ngModel)]="traceDepth">
+        </mat-slider>
+      </div>
+
+      <button class="px-4 py-1.5 bg-primary text-on-primary font-semibold rounded font-label-md text-label-md hover:bg-primary-fixed-dim transition-colors duration-150 flex items-center gap-1 active:opacity-80 disabled:opacity-50 disabled:cursor-not-allowed"
+              [disabled]="isSearching || !searchQuery.trim()"
+              (click)="onSearch()">
+        <mat-icon class="!w-4 !h-4 !text-base mr-1">{{ isSearching ? 'hourglass_empty' : 'search' }}</mat-icon>
+        <span>{{ isSearching ? 'Searching...' : 'Find Matches' }}</span>
       </button>
-
-      <mat-menu #appMenu="matMenu">
-        @for (item of menuItems; track item.path) {
-          <a mat-menu-item [routerLink]="item.path" routerLinkActive="active-link">
-            <mat-icon>{{ item.icon }}</mat-icon>
-            <span>{{ item.label }}</span>
-          </a>
-        }
-      </mat-menu>
-
-      <div class="w-px h-6 bg-slate-200 mx-1"></div> <!-- Divider -->
-
-      <!-- Avatar -->
-      <div class="w-8 h-8 rounded-full bg-slate-200 border border-slate-300 flex items-center justify-center text-slate-600 font-bold text-xs">
-        U
-      </div>
     </div>
   </div>
+</div>
+<div class="bg-surface-card border border-border-subtle rounded-xl p-3.5 flex flex-col gap-2.5">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[18px]" data-icon="history_edu">history_edu</span>
+<span class="font-headline-sm text-[13px] font-semibold text-on-surface">Episodic Memory Store (Vector Recall)</span>
+</div>
+<span class="text-accent-success font-code text-[10px] font-medium" *ngIf="searchResults.length > 0">{{ searchResults.length }} Results</span>
+<span class="text-accent-success font-code text-[10px] font-medium" *ngIf="searchResults.length === 0">HNSW Index Warm</span>
+</div>
+<!-- List of Retrieved Episodes -->
+<div class="space-y-2">
+  <div *ngIf="searchResults.length === 0 && !isSearching" class="text-center py-6 text-on-surface-variant font-code text-[12px]">
+    No matches found or ready for query.
+  </div>
 
-  <div class="flex-1 overflow-y-auto p-8">
-    <div class="max-w-4xl mx-auto space-y-6">
-
-      <!-- Search Input Card -->
-      <mat-card class="!rounded-xl !shadow-sm !border !border-slate-200">
-        <mat-card-content class="!p-6">
-          <h2 class="text-xl font-bold mb-4">Semantic Context Discovery</h2>
-
-          <div class="flex gap-4 items-start">
-            <mat-form-field appearance="outline" class="flex-1">
-              <mat-label>Enter natural language task context</mat-label>
-              <textarea matInput [(ngModel)]="searchQuery" rows="3"
-                        placeholder="e.g. I need an agent that can review Rust code and check for security vulnerabilities"
-                        (keydown)="onKeydown($event)"></textarea>
-            </mat-form-field>
-          </div>
-
-          <div class="flex items-center gap-6 mt-2">
-            <div class="flex-1">
-              <label class="text-sm font-semibold text-slate-600 mb-1 block">Trace Depth (Results Limit: {{traceDepth}})</label>
-              <mat-slider class="w-full" min="1" max="20" step="1" discrete>
-                <input matSliderThumb [(ngModel)]="traceDepth">
-              </mat-slider>
-            </div>
-
-            <button mat-flat-button color="primary" class="!h-12 !px-8 !rounded-lg"
-                    [disabled]="isSearching || !searchQuery.trim()"
-                    (click)="onSearch()">
-              <mat-icon class="mr-2">{{ isSearching ? 'hourglass_empty' : 'search' }}</mat-icon>
-              {{ isSearching ? 'Searching...' : 'Find Matches' }}
-            </button>
-          </div>
-        </mat-card-content>
-      </mat-card>
-
-      <!-- Results List -->
-      <div *ngIf="searchResults.length > 0" class="space-y-4">
-        <h3 class="font-bold text-slate-700">Top Semantic Matches</h3>
-
-        <mat-card *ngFor="let result of searchResults" class="!rounded-xl !border !border-slate-200 !shadow-sm hover:!shadow-md transition-shadow">
-          <mat-card-content class="!p-5">
-            <div class="flex justify-between items-start mb-2">
-              <div class="flex items-center gap-3">
-                <mat-icon class="text-indigo-500" [fontIcon]="result.entity_type === 'agents' ? 'smart_toy' : 'extension'"></mat-icon>
-                <div>
-                  <div class="font-bold text-lg flex items-center gap-2">
-                    <span>{{ result.name || 'Unnamed' }}</span>
-                    <span class="text-xs font-mono bg-slate-100 text-slate-600 px-2 py-0.5 rounded capitalize">
-                      {{ result.entity_type }}
-                    </span>
-                  </div>
-                </div>
-              </div>
-              <div class="flex flex-col items-end">
-                <div class="text-2xl font-black" [ngClass]="{'text-green-600': result.score > 0.8, 'text-yellow-600': result.score > 0.5 && result.score <= 0.8, 'text-red-600': result.score <= 0.5}">
-                  {{ (result.score * 100) | number:'1.0-0' }}%
-                </div>
-                <span class="text-xs text-slate-500 uppercase tracking-wider font-bold">Match Score</span>
-              </div>
-            </div>
-
-            <!-- Match Reason Badge -->
-            <div class="flex items-center gap-1.5 text-xs font-semibold text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-md w-fit mb-3">
-              <mat-icon class="!w-4 !h-4 !text-base text-indigo-600">check_circle</mat-icon>
-              <span>{{ result.match_reason }}</span>
-            </div>
-
-            <!-- Description -->
-            <p class="text-sm text-slate-700 font-normal mb-3" *ngIf="result.description">
-              {{ result.description }}
-            </p>
-
-            <!-- Matched Content Snippet (if matched on prompt/definition/etc) -->
-            <div class="bg-slate-50 rounded-lg p-3 border border-slate-200 mb-3" *ngIf="result.field_name !== 'description' && result.field_name !== 'name'">
-              <div class="text-xs uppercase font-bold text-slate-500 mb-1 tracking-wider">Matched Content ({{ result.field_name }})</div>
-              <p class="text-xs text-slate-600 font-mono m-0 line-clamp-2">{{ result.content }}</p>
-            </div>
-
-            <div class="flex items-center justify-end pt-3 border-t border-slate-100 mt-2">
-              <button mat-flat-button color="primary" class="!rounded-lg !px-4 h-9 !text-xs font-bold shrink-0"
-                      data-testid="view-details-btn"
-                      (click)="viewDetails(result)">
-                <mat-icon class="!w-4 !h-4 !text-base mr-1">visibility</mat-icon>
-                View Details
-              </button>
-            </div>
-          </mat-card-content>
-        </mat-card>
+  <div *ngFor="let result of searchResults" class="p-2.5 bg-surface-dim border border-border-subtle rounded-lg flex flex-col gap-1 hover:border-outline-variant transition-colors cursor-pointer" (click)="viewDetails(result)">
+    <div class="flex items-center justify-between text-code">
+      <div class="flex items-center gap-2">
+        <mat-icon class="text-indigo-500 !w-4 !h-4 !text-[16px]" [fontIcon]="result.entity_type === 'agents' ? 'smart_toy' : 'extension'"></mat-icon>
+        <span class="font-medium text-on-surface">{{ result.name || 'Unnamed' }}</span>
       </div>
+      <span class="font-code text-[11px] font-semibold" [ngClass]="{'text-accent-success': result.score > 0.8, 'text-accent-warning': result.score > 0.5 && result.score <= 0.8, 'text-accent-error': result.score <= 0.5}">
+        {{ (result.score * 100) | number:'1.0-0' }}% sim
+      </span>
+    </div>
+    
+    <div class="flex items-center justify-between text-[11px] text-outline font-code mt-1">
+      <span class="uppercase">{{ result.entity_type }}</span>
+      <span class="truncate ml-2 text-on-surface-variant flex-1 text-right">{{ result.match_reason }}</span>
+    </div>
 
-      <!-- Empty State -->
-      <div *ngIf="!isSearching && searchResults.length === 0 && searchQuery" class="text-center py-12">
-        <mat-icon class="text-6xl text-slate-300 mb-4 font-extralight">sentiment_dissatisfied</mat-icon>
-        <h3 class="text-xl font-bold text-slate-600 mb-2">No matches found</h3>
-        <p class="text-slate-500">Try adjusting your context description or increasing the trace depth.</p>
-      </div>
+    <p class="text-[11px] text-on-surface-variant font-body-sm mt-1 line-clamp-2" *ngIf="result.description">
+      {{ result.description }}
+    </p>
+
+    <div class="bg-surface-container-lowest rounded p-1.5 border border-border-subtle mt-1" *ngIf="result.field_name !== 'description' && result.field_name !== 'name'">
+      <div class="text-[9px] uppercase font-bold text-outline-variant mb-0.5 tracking-wider">Matched Content ({{ result.field_name }})</div>
+      <p class="text-[10px] text-on-surface-variant font-code m-0 line-clamp-2">{{ result.content }}</p>
     </div>
   </div>
+</div>
+</div>
+<!-- Card 3: Knowledge Bindings (SPO Triples) -->
+<div class="bg-surface-card border border-border-subtle rounded-xl p-3.5 flex flex-col gap-2.5">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary text-[18px]" data-icon="schema">schema</span>
+<span class="font-headline-sm text-[13px] font-semibold text-on-surface">Knowledge Bindings (SPO Triples)</span>
+</div>
+<span class="font-code text-[10px] text-primary bg-surface-dim px-1.5 py-0.5 rounded border border-border-subtle">W3C RDF/TTL</span>
+</div>
+<!-- SPO Visual List -->
+<div class="space-y-1.5 font-code text-[11px]">
+<!-- Triple 1 -->
+<div class="bg-surface-dim p-2 rounded border border-border-subtle flex items-center justify-between gap-1 overflow-x-auto">
+<span class="text-primary font-semibold">agent:AutoRefactor</span>
+<span class="text-outline flex items-center gap-0.5">
+<span class="material-symbols-outlined text-[12px]" data-icon="arrow_forward">arrow_forward</span>
+<span class="text-on-surface-variant">evaluates</span>
+<span class="material-symbols-outlined text-[12px]" data-icon="arrow_forward">arrow_forward</span>
+</span>
+<span class="text-secondary font-medium">repo:auth/token_verifier.ts</span>
+</div>
+<!-- Triple 2 -->
+<div class="bg-surface-dim p-2 rounded border border-border-subtle flex items-center justify-between gap-1 overflow-x-auto">
+<span class="text-secondary font-medium">repo:auth/token_verifier.ts</span>
+<span class="text-outline flex items-center gap-0.5">
+<span class="material-symbols-outlined text-[12px]" data-icon="arrow_forward">arrow_forward</span>
+<span class="text-error">hasTaintSink</span>
+<span class="material-symbols-outlined text-[12px]" data-icon="arrow_forward">arrow_forward</span>
+</span>
+<span class="text-accent-error font-semibold">cwe:CWE-89-SQLi</span>
+</div>
+<!-- Triple 3 -->
+<div class="bg-surface-dim p-2 rounded border border-border-subtle flex items-center justify-between gap-1 overflow-x-auto">
+<span class="text-accent-error font-semibold">cwe:CWE-89-SQLi</span>
+<span class="text-outline flex items-center gap-0.5">
+<span class="material-symbols-outlined text-[12px]" data-icon="arrow_forward">arrow_forward</span>
+<span class="text-accent-success">resolvedBy</span>
+<span class="material-symbols-outlined text-[12px]" data-icon="arrow_forward">arrow_forward</span>
+</span>
+<span class="text-accent-success font-semibold">pattern:TaggedTemplate</span>
+</div>
+</div>
+</div>
+<!-- Card 4: Pruning Heuristics & Context Compression Panel -->
+<div class="bg-surface-card border border-border-subtle rounded-xl p-3.5 flex flex-col gap-3">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-outline text-[18px]" data-icon="content_cut">content_cut</span>
+<span class="font-headline-sm text-[13px] font-semibold text-on-surface">Pruning Heuristics &amp; Eviction</span>
+</div>
+<span class="font-code text-[11px] text-accent-success">Auto-Prune Active</span>
+</div>
+<div class="space-y-2.5 font-body-sm text-[12px]">
+<div class="flex items-center justify-between">
+<div>
+<div class="text-on-surface font-medium">LRU Episodic Eviction</div>
+<div class="text-outline text-[11px]">Discard unreferenced vector memories &gt; 30 turns</div>
+</div>
+<!-- Toggle switch representation -->
+<button class="w-8 h-4 bg-primary rounded-full relative p-0.5">
+<div class="w-3 h-3 bg-on-primary rounded-full ml-auto"></div>
+</button>
+</div>
+<div class="flex items-center justify-between pt-1 border-t border-border-subtle/50">
+<div>
+<div class="text-on-surface font-medium">Summary Compression Watermark</div>
+<div class="text-outline text-[11px]">Generate recursive summary when usage &gt; 80%</div>
+</div>
+<span class="font-code text-code text-primary bg-surface-dim px-2 py-0.5 rounded border border-border-subtle">80% / 102.4k</span>
+</div>
+<div class="pt-2">
+<button class="w-full py-1.5 px-3 bg-surface-container hover:bg-surface-variant text-on-surface border border-border-subtle rounded font-label-md text-label-md flex items-center justify-center gap-1.5 transition-colors">
+<span class="material-symbols-outlined text-[16px] text-primary" data-icon="cleaning_services">cleaning_services</span>
+<span>Prune Context Manually</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</section>
+</main>
 </div>

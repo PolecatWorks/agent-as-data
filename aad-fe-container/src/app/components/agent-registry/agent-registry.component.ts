@@ -71,21 +71,21 @@ export class AgentRegistryComponent implements OnInit {
   readonly conceptGuideMappings: ConceptTabMapping[] = [
     {
       icon: 'psychology',
-      iconColor: 'text-indigo-600',
+      iconColor: 'text-primary',
       title: '1. System Prompt & Persona',
       description:
         'Role definition, operational demeanor, and core instructions driving the agent.',
     },
     {
       icon: 'verified',
-      iconColor: 'text-emerald-600',
+      iconColor: 'text-accent-success',
       title: '2. Traits & Behavioral Contracts',
       description:
         'Enforced behavioral invariants, required capability fences, and corporate policy rules.',
     },
     {
       icon: 'extension',
-      iconColor: 'text-blue-600',
+      iconColor: 'text-primary',
       title: '3. Assigned Skills & Tools',
       description:
         'Standard operating procedures (SOPs) and executable workspace tools assigned to this agent.',

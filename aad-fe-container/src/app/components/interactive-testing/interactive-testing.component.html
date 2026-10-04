@@ -1,334 +1,494 @@
-<div class="h-full w-full flex flex-row bg-slate-50 overflow-hidden">
+<div class="h-full w-full bg-surface text-on-surface font-body-md antialiased flex flex-col overflow-hidden select-none dark">
+<!-- TOP APP BAR -->
+<app-top-bar>
+<!-- Concept Guide -->
+<div class="ml-4">
+  <app-concept-guide
+    badge="6. Live Pre-Production Sandbox"
+    title="Pre-Production Sandbox (Testing Studio)"
+    icon="bug_report"
+    triggerLabel="What is Testing Studio?"
+    analogyTitle="The Pre-Production Sandbox Analogy"
+    analogyText="Think of the Testing Studio like an interactive staging sandbox. Safely preview how agents reason, test dynamic trait bindings, inspect system prompts, and verify outputs before deploying to live workflows."
+    [tabMappings]="conceptGuideMappings"
+    detailLink="/detail"
+    detailLinkLabel="Explore Testing Architecture"
+    testIdPrefix="testing-concept">
+  </app-concept-guide>
+</div>
 
-  <!-- Left Sidebar -->
-  <div [ngClass]="isSidebarCollapsed ? 'w-16' : 'w-72'" class="h-full bg-white border-r border-slate-200 shadow-sm flex flex-col transition-all duration-300 z-10 shrink-0 overflow-hidden">
-
-    <!-- Sidebar Header -->
-    <div class="p-4 border-b border-slate-100 flex items-center shrink-0 h-14" [ngClass]="isSidebarCollapsed ? 'justify-center px-0' : 'justify-between'">
-      <div class="flex items-center gap-2 overflow-hidden" *ngIf="!isSidebarCollapsed">
-        <div class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white font-bold shrink-0">
-          <mat-icon class="!w-5 !h-5 !text-[20px] !leading-none flex items-center justify-center">bug_report</mat-icon>
-        </div>
-        <span class="font-black text-slate-800 text-lg whitespace-nowrap">AAD</span>
-      </div>
-      <button mat-icon-button (click)="toggleSidebar()" class="text-slate-400 hover:text-slate-700 !flex !items-center !justify-center !w-8 !h-8" [title]="isSidebarCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'">
-        <mat-icon class="!w-5 !h-5 !text-[20px] !leading-none flex items-center justify-center">{{ isSidebarCollapsed ? 'chevron_right' : 'chevron_left' }}</mat-icon>
+<!-- Context Breadcrumb -->
+<div class="hidden lg:flex items-center gap-2 pl-space-md border-l border-border-subtle text-body-sm font-body-sm text-on-surface-variant">
+<span class="hover:text-on-surface cursor-pointer">Testing Studio</span>
+<span class="material-symbols-outlined text-[14px]">chevron_right</span>
+<span class="text-on-surface font-medium" *ngIf="selectedEntity">{{ selectedEntity.name }}</span>
+<span class="text-on-surface font-medium" *ngIf="!selectedEntity">No Entity Selected</span>
+<span class="material-symbols-outlined text-[14px]">chevron_right</span>
+<span class="font-code text-code text-primary bg-surface-container-high px-1.5 py-0.5 rounded-lg border border-border-subtle" *ngIf="selectedEntity">v{{ selectedEntity.version || '1.0.0' }}</span>
+</div>
+<!-- Center Runtime Telemetry Indicator -->
+<div class="hidden xl:flex items-center gap-2 px-3 py-1 bg-surface-container rounded-full border border-border-subtle">
+<span class="relative flex h-2 w-2">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent-success opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2 w-2 bg-accent-success"></span>
+</span>
+<span class="font-code text-[11px] text-on-surface-variant">Runtime: <span class="text-on-surface font-medium">Ready</span> (Worker node-04)</span>
+</div>
+<!-- Trailing Actions & Icons -->
+<div class="flex items-center gap-space-sm">
+<!-- Model Selection Dropdown -->
+<div class="relative hidden sm:block">
+  <button class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface border border-border-subtle text-label-md font-label-md transition-colors duration-150"
+          [matMenuTriggerFor]="modelMenu">
+    <span class="material-symbols-outlined text-[15px]">memory</span>
+    <span>Model: {{ selectedModel }}</span>
+    <span class="material-symbols-outlined text-[15px]">arrow_drop_down</span>
+  </button>
+  <mat-menu #modelMenu="matMenu">
+    @for (model of availableModels; track model) {
+      <button mat-menu-item (click)="selectModel(model)" [class.font-bold]="selectedModel === model">
+        <mat-icon [class.text-primary]="selectedModel === model">
+          {{ selectedModel === model ? 'check' : 'smart_toy' }}
+        </mat-icon>
+        <span>{{ model }}</span>
       </button>
-    </div>
-
-    <!-- Search -->
-    <div class="p-3 border-b border-slate-100 shrink-0" *ngIf="!isSidebarCollapsed">
-      <div class="relative">
-        <mat-icon class="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 !w-4 !h-4 !text-[16px] !leading-none flex items-center justify-center">search</mat-icon>
-        <input type="text" placeholder="Search agents or skills..."
-               class="w-full pl-9 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
-               [(ngModel)]="searchQuery" />
-      </div>
-    </div>
-
-    <!-- Loading Spinner -->
-    @if (isLoading) {
-      <div class="flex justify-center items-center py-10 text-slate-400 gap-3">
-        <mat-spinner diameter="24"></mat-spinner>
-        <span class="text-xs" *ngIf="!isSidebarCollapsed">Loading...</span>
-      </div>
     }
+  </mat-menu>
+</div>
 
-    <!-- Entity List -->
-    @if (!isLoading) {
-      <div class="flex-1 min-h-0 overflow-y-auto py-2">
-        <div *ngIf="getFilteredEntities().length === 0 && !isSidebarCollapsed" class="text-center py-8 text-slate-400 text-xs">
-          No matching agents or skills found.
-        </div>
+<!-- App Navigation Menu -->
+<button class="p-1.5 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high rounded-xl transition-colors duration-150" title="Menu" [matMenuTriggerFor]="appMenu">
+  <span class="material-symbols-outlined">menu</span>
+</button>
+<mat-menu #appMenu="matMenu">
+  @for (item of menuItems; track item.path) {
+    <a mat-menu-item [routerLink]="item.path" routerLinkActive="active-link">
+      <mat-icon>{{ item.icon }}</mat-icon>
+      <span>{{ item.label }}</span>
+    </a>
+  }
+</mat-menu>
 
-        <div class="space-y-2 px-2 pb-2">
-          @for (entity of getFilteredEntities(); track entity.id) {
-            <div class="group p-3 rounded-xl border transition-all cursor-pointer bg-white"
-                 [ngClass]="selectedEntity?.id === entity.id ? 'border-indigo-500 shadow-sm ring-1 ring-indigo-500/20' : 'border-slate-200 hover:border-slate-300'"
-                 (click)="selectEntity(entity)"
-                 [matTooltip]="entity.name"
-                 matTooltipPosition="right"
-                 [matTooltipDisabled]="!isSidebarCollapsed">
-
-              <!-- Expanded View -->
-              <div class="flex flex-col w-full" *ngIf="!isSidebarCollapsed">
-                <div class="flex justify-between items-start">
-                  <div class="flex items-start gap-3 overflow-hidden flex-1">
-                    <mat-icon class="shrink-0 text-slate-400 mt-0.5"
-                              [ngClass]="{'text-indigo-600': selectedEntity?.id === entity.id}">
-                      {{ entity.type === 'agent' ? 'smart_toy' : 'extension' }}
-                    </mat-icon>
-                    <div class="flex-1 min-w-0">
-                      <h5 class="text-sm font-bold text-slate-900 m-0 truncate leading-tight mt-0.5">{{ entity.name }}</h5>
-                    </div>
-                  </div>
-
-                  <div class="flex items-center gap-1 ml-2 shrink-0">
-                    <span class="px-2.5 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded-md">
-                      v{{ entity.version || '1.0.0' }}
-                    </span>
-                  </div>
-                </div>
-
-                <!-- Description -->
-                <p *ngIf="entity.description" class="text-xs text-slate-500 m-0 mt-2 line-clamp-2 leading-relaxed">
-                  {{ entity.description }}
-                </p>
-
-                <!-- Attached Items Summary -->
-                <div class="flex gap-4 mt-2">
-                  <span class="text-[10px] font-bold text-slate-400 flex items-center gap-1">
-                    <mat-icon class="!w-3 !h-3 !text-[12px] leading-3 text-indigo-400">extension</mat-icon>
-                    {{ entity.attached_skills?.length || 0 }} Skills
-                  </span>
-                  <span class="text-[10px] font-bold text-slate-400 flex items-center gap-1">
-                    <mat-icon class="!w-3 !h-3 !text-[12px] leading-3 text-blue-400">dns</mat-icon>
-                    {{ entity.attached_tools?.length || 0 }} Tools
-                  </span>
-                </div>
-
-                <!-- Tags -->
-                <div *ngIf="entity.tags && entity.tags.length > 0" class="flex flex-wrap gap-1 pt-2">
-                  @for (tag of entity.tags; track tag) {
-                    <span class="px-2 py-0.5 bg-slate-100 text-slate-600 text-[10px] font-mono rounded">
-                      #{{ tag }}
-                    </span>
-                  }
-                </div>
-              </div>
-
-              <!-- Collapsed View -->
-              <div class="flex justify-center items-center" *ngIf="isSidebarCollapsed">
-                <mat-icon class="text-slate-400 transition-colors"
-                          [ngClass]="{'text-indigo-600': selectedEntity?.id === entity.id}">
-                  {{ entity.type === 'agent' ? 'smart_toy' : 'extension' }}
-                </mat-icon>
-              </div>
-            </div>
-          }
-        </div>
+<!-- JSON Actions: Export (Secondary) and Primary Action -->
+<button class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-border-subtle bg-surface-container-low hover:bg-surface-container-high text-on-surface text-label-md font-label-md transition-colors duration-150">
+<span class="material-symbols-outlined text-[16px]">file_upload</span>
+<span>Export</span>
+</button>
+<button class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-primary-container hover:bg-primary-container/90 text-on-primary-container font-label-md text-label-md font-semibold transition-all shadow-sm"
+        [disabled]="isExecuting || !selectedEntity" (click)="runExecution()">
+<span class="material-symbols-outlined text-[16px]" data-weight="fill">play_circle</span>
+<span>Run Test</span>
+<span class="text-[10px] bg-on-primary-container/20 px-1 py-0.5 rounded text-on-primary-container font-code ml-0.5">⌘↵</span>
+</button>
+<!-- Profile image alt defined in TopNavBar -->
+<div class="w-8 h-8 rounded-xl bg-surface-container-highest border border-border-subtle flex items-center justify-center text-primary font-semibold text-xs ml-1" title="User profile avatar">
+        BG
       </div>
-    }
+</div>
+</app-top-bar>
+<!-- WORKSPACE BODY CONTAINER -->
+<div class="flex-1 flex min-h-0 overflow-hidden">
+<!-- LEFT COLLAPSIBLE SIDEBAR -->
+<aside class="h-full flex flex-col bg-surface-container-lowest border-r border-border-subtle shrink-0 transition-all duration-300"
+       [ngClass]="isSidebarCollapsed ? 'w-16' : 'w-72'">
+<!-- Sidebar Header -->
+<div class="p-space-md border-b border-border-subtle flex items-center" [ngClass]="isSidebarCollapsed ? 'justify-center px-0' : 'justify-between'">
+<div class="flex items-center gap-2" *ngIf="!isSidebarCollapsed">
+<span class="material-symbols-outlined text-primary text-[18px]">account_tree</span>
+<span class="text-headline-sm font-headline-sm text-on-surface">Entity Selector</span>
+<span class="px-1.5 py-0.5 rounded-full text-[10px] font-label-md font-label-md bg-surface-container-high text-secondary border border-border-subtle">{{ getFilteredEntities().length }}</span>
+</div>
+<button class="text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high p-1 rounded-xl transition-colors" title="Toggle Sidebar" (click)="toggleSidebar()">
+<span class="material-symbols-outlined text-[18px]">{{ isSidebarCollapsed ? 'keyboard_double_arrow_right' : 'keyboard_double_arrow_left' }}</span>
+</button>
+</div>
+<!-- Pinned Search & Filtering -->
+<div class="p-space-sm border-b border-border-subtle space-y-2 shrink-0" *ngIf="!isSidebarCollapsed">
+<div class="relative flex items-center">
+<span class="material-symbols-outlined absolute left-2.5 text-outline text-[16px]">search</span>
+<input class="w-full pl-8 pr-7 py-1.5 bg-surface-container rounded-xl border border-border-subtle text-body-sm font-body-sm text-on-surface placeholder:text-outline focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary" 
+       placeholder="Filter agents, skills, traits..." type="text" [(ngModel)]="searchQuery"/>
+<span class="absolute right-2 px-1 py-0.5 bg-surface-container-highest text-[10px] font-code text-on-surface-variant rounded border border-border-subtle">/</span>
+</div>
+<!-- Filter Tabs/Pills -->
+<div class="flex items-center gap-1 bg-surface-container-low p-0.5 rounded-xl border border-border-subtle">
+<button class="flex-1 py-1 rounded-lg text-center font-label-md text-[11px] text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors">All</button>
+<button class="flex-1 py-1 rounded-lg text-center font-label-md text-[11px] bg-surface-container-high text-primary font-medium shadow-sm">Agents</button>
+<button class="flex-1 py-1 rounded-lg text-center font-label-md text-[11px] text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors">Skills</button>
+</div>
+</div>
+
+<!-- Loading Spinner -->
+@if (isLoading) {
+  <div class="flex justify-center items-center py-10 text-on-surface-variant gap-3">
+    <mat-spinner diameter="24"></mat-spinner>
+    <span class="text-xs" *ngIf="!isSidebarCollapsed">Loading...</span>
+  </div>
+}
+
+<!-- Scrollable Entity Cards List -->
+@if (!isLoading) {
+<div class="flex-1 overflow-y-auto p-space-sm space-y-2">
+  <div *ngIf="getFilteredEntities().length === 0 && !isSidebarCollapsed" class="text-center py-8 text-on-surface-variant text-xs">
+    No matching agents or skills found.
   </div>
 
-  <!-- Right Area (Workspace) -->
-  <div class="flex-1 flex flex-col min-w-0 overflow-hidden bg-slate-50 relative">
-
-    <!-- Top Bar -->
-    <div class="h-14 bg-white border-b border-slate-200 flex items-center justify-between px-4 shrink-0 shadow-sm z-10">
-      <!-- Left side of top bar (Title & View Switcher) -->
-      <div class="flex items-center gap-3">
-        <div class="flex items-center gap-1.5 px-2.5 py-1 -ml-2 rounded-lg hover:bg-slate-100 cursor-pointer transition-colors select-none group"
-             [matMenuTriggerFor]="appMenu"
-             data-testid="workspace-title-switcher"
-             title="Click to switch workspace">
-          <mat-icon class="text-indigo-600 !w-6 !h-6 !text-[24px] !leading-none flex items-center justify-center">bug_report</mat-icon>
-          <h1 class="text-lg font-black text-slate-800 m-0">Interactive Testing Studio</h1>
-          <mat-icon class="!w-4 !h-4 !text-base text-slate-400 group-hover:text-slate-700 transition-colors">expand_more</mat-icon>
-        </div>
-
-        <!-- Zero-Footprint Reusable Concept Guide -->
-        <app-concept-guide
-          badge="6. Live Pre-Production Sandbox"
-          title="Pre-Production Sandbox (Testing Studio)"
-          icon="bug_report"
-          triggerLabel="What is Testing Studio?"
-          analogyTitle="The Pre-Production Sandbox Analogy"
-          analogyText="Think of the Testing Studio like an interactive staging sandbox. Safely preview how agents reason, test dynamic trait bindings, inspect system prompts, and verify outputs before deploying to live workflows."
-          [tabMappings]="conceptGuideMappings"
-          detailLink="/detail"
-          detailLinkLabel="Explore Testing Architecture"
-          testIdPrefix="testing-concept">
-        </app-concept-guide>
-      </div>
-
-      <!-- Right side of top bar (Actions & Navigation) -->
-      <div class="flex items-center gap-2">
-        <!-- Model Selection Dropdown (Ollama local runtime) -->
-        <div class="flex items-center bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-full px-3 py-1 text-xs font-semibold text-slate-700 gap-1.5 transition-colors cursor-pointer"
-             [matMenuTriggerFor]="modelMenu" title="Select Ollama Model">
-          <mat-icon class="!w-4 !h-4 !text-[16px] text-slate-500 !leading-none flex items-center justify-center">memory</mat-icon>
-          <span>{{ selectedModel }}</span>
-          <mat-icon class="!w-4 !h-4 !text-[16px] text-slate-400 !leading-none flex items-center justify-center">expand_more</mat-icon>
-        </div>
-
-        <mat-menu #modelMenu="matMenu">
-          @for (model of availableModels; track model) {
-            <button mat-menu-item (click)="selectModel(model)" [class.font-bold]="selectedModel === model">
-              <mat-icon [class.text-indigo-600]="selectedModel === model">
-                {{ selectedModel === model ? 'check' : 'smart_toy' }}
-              </mat-icon>
-              <span>{{ model }}</span>
-            </button>
-          }
-        </mat-menu>
-
-        <button mat-flat-button color="primary" class="!rounded-lg !px-4 !font-bold h-9 ml-2 !inline-flex !items-center !justify-center"
-                [disabled]="isExecuting || !selectedEntity" (click)="runExecution()">
-          <mat-icon class="mr-1 !w-5 !h-5 !text-[20px] !leading-none flex items-center justify-center">play_arrow</mat-icon>
-          <span>Execute</span>
-        </button>
-
-        <!-- Hamburger Menu for App Navigation -->
-        <button mat-icon-button [matMenuTriggerFor]="appMenu" aria-label="Menu" class="text-slate-500 hover:text-slate-800">
-          <mat-icon>menu</mat-icon>
-        </button>
-
-        <mat-menu #appMenu="matMenu">
-          @for (item of menuItems; track item.path) {
-            <a mat-menu-item [routerLink]="item.path" routerLinkActive="active-link">
-              <mat-icon>{{ item.icon }}</mat-icon>
-              <span>{{ item.label }}</span>
-            </a>
-          }
-        </mat-menu>
-
-        <div class="w-px h-6 bg-slate-200 mx-1"></div> <!-- Divider -->
-
-        <!-- View Toggle Icon (Mock) -->
-        <button mat-icon-button class="text-slate-500 hover:text-slate-800" title="Change View">
-          <mat-icon>view_column</mat-icon>
-        </button>
-
-        <!-- User Profile (Mock) -->
-        <button mat-icon-button class="ml-1">
-          <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-amber-400 to-orange-500 border-2 border-white shadow-sm flex items-center justify-center text-white font-bold text-sm">
-            BG
+  @for (entity of getFilteredEntities(); track entity.id) {
+    <div class="p-2.5 rounded-xl cursor-pointer group transition-colors shadow-sm relative"
+         [ngClass]="selectedEntity?.id === entity.id ? 'bg-surface-container-high border-2 border-primary/90' : 'bg-surface-container-low hover:bg-surface-container border border-border-subtle'"
+         (click)="selectEntity(entity)"
+         [matTooltip]="entity.name"
+         matTooltipPosition="right"
+         [matTooltipDisabled]="!isSidebarCollapsed">
+      
+      <div class="flex flex-col w-full" *ngIf="!isSidebarCollapsed">
+        <div class="flex items-start justify-between">
+          <div class="flex items-center gap-2">
+            <div class="w-6 h-6 rounded-lg text-primary flex items-center justify-center transition-colors"
+                 [ngClass]="selectedEntity?.id === entity.id ? 'bg-primary/20' : 'bg-surface-container-high group-hover:text-primary'">
+              <span class="material-symbols-outlined text-[15px]" [attr.data-weight]="selectedEntity?.id === entity.id ? 'fill' : null">{{ entity.type === 'agent' ? 'smart_toy' : 'extension' }}</span>
+            </div>
+            <span class="text-body-md font-medium text-on-surface truncate">{{ entity.name }}</span>
           </div>
-        </button>
+          <span class="font-code text-[10px] px-1.5 py-0.2 rounded-md border"
+                [ngClass]="selectedEntity?.id === entity.id ? 'bg-primary/15 text-primary border-primary/30' : 'text-on-surface-variant bg-surface-container-highest border-border-subtle'">
+            v{{ entity.version || '1.0.0' }}
+          </span>
+        </div>
+        
+        <p *ngIf="entity.description" class="text-[11px] text-on-surface-variant mt-1.5 line-clamp-1 font-body-sm">{{ entity.description }}</p>
+        
+        <div class="flex items-center gap-1.5 mt-2 flex-wrap">
+          <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-surface-container text-[10px] font-code text-secondary border border-border-subtle">
+            <span class="material-symbols-outlined text-[11px]">dns</span>{{ entity.attached_tools?.length || 0 }} Tools
+          </span>
+          <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-surface-container text-[10px] font-code text-secondary border border-border-subtle">
+            <span class="material-symbols-outlined text-[11px]">extension</span>{{ entity.attached_skills?.length || 0 }} Skills
+          </span>
+          <span *ngIf="selectedEntity?.id === entity.id" class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-accent-success/15 text-accent-success text-[10px] font-medium border border-accent-success/30 ml-auto">
+            Active
+          </span>
+        </div>
+        <div *ngIf="entity.tags && entity.tags.length > 0" class="flex flex-wrap gap-1 mt-1 w-full">
+          @for (tag of entity.tags; track tag) {
+            <span class="px-1.5 py-0.5 bg-surface-container-high text-on-surface-variant text-[10px] font-mono rounded border border-border-subtle">
+              #{{ tag }}
+            </span>
+          }
+        </div>
+      </div>
+      
+      <!-- Collapsed View -->
+      <div class="flex justify-center items-center py-1" *ngIf="isSidebarCollapsed">
+        <span class="material-symbols-outlined transition-colors"
+              [ngClass]="selectedEntity?.id === entity.id ? 'text-primary' : 'text-on-surface-variant'">
+          {{ entity.type === 'agent' ? 'smart_toy' : 'extension' }}
+        </span>
       </div>
     </div>
+  }
+</div>
+}
 
-    <!-- Workspace Content (Scrollable) -->
-    <div class="flex-1 min-h-0 overflow-y-auto p-6 space-y-5">
-      @if (selectedEntity) {
-
-        <!-- Selected Entity Context & Prompt Inspector Card -->
-        <mat-card class="!rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden bg-white">
-          <div class="p-4 bg-slate-50/80 border-b border-slate-200/60 flex justify-between items-center">
-            <div class="flex items-center gap-3">
-              <div class="w-9 h-9 rounded-xl flex items-center justify-center text-white font-bold shrink-0"
-                   [ngClass]="selectedEntity.type === 'agent' ? 'bg-indigo-600' : 'bg-amber-500'">
-                <mat-icon class="!w-5 !h-5 !text-[20px] !leading-none flex items-center justify-center">{{ selectedEntity.type === 'agent' ? 'smart_toy' : 'extension' }}</mat-icon>
-              </div>
-              <div>
-                <div class="flex items-center gap-2">
-                  <h2 class="text-sm font-black text-slate-800 m-0">{{ selectedEntity.name }}</h2>
-                  <span class="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded-md">
-                    v{{ selectedEntity.version || '1.0.0' }}
-                  </span>
-                  <span class="px-2 py-0.5 bg-slate-100 text-slate-600 text-[10px] font-bold uppercase rounded-md">
-                    {{ selectedEntity.type }}
-                  </span>
-                </div>
-                @if (selectedEntity.id) {
-                  <p class="text-[11px] text-slate-400 m-0 mt-0.5 font-mono">ID: {{ selectedEntity.id }}</p>
-                }
-              </div>
-            </div>
-
-            <div class="flex items-center gap-2">
-              <button mat-stroked-button class="!rounded-xl !text-xs !font-semibold !inline-flex !items-center !justify-center !h-8 !px-3"
-                      [matTooltip]="copiedPrompt ? 'Copied to Clipboard!' : 'Copy Prompt'"
-                      (click)="copyPrompt(selectedEntity.definition || selectedEntity.description || '')">
-                <mat-icon class="!w-3.5 !h-3.5 !text-[14px] !leading-none mr-1.5 flex items-center justify-center text-indigo-600">{{ copiedPrompt ? 'check' : 'content_copy' }}</mat-icon>
-                <span class="leading-none">{{ copiedPrompt ? 'Copied' : 'Copy Prompt' }}</span>
-              </button>
-              <button mat-icon-button (click)="togglePromptExpanded()" class="text-slate-400 hover:text-slate-700 !flex !items-center !justify-center !w-8 !h-8">
-                <mat-icon class="!w-5 !h-5 !text-[20px] !leading-none flex items-center justify-center">{{ isPromptExpanded ? 'expand_less' : 'expand_more' }}</mat-icon>
-              </button>
-            </div>
-          </div>
-
-          <mat-card-content class="p-4 space-y-3" *ngIf="isPromptExpanded">
-            <!-- Description -->
-            @if (selectedEntity.description) {
-              <div>
-                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Description</span>
-                <p class="text-xs text-slate-700 leading-relaxed m-0 bg-slate-50 p-3 rounded-xl border border-slate-100">
-                  {{ selectedEntity.description }}
-                </p>
-              </div>
-            }
-
-            <!-- System Prompt / Definition -->
-            <div>
-              <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
-                {{ selectedEntity.type === 'agent' ? 'Agent System Prompt (agent_definition)' : 'Skill Definition / Instructions' }}
+<!-- Sidebar Footer -->
+<div class="p-space-sm border-t border-border-subtle bg-surface-container-lowest flex flex-col gap-1.5" *ngIf="!isSidebarCollapsed">
+<div class="flex items-center justify-between text-[11px] text-on-surface-variant">
+<span class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">memory</span> Session Cache
+          </span>
+<span class="font-code text-on-surface">4.2 MB / 64 MB</span>
+</div>
+<div class="w-full bg-surface-container rounded-full h-1.5 overflow-hidden">
+<div class="bg-primary h-full rounded-full" style="width: 6.5%;"></div>
+</div>
+<div class="flex items-center justify-between pt-1 text-[11px]">
+<a class="text-on-surface-variant hover:text-primary flex items-center gap-1 transition-colors" href="#">
+<span class="material-symbols-outlined text-[13px]">help</span> Documentation
+          </a>
+<span class="text-outline text-[10px]">Worker: node-04</span>
+</div>
+</div>
+</aside>
+<!-- MAIN WORKSPACE: SPLIT-PANE LAYOUT -->
+<main class="flex-1 flex min-h-0 overflow-hidden divide-x divide-border-subtle">
+@if (selectedEntity) {
+<!-- ============================================== -->
+<!-- LEFT SPLIT-PANE: Definition & System Prompt   -->
+<!-- ============================================== -->
+<section class="w-1/2 flex flex-col h-full bg-surface min-h-0 overflow-hidden">
+<!-- Header Bar -->
+<div class="h-12 px-space-md border-b border-border-subtle bg-surface-container-low flex items-center justify-between shrink-0">
+<div class="flex items-center gap-2.5 overflow-hidden">
+<div class="w-6 h-6 rounded-lg bg-primary/20 text-primary flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[15px]" data-weight="fill">{{ selectedEntity.type === 'agent' ? 'smart_toy' : 'extension' }}</span>
+</div>
+<span class="font-headline-sm text-headline-sm text-on-surface truncate">{{ selectedEntity.name }}</span>
+<span class="font-code text-[11px] text-on-surface-variant bg-surface-container-high px-1.5 py-0.5 rounded border border-border-subtle">v{{ selectedEntity.version || '1.0.0' }}</span>
+<div class="hidden 2xl:flex items-center gap-1.5 ml-2">
+<span class="px-2 py-0.5 rounded-full bg-secondary-container/40 text-secondary border border-border-subtle font-code text-[10px]">
+                Claude 3.7 Sonnet
               </span>
-              <pre class="m-0 p-3.5 bg-slate-900 text-slate-100 rounded-xl font-mono text-xs leading-relaxed overflow-x-auto whitespace-pre-wrap select-all max-h-48 border border-slate-800">{{ selectedEntity.definition || 'No explicit system prompt or definition configured for this entity.' }}</pre>
-            </div>
-          </mat-card-content>
-        </mat-card>
-
-        <!-- Execution & Terminal Console Card -->
-        <mat-card class="!rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden bg-white">
-          <div class="p-4 bg-slate-50/80 border-b border-slate-200/60 flex justify-between items-center">
-            <div class="flex items-center gap-2">
-              <mat-icon class="text-slate-500 !w-5 !h-5 !text-xl">terminal</mat-icon>
-              <h2 class="text-sm font-black text-slate-800 m-0">Live Execution Workbench (Rig + Ollama)</h2>
-            </div>
-            <div class="flex items-center gap-2">
-              <span class="text-[10px] font-bold px-2 py-0.5 rounded-md"
-                    [ngClass]="isExecuting ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-600'">
-                {{ isExecuting ? 'RUNNING' : 'IDLE' }}
+<span class="px-1.5 py-0.5 rounded bg-surface-container-high text-on-surface-variant border border-border-subtle font-code text-[10px]">
+                temp: 0.15
               </span>
-            </div>
-          </div>
+</div>
+</div>
+<div class="flex items-center gap-1.5 shrink-0">
+<button class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-border-subtle bg-surface-container hover:bg-surface-container-high text-on-surface text-label-md font-label-md transition-colors"
+        [matTooltip]="copiedPrompt ? 'Copied to Clipboard!' : 'Copy Prompt'"
+        (click)="copyPrompt(selectedEntity.definition || selectedEntity.description || '')">
+<span class="material-symbols-outlined text-[14px]" [class.text-primary]="copiedPrompt">{{ copiedPrompt ? 'check' : 'content_copy' }}</span>
+<span>{{ copiedPrompt ? 'Copied' : 'Copy Prompt' }}</span>
+</button>
+<button class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-border-subtle bg-surface-container hover:bg-surface-container-high text-on-surface text-label-md font-label-md transition-colors"
+        (click)="togglePromptExpanded()">
+<span class="material-symbols-outlined text-[14px]">{{ isPromptExpanded ? 'expand_less' : 'expand_more' }}</span>
+</button>
+</div>
+</div>
+<!-- Tab Strip -->
+<div class="flex items-center px-space-md bg-surface-container-low/70 border-b border-border-subtle shrink-0">
+<button class="px-3 py-2 text-label-md font-label-md text-primary border-b-2 border-primary font-medium">{{ selectedEntity.type === 'agent' ? 'Agent System Prompt' : 'Skill Definition' }}</button>
+<button class="px-3 py-2 text-label-md font-label-md text-on-surface-variant hover:text-on-surface transition-colors flex items-center gap-1.5">
+<span>Attached Tools</span>
+<span class="px-1.5 py-0.2 rounded-full bg-surface-container text-[10px] font-code">{{ selectedEntity.attached_tools?.length || 0 }}</span>
+</button>
+<button class="px-3 py-2 text-label-md font-label-md text-on-surface-variant hover:text-on-surface transition-colors">Model Hyperparameters</button>
+<button class="px-3 py-2 text-label-md font-label-md text-on-surface-variant hover:text-on-surface transition-colors">State Variables</button>
+</div>
+<!-- Scrollable Inner Body -->
+<div class="flex-1 min-h-0 overflow-y-auto p-space-md space-y-4" *ngIf="isPromptExpanded">
+<!-- System Prompt Editor (Monaco / IDE style card) -->
+<div class="rounded-xl border border-border-subtle bg-surface-dark overflow-hidden shadow-md">
+<div class="h-8 px-3 bg-surface-container-lowest border-b border-border-subtle flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-outline text-[14px]">code</span>
+<span class="font-code text-[11px] text-on-surface-variant">system_prompt_v2.4.jinja2</span>
+<span class="text-[10px] text-accent-success font-code bg-accent-success/10 px-1 rounded">read-only</span>
+</div>
+<div class="flex items-center gap-2 font-code text-[10px] text-on-surface-variant">
+<span>UTF-8</span>
+<span>Jinja2</span>
+</div>
+</div>
+<!-- IDE code lines -->
+<div class="p-3 font-code text-code leading-relaxed text-on-surface flex select-text overflow-x-auto max-h-96">
+<pre class="pl-3 space-y-0.5 flex-1 whitespace-pre-wrap">{{ selectedEntity.definition || 'No explicit system prompt or definition configured for this entity.' }}</pre>
+</div>
+</div>
+<!-- Dynamic Variable Inputs Panel -->
+<div class="rounded-xl border border-border-subtle bg-surface-container-low p-3.5 space-y-3">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[16px]">tune</span>
+<span class="font-headline-sm text-[13px] text-on-surface">Dynamic Variable Overrides</span>
+</div>
+<span class="text-[10px] font-code text-on-surface-variant bg-surface-container px-2 py-0.5 rounded border border-border-subtle">3 variables configured</span>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+<!-- Var 1 -->
+<div>
+<label class="block text-[11px] font-code text-secondary mb-1">target_repository</label>
+<input class="w-full px-2.5 py-1.5 bg-surface-dark border border-border-subtle rounded-lg text-body-sm font-code text-on-surface focus:outline-none focus:border-primary" type="text" value="org/core-auth-service"/>
+</div>
+<!-- Var 2 -->
+<div>
+<label class="block text-[11px] font-code text-secondary mb-1">severity_threshold</label>
+<input class="w-full px-2.5 py-1.5 bg-surface-dark border border-border-subtle rounded-lg text-body-sm font-code text-on-surface focus:outline-none focus:border-primary" type="text" value="CWE-High / Critical"/>
+</div>
+<!-- Var 3 -->
+<div>
+<label class="block text-[11px] font-code text-secondary mb-1">diff_context_lines</label>
+<input class="w-full px-2.5 py-1.5 bg-surface-dark border border-border-subtle rounded-lg text-body-sm font-code text-on-surface focus:outline-none focus:border-primary" type="number" value="3"/>
+</div>
+</div>
+</div>
+<!-- Attached Tools Accordion Preview -->
+<div class="rounded-xl border border-border-subtle bg-surface-container-low p-3.5">
+<div class="flex items-center justify-between mb-2.5">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary text-[16px]">construction</span>
+<span class="font-headline-sm text-[13px] text-on-surface">Registered Tools in Scope</span>
+</div>
+<span class="text-[10px] text-on-surface-variant font-code">Schema v2 • Auto-Invokable</span>
+</div>
+<div class="flex flex-wrap gap-2">
+@for (tool of selectedEntity.attached_tools; track tool) {
+<div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-surface-container border border-border-subtle text-code text-[11px] text-on-surface hover:border-primary/50 transition-colors cursor-pointer">
+<span class="material-symbols-outlined text-[13px] text-primary">data_object</span>
+<span>{{ tool }}</span>
+<span class="text-[9px] text-outline">v1.0</span>
+</div>
+}
+</div>
+</div>
+</div>
+</section>
+<!-- ============================================== -->
+<!-- RIGHT SPLIT-PANE: Execution & Real-time Console-->
+<!-- ============================================== -->
+<section class="w-1/2 flex flex-col h-full bg-surface min-h-0 overflow-hidden">
+<!-- Header Bar -->
+<div class="h-12 px-space-md border-b border-border-subtle bg-surface-container-low flex items-center justify-between shrink-0">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[18px]">play_circle</span>
+<span class="font-headline-sm text-headline-sm text-on-surface">Interactive Test Execution</span>
+</div>
+<div class="flex items-center gap-2">
+<!-- Execution Mode Toggle -->
+<div class="flex items-center p-0.5 rounded-xl bg-surface-container border border-border-subtle">
+<button class="px-2 py-0.5 rounded-lg text-label-md font-label-md text-[11px] bg-primary-container text-on-primary-container font-semibold shadow-sm">SSE Stream</button>
+<button class="px-2 py-0.5 rounded-lg text-label-md font-label-md text-[11px] text-on-surface-variant hover:text-on-surface transition-colors">Batch Run</button>
+</div>
+<span class="px-2 py-0.5 rounded-lg text-label-md font-label-md text-[11px] font-semibold shadow-sm ml-2"
+      [ngClass]="isExecuting ? 'bg-accent-warning text-on-error' : 'bg-surface-container-high text-on-surface-variant'">
+  {{ isExecuting ? 'RUNNING' : 'IDLE' }}
+</span>
+</div>
+</div>
+<!-- Scrollable Inner Content -->
+<div class="flex-1 min-h-0 overflow-y-auto p-space-md space-y-4">
+<!-- Test Input Box Card -->
+<div class="rounded-xl border border-border-subtle bg-surface-container-low p-3.5 shadow-sm space-y-2.5">
+<div class="flex items-center justify-between">
+<label class="font-headline-sm text-[12px] text-on-surface flex items-center gap-1.5">
+<span class="material-symbols-outlined text-primary text-[15px]">input</span>
+<span>Test Input / Trigger Payload</span>
+</label>
+<div class="flex items-center gap-2">
+<button class="text-[11px] text-primary hover:underline flex items-center gap-1 font-label-md">
+<span class="material-symbols-outlined text-[13px]">code_blocks</span>
+<span>Inject Sample Diff</span>
+</button>
+<span class="text-outline">|</span>
+<span class="font-code text-[11px] text-on-surface-variant">148 tokens</span>
+</div>
+</div>
+<div class="relative">
+<textarea class="w-full p-2.5 rounded-lg bg-surface-dark border border-border-subtle font-code text-code text-on-surface focus:outline-none focus:border-primary resize-y" rows="3" [(ngModel)]="promptInput" (keydown.enter)="runExecution()" placeholder="Type prompt execution instructions..."></textarea>
+</div>
+<label class="font-headline-sm text-[12px] text-on-surface flex items-center gap-1.5 mt-2">
+  <span class="material-symbols-outlined text-primary text-[15px]">link</span>
+  <span>Webhook URL (Optional)</span>
+</label>
+<input type="text" [(ngModel)]="webhookUrl" placeholder="Optional Webhook URL..."
+       class="w-full px-2.5 py-1.5 bg-surface-dark border border-border-subtle rounded-lg text-body-sm font-code text-on-surface focus:outline-none focus:border-primary" />
+<div class="flex items-center justify-between pt-0.5 mt-2">
+<span class="text-[11px] text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px] text-accent-success">verified</span>
+                Ready for live step evaluation
+              </span>
+<button class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary-container hover:bg-primary-container/90 text-on-primary-container font-label-md text-label-md font-semibold transition-all shadow-sm"
+        [disabled]="isExecuting" (click)="runExecution()">
+<span class="material-symbols-outlined text-[15px]" data-weight="fill">play_arrow</span>
+<span>Execute Test Step</span>
+</button>
+</div>
+</div>
+<!-- Dark Terminal Window -->
+<div class="bg-slate-950 rounded-xl border border-slate-800 p-4 font-mono text-xs overflow-hidden shadow-lg">
+<!-- Terminal Title Bar -->
+<div class="flex items-center justify-between pb-3 mb-3 border-b border-slate-800/80">
+<div class="flex items-center gap-2">
+<div class="flex items-center gap-1.5">
+<span class="w-2.5 h-2.5 rounded-full bg-red-500/80 inline-block"></span>
+<span class="w-2.5 h-2.5 rounded-full bg-yellow-500/80 inline-block"></span>
+<span class="w-2.5 h-2.5 rounded-full bg-green-500/80 inline-block"></span>
+</div>
+<span class="text-slate-400 font-mono text-[11px] ml-2">sse-stream-listener: worker-04.agent.internal</span>
+</div>
+<div class="flex items-center gap-3">
+<div class="flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-950/80 border border-emerald-800 text-emerald-400 text-[10px] font-medium tracking-wide">
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" *ngIf="isExecuting"></span>
+<span class="w-1.5 h-1.5 rounded-full bg-slate-500" *ngIf="!isExecuting"></span>
+<span>{{ isExecuting ? 'STREAMING' : 'IDLE' }}</span>
+</div>
+<span class="text-slate-500 text-[10px]">TTFT: 142ms • 64.2 tok/s</span>
+</div>
+</div>
+<!-- Real-time SSE Streaming Logs -->
+<div class="space-y-1.5 leading-relaxed overflow-x-auto text-[11px] text-slate-300 whitespace-pre-wrap min-h-[120px] max-h-[300px] overflow-y-auto">
+{{ executionOutput || 'Click Execute to trigger Rig execution via Ollama (' + selectedModel + ').' }}
+</div>
+</div>
 
-          <mat-card-content class="p-4 space-y-4">
-            <!-- Inputs Toolbar -->
-            <div class="space-y-2">
-              <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                <div class="sm:col-span-2">
-                  <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Test Prompt</label>
-                  <input type="text" [(ngModel)]="promptInput" (keydown.enter)="runExecution()" placeholder="Type prompt execution instructions..."
-                         class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all" />
-                </div>
-                <div>
-                  <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Webhook URL (Optional)</label>
-                  <input type="text" [(ngModel)]="webhookUrl" placeholder="Optional Webhook URL..."
-                         class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all" />
-                </div>
-              </div>
-            </div>
+<!-- Final Parsed Output Card -->
+@if (finalOutput) {
+<div class="rounded-xl border border-border-subtle bg-surface-container-low p-3.5 space-y-3">
+<div class="flex items-center justify-between border-b border-border-subtle pb-2.5">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-accent-success text-[18px]">verified</span>
+<div>
+<h3 class="font-headline-sm text-[13px] text-on-surface">Synthesized Output &amp; Structured Evaluation</h3>
+<p class="text-[10px] text-accent-success font-code">Status: 200 OK • Passed Security Checks</p>
+</div>
+</div>
+<!-- Tab Switcher -->
+<div class="flex items-center gap-1 bg-surface-container p-0.5 rounded-lg border border-border-subtle">
+<button class="px-2 py-0.5 rounded text-[11px] font-label-md bg-surface-container-high text-primary font-medium">Parsed JSON / Triples</button>
+<button class="px-2 py-0.5 rounded text-[11px] font-label-md text-on-surface-variant hover:text-on-surface">Markdown Report</button>
+<button mat-icon-button (click)="copyPrompt(finalOutput)" class="text-on-surface-variant hover:text-on-surface ml-2" title="Copy Output">
+<span class="material-symbols-outlined text-[16px]">content_copy</span>
+</button>
+</div>
+</div>
+<!-- JSON / RDF Preview -->
+<div class="p-3 bg-surface-dark rounded-lg border border-border-subtle font-code text-code overflow-x-auto text-[11px]">
+<pre class="text-on-surface-variant leading-tight whitespace-pre-wrap">{{ finalOutput }}</pre>
+</div>
+<!-- Evaluation Scorecard Grid -->
+<div class="grid grid-cols-3 gap-2 pt-1">
+<div class="p-2 rounded-lg bg-surface-container border border-border-subtle flex items-center justify-between">
+<div class="flex items-center gap-1.5 text-on-surface-variant text-[11px]">
+<span class="material-symbols-outlined text-[15px] text-primary">timer</span>
+<span>Latency</span>
+</div>
+<span class="font-code text-[12px] font-medium text-on-surface">840ms</span>
+</div>
+<div class="p-2 rounded-lg bg-surface-container border border-border-subtle flex items-center justify-between">
+<div class="flex items-center gap-1.5 text-on-surface-variant text-[11px]">
+<span class="material-symbols-outlined text-[15px] text-accent-success">shield</span>
+<span>Guardrails</span>
+</div>
+<span class="font-code text-[12px] font-medium text-accent-success">100% Passed</span>
+</div>
+<div class="p-2 rounded-lg bg-surface-container border border-border-subtle flex items-center justify-between">
+<div class="flex items-center gap-1.5 text-on-surface-variant text-[11px]">
+<span class="material-symbols-outlined text-[15px] text-tertiary">payments</span>
+<span>Run Cost</span>
+</div>
+<span class="font-code text-[12px] font-medium text-on-surface">$0.0042</span>
+</div>
+</div>
+</div>
+}
 
-            <!-- Execution Log Terminal -->
-            <div class="flex flex-col bg-slate-950 text-slate-100 rounded-xl font-mono text-xs overflow-hidden border border-slate-800">
-              <div class="flex justify-between items-center text-slate-400 border-b border-slate-800 px-4 py-2 shrink-0">
-                <span class="font-bold tracking-widest text-[10px] uppercase">Execution Log Terminal</span>
-                <span class="px-2 py-0.5 rounded-md text-[10px] font-bold tracking-wider"
-                      [ngClass]="isExecuting ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' : 'bg-slate-800 text-slate-400 border border-slate-700'">
-                  {{ isExecuting ? '● RUNNING' : '○ IDLE' }}
-                </span>
-              </div>
-              <pre class="min-h-[120px] max-h-56 overflow-y-auto whitespace-pre-wrap m-0 p-4 text-slate-200 leading-relaxed font-mono text-xs">{{ executionOutput || 'Click Execute to trigger Rig execution via Ollama (' + selectedModel + ').' }}</pre>
-            </div>
-
-            <!-- Final LLM Output Inspector -->
-            @if (finalOutput) {
-              <div class="bg-emerald-50/50 border border-emerald-200 rounded-xl p-4">
-                <div class="flex justify-between items-center mb-2">
-                  <span class="text-xs font-bold text-emerald-900 flex items-center gap-1.5 leading-none">
-                    <mat-icon class="!w-4 !h-4 !text-[16px] !leading-none text-emerald-600 flex items-center justify-center">check_circle</mat-icon>
-                    Final LLM Output Response
-                  </span>
-                  <button mat-icon-button (click)="copyPrompt(finalOutput)" class="text-emerald-700 hover:text-emerald-900 !w-7 !h-7 !flex !items-center !justify-center" title="Copy Output">
-                    <mat-icon class="!w-4 !h-4 !text-[16px] !leading-none flex items-center justify-center">content_copy</mat-icon>
-                  </button>
-                </div>
-                <pre class="m-0 p-3 bg-white text-slate-800 rounded-lg font-sans text-xs leading-relaxed whitespace-pre-wrap border border-emerald-100">{{ finalOutput }}</pre>
-              </div>
-            }
-          </mat-card-content>
-        </mat-card>
-
-      } @else {
-        <div class="text-center py-20 text-slate-400">
-          <mat-icon class="!w-12 !h-12 !text-5xl text-slate-300 mb-2">touch_app</mat-icon>
-          <p class="text-sm font-semibold">Select an agent or skill from the left sidebar to start interactive testing.</p>
-        </div>
-      }
-    </div>
-  </div>
+</div>
+</section>
+} @else {
+<!-- No selection state -->
+<div class="w-full h-full flex flex-col items-center justify-center text-on-surface-variant">
+  <span class="material-symbols-outlined text-[48px] mb-2 opacity-50">touch_app</span>
+  <p class="text-sm font-semibold">Select an agent or skill from the left sidebar to start interactive testing.</p>
+</div>
+}
+</main>
+</div>
+<!-- STATUS FOOTER BAR -->
+<footer class="h-6 bg-surface-container-lowest border-t border-border-subtle px-space-md flex items-center justify-between text-[11px] font-code text-on-surface-variant shrink-0 z-20">
+<div class="flex items-center gap-3">
+<span class="flex items-center gap-1" [ngClass]="isExecuting ? 'text-accent-success' : 'text-on-surface-variant'">
+<span class="material-symbols-outlined text-[12px]">check_circle</span>
+<span>{{ isExecuting ? 'SSE Stream Connected' : 'SSE Stream Disconnected' }}</span>
+</span>
+<span class="text-outline">|</span>
+<span>Cluster: us-east-prod-02</span>
+<span class="text-outline">|</span>
+<span>Engine: v1.4.0-hybrid</span>
+</div>
+<div class="flex items-center gap-4">
+<span>Context Window: 4,120 / 128,000 tokens</span>
+<span class="text-on-surface">UTF-8 • JSON Output</span>
+</div>
+</footer>
 </div>

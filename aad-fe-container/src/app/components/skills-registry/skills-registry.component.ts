@@ -1,3 +1,4 @@
+import { TopBarComponent } from '../../shared/top-bar/top-bar.component';
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -25,7 +26,7 @@ import { APP_NAV_MENU_ITEMS } from '../../models/navigation';
 @Component({
   selector: 'app-skills-registry',
   standalone: true,
-  imports: [
+  imports: [TopBarComponent, 
     CommonModule,
     FormsModule,
     RouterModule,
@@ -52,21 +53,21 @@ export class SkillsRegistryComponent implements OnInit {
   readonly conceptGuideMappings: ConceptTabMapping[] = [
     {
       icon: 'description',
-      iconColor: 'text-indigo-600',
+      iconColor: 'text-primary',
       title: '1. Procedural Instructions',
       description:
         'Step-by-step guidance and deterministic execution rules defining how the task is performed.',
     },
     {
       icon: 'schema',
-      iconColor: 'text-amber-600',
+      iconColor: 'text-accent-warning',
       title: '2. Typed JSON Schemas',
       description:
         'Strictly validated input parameters and structured response payload schemas.',
     },
     {
       icon: 'verified',
-      iconColor: 'text-emerald-600',
+      iconColor: 'text-accent-success',
       title: '3. Trait Safety Verification',
       description:
         'Automated contract verification ensuring the skill adheres to required behavioral invariants.',

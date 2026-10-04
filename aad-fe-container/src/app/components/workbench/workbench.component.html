@@ -1,258 +1,28 @@
-<div class="h-full w-full flex flex-row bg-slate-50 overflow-hidden">
-
-  <!-- Left Sidebar -->
-  <div [ngClass]="isSidebarCollapsed ? 'w-16' : 'w-72'" class="h-full bg-white border-r border-slate-200 shadow-sm flex flex-col transition-all duration-300 z-10 shrink-0 overflow-hidden">
-
-    <!-- Sidebar Header (Bench Scoped Switcher) -->
-    <div class="p-3 border-b border-slate-100 flex flex-col shrink-0" [ngClass]="isSidebarCollapsed ? 'items-center px-0' : ''">
-      
-      <!-- Collapsed Toggle Row -->
-      <div class="flex items-center justify-between w-full" *ngIf="!isSidebarCollapsed">
-        <div class="flex items-center gap-2 overflow-hidden flex-1">
-          <div class="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center text-white font-bold shrink-0">
-            <mat-icon class="!w-4 !h-4 !text-base">table_restaurant</mat-icon>
-          </div>
-          <span class="font-black text-slate-800 text-sm whitespace-nowrap">BENCH</span>
-        </div>
-        <button mat-icon-button (click)="toggleSidebar()" class="text-slate-400 hover:text-slate-700 !w-8 !h-8" [title]="isSidebarCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'">
-          <mat-icon class="!text-lg">chevron_left</mat-icon>
-        </button>
-      </div>
-
-      <div *ngIf="isSidebarCollapsed" class="flex flex-col items-center py-2">
-        <button mat-icon-button (click)="toggleSidebar()" class="text-slate-400 hover:text-slate-700" title="Expand Sidebar">
-          <mat-icon>chevron_right</mat-icon>
-        </button>
-      </div>
-
-      <!-- Bench Selector Dropdown & Renaming Area (Expanded Only) -->
-      <div class="mt-2 relative w-full" *ngIf="!isSidebarCollapsed">
-        
-        <!-- Active Bench Button / Dropdown Trigger -->
-        <div class="flex items-center justify-between bg-slate-50 border border-slate-200 rounded-lg p-1.5 hover:border-slate-300 transition-all">
-          
-          <!-- Name Display or Inline Edit -->
-          <div class="flex-1 min-w-0 flex items-center gap-1.5" *ngIf="!isEditingBenchName">
-            <mat-icon class="!w-4 !h-4 !text-base text-indigo-600 shrink-0">folder_shared</mat-icon>
-            <span class="text-xs font-bold text-slate-800 truncate cursor-pointer flex-1" (click)="toggleBenchDropdown()" title="Switch Bench">
-              {{ activeBench ? activeBench.name : 'Select Bench' }}
-            </span>
-            <button mat-icon-button class="!w-6 !h-6 text-slate-400 hover:text-indigo-600 shrink-0" (click)="startEditingBenchName(); $event.stopPropagation()" title="Rename Bench">
-              <mat-icon class="!w-3.5 !h-3.5 !text-sm">edit</mat-icon>
-            </button>
-          </div>
-
-          <!-- Inline Bench Renaming Input -->
-          <div class="flex-1 min-w-0 flex items-center gap-1" *ngIf="isEditingBenchName">
-            <input type="text"
-                   class="w-full text-xs font-bold text-slate-800 bg-white border border-indigo-400 rounded px-1.5 py-0.5 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                   [(ngModel)]="editingBenchNameContent"
-                   (keydown.enter)="saveBenchName()"
-                   (keydown.escape)="cancelEditingBenchName()"
-                   (blur)="saveBenchName()"
-                   autofocus />
-          </div>
-
-          <!-- Dropdown Toggle Chevron -->
-          <button mat-icon-button class="!w-6 !h-6 text-slate-400 hover:text-slate-700 shrink-0" (click)="toggleBenchDropdown()" title="Toggle Benches List">
-            <mat-icon class="!w-4 !h-4 !text-base">{{ isBenchDropdownOpen ? 'expand_less' : 'expand_more' }}</mat-icon>
-          </button>
-        </div>
-
-        <!-- Custom Dropdown Menu for Benches -->
-        <div *ngIf="isBenchDropdownOpen" class="absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg z-30 p-2 space-y-1">
-          
-          <!-- Action: Add New Bench Inline Toggle -->
-          <button *ngIf="!isCreatingBenchInline" mat-button class="w-full !justify-start !text-xs !text-indigo-600 font-bold !px-2 !py-1 h-7 bg-indigo-50/50 hover:bg-indigo-50 rounded" (click)="startCreatingBenchInline()">
-            <mat-icon class="!w-3.5 !h-3.5 !text-sm mr-1">add</mat-icon> + New Bench
-          </button>
-
-          <!-- Inline Input for Creating Bench -->
-          <div *ngIf="isCreatingBenchInline" class="p-1 bg-slate-50 border border-indigo-200 rounded-lg flex items-center gap-1">
-            <input type="text" placeholder="Bench name..."
-                   class="w-full text-xs bg-white border border-slate-200 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                   [(ngModel)]="newBenchName"
-                   (keydown.enter)="commitCreateBench()"
-                   (keydown.escape)="cancelCreatingBenchInline()"
-                   autofocus />
-            <button mat-icon-button class="!w-6 !h-6 text-emerald-600 hover:text-emerald-700 shrink-0" (click)="commitCreateBench()">
-              <mat-icon class="!w-3.5 !h-3.5 !text-sm">check</mat-icon>
-            </button>
-            <button mat-icon-button class="!w-6 !h-6 text-slate-400 hover:text-slate-600 shrink-0" (click)="cancelCreatingBenchInline()">
-              <mat-icon class="!w-3.5 !h-3.5 !text-sm">close</mat-icon>
-            </button>
-          </div>
-
-          <!-- Benches List -->
-          <div class="max-h-48 overflow-y-auto space-y-0.5 pt-1">
-            <div *ngFor="let b of benches"
-                 class="flex items-center justify-between px-2 py-1.5 rounded-lg text-xs cursor-pointer hover:bg-slate-100 transition-colors"
-                 [ngClass]="b.id === activeBench?.id ? 'bg-indigo-50/70 text-indigo-700 font-bold' : 'text-slate-700'"
-                 (click)="selectBench(b)">
-              <div class="flex items-center gap-1.5 truncate">
-                <mat-icon class="!w-3.5 !h-3.5 !text-sm text-slate-400" [ngClass]="{'text-indigo-600': b.id === activeBench?.id}">folder</mat-icon>
-                <span class="truncate">{{ b.name }}</span>
-              </div>
-              <span *ngIf="b.id === activeBench?.id" class="w-1.5 h-1.5 rounded-full bg-indigo-600 shrink-0"></span>
-            </div>
-          </div>
-
-          <!-- Delete Bench Confirmation or Action -->
-          <div class="pt-2 border-t border-slate-100 mt-2" *ngIf="activeBench">
-            <div *ngIf="!isConfirmingDeleteBench">
-              <button mat-button class="w-full !justify-start !text-[11px] !text-red-500 hover:!bg-red-50 !px-2 !py-0.5 h-6 rounded" (click)="promptDeleteBench()">
-                <mat-icon class="!w-3 !h-3 !text-[12px] mr-1">delete</mat-icon> Delete Bench
-              </button>
-            </div>
-            
-            <!-- Intentional Layout Offset Two-Step Confirmation -->
-            <div *ngIf="isConfirmingDeleteBench" class="p-2 bg-red-50 border border-red-200 rounded-lg text-center space-y-2">
-              <p class="text-[11px] text-red-700 font-medium m-0 leading-tight">Delete bench and all files?</p>
-              <div class="flex items-center justify-between pt-1">
-                <button mat-button class="!text-[11px] !text-slate-600 !px-2 !py-0 h-6" (click)="cancelDeleteBench()">
-                  Cancel
-                </button>
-                <button mat-flat-button color="warn" class="!text-[11px] !px-3 !py-0 h-6 !font-bold" (click)="confirmDeleteBench()">
-                  Confirm Delete
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Search Threads -->
-    <div class="p-3 border-b border-slate-100 shrink-0" *ngIf="!isSidebarCollapsed">
-      <div class="relative">
-        <mat-icon class="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 !w-4 !h-4 !text-base">search</mat-icon>
-        <input type="text" placeholder="Search threads in bench..."
-               class="w-full pl-9 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
-               [(ngModel)]="searchQuery" />
-      </div>
-    </div>
-
-    <!-- Thread List Header (Scoped to Bench) -->
-    <div class="px-3 py-2 border-b border-slate-100 flex items-center justify-between shrink-0 bg-slate-50/50" *ngIf="!isSidebarCollapsed">
-      <span class="text-[11px] font-bold text-slate-500 tracking-wider uppercase">Threads ({{ threads.length }})</span>
-      <button mat-button class="!text-[11px] !text-indigo-600 font-bold !px-1.5 !py-0 h-5 hover:bg-indigo-50 rounded" (click)="createNewThread()">
-        + New Thread
-      </button>
-    </div>
-
-    <!-- Thread List -->
-    <div class="flex-1 min-h-0 overflow-y-auto py-2">
-      <div *ngIf="getFilteredThreads().length === 0 && !isSidebarCollapsed" class="text-center py-8 text-slate-400 text-xs">
-        No threads in this bench.
-      </div>
-
-      <div class="space-y-2 px-2 pb-2">
-        <div *ngFor="let thread of getFilteredThreads()"
-             class="group p-3 rounded-xl border transition-all cursor-pointer bg-white"
-             [ngClass]="thread.id === activeThread?.id ? 'border-indigo-500 shadow-sm ring-1 ring-indigo-500/20' : 'border-slate-200 hover:border-slate-300'"
-             (click)="selectThread(thread)"
-             [matTooltip]="thread.title"
-             matTooltipPosition="right"
-             [matTooltipDisabled]="!isSidebarCollapsed">
-
-          <!-- Expanded View -->
-          <div class="flex flex-col w-full" *ngIf="!isSidebarCollapsed">
-            <div class="flex justify-between items-start">
-              <div class="flex items-start gap-2 overflow-hidden flex-1">
-                <mat-icon class="shrink-0 text-slate-400 mt-0.5 !w-4 !h-4 !text-base"
-                          [ngClass]="{'text-indigo-600': thread.id === activeThread?.id}">
-                  chat_bubble_outline
-                </mat-icon>
-                <div class="flex-1 min-w-0">
-                  <!-- Normal Thread Title Display -->
-                  <h5 *ngIf="editingThreadId !== thread.id" class="text-xs font-bold text-slate-900 m-0 truncate leading-tight mt-0.5">
-                    {{ thread.title }}
-                  </h5>
-                  
-                  <!-- Inline Thread Renaming -->
-                  <input *ngIf="editingThreadId === thread.id"
-                         type="text"
-                         class="w-full text-xs font-bold text-slate-900 bg-white border border-indigo-400 rounded px-1.5 py-0.5 focus:outline-none"
-                         [(ngModel)]="editingThreadTitleContent"
-                         (click)="$event.stopPropagation()"
-                         (keydown.enter)="saveThreadTitleInline(thread)"
-                         (keydown.escape)="cancelEditingThreadInline()"
-                         (blur)="saveThreadTitleInline(thread)"
-                         autofocus />
-                </div>
-              </div>
-
-              <!-- Actions & Date -->
-              <div class="flex items-center gap-1 ml-1 shrink-0">
-                <span *ngIf="editingThreadId !== thread.id" class="px-1.5 py-0.5 bg-slate-100 text-slate-600 text-[9px] font-bold rounded">
-                  {{ (thread.updated_at || thread.created_at) | date:'shortDate' }}
-                </span>
-                <button mat-icon-button class="!w-5 !h-5 text-slate-300 hover:text-indigo-600 hidden group-hover:block" (click)="startEditingThreadInline(thread, $event)" title="Rename Thread">
-                  <mat-icon class="!w-3 !h-3 !text-[12px]">edit</mat-icon>
-                </button>
-                <button mat-icon-button class="!w-5 !h-5 text-slate-300 hover:text-red-500 hidden group-hover:block" (click)="promptDeleteThread(thread.id, $event)" title="Delete Thread">
-                  <mat-icon class="!w-3 !h-3 !text-[12px]">delete</mat-icon>
-                </button>
-              </div>
-            </div>
-
-            <!-- Description -->
-            <p *ngIf="thread.description" class="text-[11px] text-slate-500 m-0 mt-1.5 line-clamp-2 leading-relaxed">
-              {{ thread.description }}
-            </p>
-
-            <!-- Two-step offset confirmation for thread deletion -->
-            <div *ngIf="isConfirmingDeleteThreadId === thread.id" class="mt-2 p-2 bg-red-50 border border-red-200 rounded-lg flex items-center justify-between" (click)="$event.stopPropagation()">
-              <span class="text-[10px] text-red-700 font-medium">Delete thread?</span>
-              <div class="flex items-center gap-1 ml-2">
-                <button mat-button class="!text-[10px] !px-1.5 !py-0 h-5 !min-w-0 text-slate-600" (click)="cancelDeleteThread($event)">Cancel</button>
-                <button mat-flat-button color="warn" class="!text-[10px] !px-2 !py-0 h-5 !min-w-0 font-bold" (click)="confirmDeleteThread(thread.id, $event)">Confirm</button>
-              </div>
-            </div>
-          </div>
-
-          <!-- Collapsed View -->
-          <div class="flex justify-center items-center" *ngIf="isSidebarCollapsed">
-             <mat-icon class="text-slate-400 transition-colors"
-                      [ngClass]="{'text-indigo-600': thread.id === activeThread?.id}">
-              chat_bubble_outline
-            </mat-icon>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Right Area (Workspace) -->
-  <div class="flex-1 flex flex-col min-w-0 overflow-hidden bg-slate-50 relative">
-
-    <!-- Top Bar with Active Bench Badge & Breadcrumb -->
-    <div class="h-14 bg-white border-b border-slate-200 flex items-center justify-between px-4 shrink-0 shadow-sm z-10">
-
-      <!-- Left side of top bar (Breadcrumb & Active Bench Pill) -->
-      <div class="flex items-center gap-3 overflow-hidden">
-        <div class="flex items-center gap-1 text-slate-500 text-xs shrink-0">
-          <div class="flex items-center gap-1 px-2 py-1 -ml-1 rounded-lg hover:bg-slate-100 cursor-pointer transition-colors select-none group"
-               [matMenuTriggerFor]="appMenu"
-               data-testid="workspace-title-switcher"
-               title="Click to switch workspace">
-            <mat-icon class="!w-4 !h-4 !text-base text-indigo-600">home_repair_service</mat-icon>
-            <span class="font-bold text-slate-800 text-sm">Workbench</span>
-            <mat-icon class="!w-3.5 !h-3.5 !text-xs text-slate-400 group-hover:text-slate-700 transition-colors">expand_more</mat-icon>
-          </div>
-          <mat-icon class="!w-3 !h-3 !text-xs text-slate-400">chevron_right</mat-icon>
-          <span class="px-2 py-0.5 bg-indigo-50 border border-indigo-200 text-indigo-700 font-bold rounded-md flex items-center gap-1">
-            <mat-icon class="!w-3 !h-3 !text-[12px]">folder_shared</mat-icon>
-            Bench: {{ activeBench ? activeBench.name : 'None' }}
+<div class="bg-surface-container-lowest text-on-surface font-body-md text-body-md h-full w-full flex flex-col overflow-hidden antialiased select-none">
+  <!-- TOP APP BAR -->
+  <app-top-bar>
+      <!-- Context Breadcrumb Anchor -->
+      <div class="flex items-center gap-2 text-body-sm font-body-sm text-on-surface-variant pl-2 border-l border-border-subtle">
+        <span class="text-outline cursor-pointer hover:text-on-surface transition-colors" [matMenuTriggerFor]="appMenu">
+          <mat-icon class="!w-4 !h-4 !text-base text-primary mr-1">home_repair_service</mat-icon>
+          Workbench
+        </span>
+        <span class="material-symbols-outlined text-outline" style="font-size: 14px;">chevron_right</span>
+        @if (activeBench) {
+          <span class="text-on-surface font-label-md flex items-center gap-1.5">
+            <span class="w-1.5 h-1.5 rounded-full bg-accent-success inline-block"></span>
+            Bench: {{ activeBench.name }}
           </span>
-          <mat-icon class="!w-3 !h-3 !text-xs text-slate-400" *ngIf="activeThread">chevron_right</mat-icon>
-          <span class="font-medium text-slate-800 truncate max-w-[200px]" *ngIf="activeThread">
+        }
+        @if (activeThread) {
+          <span class="material-symbols-outlined text-outline" style="font-size: 14px;">chevron_right</span>
+          <span class="text-on-surface font-label-md flex items-center gap-1.5 truncate max-w-[200px]">
             {{ activeThread.title }}
           </span>
-        </div>
-
-        <!-- Zero-Footprint Reusable Concept Guide -->
-        <app-concept-guide
+        }
+      </div>
+      
+      <app-concept-guide
           badge="5. Multi-Turn Project Workspaces"
           title="Active Project Rooms (Workbenches)"
           icon="home_repair_service"
@@ -263,276 +33,620 @@
           detailLink="/detail"
           detailLinkLabel="Explore Workbench Architecture"
           testIdPrefix="workbench-concept">
-        </app-concept-guide>
+      </app-concept-guide>
+
+    <!-- Right Global Action Bar -->
+    <div class="flex items-center gap-2">
+      <!-- Hamburger Menu for App Navigation -->
+      <button mat-icon-button [matMenuTriggerFor]="appMenu" aria-label="Menu" class="text-on-surface-variant hover:text-on-surface">
+        <mat-icon>menu</mat-icon>
+      </button>
+      <mat-menu #appMenu="matMenu">
+        @for (item of menuItems; track item) {
+          <a mat-menu-item [routerLink]="item.path" routerLinkActive="active-link">
+            <mat-icon>{{ item.icon }}</mat-icon>
+            <span>{{ item.label }}</span>
+          </a>
+        }
+      </mat-menu>
+
+      <!-- Active Status Indicator -->
+      <div class="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded bg-surface-container-low border border-border-subtle text-body-sm font-body-sm text-on-surface-variant mr-2">
+        <span class="relative flex h-2 w-2">
+          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent-success opacity-75"></span>
+          <span class="relative inline-flex rounded-full h-2 w-2 bg-accent-success"></span>
+        </span>
+        <span class="text-code font-code text-body-sm">Graph Index: Synced</span>
       </div>
+      <!-- Quick Action Buttons -->
+      <button class="flex items-center gap-1.5 px-2.5 py-1.5 rounded bg-surface-container hover:bg-surface-container-high text-on-surface text-label-md font-label-md border border-border-subtle active:scale-[0.98] transition-all">
+        <span class="material-symbols-outlined text-on-surface-variant">call_split</span>
+        <span>Branch Bench</span>
+      </button>
+      <button class="flex items-center gap-1.5 px-2.5 py-1.5 rounded bg-surface-container hover:bg-surface-container-high text-on-surface text-label-md font-label-md border border-border-subtle active:scale-[0.98] transition-all">
+        <span class="material-symbols-outlined text-on-surface-variant">file_download</span>
+        <span>Export State</span>
+      </button>
+      <button class="flex items-center gap-1.5 px-3 py-1.5 rounded bg-primary text-on-primary hover:bg-primary-fixed-dim text-label-md font-label-md active:scale-[0.98] transition-all font-medium">
+        <span class="material-symbols-outlined">commit</span>
+        <span>Commit to Graph</span>
+      </button>
 
-      <!-- Right side of top bar (Actions) -->
-      <div class="flex items-center gap-2">
-        <!-- Hamburger Menu for App Navigation -->
-        <button mat-icon-button [matMenuTriggerFor]="appMenu" aria-label="Menu" class="text-slate-500 hover:text-slate-800">
-          <mat-icon>menu</mat-icon>
-        </button>
-
-        <mat-menu #appMenu="matMenu">
-          @for (item of menuItems; track item.path) {
-            <a mat-menu-item [routerLink]="item.path" routerLinkActive="active-link">
-              <mat-icon>{{ item.icon }}</mat-icon>
-              <span>{{ item.label }}</span>
-            </a>
-          }
-        </mat-menu>
-
-        <div class="w-px h-6 bg-slate-200 mx-1"></div> <!-- Divider -->
-
-        <!-- View Toggle Icon (Mock) -->
-        <button mat-icon-button class="text-slate-500 hover:text-slate-800" title="Change View">
-          <mat-icon>view_column</mat-icon>
-        </button>
-
-        <!-- User Profile (Mock) -->
-        <button mat-icon-button class="ml-1">
-          <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-amber-400 to-orange-500 border-2 border-white shadow-sm flex items-center justify-center text-white font-bold text-sm">
-            BG
-          </div>
-        </button>
+      <div class="h-5 w-[1px] bg-border-subtle mx-1"></div>
+      
+      <button class="w-8 h-8 rounded flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors">
+        <span class="material-symbols-outlined">notifications</span>
+      </button>
+      <button class="w-8 h-8 rounded flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors">
+        <span class="material-symbols-outlined">tune</span>
+      </button>
+      <button class="w-8 h-8 rounded flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors">
+        <span class="material-symbols-outlined">settings</span>
+      </button>
+      <div class="ml-2 w-7 h-7 rounded-full bg-secondary-container border border-border-subtle flex items-center justify-center text-label-md font-label-md text-secondary" title="Operator Avatar">
+        BG
       </div>
     </div>
+</app-top-bar>
 
-    <!-- Split Content Area -->
-    <div class="flex-1 flex flex-row overflow-hidden relative">
-
-      <!-- Conversation Pane -->
-      <div class="flex flex-col h-full bg-white shadow-sm" [style.width.%]="chatPanePercentage">
-
-        <!-- Conversation Header -->
-        <div class="p-4 border-b border-slate-100 shrink-0 bg-slate-50/50 flex justify-between items-center h-12">
-           <div class="flex-1 min-w-0 pr-4">
-             <h2 *ngIf="!isEditingTitle" class="text-sm font-bold text-slate-800 m-0 truncate cursor-pointer hover:bg-slate-200/50 px-2 py-1 -ml-2 rounded" (click)="startEditingTitle()" title="Click to edit thread title">
-               {{ activeThread ? activeThread.title : 'No active thread' }}
-             </h2>
-             <input *ngIf="isEditingTitle" type="text"
-                    class="w-full text-sm font-bold text-slate-800 bg-white border border-indigo-300 rounded px-2 py-1 -ml-2 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
-                    [(ngModel)]="editingTitleContent"
-                    (blur)="saveThreadTitle()"
-                    (keydown.enter)="saveThreadTitle()"
-                    (keydown.escape)="cancelEditingTitle()"
-                    autofocus />
-           </div>
-        </div>
-
-        <!-- Messages -->
-        <div #messagesContainer class="flex-1 overflow-y-auto p-4 space-y-4">
-          <ng-container *ngIf="activeThreadMessages.length > 0">
-            <div *ngFor="let msg of activeThreadMessages"
-                 class="flex"
-                 [ngClass]="{
-                   'justify-center my-1': msg.role === 'system',
-                   'justify-end': msg.role === 'user',
-                   'justify-start': msg.role !== 'user' && msg.role !== 'system'
-                 }">
-              <!-- System / Cancellation Notice -->
-              <div *ngIf="msg.role === 'system'"
-                   class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100 text-slate-500 text-xs font-medium border border-slate-200 shadow-sm">
-                <mat-icon class="!w-3.5 !h-3.5 !text-sm text-slate-400">info</mat-icon>
-                <span>{{ msg.content }}</span>
-              </div>
-              <!-- Message Content: Tool Execution Card or Standard Bubble -->
-              <ng-container *ngIf="msg.role !== 'system'">
-                <!-- Tool Execution Card -->
-                <div *ngIf="msg.role !== 'user' && parseToolExecution(msg.content) as toolExec; else standardBubble"
-                     data-testid="tool-execution-card"
-                     class="w-full max-w-[85%] rounded-xl border border-slate-200 bg-white p-3.5 shadow-sm text-sm">
-                  <div class="flex items-center justify-between gap-2 pb-2 border-b border-slate-100">
-                    <div class="flex items-center gap-2">
-                      <div class="w-6 h-6 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600">
-                        <mat-icon class="!w-3.5 !h-3.5 !text-sm">build</mat-icon>
-                      </div>
-                      <span class="font-mono text-xs font-semibold text-slate-800">{{ toolExec.toolName }}</span>
-                    </div>
-                    <span *ngIf="toolExec.success" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                      <mat-icon class="!w-3 !h-3 !text-[12px]">check_circle</mat-icon> Success
-                    </span>
-                    <span *ngIf="!toolExec.success" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-rose-50 text-rose-700 border border-rose-200">
-                      <mat-icon class="!w-3 !h-3 !text-[12px]">error</mat-icon> Failed
-                    </span>
-                  </div>
-                  <div class="pt-2 text-slate-700 text-xs leading-relaxed font-normal whitespace-pre-wrap">
-                    {{ toolExec.message }}
-                  </div>
-                </div>
-
-                <!-- Standard Bubble -->
-                <ng-template #standardBubble>
-                  <div class="p-3 rounded-2xl max-w-[85%] text-sm shadow-sm whitespace-pre-wrap"
-                       [ngClass]="{
-                         'bg-indigo-600 text-white rounded-br-sm': msg.role === 'user',
-                         'bg-slate-100 text-slate-800 rounded-bl-sm border border-slate-200': msg.role !== 'user'
-                       }">
-                    {{ msg.content }}
-                  </div>
-                </ng-template>
-              </ng-container>
-            </div>
-          </ng-container>
-
-          <!-- In-Progress Phase Banner & Cancel Action -->
-          <div *ngIf="isProcessing" class="flex items-center justify-between p-3 rounded-xl bg-gradient-to-r from-indigo-50/80 via-slate-50 to-amber-50/50 border border-indigo-100/80 shadow-sm">
-            <div class="flex items-center gap-2.5 min-w-0">
-              <div class="flex space-x-1 shrink-0">
-                <div class="w-2 h-2 bg-indigo-500 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
-                <div class="w-2 h-2 bg-indigo-500 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
-                <div class="w-2 h-2 bg-indigo-500 rounded-full animate-bounce"></div>
-              </div>
-              <span class="text-xs text-slate-700 font-medium truncate">
-                <ng-container *ngIf="activeRun?.current_phase === 'executing_tool'">
-                  Executing tool: <code class="px-1 py-0.5 bg-slate-200/80 rounded text-indigo-700 font-mono text-[11px]">{{ activeRun?.active_tool_name || 'tool' }}</code>...
-                </ng-container>
-                <ng-container *ngIf="activeRun?.current_phase !== 'executing_tool'">
-                  Assistant is thinking...
-                </ng-container>
-              </span>
-            </div>
-            <button mat-stroked-button color="warn" (click)="cancelCurrentAction()" class="!text-xs !h-7 !px-2.5 shrink-0 ml-2 !border-red-200 hover:!bg-red-50 text-red-600 font-medium flex items-center">
-              <mat-icon class="!w-3.5 !h-3.5 !text-sm mr-1">stop_circle</mat-icon>
-              Cancel Action
+  <!-- BODY CONTENT AREA (ZERO LOSS: flex-1 min-h-0 overflow-hidden) -->
+  <div class="flex-1 min-h-0 flex w-full overflow-hidden">
+    <!-- LEFT SIDEBAR (Scoped to Active Bench) -->
+    <aside [ngClass]="isSidebarCollapsed ? 'w-16' : 'w-72'" class="flex flex-col h-full border-r border-border-subtle bg-surface-container-lowest shrink-0 select-none transition-all duration-300">
+      
+      <div class="p-3 border-b border-border-subtle" [ngClass]="isSidebarCollapsed ? 'items-center px-0' : ''">
+        @if (!isSidebarCollapsed) {
+          <div class="flex items-center justify-between w-full mb-1.5">
+            <div class="text-body-sm font-label-md text-outline uppercase tracking-wider px-1">Workspace Scope</div>
+            <button mat-icon-button (click)="toggleSidebar()" class="text-outline hover:text-on-surface !w-8 !h-8" title="Collapse Sidebar">
+              <span class="material-symbols-outlined">chevron_left</span>
             </button>
           </div>
+        }
+        
+        @if (isSidebarCollapsed) {
+          <div class="flex flex-col items-center py-2">
+            <button mat-icon-button (click)="toggleSidebar()" class="text-outline hover:text-on-surface" title="Expand Sidebar">
+              <span class="material-symbols-outlined">chevron_right</span>
+            </button>
+          </div>
+        }
 
-          <div *ngIf="activeThread && activeThreadMessages.length === 0 && !isProcessing" class="flex flex-col items-center justify-center h-full text-slate-400">
-            <div class="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mb-3">
-              <mat-icon class="text-slate-300">chat</mat-icon>
+        @if (!isSidebarCollapsed) {
+          <!-- Bench Selector -->
+          <div class="mt-2 relative w-full">
+            <div class="flex items-center justify-between bg-surface-container border border-border-subtle rounded p-1.5 hover:border-primary transition-all">
+              @if (!isEditingBenchName) {
+                <div class="flex-1 min-w-0 flex items-center gap-1.5">
+                  <span class="text-label-md font-label-md font-medium text-on-surface truncate cursor-pointer flex-1" (click)="toggleBenchDropdown()" title="Switch Bench">
+                    {{ activeBench ? activeBench.name : 'Select Bench' }}
+                  </span>
+                  <button mat-icon-button class="!w-6 !h-6 text-outline hover:text-primary shrink-0" (click)="startEditingBenchName(); $event.stopPropagation()" title="Rename Bench">
+                    <span class="material-symbols-outlined" style="font-size: 14px;">edit</span>
+                  </button>
+                </div>
+              }
+              @if (isEditingBenchName) {
+                <div class="flex-1 min-w-0 flex items-center gap-1">
+                  <input type="text"
+                         class="w-full text-xs font-bold text-on-surface bg-surface-dark border border-primary rounded px-1.5 py-0.5 focus:outline-none focus:ring-1 focus:ring-primary"
+                         [(ngModel)]="editingBenchNameContent"
+                         (keydown.enter)="saveBenchName()"
+                         (keydown.escape)="cancelEditingBenchName()"
+                         (blur)="saveBenchName()"
+                         autofocus />
+                </div>
+              }
+              <button mat-icon-button class="!w-6 !h-6 text-outline hover:text-on-surface shrink-0" (click)="toggleBenchDropdown()" title="Toggle Benches List">
+                <span class="material-symbols-outlined" style="font-size: 16px;">{{ isBenchDropdownOpen ? 'expand_less' : 'unfold_more' }}</span>
+              </button>
             </div>
-            <h3 class="text-sm font-medium text-slate-600 m-0">Start the conversation</h3>
-            <p class="text-xs mt-1 text-center max-w-[200px]">Send a message to begin collaborating with the agent in this bench.</p>
+
+            <!-- Dropdown -->
+            @if (isBenchDropdownOpen) {
+              <div class="absolute left-0 right-0 top-full mt-1 bg-surface-container-high border border-border-subtle rounded-xl shadow-lg z-30 p-2 space-y-1">
+                @if (!isCreatingBenchInline) {
+                  <button mat-button class="w-full !justify-start !text-xs !text-primary font-bold !px-2 !py-1 h-7 hover:bg-surface-container rounded" (click)="startCreatingBenchInline()">
+                    <span class="material-symbols-outlined" style="font-size: 14px;">add</span> + New Bench
+                  </button>
+                }
+                @if (isCreatingBenchInline) {
+                  <div class="p-1 bg-surface-container-low border border-primary rounded flex items-center gap-1">
+                    <input type="text" placeholder="Bench name..."
+                           class="w-full text-xs bg-surface-dark border border-border-subtle text-on-surface rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-primary"
+                           [(ngModel)]="newBenchName"
+                           (keydown.enter)="commitCreateBench()"
+                           (keydown.escape)="cancelCreatingBenchInline()"
+                           autofocus />
+                    <button mat-icon-button class="!w-6 !h-6 text-accent-success hover:text-primary shrink-0" (click)="commitCreateBench()">
+                      <span class="material-symbols-outlined" style="font-size: 14px;">check</span>
+                    </button>
+                    <button mat-icon-button class="!w-6 !h-6 text-outline hover:text-on-surface shrink-0" (click)="cancelCreatingBenchInline()">
+                      <span class="material-symbols-outlined" style="font-size: 14px;">close</span>
+                    </button>
+                  </div>
+                }
+                <div class="max-h-48 overflow-y-auto space-y-0.5 pt-1 custom-scrollbar">
+                  @for (b of benches; track b.id) {
+                    <div class="flex items-center justify-between px-2 py-1.5 rounded text-xs cursor-pointer hover:bg-surface-container transition-colors"
+                         [ngClass]="b.id === activeBench?.id ? 'bg-primary-container/20 text-primary font-bold' : 'text-on-surface-variant'"
+                         (click)="selectBench(b)">
+                      <div class="flex items-center gap-1.5 truncate">
+                        <span class="material-symbols-outlined" style="font-size: 14px;">folder</span>
+                        <span class="truncate">{{ b.name }}</span>
+                      </div>
+                      @if (b.id === activeBench?.id) {
+                        <span class="w-1.5 h-1.5 rounded-full bg-primary shrink-0"></span>
+                      }
+                    </div>
+                  }
+                </div>
+                @if (activeBench) {
+                  <div class="pt-2 border-t border-border-subtle mt-2">
+                    @if (!isConfirmingDeleteBench) {
+                      <button mat-button class="w-full !justify-start !text-[11px] !text-accent-error hover:!bg-surface-container !px-2 !py-0.5 h-6 rounded" (click)="promptDeleteBench()">
+                        <span class="material-symbols-outlined" style="font-size: 14px;">delete</span> Delete Bench
+                      </button>
+                    }
+                    @if (isConfirmingDeleteBench) {
+                      <div class="p-2 bg-error-container/20 border border-error-container rounded text-center space-y-2">
+                        <p class="text-[11px] text-accent-error font-medium m-0 leading-tight">Delete bench and all files?</p>
+                        <div class="flex items-center justify-between pt-1">
+                          <button mat-button class="!text-[11px] !text-on-surface-variant !px-2 !py-0 h-6" (click)="cancelDeleteBench()">Cancel</button>
+                          <button mat-flat-button color="warn" class="!text-[11px] !px-3 !py-0 h-6 !font-bold" (click)="confirmDeleteBench()">Confirm</button>
+                        </div>
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        }
+      </div>
+
+      <!-- Action Button & Filter Bar -->
+      @if (!isSidebarCollapsed) {
+        <div class="p-3 border-b border-border-subtle space-y-2.5">
+          <button class="w-full flex items-center justify-center gap-2 py-2 px-3 rounded bg-primary text-on-primary hover:bg-primary-fixed-dim text-label-md font-label-md font-medium active:scale-[0.98] transition-all" (click)="createNewThread()">
+            <span class="material-symbols-outlined" style="font-size: 18px;">add_circle</span>
+            <span>+ New Thread</span>
+          </button>
+          <div class="relative">
+            <span class="material-symbols-outlined absolute left-2.5 top-2 text-outline" style="font-size: 16px;">search</span>
+            <input class="w-full bg-surface-container-low border border-border-subtle rounded py-1.5 pl-8 pr-3 text-body-sm font-body-sm text-on-surface placeholder:text-outline focus:outline-none focus:border-primary" placeholder="Filter bench threads..." type="text" [(ngModel)]="searchQuery"/>
+          </div>
+        </div>
+      }
+
+      <!-- Thread List -->
+      <div class="flex-1 min-h-0 overflow-y-auto custom-scrollbar p-2 space-y-1">
+        @if (!isSidebarCollapsed) {
+          <div class="px-2 py-1 text-body-sm font-label-md text-outline uppercase tracking-wider flex items-center justify-between">
+            <span>Active Threads</span>
+            <span class="text-code font-code">{{ getFilteredThreads().length }}</span>
+          </div>
+        }
+        
+        @if (getFilteredThreads().length === 0 && !isSidebarCollapsed) {
+          <div class="text-center py-8 text-outline text-xs">
+            No threads in this bench.
+          </div>
+        }
+
+        @for (thread of getFilteredThreads(); track thread.id) {
+          <div class="group relative rounded hover:bg-surface-container-low text-on-surface-variant hover:text-on-surface p-2.5 transition-colors cursor-pointer"
+               [ngClass]="thread.id === activeThread?.id ? 'bg-surface-container border-l-2 border-primary text-on-surface' : ''"
+               (click)="selectThread(thread)"
+               [matTooltip]="thread.title"
+               matTooltipPosition="right"
+               [matTooltipDisabled]="!isSidebarCollapsed">
+            
+            @if (!isSidebarCollapsed) {
+              <div class="flex items-start justify-between gap-1">
+                <div class="flex items-center gap-1.5 text-label-md font-label-md truncate">
+                  <span class="material-symbols-outlined" [ngClass]="thread.id === activeThread?.id ? 'text-primary' : 'text-outline'" style="font-size: 16px;">chat_bubble_outline</span>
+                  
+                  @if (editingThreadId !== thread.id) {
+                    <span class="truncate" [ngClass]="thread.id === activeThread?.id ? 'text-primary font-medium' : ''">{{ thread.title }}</span>
+                  }
+                  @if (editingThreadId === thread.id) {
+                    <input type="text"
+                           class="w-full text-xs font-bold text-on-surface bg-surface-dark border border-primary rounded px-1.5 py-0.5 focus:outline-none"
+                           [(ngModel)]="editingThreadTitleContent"
+                           (click)="$event.stopPropagation()"
+                           (keydown.enter)="saveThreadTitleInline(thread)"
+                           (keydown.escape)="cancelEditingThreadInline()"
+                           (blur)="saveThreadTitleInline(thread)"
+                           autofocus />
+                  }
+                </div>
+                @if (editingThreadId !== thread.id) {
+                  <span class="text-body-sm font-code shrink-0" [ngClass]="thread.id === activeThread?.id ? 'text-accent-success' : 'text-outline'">
+                    {{ (thread.updated_at || thread.created_at) | date:'shortDate' }}
+                  </span>
+                }
+              </div>
+
+              <div class="mt-1 flex items-center justify-between text-body-sm font-body-sm text-outline">
+                <span class="font-code text-body-sm line-clamp-1 flex-1">{{ thread.description || '' }}</span>
+                <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button class="p-0.5 hover:text-on-surface text-outline" (click)="startEditingThreadInline(thread, $event)" title="Rename"><span class="material-symbols-outlined" style="font-size: 14px;">edit</span></button>
+                  <button class="p-0.5 hover:text-on-surface text-outline" (click)="promptDeleteThread(thread.id, $event)" title="Archive"><span class="material-symbols-outlined" style="font-size: 14px;">archive</span></button>
+                </div>
+              </div>
+            }
+
+            @if (isConfirmingDeleteThreadId === thread.id) {
+              <div class="mt-2 p-2 bg-error-container/20 border border-error-container rounded flex items-center justify-between" (click)="$event.stopPropagation()">
+                <span class="text-[10px] text-accent-error font-medium">Delete thread?</span>
+                <div class="flex items-center gap-1 ml-2">
+                  <button mat-button class="!text-[10px] !px-1.5 !py-0 h-5 !min-w-0 text-on-surface-variant" (click)="cancelDeleteThread($event)">Cancel</button>
+                  <button mat-flat-button color="warn" class="!text-[10px] !px-2 !py-0 h-5 !min-w-0 font-bold" (click)="confirmDeleteThread(thread.id, $event)">Confirm</button>
+                </div>
+              </div>
+            }
+
+            @if (isSidebarCollapsed) {
+              <div class="flex justify-center items-center">
+                 <span class="material-symbols-outlined transition-colors" [ngClass]="thread.id === activeThread?.id ? 'text-primary' : 'text-outline'">chat_bubble_outline</span>
+              </div>
+            }
+          </div>
+        }
+      </div>
+      
+      <!-- Bottom Docked Bench Stats -->
+      @if (!isSidebarCollapsed) {
+        <div class="p-3 border-t border-border-subtle bg-surface-container-lowest space-y-2 font-code text-body-sm">
+          <div class="flex items-center justify-between text-outline">
+            <span>Memory Footprint</span>
+            <span class="text-on-surface">14.8 KB / 128 KB</span>
+          </div>
+          <div class="w-full bg-surface-container h-1.5 rounded-full overflow-hidden">
+            <div class="bg-primary h-full rounded-full" style="width: 11.5%"></div>
+          </div>
+          <div class="flex items-center justify-between text-outline pt-1">
+            <span>Embedding Model</span>
+            <span class="text-on-surface truncate text-right">text-emb-3-large</span>
+          </div>
+          <div class="flex items-center justify-between text-outline">
+            <span>Bench Sync</span>
+            <span class="text-accent-success flex items-center gap-1">
+              <span class="w-1.5 h-1.5 rounded-full bg-accent-success"></span>
+              Online
+            </span>
+          </div>
+        </div>
+      }
+    </aside>
+
+    <!-- MAIN WORKSPACE RESIZABLE SPLIT-PANE CONTAINER -->
+    <main class="flex-1 min-h-0 flex overflow-hidden bg-background">
+      
+      <!-- LEFT PANE: CHAT INTERFACE -->
+      <section class="flex flex-col h-full border-r border-border-subtle bg-surface-container-lowest" [style.width.%]="chatPanePercentage">
+        
+        <!-- Thread Header -->
+        <div class="px-5 py-3 border-b border-border-subtle flex items-center justify-between shrink-0 bg-surface-container-lowest">
+          <div class="flex items-center gap-3">
+            <div class="flex items-center gap-2 flex-1 min-w-0 pr-4">
+              @if (!isEditingTitle) {
+                <h2 class="text-headline-sm font-headline-sm font-semibold text-on-surface truncate cursor-pointer hover:text-primary transition-colors" (click)="startEditingTitle()" title="Click to edit thread title">
+                  {{ activeThread ? activeThread.title : 'No active thread' }}
+                </h2>
+                <button class="text-outline hover:text-on-surface" (click)="startEditingTitle()"><span class="material-symbols-outlined" style="font-size: 16px;">edit</span></button>
+              }
+              @if (isEditingTitle) {
+                <input type="text"
+                       class="w-full text-headline-sm font-semibold text-on-surface bg-surface-dark border border-primary rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-primary"
+                       [(ngModel)]="editingTitleContent"
+                       (blur)="saveThreadTitle()"
+                       (keydown.enter)="saveThreadTitle()"
+                       (keydown.escape)="cancelEditingTitle()"
+                       autofocus />
+              }
+            </div>
+            @if (activeThread) {
+              <span class="px-2 py-0.5 rounded bg-surface-container border border-border-subtle text-code font-code text-body-sm text-primary flex items-center gap-1.5 whitespace-nowrap">
+                <span class="material-symbols-outlined text-primary" style="font-size: 14px;">smart_toy</span>
+                Claude 3.7 Sonnet + Semantic Tools
+              </span>
+            }
+          </div>
+          <div class="flex items-center gap-3">
+            <div class="flex items-center gap-1.5 text-body-sm font-code text-outline" title="Sampling Temperature">
+              <span class="material-symbols-outlined" style="font-size: 15px;">thermostat</span>
+              <span>temp: 0.2</span>
+            </div>
+            <button class="flex items-center gap-1 text-label-md font-label-md text-on-surface-variant hover:text-accent-error transition-colors px-2 py-1 rounded hover:bg-surface-container">
+              <span class="material-symbols-outlined" style="font-size: 16px;">delete_sweep</span>
+              <span>Clear Context</span>
+            </button>
           </div>
         </div>
 
-        <!-- Input Area -->
-        <div class="p-4 border-t border-slate-100 bg-white shrink-0">
-          <div class="relative flex items-end shadow-sm border border-slate-200 rounded-xl bg-slate-50 focus-within:ring-2 focus-within:ring-indigo-500/20 focus-within:border-indigo-500 focus-within:bg-white transition-all" [ngClass]="{'opacity-50 cursor-not-allowed': isProcessing}">
-            <textarea #messageInput class="flex-1 px-4 py-3 bg-transparent border-none text-sm focus:outline-none focus:ring-0 resize-none min-h-[44px]"
-                      rows="1" [placeholder]="isProcessing ? 'Waiting for agent...' : 'Type a message...'"
+        <!-- Chat Stream -->
+        <div #messagesContainer class="flex-1 min-h-0 overflow-y-auto custom-scrollbar p-6 space-y-6">
+          @if (activeThreadMessages.length > 0) {
+            @for (msg of activeThreadMessages; track msg) {
+              <div class="flex items-start gap-3">
+                
+                <!-- Avatar -->
+                @if (msg.role === 'user') {
+                  <div class="w-7 h-7 rounded bg-secondary-container text-secondary flex items-center justify-center font-label-md text-label-md shrink-0 mt-0.5">
+                    BG
+                  </div>
+                }
+                @if (msg.role !== 'user' && msg.role !== 'system') {
+                  <div class="w-7 h-7 rounded bg-primary-container text-on-primary-container flex items-center justify-center shrink-0 mt-0.5">
+                    <span class="material-symbols-outlined" style="font-size: 18px;">smart_toy</span>
+                  </div>
+                }
+
+                <!-- Message Content -->
+                <div class="flex-1 space-y-3" [ngClass]="{'max-w-2xl': msg.role === 'user'}">
+                  
+                  @if (msg.role === 'system') {
+                    <div class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container border border-border-subtle text-outline text-xs font-medium">
+                      <span class="material-symbols-outlined" style="font-size: 14px;">info</span>
+                      <span>{{ msg.content }}</span>
+                    </div>
+                  }
+
+                  @if (msg.role !== 'system') {
+                    @if (msg.role !== 'user' && parseToolExecution(msg.content); as toolExec) {
+                      <div class="bg-surface-card border border-border-subtle rounded-lg p-4 space-y-3 text-sm text-on-surface">
+                        <div class="flex items-center justify-between">
+                          <div class="flex items-center gap-2">
+                            <span class="px-2 py-0.5 rounded font-code text-body-sm font-semibold border"
+                                  [ngClass]="toolExec.success ? 'bg-surface-container-high text-accent-success border-border-subtle' : 'bg-error-container/20 text-accent-error border-error-container'">
+                              {{ toolExec.success ? 'SUCCESS' : 'FAILED' }}
+                            </span>
+                            <span class="text-label-md font-label-md text-primary font-code">{{ toolExec.toolName }}</span>
+                          </div>
+                        </div>
+                        <p class="font-body-md text-body-md leading-relaxed whitespace-pre-wrap">{{ toolExec.message }}</p>
+                      </div>
+                    } @else {
+                      <div class="border border-border-subtle rounded-lg p-3.5 text-on-surface"
+                           [ngClass]="msg.role === 'user' ? 'bg-surface-container-low' : 'bg-surface-card'">
+                        <p class="font-body-md text-body-md leading-relaxed whitespace-pre-wrap">{{ msg.content }}</p>
+                      </div>
+                    }
+                  }
+                </div>
+              </div>
+            }
+          }
+
+          <!-- In-Progress Banner -->
+          @if (isProcessing) {
+            <div class="flex items-center justify-between p-3 rounded-lg bg-surface-container border border-primary/30 shadow-sm">
+              <div class="flex items-center gap-2.5 min-w-0 text-on-surface">
+                <span class="text-xs font-medium truncate">
+                  @if (activeRun?.current_phase === 'executing_tool') {
+                    Executing tool: <code class="px-1 py-0.5 bg-surface-dark rounded text-primary font-mono text-[11px]">{{ activeRun?.active_tool_name || 'tool' }}</code>...
+                  } @else {
+                    Assistant is thinking...
+                  }
+                </span>
+              </div>
+              <button mat-stroked-button (click)="cancelCurrentAction()" class="!text-xs !h-7 !px-2.5 shrink-0 ml-2 !border-accent-error text-accent-error hover:!bg-surface-container-high font-medium flex items-center">
+                <span class="material-symbols-outlined" style="font-size: 14px; margin-right: 4px;">stop_circle</span>
+                Cancel Action
+              </button>
+            </div>
+          }
+
+          @if (activeThread && activeThreadMessages.length === 0 && !isProcessing) {
+            <div class="flex flex-col items-center justify-center h-full text-outline">
+              <div class="w-12 h-12 rounded-full bg-surface-container flex items-center justify-center mb-3">
+                <span class="material-symbols-outlined">chat</span>
+              </div>
+              <h3 class="text-sm font-medium text-on-surface m-0">Start the conversation</h3>
+              <p class="text-xs mt-1 text-center max-w-[200px]">Send a message to begin collaborating with the agent in this bench.</p>
+            </div>
+          }
+        </div>
+
+        <!-- BOTTOM PINNED CHAT INPUT DOCK -->
+        <div class="p-4 border-t border-border-subtle bg-surface-container-lowest shrink-0 space-y-2.5">
+          <!-- Tool & Entity Selector Pills -->
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="text-body-sm font-label-md text-outline">Context Attach:</span>
+              <button class="px-2 py-0.5 rounded bg-surface-container hover:bg-surface-container-high border border-border-subtle text-code font-code text-body-sm text-primary flex items-center gap-1 transition-colors">
+                <span>&#64;KnowledgeGraph</span>
+                <span class="material-symbols-outlined" style="font-size: 14px;">check</span>
+              </button>
+              <button class="px-2 py-0.5 rounded bg-surface-container hover:bg-surface-container-high border border-border-subtle text-code font-code text-body-sm text-primary flex items-center gap-1 transition-colors">
+                <span>&#64;ASTParser</span>
+                <span class="material-symbols-outlined" style="font-size: 14px;">check</span>
+              </button>
+              <button class="px-2 py-0.5 rounded bg-surface-container hover:bg-surface-container-high border border-border-subtle text-code font-code text-body-sm text-outline hover:text-on-surface flex items-center gap-1 transition-colors">
+                <span class="material-symbols-outlined" style="font-size: 14px;">add</span>
+                <span>Add Tool</span>
+              </button>
+            </div>
+            <div class="text-code font-code text-body-sm text-outline">
+              <span>Tokens: </span><span class="text-on-surface">482</span> / 128k
+            </div>
+          </div>
+          
+          <!-- Textarea Input Area -->
+          <div class="relative rounded-lg bg-surface-card border border-border-subtle focus-within:border-primary transition-colors" [ngClass]="{'opacity-50 cursor-not-allowed': isProcessing}">
+            <textarea #messageInput class="w-full bg-transparent border-0 text-on-surface placeholder:text-outline font-body-md text-body-md p-3 focus:ring-0 resize-none min-h-[64px]"
+                      [placeholder]="isProcessing ? 'Waiting for agent...' : 'Instruct the semantic agent or query AST nodes (e.g. \'Synthesize rule for CWE-89\')...'"
+                      rows="3"
                       [(ngModel)]="newMessageContent"
                       [disabled]="!activeThread"
                       [readonly]="isProcessing"
-                      (keydown.enter)="$event.preventDefault(); sendMessage()">
-            </textarea>
-            <button mat-icon-button color="primary" class="m-1 shrink-0"
-                    [disabled]="!activeThread || !newMessageContent.trim() || isProcessing"
-                    (click)="sendMessage()">
-              <mat-icon>send</mat-icon>
-            </button>
+                      (keydown.enter)="$event.preventDefault(); sendMessage()"></textarea>
+            <div class="flex items-center justify-between px-3 py-2 border-t border-border-subtle/40 bg-surface-card/60 rounded-b-lg">
+              <div class="flex items-center gap-2">
+                <button class="p-1 rounded text-outline hover:text-on-surface hover:bg-surface-container transition-colors" title="Attach file or code snippet">
+                  <span class="material-symbols-outlined">attach_file</span>
+                </button>
+                <button class="p-1 rounded text-outline hover:text-on-surface hover:bg-surface-container transition-colors flex items-center gap-1 text-body-sm font-code" title="Configure model sampling params">
+                  <span class="material-symbols-outlined">tune</span>
+                  <span>Model Params</span>
+                </button>
+              </div>
+              <div class="flex items-center gap-2">
+                <button class="px-3 py-1.5 rounded bg-primary text-on-primary hover:bg-primary-fixed-dim text-label-md font-label-md font-medium flex items-center gap-1.5 active:scale-[0.98] transition-all"
+                        [disabled]="!activeThread || !newMessageContent.trim() || isProcessing"
+                        (click)="sendMessage()">
+                  <span>Send Command</span>
+                  <span class="material-symbols-outlined" style="font-size: 16px;">arrow_upward</span>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
+      </section>
+
+      <!-- VERTICAL SPLITTER DIVIDER -->
+      <div class="w-1.5 bg-surface-container-lowest hover:bg-primary/40 active:bg-primary transition-colors cursor-col-resize flex flex-col items-center justify-center group shrink-0 border-x border-border-subtle/50" (mousedown)="startResizing($event)">
+        <div class="w-1 h-8 rounded-full bg-outline-variant group-hover:bg-primary transition-colors"></div>
       </div>
 
-      <!-- Resizer Handle -->
-      <div class="w-1 cursor-col-resize bg-slate-200 hover:bg-indigo-400 active:bg-indigo-600 transition-colors z-20 flex-shrink-0"
-           (mousedown)="startResizing($event)">
-      </div>
-
-      <!-- Editor Pane (Shared Bench Filesystem & Bench Memory) -->
-      <div class="flex-1 flex flex-col h-full bg-white shadow-sm border-l border-slate-200/50">
-
-        <!-- Tab Header -->
-        <div class="px-4 py-2 border-b border-slate-200 bg-slate-50/75 flex justify-between items-center shrink-0 h-12">
-          <!-- Left: Tab Buttons -->
-          <div class="flex items-center gap-1 bg-slate-200/70 p-0.5 rounded-lg">
-            <button class="px-3 py-1 text-xs font-semibold rounded-md transition-all flex items-center gap-1.5"
-                    [ngClass]="activeRightTab === 'files' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-600 hover:text-slate-900'"
-                    (click)="setRightTab('files')">
-              <mat-icon class="!w-3.5 !h-3.5 !text-[14px]">folder_open</mat-icon>
-              Files
-            </button>
-            <button class="px-3 py-1 text-xs font-semibold rounded-md transition-all flex items-center gap-1.5"
-                    [ngClass]="activeRightTab === 'memory' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-600 hover:text-slate-900'"
-                    (click)="setRightTab('memory')">
-              <mat-icon class="!w-3.5 !h-3.5 !text-[14px]">psychology</mat-icon>
-              Bench Memory
-            </button>
-          </div>
-
-          <!-- Right: Actions depending on active tab -->
-          <!-- Files Tab Actions -->
-          <div class="flex items-center gap-2" *ngIf="activeRightTab === 'files'">
-            <button mat-button class="!text-xs !py-0 !px-2 !min-w-0 h-6 bg-indigo-50 border border-indigo-200 rounded text-indigo-700 font-medium flex items-center gap-1" (click)="createNewFile()" [disabled]="!activeBench">
-              <mat-icon class="!w-3 !h-3 !text-[12px] leading-3">note_add</mat-icon> Add File
-            </button>
-            <button mat-button class="!text-xs !py-0 !px-2 !min-w-0 h-6 bg-emerald-50 border border-emerald-200 rounded text-emerald-700 font-medium flex items-center gap-1" (click)="saveFile()" [disabled]="!selectedFile">
-              <mat-icon class="!w-3 !h-3 !text-[12px] leading-3">save</mat-icon> Save
-            </button>
-          </div>
-
-          <!-- Memory Tab Actions -->
-          <div class="flex items-center gap-2" *ngIf="activeRightTab === 'memory'">
-            <span *ngIf="memorySaveStatus" class="text-xs font-medium"
-                  [ngClass]="memorySaveStatus.includes('failed') ? 'text-red-600' : 'text-emerald-600'">
-              {{ memorySaveStatus }}
+      <!-- RIGHT PANE: BENCH WORKING MEMORY & FILES -->
+      <section class="flex-1 flex flex-col h-full bg-surface-dark overflow-hidden">
+        
+        <!-- Scratchpad Header & Tabs -->
+        <div class="px-4 py-2.5 border-b border-border-subtle flex items-center justify-between shrink-0 bg-surface-container-lowest">
+          <div class="flex items-center gap-2.5">
+            <span class="material-symbols-outlined text-tertiary" style="font-size: 20px;">memory</span>
+            <span class="text-headline-sm font-headline-sm font-semibold text-on-surface">Bench Resources</span>
+            <span class="px-2 py-0.5 rounded bg-surface-container text-body-sm font-code text-accent-success flex items-center gap-1 border border-border-subtle">
+              <span class="w-1.5 h-1.5 rounded-full bg-accent-success"></span>
+              Live Synced
             </span>
-            <button mat-button class="!text-xs !py-0 !px-2.5 !min-w-0 h-6 bg-emerald-50 border border-emerald-200 rounded text-emerald-700 font-medium flex items-center gap-1"
-                    (click)="saveBenchMemory()"
-                    [disabled]="!activeBench || isSavingMemory">
-              <mat-icon class="!w-3 !h-3 !text-[12px] leading-3">save</mat-icon> Save Memory
+          </div>
+          <!-- Format and Action Icons -->
+          <div class="flex items-center gap-1">
+            <button class="w-7 h-7 rounded text-outline hover:text-on-surface hover:bg-surface-container flex items-center justify-center transition-colors" title="Copy Scratchpad Content">
+              <span class="material-symbols-outlined" style="font-size: 16px;">content_copy</span>
+            </button>
+            <button class="w-7 h-7 rounded text-outline hover:text-on-surface hover:bg-surface-container flex items-center justify-center transition-colors" title="History Diff">
+              <span class="material-symbols-outlined" style="font-size: 16px;">history</span>
+            </button>
+            <button class="w-7 h-7 rounded text-outline hover:text-on-surface hover:bg-surface-container flex items-center justify-center transition-colors" title="Format Editor">
+              <span class="material-symbols-outlined" style="font-size: 16px;">auto_fix_high</span>
+            </button>
+            <button class="w-7 h-7 rounded text-outline hover:text-on-surface hover:bg-surface-container flex items-center justify-center transition-colors" title="Insert into Chat">
+              <span class="material-symbols-outlined" style="font-size: 16px;">input</span>
             </button>
           </div>
         </div>
 
-        <!-- TAB 1: Files Explorer & Editor -->
-        <div class="flex-1 flex flex-row overflow-hidden bg-[#fafafa]" *ngIf="activeRightTab === 'files'">
-          <!-- Left: File List -->
-          <div class="w-48 border-r border-slate-200 bg-slate-50 flex flex-col overflow-y-auto">
-            <div *ngIf="files.length === 0" class="text-slate-400 text-xs text-center mt-4">
-              No files in bench workspace.
-            </div>
-            <div *ngFor="let file of files"
-                 class="group flex items-center justify-between px-3 py-2 cursor-pointer text-sm border-b border-slate-100"
-                 [ngClass]="file === selectedFile ? 'bg-indigo-50 text-indigo-700 font-medium' : 'text-slate-600 hover:bg-slate-100'"
-                 (click)="selectFile(file)">
-               <div class="flex items-center gap-2 overflow-hidden">
-                 <mat-icon class="!w-4 !h-4 !text-base shrink-0" [ngClass]="file.endsWith('/') ? 'text-amber-400' : 'text-slate-400'">
-                   {{ file.endsWith('/') ? 'folder' : 'insert_drive_file' }}
-                 </mat-icon>
-                 <span class="truncate">{{ file }}</span>
-               </div>
-               <mat-icon class="!w-4 !h-4 !text-base shrink-0 text-slate-300 hover:text-red-500 hidden group-hover:block transition-colors"
-                         (click)="deleteFile(file, $event)" title="Delete File">delete</mat-icon>
-            </div>
-          </div>
-
-          <!-- Right: Text Area -->
-          <div class="flex-1 flex flex-col min-w-0 relative">
-            <ng-container *ngIf="selectedFile">
-               <div class="h-8 bg-slate-100 border-b border-slate-200 flex items-center px-4 shrink-0 shadow-inner">
-                 <span class="text-xs font-mono text-slate-600">{{ selectedFile }}</span>
-               </div>
-               <textarea class="flex-1 w-full p-4 font-mono text-sm resize-none border-none focus:outline-none focus:ring-0 bg-white shadow-inner"
-                         [(ngModel)]="selectedFileContent"
-                         placeholder="Type here..."
-                         spellcheck="false"></textarea>
-            </ng-container>
-            <div *ngIf="!selectedFile" class="flex-1 flex flex-col items-center justify-center text-slate-400">
-               <mat-icon class="!w-12 !h-12 !text-[48px] text-slate-200 mb-2">edit_document</mat-icon>
-               <span class="text-sm font-medium">Select a file in bench to edit</span>
-            </div>
-          </div>
+        <div class="flex items-center border-b border-border-subtle bg-surface-container-lowest px-4 text-label-md font-label-md shrink-0">
+          <button class="px-3 py-2 transition-colors flex items-center gap-1.5"
+                  [ngClass]="activeRightTab === 'files' ? 'border-b-2 border-primary text-primary font-medium' : 'text-on-surface-variant hover:text-on-surface'"
+                  (click)="setRightTab('files')">
+            <span class="material-symbols-outlined" style="font-size: 16px;">folder_open</span>
+            <span>Files</span>
+          </button>
+          <button class="px-3 py-2 transition-colors flex items-center gap-1.5"
+                  [ngClass]="activeRightTab === 'memory' ? 'border-b-2 border-primary text-primary font-medium' : 'text-on-surface-variant hover:text-on-surface'"
+                  (click)="setRightTab('memory')">
+            <span class="material-symbols-outlined" style="font-size: 16px;">psychology</span>
+            <span>Bench Memory</span>
+          </button>
         </div>
 
-        <!-- TAB 2: Bench Working Memory Markdown Editor -->
-        <div class="flex-1 flex flex-col overflow-hidden bg-white" *ngIf="activeRightTab === 'memory'">
-          <div class="px-4 py-2 bg-indigo-50/50 border-b border-indigo-100 text-xs text-indigo-900 flex items-center justify-between">
-            <div class="flex items-center gap-1.5">
-              <mat-icon class="!w-4 !h-4 !text-base text-indigo-600">info_outline</mat-icon>
-              <span>Shared project working memory for all threads in <strong>{{ activeBench ? activeBench.name : 'this bench' }}</strong>. Agents read and update this context.</span>
+        <!-- Files Tab -->
+        @if (activeRightTab === 'files') {
+          <div class="flex-1 flex flex-row overflow-hidden bg-background">
+            <div class="w-48 border-r border-border-subtle bg-surface-container-lowest flex flex-col overflow-y-auto custom-scrollbar">
+              <div class="p-2 border-b border-border-subtle flex justify-between items-center">
+                <span class="text-xs font-bold text-outline uppercase">Explorer</span>
+                <button mat-icon-button class="!w-6 !h-6 text-outline hover:text-primary" (click)="createNewFile()" [disabled]="!activeBench">
+                  <span class="material-symbols-outlined" style="font-size: 14px;">add</span>
+                </button>
+              </div>
+              @if (files.length === 0) {
+                <div class="text-outline text-xs text-center mt-4">No files.</div>
+              }
+              @for (file of files; track file) {
+                <div class="group flex items-center justify-between px-3 py-2 cursor-pointer text-sm border-b border-border-subtle/50"
+                     [ngClass]="file === selectedFile ? 'bg-surface-container text-primary font-medium' : 'text-on-surface-variant hover:bg-surface-container-low'"
+                     (click)="selectFile(file)">
+                   <div class="flex items-center gap-2 overflow-hidden">
+                     <span class="material-symbols-outlined shrink-0" style="font-size: 16px;" [ngClass]="file.endsWith('/') ? 'text-accent-warning' : 'text-outline'">
+                       {{ file.endsWith('/') ? 'folder' : 'insert_drive_file' }}
+                     </span>
+                     <span class="truncate">{{ file }}</span>
+                   </div>
+                   <span class="material-symbols-outlined shrink-0 text-outline hover:text-accent-error hidden group-hover:block transition-colors"
+                         style="font-size: 14px;"
+                         (click)="deleteFile(file, $event)" title="Delete File">delete</span>
+                </div>
+              }
+            </div>
+            <div class="flex-1 flex flex-col min-w-0 relative">
+              @if (selectedFile) {
+                 <div class="h-10 bg-surface-container-low border-b border-border-subtle flex items-center justify-between px-4 shrink-0">
+                   <span class="text-xs font-code text-on-surface">{{ selectedFile }}</span>
+                   <button class="px-2.5 py-1 text-xs bg-primary text-on-primary rounded hover:bg-primary-fixed-dim font-medium" (click)="saveFile()">Save</button>
+                 </div>
+                 <textarea class="flex-1 w-full p-4 font-code text-body-sm resize-none border-none focus:outline-none focus:ring-0 bg-surface-dark text-on-surface custom-scrollbar"
+                           [(ngModel)]="selectedFileContent"
+                           placeholder="Type here..."
+                           spellcheck="false"></textarea>
+              }
+              @if (!selectedFile) {
+                <div class="flex-1 flex flex-col items-center justify-center text-outline">
+                   <span class="material-symbols-outlined text-[48px] mb-2">edit_document</span>
+                   <span class="text-sm font-medium">Select a file in bench to edit</span>
+                </div>
+              }
             </div>
           </div>
-          <div class="flex-1 flex flex-col min-w-0 relative">
-            <textarea class="flex-1 w-full p-4 font-mono text-xs sm:text-sm leading-relaxed resize-none border-none focus:outline-none focus:ring-0 bg-[#fdfdfd]"
-                      [(ngModel)]="benchWorkingMemoryContent"
-                      placeholder="# Bench Working Memory&#10;&#10;Document core project decisions, constraints, architectural choices, and context shared across all threads..."
-                      spellcheck="false"></textarea>
+        }
+
+        <!-- Memory Tab -->
+        @if (activeRightTab === 'memory') {
+          <div class="flex-1 flex flex-col overflow-hidden bg-surface-dark">
+            <div class="px-4 py-2 bg-surface-container-low border-b border-border-subtle text-xs text-on-surface flex items-center justify-between">
+              <div class="flex items-center gap-1.5">
+                <span class="material-symbols-outlined text-primary" style="font-size: 16px;">info</span>
+                <span>Shared project working memory for all threads in <strong>{{ activeBench ? activeBench.name : 'this bench' }}</strong>.</span>
+              </div>
+              <button class="px-2.5 py-1 text-xs bg-primary text-on-primary rounded hover:bg-primary-fixed-dim font-medium" (click)="saveBenchMemory()" [disabled]="!activeBench || isSavingMemory">Save Memory</button>
+            </div>
+            <div class="flex-1 flex flex-col min-w-0 relative">
+              <textarea class="flex-1 w-full p-4 font-code text-body-sm leading-relaxed resize-none border-none focus:outline-none focus:ring-0 bg-transparent text-on-surface custom-scrollbar"
+                        [(ngModel)]="benchWorkingMemoryContent"
+                        placeholder="# Bench Working Memory&#10;&#10;Document core project decisions, constraints, architectural choices, and context shared across all threads..."
+                        spellcheck="false"></textarea>
+            </div>
+            
+            <!-- Scratchpad Bottom Action Bar -->
+            <div class="p-3 border-t border-border-subtle bg-surface-container-lowest shrink-0 flex items-center justify-between">
+              <!-- Toggle Switch: Inject into Prompt Context -->
+              <label class="flex items-center gap-2 cursor-pointer select-none">
+                <div class="relative inline-flex items-center">
+                  <input checked="" class="sr-only peer" type="checkbox"/>
+                  <div class="w-8 h-4 bg-surface-container peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-primary peer-checked:bg-primary-container after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-on-primary-container after:rounded-full after:h-3 after:w-3 after:transition-all"></div>
+                </div>
+                <span class="text-body-sm font-label-md text-on-surface">Inject into Prompt Context</span>
+              </label>
+              <!-- Quick Action Buttons -->
+              <div class="flex items-center gap-2">
+                <button class="px-2.5 py-1.5 rounded bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface text-label-md font-label-md border border-border-subtle transition-colors">
+                  Clear Scratchpad
+                </button>
+                <button class="px-3 py-1.5 rounded bg-surface-container-high hover:bg-surface-bright text-primary border border-primary/30 text-label-md font-label-md font-medium transition-all flex items-center gap-1.5">
+                  <span class="material-symbols-outlined" style="font-size: 16px;">save</span>
+                  <span>Save as Semantic Snapshot</span>
+                </button>
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
-    </div>
+        }
+      </section>
+    </main>
   </div>
 </div>

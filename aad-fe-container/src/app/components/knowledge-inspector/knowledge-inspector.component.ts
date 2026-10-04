@@ -1,3 +1,4 @@
+import { TopBarComponent } from '../../shared/top-bar/top-bar.component';
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -38,7 +39,7 @@ export interface KnowledgeNodeProposal {
 @Component({
   selector: 'app-knowledge-inspector',
   standalone: true,
-  imports: [
+  imports: [TopBarComponent, 
     CommonModule,
     FormsModule,
     MatCardModule,
@@ -103,21 +104,21 @@ export class KnowledgeInspectorComponent implements OnInit {
   readonly conceptGuideMappings: ConceptTabMapping[] = [
     {
       icon: 'saved_search',
-      iconColor: 'text-blue-600',
+      iconColor: 'text-primary',
       title: '1. Semantic Vector Store',
       description:
         'High-dimensional vector embeddings for hybrid RAG search over documents and corporate policies.',
     },
     {
       icon: 'hub',
-      iconColor: 'text-indigo-600',
+      iconColor: 'text-primary',
       title: '2. Knowledge Graph Triples',
       description:
         'Subject-Predicate-Object relation tuples connecting company concepts, teams, and data structures.',
     },
     {
       icon: 'cleaning_services',
-      iconColor: 'text-emerald-600',
+      iconColor: 'text-accent-success',
       title: '3. Entity Resolution & Pruning',
       description:
         'Canonical entity deduction and automated duplicate pruning ensuring reliable AI grounding.',

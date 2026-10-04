@@ -1,495 +1,460 @@
-<div class="h-full w-full flex flex-row bg-slate-50 overflow-hidden">
+<div class="bg-background text-on-surface font-body-md text-body-md antialiased overflow-hidden h-screen flex flex-col select-none dark">
+<!-- ==================== SHARED COMPONENT: TopNavBar ==================== -->
+<app-top-bar>
+<!-- Center/Breadcrumb Path Context -->
+<ng-container left-actions>
+<div class="hidden xl:flex items-center gap-space-xs font-body-sm text-body-sm text-on-surface-variant bg-surface-container-low px-space-md py-1 rounded-lg border border-border-subtle">
+<span class="text-outline">MCP Engine</span>
+<span class="text-outline-variant">&gt;</span>
+<span class="text-outline">Tool Registries</span>
+<span class="text-outline-variant">&gt;</span>
+<span class="text-on-surface font-medium">Production Cluster</span>
+<span class="inline-block w-1.5 h-1.5 rounded-full bg-accent-success ml-space-sm"></span>
+<span class="text-accent-success font-code text-code">Active • {{ getFilteredServers().length }} Servers</span>
+</div>
+</ng-container>
+<!-- Right: Actions, Transport Selector, Trailing Action Icons -->
+<ng-container right-actions>
+<div class="flex items-center gap-space-sm">
+<!-- Concept Guide -->
+<app-concept-guide
+  badge="Tool Trait Ecosystem"
+  title="Workspace Tools (Tool Manager)"
+  icon="dns"
+  triggerLabel="What are Tools?"
+  analogyTitle="The Toolbelt Analogy"
+  analogyText="Think of Tools like physical instruments on an AI teammate's toolbelt. They connect agents to filesystems, code interpreters, terminal commands, and external APIs with pre-tool safety checks."
+  [tabMappings]="conceptGuideMappings"
+  detailLink="/detail"
+  detailLinkLabel="Explore Tool Architecture"
+  testIdPrefix="tools-concept">
+</app-concept-guide>
 
-  <!-- Left Sidebar -->
-  <div [ngClass]="isSidebarCollapsed ? 'w-16' : 'w-72'" class="h-full bg-white border-r border-slate-200 shadow-sm flex flex-col transition-all duration-300 z-10 shrink-0 overflow-hidden">
-
-    <!-- Sidebar Header -->
-    <div class="p-4 border-b border-slate-100 flex items-center shrink-0 h-14" [ngClass]="isSidebarCollapsed ? 'justify-center px-0' : 'justify-between'">
-      <div class="flex items-center gap-2 overflow-hidden" *ngIf="!isSidebarCollapsed">
-        <div class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white font-bold shrink-0">
-          <mat-icon class="!w-5 !h-5 !text-xl">build</mat-icon>
+<!-- Sync Action (Shared trailing_primary_action) -->
+<button class="flex items-center gap-space-xs bg-primary hover:bg-primary-fixed-dim text-on-primary font-label-md text-label-md px-space-md py-1.5 rounded-lg active:opacity-80 transition-opacity duration-150 shadow-sm font-semibold" (click)="syncServer()" [disabled]="isSyncing">
+<span class="material-symbols-outlined text-[16px]" style="font-variation-settings: 'wght' 600;" [class.animate-spin]="isSyncing">sync</span>
+<span>{{ isSyncing ? 'Syncing...' : 'Sync Now' }}</span>
+</button>
+<!-- Trailing Action Icons (terminal, circle, notifications, settings) -->
+<div class="flex items-center gap-1 border-l border-border-subtle pl-space-sm ml-space-xs">
+<button class="w-8 h-8 rounded-lg flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors duration-150 active:opacity-80" (click)="toggleSidebar()" [title]="isSidebarCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'">
+<span class="material-symbols-outlined">{{ isSidebarCollapsed ? 'last_page' : 'first_page' }}</span>
+</button>
+<button class="w-8 h-8 rounded-lg flex items-center justify-center text-accent-success hover:bg-surface-container transition-colors duration-150 active:opacity-80" title="Cluster Status">
+<span class="material-symbols-outlined fill-icon">circle</span>
+</button>
+<button class="w-8 h-8 rounded-lg flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors duration-150 active:opacity-80 relative" title="Notifications">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-tertiary-container"></span>
+</button>
+<button class="w-8 h-8 rounded-lg flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors duration-150 active:opacity-80" title="Engine Settings">
+<span class="material-symbols-outlined">settings</span>
+</button>
+</div>
+<!-- Profile Avatar -->
+<div class="flex items-center gap-space-xs pl-space-xs">
+<div class="w-7 h-7 rounded-lg bg-surface-container-high border border-border-subtle flex items-center justify-center text-primary font-code text-code font-semibold" title="User Profile Avatar">
+          SE
         </div>
-        <span class="font-black text-slate-800 text-lg whitespace-nowrap">AAD</span>
-      </div>
-      <button mat-icon-button (click)="toggleSidebar()" class="text-slate-400 hover:text-slate-700" [title]="isSidebarCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'">
-        <mat-icon>{{ isSidebarCollapsed ? 'chevron_right' : 'chevron_left' }}</mat-icon>
-      </button>
-    </div>
+</div>
+</div>
+</ng-container>
+</app-top-bar>
+<!-- ==================== BODY WORKSPACE CONTAINER ==================== -->
+<div class="flex-1 flex overflow-hidden">
+<!-- ==================== SHARED COMPONENT: SideNavBar ==================== -->
+<aside [ngClass]="isSidebarCollapsed ? 'w-16 items-center' : 'w-72'" class="h-[calc(100vh-3.5rem)] flex flex-col justify-between p-space-md border-r border-border-subtle bg-surface-container-low flex-shrink-0 transition-all duration-300">
+@if (!isSidebarCollapsed) {
+<div class="flex flex-col gap-space-md h-full">
+<!-- Header: Semantic Engine & Status -->
+<div class="flex items-center justify-between px-space-xs py-space-xs border-b border-border-subtle pb-space-sm">
+<div class="flex items-center gap-space-sm">
+<div class="w-8 h-8 rounded-lg bg-primary-container/20 border border-primary/30 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[20px]">smart_toy</span>
+</div>
+<div>
+<h2 class="font-headline-sm text-headline-sm text-on-surface font-semibold">MCP Engine</h2>
+<div class="flex items-center gap-1.5">
+<span class="w-1.5 h-1.5 rounded-full bg-accent-success"></span>
+<p class="font-body-sm text-body-sm text-on-surface-variant">v2.4.0 • Connected</p>
+</div>
+</div>
+</div>
+<button class="text-on-surface-variant hover:text-on-surface p-1 rounded hover:bg-surface-container">
+<span class="material-symbols-outlined text-[16px]">tune</span>
+</button>
+</div>
+<!-- CTA: Add Tool Server -->
+<button class="w-full flex items-center justify-center gap-space-sm px-space-md py-2 rounded-lg bg-surface-container border border-border-subtle hover:bg-surface-container-high text-primary font-label-md text-label-md active:scale-[0.99] transition-transform duration-150" (click)="startNewServer()">
+<span class="material-symbols-outlined text-[16px]">add_circle</span>
+<span>Add Tool Server</span>
+</button>
+<!-- Navigation Tabs (Shared Components tabs) -->
+<nav class="flex flex-col gap-1">
+<a class="flex items-center gap-space-sm px-space-md py-space-sm rounded-lg bg-secondary-container text-on-secondary-container font-label-md text-label-md" href="javascript:void(0)">
+<span class="material-symbols-outlined text-[18px]">dns</span>
+<span class="flex-1">MCP Servers</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-code bg-surface-container-lowest text-on-surface-variant">{{ getFilteredServers().length }} Active</span>
+</a>
+</nav>
 
-    <!-- Search -->
-    <div class="p-3 border-b border-slate-100 shrink-0" *ngIf="!isSidebarCollapsed">
-      <div class="relative">
-        <mat-icon class="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 !w-4 !h-4 !text-base">search</mat-icon>
-        <input type="text" placeholder="Search tools by name..."
-               class="w-full pl-9 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
-               [(ngModel)]="searchQuery" />
-      </div>
-    </div>
-
-    <!-- Tool List -->
-    <div class="flex-1 min-h-0 overflow-y-auto py-2">
-      <div *ngIf="getFilteredServers().length === 0 && !isSidebarCollapsed" class="text-center py-8 text-slate-400 text-xs">
-        No matching tools found.
-      </div>
-
-      <div class="space-y-2 px-2 pb-2">
-        @for (s of getFilteredServers(); track s.id) {
-          <div class="group p-3 rounded-xl border transition-all cursor-pointer bg-white"
-               [ngClass]="selectedServer?.id === s.id ? 'border-indigo-500 shadow-sm ring-1 ring-indigo-500/20' : 'border-slate-200 hover:border-slate-300'"
-               (click)="selectServer(s)"
-               [matTooltip]="s.server_name"
-               matTooltipPosition="right"
-               [matTooltipDisabled]="!isSidebarCollapsed">
-
-            <!-- Expanded View -->
-            <div class="flex flex-col w-full" *ngIf="!isSidebarCollapsed">
-              <div class="flex justify-between items-start">
-                <div class="flex items-start gap-3 overflow-hidden flex-1">
-                  <mat-icon class="shrink-0 text-slate-400 mt-0.5"
-                            [ngClass]="{'text-indigo-600': selectedServer?.id === s.id}">
-                    dns
-                  </mat-icon>
-                  <div class="flex-1 min-w-0">
-                    <h5 class="text-sm font-bold text-slate-900 m-0 truncate leading-tight mt-0.5">{{ s.server_name }}</h5>
-                  </div>
-                </div>
-
-                <div class="flex items-center gap-1 ml-2 shrink-0">
-                  <span class="px-2.5 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded-md">
-                    v1.0.0
-                  </span>
-                </div>
-              </div>
-
-              <!-- Description -->
-              <p class="text-xs text-slate-500 m-0 mt-2 line-clamp-2 leading-relaxed">
-                Cached Tools: {{ s.tools_count }} tools parsed & embedded
-              </p>
-
-              <div class="flex items-center justify-between pt-2">
-                <span class="text-[10px] text-slate-400">Last Synced: {{ s.last_synced }}</span>
-              </div>
-
-              <!-- Tags -->
-              <div *ngIf="s.tags && s.tags.length > 0" class="flex flex-wrap gap-1 mt-2">
-                @for (tag of s.tags; track tag) {
-                  <span class="px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded text-[9px] font-semibold">#{{ tag }}</span>
-                }
-              </div>
-            </div>
-
-            <!-- Collapsed View -->
-            <div class="flex justify-center items-center" *ngIf="isSidebarCollapsed">
-               <mat-icon class="text-slate-400 transition-colors"
-                        [ngClass]="{'text-indigo-600': selectedServer?.id === s.id}">
-                dns
-              </mat-icon>
-            </div>
-          </div>
-        }
-      </div>
-    </div>
-  </div>
-
-  <!-- Right Area (Workspace) -->
-  <div class="flex-1 flex flex-col min-w-0 overflow-hidden bg-slate-50 relative">
-
-    <!-- Top Bar -->
-    <div class="h-14 bg-white border-b border-slate-200 flex items-center justify-between px-4 shrink-0 shadow-sm z-10">
-      <!-- Left side of top bar (Title & View Switcher) -->
-      <div class="flex items-center gap-3">
-        <div class="flex items-center gap-1.5 px-2.5 py-1 -ml-2 rounded-lg hover:bg-slate-100 cursor-pointer transition-colors select-none group"
-             [matMenuTriggerFor]="appMenu"
-             data-testid="workspace-title-switcher"
-             title="Click to switch workspace">
-          <mat-icon class="text-indigo-600">dns</mat-icon>
-          <h1 class="text-lg font-black text-slate-800 m-0">Tools Registry</h1>
-          <mat-icon class="!w-4 !h-4 !text-base text-slate-400 group-hover:text-slate-700 transition-colors">expand_more</mat-icon>
-        </div>
-
-        <!-- Zero-Footprint Concept Guide -->
-        <app-concept-guide
-          badge="Tool Trait Ecosystem"
-          title="Workspace Tools (Tool Manager)"
-          icon="dns"
-          triggerLabel="What are Tools?"
-          analogyTitle="The Toolbelt Analogy"
-          analogyText="Think of Tools like physical instruments on an AI teammate's toolbelt. They connect agents to filesystems, code interpreters, terminal commands, and external APIs with pre-tool safety checks."
-          [tabMappings]="conceptGuideMappings"
-          detailLink="/detail"
-          detailLinkLabel="Explore Tool Architecture"
-          testIdPrefix="tools-concept">
-        </app-concept-guide>
-      </div>
-
-      <!-- Right side of top bar (Actions) -->
-      <div class="flex items-center gap-2">
-        <button mat-flat-button color="primary" class="!rounded-lg !px-4 !font-bold h-9 mr-2" (click)="startNewServer()">
-          <mat-icon class="mr-1">add</mat-icon> New Tool
-        </button>
-
-        <!-- Hamburger Menu for App Navigation -->
-        <button mat-icon-button [matMenuTriggerFor]="appMenu" aria-label="Menu" class="text-slate-500 hover:text-slate-800">
-          <mat-icon>menu</mat-icon>
-        </button>
-
-        <mat-menu #appMenu="matMenu">
-          @for (item of menuItems; track item.path) {
-            <a mat-menu-item [routerLink]="item.path" routerLinkActive="active-link">
-              <mat-icon>{{ item.icon }}</mat-icon>
-              <span>{{ item.label }}</span>
-            </a>
-          }
-        </mat-menu>
-
-        <div class="w-px h-6 bg-slate-200 mx-1"></div> <!-- Divider -->
-
-        <!-- View Toggle Icon (Mock) -->
-        <button mat-icon-button class="text-slate-500 hover:text-slate-800" title="Change View">
-          <mat-icon>view_column</mat-icon>
-        </button>
-
-        <!-- User Profile (Mock) -->
-        <button mat-icon-button class="ml-1">
-          <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-amber-400 to-orange-500 border-2 border-white shadow-sm flex items-center justify-center text-white font-bold text-sm">
-            BG
-          </div>
-        </button>
-      </div>
-    </div>
-
-    <!-- Workspace Content (Scrollable) -->
-    <div class="flex-1 min-h-0 overflow-y-auto p-6">
-      <!-- Right Content Panel: Tool Details & Editor -->
-          @if (selectedServer || isEditing) {
-        <mat-card class="!rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
-          <div class="p-6 bg-slate-50/80 border-b border-slate-200/60 flex justify-between items-center">
-            <div>
-              <h2 class="text-base font-black text-slate-800 m-0">
-                {{ isEditing ? (selectedServer ? 'Edit Tool Configuration' : 'Register New Tool') : 'Tool Connection Details' }}
-              </h2>
-              @if (selectedServer) {
-                <p class="text-xs text-slate-400 m-0 mt-0.5">ID: {{ selectedServer.id }}</p>
-              }
-            </div>
-
-            <div class="flex flex-col items-end gap-1">
-              <div class="flex gap-2">
-                @if (!isEditing && selectedServer) {
-                  <button mat-stroked-button class="!rounded-xl !font-semibold" [disabled]="isSyncing" (click)="syncServer()" title="Re-query remote MCP server to refresh tools">
-                    <mat-icon [class.animate-spin]="isSyncing">sync</mat-icon> {{ isSyncing ? 'Syncing...' : 'Sync Now' }}
-                  </button>
-                  <button mat-stroked-button color="warn" class="!rounded-xl !font-semibold" (click)="confirmDeleteState()">
-                    <mat-icon>delete</mat-icon> Delete
-                  </button>
-                  <button mat-stroked-button class="!rounded-xl !font-semibold" (click)="enableEdit()">
-                    <mat-icon>edit</mat-icon> Edit
-                  </button>
-                }
-                @if (isEditing) {
-                  <button mat-stroked-button class="!rounded-xl !font-bold" (click)="cancelEdit()">
-                    Cancel
-                  </button>
-                  <button mat-flat-button color="primary" class="!rounded-xl !font-bold" [disabled]="isRegistering" (click)="registerServer()">
-                    <mat-icon>save</mat-icon> Save
-                  </button>
-                }
-              </div>
-              @if (selectedServer) {
-                <div class="flex items-center gap-2 mt-1">
-                  <span class="px-2 py-0.5 rounded-md text-[10px] font-bold border uppercase tracking-wider flex items-center gap-1"
-                        [ngClass]="selectedServer.sync_status === 'synced' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200'"
-                        [matTooltip]="selectedServer.last_sync_error || 'Synchronized with remote endpoint'">
-                    <mat-icon class="!w-3 !h-3 !text-[12px]">{{ selectedServer.sync_status === 'synced' ? 'check_circle' : 'warning' }}</mat-icon>
-                    {{ selectedServer.sync_status || 'synced' }}
-                  </span>
-                  <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
-                    Version: 1.0.0
-                  </span>
-                </div>
-              }
-            </div>
-          </div>
-
-          @if (showDeleteConfirm) {
-            <div class="p-3 bg-red-50 border-b border-red-200 text-red-900 text-xs font-semibold flex items-center justify-between px-6">
-              <span class="flex items-center gap-1.5">
-                <mat-icon class="!w-4 !h-4 !text-base text-red-600">warning</mat-icon>
-                <p class="text-xs text-red-600 m-0 font-bold">Warning: Deleting this tool connection will remove it from the registry cache. Confirm deletion?</p>
-              </span>
-              <div class="flex gap-2">
-                <button mat-button color="warn" class="!text-xs !font-bold" (click)="deleteServer()">Confirm Delete</button>
-                <button mat-button class="!text-xs" (click)="cancelDelete()">Cancel</button>
-              </div>
-            </div>
-          }
-
-          <mat-card-content class="p-6 space-y-6">
-            <!-- Name & Owner ID -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <!-- Name -->
-              <div class="space-y-1 text-left">
-                <label class="text-xs font-bold text-slate-500">Name</label>
-                <input type="text" [(ngModel)]="serverForm.server_name" [disabled]="!isEditing || selectedServer"
-                       placeholder="e.g. github-tool"
-                       class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 disabled:bg-slate-50 disabled:text-slate-500 transition-all" />
-              </div>
-
-              <!-- Owner ID -->
-              <div class="space-y-1 text-left">
-                <label class="text-xs font-bold text-slate-500">Owner</label>
-                <input type="text" [(ngModel)]="serverForm.owner_id" [disabled]="!isEditing"
-                       class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 disabled:bg-slate-50 disabled:text-slate-500 transition-all" />
-              </div>
-            </div>
-
-            <!-- Description -->
-            <div class="space-y-1 text-left pt-2">
-              <label class="text-xs font-bold text-slate-500">Description</label>
-              <textarea rows="3" [(ngModel)]="serverForm.description" [disabled]="!isEditing"
-                        placeholder="Describe the purpose, operations, and services provided by this Tool..."
-                        class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 disabled:bg-slate-50 disabled:text-slate-500 transition-all"></textarea>
-            </div>
-
-            <!-- Tags -->
-            <div class="space-y-2 text-left pt-2">
-              <label class="text-xs font-bold text-slate-500 block">Tags</label>
-              @if (isEditing) {
-                <div class="flex gap-2 mb-2">
-                  <input type="text" placeholder="Add tag..." [(ngModel)]="newTag" (keyup.enter)="addTag()"
-                         class="flex-1 px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all" />
-                  <button mat-stroked-button class="!rounded-xl !text-xs" (click)="addTag()">Add</button>
-                </div>
-              }
-              <div class="flex flex-wrap gap-1.5">
-                @for (tag of serverForm.tags || []; track tag) {
-                  <span class="px-2.5 py-1 bg-indigo-50 text-indigo-700 font-bold text-[11px] rounded-xl flex items-center gap-1.5 border border-indigo-100">
-                    #{{ tag }}
-                    @if (isEditing) {
-                      <button class="text-indigo-400 hover:text-red-600 font-bold border-none bg-transparent cursor-pointer text-xs" (click)="removeTag(tag)">×</button>
-                    }
-                  </span>
-                }
-              </div>
-            </div>
-
-            <!-- Version and Transport Protocol -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <!-- Version -->
-              <div class="space-y-1 text-left">
-                <label class="text-xs font-bold text-slate-500">Version</label>
-                <input type="text" value="1.0.0" disabled
-                       class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-500 transition-all" />
-              </div>
-
-              <!-- Transport Protocol -->
-              <div class="space-y-1 text-left">
-                <label class="text-xs font-bold text-slate-500 block">Transport Protocol</label>
-                <mat-select [(ngModel)]="serverForm.transport_type" [disabled]="!isEditing"
-                            class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 disabled:bg-slate-50 disabled:text-slate-500 transition-all">
-                  <mat-option value="http">HTTP (JSON-RPC 2.0 Streamable HTTP - Recommended)</mat-option>
-                  <mat-option value="sse">SSE (Server-Sent Events HTTP)</mat-option>
-                  <mat-option value="stdio">Stdio (Standard Input/Output Command)</mat-option>
-                </mat-select>
-              </div>
-            </div>
-
-            <!-- Endpoint URL or Command -->
-            <div class="space-y-1 text-left">
-              <label class="text-xs font-bold text-slate-500">Endpoint URL or Executable Command</label>
-              <input type="text" [(ngModel)]="serverForm.url" [disabled]="!isEditing"
-                     placeholder="e.g. http://localhost:8082"
-                     class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 disabled:bg-slate-50 disabled:text-slate-500 transition-all" />
-            </div>
-          </mat-card-content>
-        </mat-card>
-
-        <!-- Discovered Capabilities Section -->
-        @if (selectedServer && !isEditing) {
-          <div class="mt-6">
-            <div class="flex items-center justify-between mb-3">
-              <div>
-                <h3 class="text-sm font-black text-slate-800 m-0 flex items-center gap-2">
-                  <mat-icon class="text-indigo-600 !w-5 !h-5 !text-xl">construction</mat-icon>
-                  Discovered Tools & Capabilities
-                  <span class="px-2 py-0.5 bg-indigo-50 text-indigo-700 text-xs font-bold rounded-full border border-indigo-100">
-                    {{ selectedServer.cached_capabilities?.tools?.length || 0 }} Tools
-                  </span>
-                </h3>
-                <p class="text-xs text-slate-500 m-0 mt-0.5">
-                  Remote tools parsed from server schema and available for dynamic agent dispatch.
-                </p>
-              </div>
-            </div>
-
-            @if (!selectedServer.cached_capabilities?.tools || selectedServer.cached_capabilities.tools.length === 0) {
-              <div class="p-6 bg-white rounded-2xl border border-dashed border-slate-200 text-center shadow-xs">
-                <mat-icon class="text-slate-300 !w-8 !h-8 !text-3xl mb-1">build_circle</mat-icon>
-                <p class="text-xs font-semibold text-slate-700 m-0">No tools currently cached</p>
-                <p class="text-[11px] text-slate-400 m-0 mt-1">
-                  Ensure the MCP server is active on <code class="font-mono text-indigo-600">{{ selectedServer.url || 'the configured endpoint' }}</code> and click <strong>Sync Now</strong> above.
-                </p>
-              </div>
-            } @else {
-              <div class="space-y-3">
-                @for (tool of selectedServer.cached_capabilities.tools; track tool.name) {
-                  <div class="p-4 bg-white rounded-2xl border border-slate-200 hover:border-slate-300 shadow-xs transition-all">
-                    <div class="flex items-start justify-between">
-                      <div class="space-y-1 flex-1 min-w-0 pr-4">
-                        <div class="flex items-center gap-2">
-                          <span class="font-mono text-xs font-bold px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded-md border border-indigo-100">
-                            {{ tool.name }}
-                          </span>
-                          @if (tool.inputSchema?.required && tool.inputSchema.required.length > 0) {
-                            <span class="text-[10px] text-slate-500">
-                              Required: <span class="font-mono text-slate-700">{{ tool.inputSchema.required.join(', ') }}</span>
-                            </span>
-                          }
-                        </div>
-                        <p class="text-xs text-slate-600 m-0 leading-relaxed pt-1">
-                          {{ tool.description || 'No description provided.' }}
-                        </p>
-                      </div>
-
-                      <div class="flex items-center gap-2 shrink-0">
-                        <button mat-flat-button color="primary" class="!rounded-xl !text-xs !font-bold h-8" (click)="openToolTester(tool)">
-                          <mat-icon class="!w-4 !h-4 !text-base mr-1">play_arrow</mat-icon> Test Tool
-                        </button>
-                      </div>
-                    </div>
-
-                    <!-- Parameters preview -->
-                    @if (getToolProperties(tool).length > 0) {
-                      <div class="mt-3 pt-3 border-t border-slate-100">
-                        <div class="text-[11px] font-bold text-slate-500 mb-1.5">Parameters:</div>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-                          @for (prop of getToolProperties(tool); track prop.name) {
-                            <div class="p-2 bg-slate-50 rounded-xl border border-slate-100 text-xs">
-                              <div class="flex items-center justify-between">
-                                <span class="font-mono font-bold text-slate-800">{{ prop.name }}</span>
-                                <span class="text-[10px] px-1.5 py-0.5 rounded bg-slate-200/60 font-mono text-slate-600">{{ prop.type }}</span>
-                              </div>
-                              @if (prop.description) {
-                                <p class="text-[11px] text-slate-500 m-0 mt-1 line-clamp-2">{{ prop.description }}</p>
-                              }
-                              @if (prop.required) {
-                                <span class="text-[9px] text-red-500 font-bold uppercase tracking-wider block mt-1">Required</span>
-                              }
-                            </div>
-                          }
-                        </div>
-                      </div>
-                    }
-                  </div>
-                }
-              </div>
-            }
-          </div>
-        }
-      } @else {
-        <div class="flex flex-col items-center justify-center py-24 bg-white rounded-2xl border border-slate-200 shadow-sm text-slate-400">
-          <mat-icon class="!w-16 !h-16 !text-6xl text-slate-200 mb-4">dns</mat-icon>
-          <h3 class="text-sm font-bold text-slate-700 m-0">No Tool Selected</h3>
-          <p class="text-xs text-slate-500 m-0 mt-1">
-            Choose a tool from the list, or register a new one to begin configuration.
-          </p>
-        </div>
-      }
-    </div>
-  </div>
+<!-- Active Server List Cluster -->
+<div class="flex-1 overflow-y-auto mt-space-sm pt-space-sm border-t border-border-subtle">
+<div class="relative flex-shrink-0 mb-3">
+<span class="material-symbols-outlined absolute left-3 top-2 text-on-surface-variant text-[18px]">search</span>
+<input type="text" placeholder="Filter servers..."
+       class="w-full bg-surface-container-lowest border border-border-subtle rounded-lg pl-9 pr-3 py-1.5 font-body-sm text-body-sm text-on-surface placeholder:text-outline focus:outline-none focus:border-primary transition-colors"
+       [(ngModel)]="searchQuery" />
 </div>
 
-<!-- Interactive Tool Verification Modal -->
-@if (activeTestTool) {
-  <div class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
-    <div class="bg-white w-full max-w-xl rounded-2xl shadow-xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]">
-      <!-- Header -->
-      <div class="p-4 px-6 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
-        <div class="flex items-center gap-2">
-          <div class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white font-bold">
-            <mat-icon class="!w-5 !h-5 !text-xl">science</mat-icon>
-          </div>
-          <div>
-            <h3 class="text-sm font-bold text-slate-800 m-0 flex items-center gap-1.5">
-              Verify Tool: <span class="font-mono text-indigo-600">{{ activeTestTool.name }}</span>
-            </h3>
-            <p class="text-[11px] text-slate-500 m-0">Send live JSON-RPC test execution payload to {{ selectedServer?.server_name }}</p>
-          </div>
-        </div>
-        <button mat-icon-button (click)="closeToolTester()" class="text-slate-400 hover:text-slate-600">
-          <mat-icon>close</mat-icon>
-        </button>
-      </div>
+<div class="flex items-center justify-between px-space-xs mb-space-xs">
+<span class="font-body-sm text-body-sm text-outline uppercase tracking-wider font-semibold">Live Tool Servers</span>
+<span class="font-code text-[11px] text-accent-success">Cluster Healthy</span>
+</div>
+@if (getFilteredServers().length === 0) {
+  <div class="text-center py-8 text-on-surface-variant text-xs">No matching tools found.</div>
+}
 
-      <!-- Content Body -->
-      <div class="p-6 overflow-y-auto space-y-4 flex-1">
-        <div>
-          <label class="text-xs font-bold text-slate-600 block mb-1">Tool Description</label>
-          <p class="text-xs text-slate-600 bg-slate-50 p-2.5 rounded-xl border border-slate-200 m-0">
-            {{ activeTestTool.description || 'No description available' }}
-          </p>
-        </div>
+<div class="flex flex-col gap-1.5">
+@for (s of getFilteredServers(); track s.id) {
+<div class="p-2 rounded-lg border flex items-center justify-between cursor-pointer transition-colors"
+     [ngClass]="selectedServer?.id === s.id ? 'bg-surface-container/60 border-primary/30 shadow-sm' : 'bg-surface-container/30 border-border-subtle hover:bg-surface-container'"
+     (click)="selectServer(s)" [matTooltip]="s.server_name" matTooltipPosition="right">
+<div class="flex items-center gap-2 overflow-hidden">
+<span class="w-2 h-2 rounded-full flex-shrink-0" [ngClass]="s.sync_status === 'synced' ? 'bg-accent-success animate-pulse' : 'bg-accent-warning animate-ping'"></span>
+<div class="truncate">
+<p class="font-code text-code text-on-surface truncate">{{ s.server_name }}</p>
+<p class="font-body-sm text-[11px] text-on-surface-variant">{{ s.transport_type || 'Stdio' }} • {{ s.tools_count || 0 }} capabilities</p>
+</div>
+</div>
+<span class="text-[10px] font-code px-1.5 py-0.5 rounded border" [ngClass]="s.sync_status === 'synced' ? 'bg-accent-success/10 text-accent-success border-accent-success/20' : 'bg-accent-warning/10 text-accent-warning border-accent-warning/20'">
+{{ s.sync_status === 'synced' ? 'Active' : 'Syncing' }}
+</span>
+</div>
+}
+</div>
+</div>
+</div>
+} @else {
+  <!-- Collapsed Sidebar View -->
+  <div class="flex flex-col gap-4 mt-2 h-full items-center">
+    <span class="material-symbols-outlined text-[20px] text-on-surface-variant cursor-pointer" (click)="toggleSidebar()">search</span>
+    <div class="w-full border-t border-border-subtle"></div>
+    @for (s of getFilteredServers(); track s.id) {
+      <span class="material-symbols-outlined text-[20px] cursor-pointer" 
+            [ngClass]="selectedServer?.id === s.id ? 'text-primary' : 'text-on-surface-variant'"
+            (click)="selectServer(s)" [title]="s.server_name">dns</span>
+    }
+  </div>
+}
+</aside>
+<!-- ==================== MAIN WORKSPACE: 2-COLUMN BALANCED SPLIT ==================== -->
+<main class="flex-1 flex overflow-hidden bg-background">
+<!-- ==================== LEFT / CENTER PANEL: REMOTE DISCOVERED TOOLS & SCHEMAS ==================== -->
+<section class="flex-1 flex flex-col border-r border-border-subtle bg-surface-container-lowest/50 min-w-0" [ngClass]="{'w-full': !activeTestTool}">
+@if (selectedServer || isEditing) {
+<!-- Filter and Search Header -->
+<div class="p-space-md border-b border-border-subtle bg-surface-container-low flex flex-col gap-space-sm shrink-0">
+<div class="flex items-center justify-between">
+<div>
+<h1 class="font-headline-md text-headline-md text-on-surface font-semibold tracking-tight">{{ isEditing ? (selectedServer ? 'Edit Tool Configuration' : 'Register New Tool') : 'MCP Remote Discovered Tools' }}</h1>
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+@if (isEditing) { Configure your MCP server endpoint details } @else { Verified protocol capabilities published via registered MCP endpoints }
+</p>
+</div>
+<div class="flex items-center gap-2">
+  @if (!isEditing && selectedServer) {
+    <button class="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-error-container/20 hover:bg-error-container/40 border border-error/30 text-error font-label-md text-label-md" (click)="confirmDeleteState()">
+      <span class="material-symbols-outlined text-[16px]">delete</span>
+      <span>Delete</span>
+    </button>
+    <button class="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-primary/10 hover:bg-primary/20 border border-primary/30 text-primary font-label-md text-label-md" (click)="enableEdit()">
+      <span class="material-symbols-outlined text-[16px]">edit</span>
+      <span>Edit</span>
+    </button>
+  }
+  @if (isEditing) {
+    <button class="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high border border-border-subtle text-on-surface font-label-md text-label-md" (click)="cancelEdit()">Cancel</button>
+    <button class="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-primary hover:bg-primary-fixed-dim text-on-primary font-label-md text-label-md font-semibold" [disabled]="isRegistering" (click)="registerServer()">
+      <span class="material-symbols-outlined text-[16px]">save</span>
+      <span>Save</span>
+    </button>
+  }
+  @if (!isEditing) {
+    <span class="font-code text-code bg-secondary-container text-on-secondary-container px-2.5 py-1 rounded-full border border-outline-variant/30 font-medium">
+      {{ selectedServer?.cached_capabilities?.tools?.length || 0 }} Discovered Tools
+    </span>
+  }
+</div>
+</div>
 
-        <div>
-          <div class="flex items-center justify-between mb-1">
-            <label class="text-xs font-bold text-slate-600">Input Arguments (JSON)</label>
-            <span class="text-[10px] text-slate-400">Pre-populated from JSON Schema</span>
-          </div>
-          <textarea rows="4" [(ngModel)]="testArgsJson"
-                    class="w-full font-mono text-xs p-3 bg-slate-900 text-emerald-400 rounded-xl border border-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"></textarea>
-        </div>
-
-        @if (testError) {
-          <div class="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700 flex items-center gap-2">
-            <mat-icon class="text-red-600 !w-4 !h-4 !text-base">error</mat-icon>
-            <span>{{ testError }}</span>
-          </div>
-        }
-
-        @if (testResult) {
-          <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
-            <div class="flex items-center justify-between">
-              <span class="text-xs font-bold flex items-center gap-1.5"
-                    [ngClass]="testResult.success ? 'text-emerald-700' : 'text-red-600'">
-                <mat-icon class="!w-4 !h-4 !text-base">{{ testResult.success ? 'check_circle' : 'cancel' }}</mat-icon>
-                {{ testResult.success ? 'Execution Successful' : 'Execution Failed' }}
-              </span>
-              <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-200/70 text-slate-600 font-bold">
-                Latency: {{ testResult.latency_ms }}ms
-              </span>
-            </div>
-
-            @if (testResult.output) {
-              <div>
-                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Formatted Output:</span>
-                <div class="p-2.5 bg-white rounded-lg border border-slate-200 font-mono text-xs text-slate-800 whitespace-pre-wrap">
-                  {{ testResult.output }}
-                </div>
-              </div>
-            }
-
-            @if (testResult.error) {
-              <div class="text-xs text-red-600 font-medium">
-                {{ testResult.error }}
-              </div>
-            }
-
-            <div>
-              <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Raw Result:</span>
-              <pre class="p-2.5 bg-slate-900 text-slate-300 rounded-lg text-[11px] overflow-x-auto max-h-32 m-0">{{ testResult.raw_result | json }}</pre>
-            </div>
-          </div>
-        }
-      </div>
-
-      <!-- Footer -->
-      <div class="p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-end gap-2">
-        <button mat-stroked-button class="!rounded-xl !font-bold" (click)="closeToolTester()">Close</button>
-        <button mat-flat-button color="primary" class="!rounded-xl !font-bold" [disabled]="isExecutingTest" (click)="executeToolTest()">
-          <mat-icon class="mr-1" [class.animate-spin]="isExecutingTest">{{ isExecutingTest ? 'refresh' : 'play_arrow' }}</mat-icon>
-          {{ isExecutingTest ? 'Executing...' : 'Execute Tool' }}
-        </button>
-      </div>
+@if (showDeleteConfirm) {
+  <div class="p-3 bg-error-container/20 border border-error/30 rounded-lg text-error text-xs font-semibold flex items-center justify-between mt-2">
+    <span class="flex items-center gap-1.5">
+      <span class="material-symbols-outlined text-[16px]">warning</span>
+      Warning: Deleting this tool connection will remove it from the registry cache. Confirm deletion?
+    </span>
+    <div class="flex gap-2">
+      <button class="font-bold underline" (click)="deleteServer()">Confirm Delete</button>
+      <button (click)="cancelDelete()">Cancel</button>
     </div>
   </div>
 }
+
+@if (isEditing) {
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+    <div class="flex flex-col gap-1">
+      <label class="text-xs font-bold text-outline">Name</label>
+      <input type="text" [(ngModel)]="serverForm.server_name" [disabled]="!isEditing || selectedServer"
+             class="w-full px-3 py-2 bg-surface-container-lowest border border-border-subtle rounded-lg text-sm text-on-surface focus:border-primary disabled:opacity-50" />
+    </div>
+    <div class="flex flex-col gap-1">
+      <label class="text-xs font-bold text-outline">Owner</label>
+      <input type="text" [(ngModel)]="serverForm.owner_id" [disabled]="!isEditing"
+             class="w-full px-3 py-2 bg-surface-container-lowest border border-border-subtle rounded-lg text-sm text-on-surface focus:border-primary disabled:opacity-50" />
+    </div>
+    <div class="flex flex-col gap-1 md:col-span-2">
+      <label class="text-xs font-bold text-outline">Description</label>
+      <textarea rows="2" [(ngModel)]="serverForm.description" [disabled]="!isEditing"
+                class="w-full px-3 py-2 bg-surface-container-lowest border border-border-subtle rounded-lg text-sm text-on-surface focus:border-primary disabled:opacity-50"></textarea>
+    </div>
+    <div class="flex flex-col gap-1">
+      <label class="text-xs font-bold text-outline">Transport Protocol</label>
+      <select [(ngModel)]="serverForm.transport_type" [disabled]="!isEditing"
+              class="w-full px-3 py-2 bg-surface-container-lowest border border-border-subtle rounded-lg text-sm text-on-surface focus:border-primary disabled:opacity-50">
+        <option value="http">HTTP (JSON-RPC 2.0)</option>
+        <option value="sse">SSE (Server-Sent Events)</option>
+        <option value="stdio">Stdio (Subprocess)</option>
+      </select>
+    </div>
+    <div class="flex flex-col gap-1">
+      <label class="text-xs font-bold text-outline">Endpoint URL or Command</label>
+      <input type="text" [(ngModel)]="serverForm.url" [disabled]="!isEditing"
+             class="w-full px-3 py-2 bg-surface-container-lowest border border-border-subtle rounded-lg text-sm text-on-surface focus:border-primary disabled:opacity-50" />
+    </div>
+  </div>
+} @else {
+  <!-- Search & Filter Controls -->
+  <div class="flex items-center gap-space-sm pt-1 mt-2">
+  <div class="relative flex-1">
+  <span class="material-symbols-outlined absolute left-3 top-2.5 text-on-surface-variant text-[18px]">search</span>
+  <input class="w-full bg-surface-container-lowest border border-border-subtle rounded-lg pl-9 pr-4 py-2 font-body-sm text-body-sm text-on-surface placeholder:text-outline focus:outline-none focus:border-primary transition-colors" placeholder="Filter tools by name, namespace, tag..." type="text"/>
+  </div>
+  </div>
+}
+</div>
+<!-- Tool Cards Scroll Area (Independent scroll) -->
+@if (!isEditing && selectedServer) {
+<div class="flex-1 min-h-0 overflow-y-auto p-space-md flex flex-col gap-space-md">
+
+@if (!selectedServer.cached_capabilities?.tools || selectedServer.cached_capabilities.tools.length === 0) {
+  <div class="flex flex-col items-center justify-center p-8 bg-surface-container-lowest border border-dashed border-border-subtle rounded-lg text-on-surface-variant">
+    <span class="material-symbols-outlined text-[32px] mb-2">build_circle</span>
+    <p class="font-semibold text-sm">No tools currently cached</p>
+    <p class="text-[11px] mt-1">Ensure the server is active and click Sync Now.</p>
+  </div>
+}
+
+@for (tool of selectedServer.cached_capabilities?.tools; track tool.name) {
+<!-- CARD -->
+<article class="bg-surface-card rounded-lg border transition-all duration-150 overflow-hidden" [ngClass]="activeTestTool?.name === tool.name ? 'border-primary/60 border-2 shadow-lg' : 'border-border-subtle hover:border-outline-variant border'">
+<!-- Card Header -->
+<div class="p-space-md border-b border-border-subtle flex items-start justify-between" [ngClass]="activeTestTool?.name === tool.name ? 'bg-surface-container-high/40' : ''">
+<div class="flex items-start gap-space-sm">
+<div class="w-9 h-9 rounded-lg border flex items-center justify-center mt-0.5" [ngClass]="activeTestTool?.name === tool.name ? 'bg-primary/10 border-primary/30 text-primary' : 'bg-surface-container border-border-subtle text-secondary'">
+<span class="material-symbols-outlined text-[20px]">account_tree</span>
+</div>
+<div>
+<div class="flex items-center gap-space-sm flex-wrap">
+<h3 class="font-headline-sm text-headline-sm font-semibold font-code" [ngClass]="activeTestTool?.name === tool.name ? 'text-primary' : 'text-on-surface'">{{ tool.name }}</h3>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1">
+  {{ tool.description }}
+</p>
+</div>
+</div>
+<div class="flex items-center gap-2">
+@if (activeTestTool?.name === tool.name) {
+<span class="px-2 py-1 rounded bg-primary/20 text-primary font-code text-[11px] border border-primary/40 flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span> Target Selected
+</span>
+} @else {
+<button class="px-2.5 py-1 text-on-surface-variant hover:text-on-surface bg-surface-container hover:bg-surface-container-high rounded border border-border-subtle font-label-md text-label-md" (click)="openToolTester(tool)">
+  Load in Sandbox
+</button>
+}
+</div>
+</div>
+<!-- Detailed Schema Content -->
+@if (getToolProperties(tool).length > 0) {
+<div class="p-space-md flex flex-col gap-space-md">
+<!-- Parameter Schema Table -->
+<div class="border border-border-subtle rounded-lg overflow-hidden">
+<div class="bg-surface-container-high/60 px-space-md py-2 border-b border-border-subtle flex items-center justify-between">
+<span class="font-label-md text-label-md text-on-surface font-semibold flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px] text-primary">schema</span>
+                    Input Parameters Definition
+                  </span>
+<span class="font-code text-[11px] text-on-surface-variant">{{ getToolProperties(tool).length }} fields defined</span>
+</div>
+<table class="w-full text-left font-body-sm text-body-sm">
+<thead class="bg-surface-container-low text-on-surface-variant font-label-md text-label-md border-b border-border-subtle">
+<tr>
+<th class="py-2 px-3">Field</th>
+<th class="py-2 px-3">Type</th>
+<th class="py-2 px-3">Constraint</th>
+<th class="py-2 px-3">Description</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-border-subtle font-code text-code">
+@for (prop of getToolProperties(tool); track prop.name) {
+<tr class="hover:bg-surface-container/40 transition-colors">
+<td class="py-2 px-3 text-primary font-medium">{{ prop.name }}</td>
+<td class="py-2 px-3 text-secondary">{{ prop.type }}</td>
+<td class="py-2 px-3">
+  @if (prop.required) {
+    <span class="text-error bg-error-container/20 px-1 rounded text-[10px]">required</span>
+  } @else {
+    <span class="text-outline bg-surface-container px-1 rounded text-[10px]">optional</span>
+  }
+</td>
+<td class="py-2 px-3 font-body-sm text-on-surface-variant">{{ prop.description }}</td>
+</tr>
+}
+</tbody>
+</table>
+</div>
+</div>
+}
+</article>
+}
+</div>
+}
+} @else {
+  <!-- Empty State when nothing selected -->
+  <div class="flex flex-col items-center justify-center h-full text-on-surface-variant">
+    <span class="material-symbols-outlined text-[64px] mb-4 text-outline-variant">dns</span>
+    <h3 class="font-headline-md text-headline-md font-semibold text-on-surface mb-2">No Tool Selected</h3>
+    <p class="font-body-md text-body-md">Choose a tool from the list, or register a new one to begin configuration.</p>
+  </div>
+}
+</section>
+<!-- ==================== RIGHT PANEL: INTERACTIVE TOOL VERIFICATION & DARK TERMINAL CONSOLE ==================== -->
+@if (activeTestTool) {
+<section class="flex-1 flex flex-col bg-surface-dark min-w-0 border-l border-border-subtle max-w-[50%]">
+<!-- Verification Panel Header -->
+<div class="p-space-md border-b border-border-subtle bg-surface-container-low flex items-center justify-between shrink-0">
+<div class="flex items-center gap-space-sm">
+<div class="w-8 h-8 rounded-lg bg-primary-container/20 border border-primary/30 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[18px]">bug_report</span>
+</div>
+<div>
+<div class="flex items-center gap-2">
+<h2 class="font-headline-sm text-headline-sm font-semibold text-on-surface">Tool Verification &amp; Execution Sandbox</h2>
+<span class="px-2 py-0.5 rounded text-[10px] font-code bg-secondary-container text-on-secondary-container">POST /rpc.mcp</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant font-code">
+                Target: <span class="text-primary font-medium">{{ activeTestTool.name }}</span>
+</p>
+</div>
+</div>
+<div class="flex items-center gap-space-sm">
+<button class="text-on-surface-variant hover:text-on-surface flex items-center gap-1 font-label-md text-label-md bg-surface-container px-2.5 py-1.5 rounded-lg border border-border-subtle" (click)="closeToolTester()">
+<span class="material-symbols-outlined text-[15px]">close</span>
+<span>Close</span>
+</button>
+</div>
+</div>
+<!-- Upper Section: Test Input Payload Box -->
+<div class="p-space-md border-b border-border-subtle bg-surface-container-lowest/80 flex flex-col gap-2 shrink-0">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="font-label-md text-label-md text-on-surface font-semibold">Input Payload (JSON Schema Validated)</span>
+<span class="w-2 h-2 rounded-full bg-accent-success" title="Schema valid"></span>
+</div>
+</div>
+<!-- Code Editor Surface (Monospace, dark developer aesthetic) -->
+<textarea rows="6" [(ngModel)]="testArgsJson"
+          class="rounded-lg bg-surface-dark border border-border-subtle p-3 font-code text-code text-on-surface overflow-x-auto leading-relaxed shadow-inner focus:outline-none focus:border-primary w-full resize-none"></textarea>
+
+@if (testError) {
+  <div class="p-2 bg-error-container/20 border border-error/30 rounded text-xs text-error flex items-center gap-2 mt-1">
+    <span class="material-symbols-outlined text-[14px]">error</span>
+    <span>{{ testError }}</span>
+  </div>
+}
+
+<!-- Execution Action Controls -->
+<div class="flex items-center justify-between pt-1">
+<div class="flex items-center gap-space-md">
+<div class="flex items-center gap-2 font-body-sm text-body-sm text-on-surface-variant">
+<span class="material-symbols-outlined text-[16px] text-outline">timer</span>
+<span>Timeout: <strong class="text-on-surface font-code">10s</strong></span>
+</div>
+</div>
+<!-- Execute Button -->
+<button class="flex items-center gap-2 bg-primary hover:bg-primary-fixed-dim text-on-primary px-space-lg py-2 rounded-lg font-label-md text-label-md font-semibold transition-all shadow-md active:scale-95" [disabled]="isExecutingTest" (click)="executeToolTest()">
+<span class="material-symbols-outlined text-[18px]" style="font-variation-settings: 'FILL' 1;" [class.animate-spin]="isExecutingTest">{{ isExecutingTest ? 'refresh' : 'play_arrow' }}</span>
+<span>{{ isExecutingTest ? 'Executing...' : 'Execute Verification Run' }}</span>
+</button>
+</div>
+</div>
+<!-- Lower Section: Dark Terminal Execution Console (bg-slate-950) -->
+<div class="flex-1 flex flex-col min-h-0 bg-surface-dark font-code text-code">
+@if (testResult) {
+<!-- Terminal Header Bar with Dots & Status -->
+<div class="px-space-md py-2 bg-surface-container-lowest border-b border-border-subtle flex items-center justify-between">
+<div class="flex items-center gap-space-md">
+<!-- Window Dots -->
+<div class="flex items-center gap-1.5">
+<span class="w-3 h-3 rounded-full bg-accent-error/80 inline-block"></span>
+<span class="w-3 h-3 rounded-full bg-accent-warning/80 inline-block"></span>
+<span class="w-3 h-3 rounded-full bg-accent-success/80 inline-block"></span>
+</div>
+<div class="flex items-center gap-2 text-on-surface-variant font-code text-[11px]">
+<span class="material-symbols-outlined text-[14px] text-primary">terminal</span>
+<span>Execution Result</span>
+</div>
+</div>
+<!-- Status Badges -->
+<div class="flex items-center gap-space-sm font-code text-[11px]">
+<span class="px-2 py-0.5 rounded border font-semibold"
+      [ngClass]="testResult.success ? 'bg-accent-success/15 text-accent-success border-accent-success/30' : 'bg-error-container/20 text-error border-error/30'">
+  {{ testResult.success ? 'SUCCESS' : 'FAILED' }}
+</span>
+<span class="text-on-surface-variant">Latency: <span class="text-primary font-medium">{{ testResult.latency_ms }}ms</span></span>
+</div>
+</div>
+<!-- Live Log Entries (Terminal Screen) -->
+<div class="flex-1 p-space-md overflow-y-auto font-code text-code leading-relaxed space-y-3">
+  @if (testResult.output) {
+    <div>
+      <div class="text-[11px] text-on-surface-variant uppercase tracking-wider mb-1 flex items-center justify-between">
+        <span>// Formatted Output</span>
+      </div>
+      <pre class="bg-surface-container-lowest/90 border border-border-subtle rounded p-space-sm text-on-surface whitespace-pre-wrap">{{ testResult.output }}</pre>
+    </div>
+  }
+  @if (testResult.error) {
+    <div class="text-error font-medium">
+      {{ testResult.error }}
+    </div>
+  }
+  <div>
+    <div class="text-[11px] text-on-surface-variant uppercase tracking-wider mb-1 flex items-center justify-between">
+      <span>// Raw Result</span>
+    </div>
+    <pre class="bg-surface-container-lowest/90 border border-border-subtle rounded p-space-sm text-outline whitespace-pre-wrap overflow-x-auto">{{ testResult.raw_result | json }}</pre>
+  </div>
+</div>
+} @else {
+  <div class="flex-1 p-space-md flex items-center justify-center text-outline-variant font-code text-code">
+    Ready for execution.
+  </div>
+}
+</div>
+</section>
+}
+</main>
+</div>
+</div>

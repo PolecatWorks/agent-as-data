@@ -1,3 +1,4 @@
+import { TopBarComponent } from '../../shared/top-bar/top-bar.component';
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -20,7 +21,7 @@ import {
 @Component({
   selector: 'app-tool-manager',
   standalone: true,
-  imports: [
+  imports: [TopBarComponent, 
     CommonModule,
     FormsModule,
     RouterModule,
@@ -45,21 +46,21 @@ export class ToolManagerComponent implements OnInit {
   readonly conceptGuideMappings: ConceptTabMapping[] = [
     {
       icon: 'build',
-      iconColor: 'text-indigo-600',
+      iconColor: 'text-primary',
       title: '1. Standardized Rig Tools',
       description:
         'Defines standardized tool payloads, command definitions, and JSON schemas directly consumed by agent runtimes.',
     },
     {
       icon: 'cloud_sync',
-      iconColor: 'text-emerald-600',
+      iconColor: 'text-accent-success',
       title: '2. Model Context Protocol (MCP)',
       description:
         'Connects to remote Model Context Protocol tool endpoints via SSE and Stdio daemon processes.',
     },
     {
       icon: 'security',
-      iconColor: 'text-blue-600',
+      iconColor: 'text-primary',
       title: '3. Pre-Tool Execution Safeties',
       description:
         'Enforces execution permissions, timeout constraints, and pre-tool execution validations.',

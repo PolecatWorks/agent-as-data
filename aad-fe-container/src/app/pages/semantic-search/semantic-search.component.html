@@ -1,64 +1,476 @@
-<div class="search-container p-6">
-  <h1 class="text-3xl font-bold mb-6">Semantic Search Discovery</h1>
+<div class="bg-surface text-on-surface font-body-md text-body-md h-screen w-full overflow-hidden flex flex-col antialiased selection:bg-primary-container selection:text-on-primary-container dark">
+<!-- TOP APP BAR (Shared Component Source of Truth) -->
+<app-top-bar>
+<!-- Context Breadcrumb Separator -->
+<div class="hidden lg:flex items-center gap-2 text-on-surface-variant text-body-sm font-body-sm pl-2 border-l border-border-subtle">
+<span class="text-on-surface font-medium">Discovery</span>
+<span class="material-symbols-outlined text-[14px]">chevron_right</span>
+<span class="text-primary font-code text-code">semantic_index_v2</span>
+<span class="inline-flex items-center gap-1 ml-1 px-1.5 py-0.5 rounded text-[10px] font-code bg-surface-container border border-border-subtle text-accent-success">
+<span class="w-1.5 h-1.5 rounded-full bg-accent-success animate-pulse"></span>
+          LIVE INDEX
+        </span>
+</div>
+<!-- Trailing Actions & User Utility -->
+<div class="flex items-center gap-3">
+<!-- Quick Docs Action -->
+<a class="hidden sm:flex items-center gap-1 text-label-md font-label-md text-on-surface-variant hover:text-on-surface px-2.5 py-1.5 rounded hover:bg-surface-container-high transition-colors" href="#">
+<span class="material-symbols-outlined text-[16px]">menu_book</span>
+<span>Docs</span>
+</a>
+<!-- Primary Action CTA -->
+<button class="bg-primary text-on-primary hover:bg-primary-fixed font-label-md text-label-md font-medium px-3.5 py-1.5 rounded flex items-center gap-1.5 active:scale-[0.98] transition-all duration-150 shadow-sm">
+<span class="material-symbols-outlined text-[16px]">rocket_launch</span>
+<span>Deploy Entity</span>
+</button>
+<div class="h-4 w-[1px] bg-border-subtle mx-1 hidden sm:block"></div>
+<!-- Icon Action Cluster -->
+<div class="flex items-center gap-1">
+<button class="p-1.5 rounded text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors" title="Notifications">
+<span class="material-symbols-outlined text-[18px]">notifications</span>
+</button>
+<button class="p-1.5 rounded text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors" title="Index Tuner">
+<span class="material-symbols-outlined text-[18px]">tune</span>
+</button>
+<button class="p-1.5 rounded text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors" title="Engine Settings">
+<span class="material-symbols-outlined text-[18px]">settings</span>
+</button>
+</div>
+<!-- Operator Avatar -->
+<div class="w-8 h-8 rounded border border-border-subtle overflow-hidden ml-1 flex items-center justify-center bg-surface-container-high text-primary font-code text-[11px] font-semibold" title="User operator avatar">
+        OP-1
+      </div>
+</div>
+</app-top-bar>
+<!-- BODY SHELL -->
+<div class="flex-1 flex overflow-hidden">
+<!-- SIDE NAV BAR (Shared Component Source of Truth) -->
+<aside class="flex flex-col h-full w-72 p-4 border-r border-border-subtle dark:border-border-subtle shrink-0 bg-surface-container-lowest dark:bg-surface-container-lowest justify-between select-none">
+<div class="space-y-4">
+<!-- SideNav Header with Workspace Avatar -->
+<div class="flex items-center justify-between px-2 pb-3 border-b border-border-subtle">
+<div class="flex items-center gap-2.5">
+<div class="w-7 h-7 rounded bg-surface-container-high border border-border-subtle flex items-center justify-center text-primary" title="Semantic Workspace Icon">
+<span class="material-symbols-outlined text-[18px]">neurology</span>
+</div>
+<div>
+<div class="text-body-md font-body-md font-semibold text-on-surface leading-tight">Discovery Space</div>
+<div class="text-[11px] font-code text-on-surface-variant leading-none">v2.4.0 Engine</div>
+</div>
+</div>
+<span class="px-1.5 py-0.5 rounded bg-surface-container-high text-on-surface-variant font-code text-[10px] border border-border-subtle">HNSW</span>
+</div>
+<!-- Sidebar CTA -->
+<button class="w-full bg-surface-container-high hover:bg-surface-container-highest text-primary border border-border-subtle font-label-md text-label-md py-2 px-3 rounded flex items-center justify-center gap-2 transition-colors active:scale-[0.98]">
+<span class="material-symbols-outlined text-[18px]">add_circle</span>
+<span>Create Agent</span>
+</button>
+<!-- Navigation Categories -->
+<div class="space-y-1">
+<div class="px-3 py-1.5 text-[11px] font-label-md uppercase tracking-wider text-outline font-semibold">Semantic Entities</div>
+<!-- All Entities (Active Tab) -->
+<a class="bg-surface-container dark:bg-surface-container text-primary dark:text-primary font-medium rounded-lg px-3 py-2 border-l-2 border-primary dark:border-primary flex items-center justify-between text-body-md font-body-md transition-all" href="#">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[18px]">hub</span>
+<span>All Entities</span>
+</div>
+<span class="text-code font-code text-[11px] px-1.5 py-0.5 rounded bg-surface-container-lowest text-primary border border-border-subtle">124</span>
+</a>
+<!-- Agents -->
+<a class="text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-container-low dark:hover:bg-surface-container-low hover:text-on-surface dark:hover:text-on-surface rounded-lg px-3 py-2 flex items-center justify-between text-body-md font-body-md transition-all" href="#">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[18px]">smart_toy</span>
+<span>Agents</span>
+</div>
+<span class="text-code font-code text-[11px] px-1.5 py-0.5 rounded bg-surface-container-lowest text-on-surface-variant">42</span>
+</a>
+<!-- Skills -->
+<a class="text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-container-low dark:hover:bg-surface-container-low hover:text-on-surface dark:hover:text-on-surface rounded-lg px-3 py-2 flex items-center justify-between text-body-md font-body-md transition-all" href="#">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[18px]">bolt</span>
+<span>Skills</span>
+</div>
+<span class="text-code font-code text-[11px] px-1.5 py-0.5 rounded bg-surface-container-lowest text-on-surface-variant">38</span>
+</a>
+<!-- Traits -->
+<a class="text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-container-low dark:hover:bg-surface-container-low hover:text-on-surface dark:hover:text-on-surface rounded-lg px-3 py-2 flex items-center justify-between text-body-md font-body-md transition-all" href="#">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[18px]">psychology</span>
+<span>Traits</span>
+</div>
+<span class="text-code font-code text-[11px] px-1.5 py-0.5 rounded bg-surface-container-lowest text-on-surface-variant">18</span>
+</a>
+<!-- Tools -->
+<a class="text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-container-low dark:hover:bg-surface-container-low hover:text-on-surface dark:hover:text-on-surface rounded-lg px-3 py-2 flex items-center justify-between text-body-md font-body-md transition-all" href="#">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[18px]">extension</span>
+<span>Tools</span>
+</div>
+<span class="text-code font-code text-[11px] px-1.5 py-0.5 rounded bg-surface-container-lowest text-on-surface-variant">26</span>
+</a>
+</div>
+<!-- Embedding Cluster Stats Sub-panel -->
+<div class="p-3 rounded bg-surface-container-low border border-border-subtle mt-4">
+<div class="flex items-center justify-between text-[11px] font-label-md text-on-surface-variant mb-2">
+<span>Vector Density Metric</span>
+<span class="text-accent-success font-code">0.94 / 1.0</span>
+</div>
+<div class="w-full bg-surface-container-highest h-1.5 rounded-full overflow-hidden">
+<div class="bg-primary h-full rounded-full" style="width: 84%"></div>
+</div>
+<div class="flex justify-between items-center mt-2 text-[10px] font-code text-outline">
+<span>Cosine Partitioning</span>
+<span>Balanced</span>
+</div>
+</div>
+</div>
+<!-- SideBar Footer Tabs -->
+<div class="pt-3 border-t border-border-subtle space-y-1">
+<a class="text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low rounded-lg px-3 py-2 flex items-center justify-between text-body-sm font-body-sm transition-colors" href="#">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-accent-success">dns</span>
+<span>Index Status</span>
+</div>
+<span class="w-2 h-2 rounded-full bg-accent-success"></span>
+</a>
+<a class="text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low rounded-lg px-3 py-2 flex items-center justify-between text-body-sm font-body-sm transition-colors" href="#">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-outline">terminal</span>
+<span>System Logs</span>
+</div>
+<span class="text-code font-code text-[10px] text-outline">Tail v2</span>
+</a>
+</div>
+</aside>
+<!-- MAIN DISCOVERY CANVAS CONTAINER -->
+<main class="flex-1 min-h-0 overflow-y-auto p-6 flex flex-col space-y-6">
+<!-- HERO: Natural Language Semantic Search Console -->
+<section class="p-5 rounded-lg bg-surface-container-lowest border border-border-subtle relative overflow-hidden">
+<!-- Ambient subtle accent glow -->
+<div class="absolute -top-10 -right-10 w-64 h-64 bg-primary/5 rounded-full blur-3xl pointer-events-none"></div>
+<div class="flex flex-col gap-4">
+<!-- Top row meta stats & Embedding Model Details -->
+<div class="flex flex-wrap items-center justify-between gap-3 text-body-sm font-body-sm">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[18px]">psychology_alt</span>
+<span class="font-headline-sm text-headline-sm text-on-surface">Semantic Intent Query</span>
+<span class="text-xs px-2 py-0.5 rounded bg-surface-container font-code text-secondary border border-border-subtle">
+                text-embedding-3-large • 1536 dim
+              </span>
+</div>
+<div class="flex items-center gap-4 text-xs font-code">
+<div class="flex items-center gap-1.5 text-accent-success bg-surface-container px-2 py-1 rounded border border-border-subtle" *ngIf="!isSearching && hasSearched">
+<span class="material-symbols-outlined text-[14px]">bolt</span>
+<span>Found {{ results.length }} matching entities</span>
+</div>
+</div>
+</div>
+<!-- The NL Input Field Bar -->
+<div class="relative flex items-center">
+<div class="absolute left-4 flex items-center pointer-events-none text-primary">
+<span class="material-symbols-outlined text-[22px]">manage_search</span>
+</div>
+<input class="w-full pl-12 pr-28 py-3.5 bg-surface-container text-on-surface font-body-md text-body-md rounded-md border border-border-subtle focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all placeholder:text-outline" [(ngModel)]="query" (keyup.enter)="onSearch()" placeholder="Describe entity capability, prompt objective, behavioral traits, or tool dependencies in plain English..." type="text"/>
+<div class="absolute right-2.5 flex items-center gap-1.5">
+<button class="bg-primary text-on-primary hover:bg-primary-fixed text-label-md font-label-md px-3 py-1.5 rounded flex items-center gap-1 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" [disabled]="isSearching || !query.trim()" (click)="onSearch()">
+<span class="material-symbols-outlined text-[16px]" *ngIf="!isSearching">search</span>
+<span class="material-symbols-outlined text-[16px] animate-spin" *ngIf="isSearching">autorenew</span>
+<span>{{ isSearching ? 'Searching' : 'Vectorize' }}</span>
+</button>
+</div>
+</div>
+<!-- Controls: Similarity Threshold & Quick Pre-filters -->
+<div class="flex flex-wrap items-center justify-between gap-4 pt-1 text-body-sm">
+<!-- Slider Control -->
+<div class="flex items-center gap-3 bg-surface-container-low px-3 py-1.5 rounded border border-border-subtle">
+<label class="text-on-surface-variant font-label-md text-label-md flex items-center gap-1.5" for="threshold">
+<span class="material-symbols-outlined text-[15px] text-tertiary">tune</span>
+<span>Min similarity: <strong class="text-on-surface font-code" id="threshold-val">78%</strong></span>
+</label>
+<input class="w-28 accent-primary h-1 bg-surface-container-highest rounded cursor-pointer" id="threshold" max="95" min="50" oninput="document.getElementById('threshold-val').textContent = this.value + '%'" type="range" value="78"/>
+</div>
+<!-- Example query prompts suggestions -->
+<div class="flex items-center gap-2 text-xs text-on-surface-variant overflow-x-auto pb-1 max-w-full">
+<span class="text-outline shrink-0">Try queries:</span>
+<button class="px-2 py-0.5 rounded bg-surface-container hover:bg-surface-container-high border border-border-subtle text-on-surface-variant hover:text-on-surface transition-colors whitespace-nowrap" (click)="query = 'Fast git commit analyzer'; onSearch()">
+                "Fast git commit analyzer"
+              </button>
+<button class="px-2 py-0.5 rounded bg-surface-container hover:bg-surface-container-high border border-border-subtle text-on-surface-variant hover:text-on-surface transition-colors whitespace-nowrap" (click)="query = 'Security red-teamer with low temp'; onSearch()">
+                "Security red-teamer with low temp"
+              </button>
+<button class="px-2 py-0.5 rounded bg-surface-container hover:bg-surface-container-high border border-border-subtle text-on-surface-variant hover:text-on-surface transition-colors whitespace-nowrap" (click)="query = 'Postgres schema generator'; onSearch()">
+                "Postgres schema generator"
+              </button>
+</div>
+</div>
+</div>
+</section>
 
-  <div class="search-box mb-8 flex gap-4 items-center">
-    <mat-form-field appearance="outline" class="flex-1 w-full m-0">
-      <mat-label>Search for agents, skills, tools, or traits...</mat-label>
-      <input matInput [(ngModel)]="query" (keyup.enter)="onSearch()" placeholder="e.g. A helpful agent for data analysis" />
-      <mat-icon matPrefix>search</mat-icon>
-    </mat-form-field>
-
-    <button mat-raised-button color="primary" class="h-[56px] px-8" [disabled]="isSearching || !query.trim()" (click)="onSearch()">
-      Search
-    </button>
+<!-- Loading State -->
+<div *ngIf="isSearching" class="p-5 rounded-lg bg-surface-container-lowest border border-border-subtle relative overflow-hidden">
+  <div class="flex items-center text-on-surface-variant gap-2 mb-2">
+    <mat-icon>hourglass_empty</mat-icon>
+    <span>Searching across knowledge base...</span>
   </div>
+  <mat-progress-bar mode="indeterminate" color="primary"></mat-progress-bar>
+</div>
 
-  <div *ngIf="isSearching" class="loading-state mb-8">
-    <div class="flex items-center text-gray-500 gap-2 mb-2">
-      <mat-icon>hourglass_empty</mat-icon>
-      <span>Searching across knowledge base...</span>
-    </div>
-    <mat-progress-bar mode="indeterminate"></mat-progress-bar>
-  </div>
+<!-- No Results State -->
+<div *ngIf="hasSearched && !isSearching && results.length === 0" class="p-12 text-center rounded-lg bg-surface-container-lowest border border-border-subtle flex flex-col items-center justify-center">
+  <span class="material-symbols-outlined text-[48px] text-outline mb-4">search_off</span>
+  <h2 class="text-xl text-on-surface font-headline-sm mb-2">No matching entities found.</h2>
+  <p class="text-on-surface-variant font-body-sm">Try adjusting your search terms or decreasing the minimum similarity threshold.</p>
+</div>
 
-  <div *ngIf="hasSearched && !isSearching && results.length === 0" class="no-results text-center py-12 text-gray-500">
-    <mat-icon class="text-5xl mb-4 text-gray-400 opacity-50">search_off</mat-icon>
-    <h2 class="text-xl">No matching entities found.</h2>
-    <p>Try adjusting your search terms.</p>
-  </div>
-
-  <div class="results-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" *ngIf="!isSearching && results.length > 0">
-    <mat-card *ngFor="let result of results" class="result-card flex flex-col h-full hover:shadow-lg transition-shadow">
-      <mat-card-header class="mb-4">
-        <mat-card-title class="text-xl mb-1">{{ result.name || ('Entity ' + result.entity_id.substring(0, 8)) }}</mat-card-title>
-        <mat-card-subtitle class="flex items-center gap-2">
-          <span class="type-badge px-2 py-1 rounded bg-gray-200 text-gray-700 text-xs font-bold uppercase">{{ result.entity_type }}</span>
-          <span class="search-type-badge px-2 py-1 rounded bg-blue-100 text-blue-800 text-xs font-bold uppercase flex items-center gap-1">
-            <mat-icon class="text-[14px] h-[14px] w-[14px]">search</mat-icon> {{ result.search_type }}
-          </span>
-        </mat-card-subtitle>
-      </mat-card-header>
-
-      <mat-card-content class="flex-1">
-        <p class="text-gray-600 mb-4 line-clamp-3">{{ result.description || 'No description available.' }}</p>
-
-        <div class="match-reason-container mb-4">
-          <p class="text-sm text-blue-600 font-medium"><mat-icon class="align-middle text-sm">info</mat-icon> {{ result.match_reason }}</p>
-          <p class="text-xs text-gray-500 italic line-clamp-2" *ngIf="result.content">"{{ result.content }}"</p>
-        </div>
-
-        <div class="score-container mt-auto pt-4 border-t border-gray-100">
-          <div class="flex justify-between text-xs text-gray-500 mb-1">
-            <span>Match Likelihood</span>
-            <span>{{ (result.score * 100).toFixed(0) }}%</span>
+<!-- FILTER AND SORT TOOLBAR -->
+<section class="flex flex-wrap items-center justify-between gap-3 border-b border-border-subtle pb-3" *ngIf="hasSearched && results.length > 0">
+<!-- Filter Tabs (Pills) -->
+<div class="flex items-center gap-1.5 overflow-x-auto">
+<button class="bg-primary text-on-primary text-label-md font-label-md px-3 py-1 rounded font-medium transition-all shadow-sm">
+            All (14)
+          </button>
+<button class="bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface text-label-md font-label-md px-3 py-1 rounded border border-border-subtle transition-all">
+            Agents (6)
+          </button>
+<button class="bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface text-label-md font-label-md px-3 py-1 rounded border border-border-subtle transition-all">
+            Skills (4)
+          </button>
+<button class="bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface text-label-md font-label-md px-3 py-1 rounded border border-border-subtle transition-all">
+            Traits (2)
+          </button>
+<button class="bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface text-label-md font-label-md px-3 py-1 rounded border border-border-subtle transition-all">
+            Tools (2)
+          </button>
+</div>
+<!-- Right Side Sorting & Deployment status -->
+<div class="flex items-center gap-2">
+<div class="flex items-center gap-1.5 text-xs text-on-surface-variant font-label-md">
+<span class="text-outline">Sort by:</span>
+<select class="bg-surface-container-low border border-border-subtle text-on-surface rounded text-xs py-1 px-2.5 focus:border-primary outline-none cursor-pointer">
+<option>Semantic Similarity (Highest)</option>
+<option>Execution Recency</option>
+<option>Composite Confidence Score</option>
+<option>Entity Name (A-Z)</option>
+</select>
+</div>
+<button class="p-1 text-on-surface-variant hover:text-on-surface bg-surface-container border border-border-subtle rounded" title="Toggle Layout Grid">
+<span class="material-symbols-outlined text-[16px]">grid_view</span>
+</button>
+</div>
+</section>
+<!-- RESULTS GRID -->
+<section class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4" *ngIf="!isSearching && results.length > 0">
+<div *ngFor="let result of results" class="rounded-lg bg-surface-card border border-border-subtle p-4 hover:border-primary/50 transition-all flex flex-col justify-between group relative shadow-sm">
+<div>
+<!-- Header Row: Icon, Entity Name, Version, Match Indicator -->
+<div class="flex items-start justify-between gap-3 mb-2.5">
+<div class="flex items-center gap-2.5">
+<div class="w-8 h-8 rounded border flex items-center justify-center" [ngClass]="{
+  'text-primary bg-primary/10 border-primary/20': result.entity_type === 'agent',
+  'text-tertiary bg-tertiary/10 border-tertiary/20': result.entity_type === 'skill',
+  'text-secondary bg-secondary/10 border-secondary/20': result.entity_type === 'tool',
+  'text-primary-fixed-dim bg-primary-fixed-dim/10 border-primary-fixed-dim/20': result.entity_type === 'trait'
+}">
+<span class="material-symbols-outlined text-[20px]">{{ result.entity_type === 'agent' ? 'smart_toy' : result.entity_type === 'skill' ? 'bolt' : result.entity_type === 'tool' ? 'extension' : 'psychology' }}</span>
+</div>
+<div>
+<div class="flex items-center gap-2">
+<h3 class="font-headline-sm text-headline-sm text-on-surface font-semibold group-hover:text-primary transition-colors">
+                      {{ result.name || ('Entity ' + result.entity_id.substring(0, 8)) }}
+                    </h3>
+<span class="text-code font-code text-[11px] px-1.5 py-0.2 rounded bg-surface-container-high text-on-surface-variant border border-border-subtle">
+                      {{ result.entity_id.substring(0, 6) }}
+                    </span>
+</div>
+<span class="text-[11px] text-outline font-code">{{ result.entity_type | uppercase }} • {{ result.search_type }}</span>
+</div>
+</div>
+<!-- Score Indicator -->
+<div class="flex flex-col items-end">
+<span class="font-code text-xs font-semibold px-2 py-0.5 rounded" [ngClass]="{
+  'text-accent-success bg-accent-success/10 border border-accent-success/20': result.score >= 0.9,
+  'text-primary bg-primary/10 border border-primary/20': result.score >= 0.8 && result.score < 0.9,
+  'text-secondary bg-secondary/10 border border-secondary/20': result.score < 0.8
+}">
+                  {{ (result.score * 100).toFixed(0) }}% match
+                </span>
+<span class="text-[10px] text-outline font-code mt-0.5">dist: {{ (1 - result.score).toFixed(3) }}</span>
+</div>
+</div>
+<!-- Matched Explanation Box -->
+<div class="mb-3 px-2.5 py-1.5 rounded bg-surface-container-low border border-border-subtle text-[11px] text-secondary font-code flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[14px] text-accent-success">check_circle</span>
+<span class="truncate">Matched: {{ result.match_reason }}</span>
+</div>
+<!-- Description -->
+<p class="text-body-sm font-body-sm text-on-surface-variant mb-4 line-clamp-3">
+              {{ result.description || 'No description available.' }}
+            </p>
+<div class="mb-3 p-2 rounded bg-surface-container-lowest border border-border-subtle text-[11px] text-on-surface-variant italic line-clamp-2" *ngIf="result.content">
+  "{{ result.content }}"
+</div>
+<!-- Tags -->
+<div class="flex flex-wrap items-center gap-1 mb-4" *ngIf="result.field_name">
+<span class="text-[11px] font-code px-1.5 py-0.5 rounded bg-surface-container-high text-outline">#{{ result.field_name }}</span>
+</div>
+</div>
+<!-- Card Actions -->
+<div class="pt-3 border-t border-border-subtle flex items-center justify-between">
+<span class="text-xs font-code text-on-surface-variant flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full" [ngClass]="result.score >= 0.8 ? 'bg-accent-success' : 'bg-accent-warning'"></span> {{ result.score >= 0.8 ? 'High Confidence' : 'Review Match' }}
+            </span>
+<button class="bg-surface-container-high hover:bg-surface-container-highest text-primary hover:text-white px-3 py-1.5 rounded text-label-md font-label-md font-medium flex items-center gap-1 border border-border-subtle transition-all active:scale-[0.98]" (click)="viewDetails(result)">
+<span>View Details</span>
+<span class="material-symbols-outlined text-[14px]">arrow_forward</span>
+</button>
+</div>
+</div>
+</section>
+<!-- BOTTOM CONSOLE / QUERY STATS AUDIT FOOTER -->
+<footer class="mt-8 p-4 rounded-lg bg-surface-container-lowest border border-border-subtle flex flex-wrap items-center justify-between gap-4 text-xs font-code text-on-surface-variant">
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-accent-success"></span>
+<span>Index cluster: <strong>hnsw_us_east_primary</strong></span>
+</div>
+<span class="text-outline">|</span>
+<div>Total Indexed Vectors: <strong class="text-on-surface">1,489,120</strong></div>
+<span class="text-outline">|</span>
+<div>Metric: <strong class="text-on-surface">Cosine Space (dot_product)</strong></div>
+</div>
+<div class="flex items-center gap-3">
+<span class="text-outline">Engine load: 14.2 QPS</span>
+<button class="text-primary hover:underline flex items-center gap-1">
+<span>Export Search Embeddings JSON</span>
+<span class="material-symbols-outlined text-[14px]">download</span>
+</button>
+</div>
+</footer>
+</main>
+<!-- CARD DETAIL INSPECTION FLYOUT / DRAWER OVERLAY -->
+<aside class="hidden fixed inset-y-0 right-0 w-96 bg-surface-container-lowest border-l border-border-subtle shadow-2xl z-50 flex flex-col justify-between" id="detailFlyout">
+<!-- Drawer Header -->
+<div class="p-5 border-b border-border-subtle flex items-center justify-between">
+<div class="flex items-center gap-2.5">
+<div class="w-8 h-8 rounded bg-primary/10 border border-primary/20 flex items-center justify-center text-primary" id="flyoutIcon">
+<span class="material-symbols-outlined text-[20px]">smart_toy</span>
+</div>
+<div>
+<h2 class="text-headline-sm font-headline-sm font-semibold text-on-surface" id="flyoutTitle">CodeReview Sentinel</h2>
+<div class="flex items-center gap-2 mt-0.5">
+<span class="text-[11px] font-code text-primary" id="flyoutType">Agent</span>
+<span class="text-outline text-[10px]">•</span>
+<span class="text-[11px] font-code text-on-surface-variant" id="flyoutVersion">v2.4.1</span>
+</div>
+</div>
+</div>
+<button class="text-on-surface-variant hover:text-on-surface p-1.5 rounded hover:bg-surface-container-high transition-colors" onclick="toggleFlyout()">
+<span class="material-symbols-outlined text-[20px]">close</span>
+</button>
+</div>
+<!-- Drawer Scrollable Content -->
+<div class="flex-1 overflow-y-auto p-5 space-y-6">
+<!-- Vector Embedding Breakdown Card -->
+<div class="p-3.5 rounded bg-surface-container-low border border-border-subtle space-y-3">
+<div class="flex items-center justify-between text-xs font-headline-sm">
+<span class="text-on-surface font-semibold flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px] text-primary">schema</span>
+              Vector Embedding Breakdown
+            </span>
+<span class="text-accent-success font-code font-bold" id="flyoutScore">96%</span>
+</div>
+<div class="space-y-2 text-xs font-code">
+<div>
+<div class="flex justify-between text-[11px] text-on-surface-variant mb-1">
+<span>Cosine Distance</span>
+<span class="text-on-surface" id="flyoutDist">0.042</span>
+</div>
+<div class="w-full bg-surface-container-highest h-1.5 rounded-full overflow-hidden">
+<div class="bg-accent-success h-full" style="width: 96%"></div>
+</div>
+</div>
+<div>
+<div class="flex justify-between text-[11px] text-on-surface-variant mb-1">
+<span>Semantic Cluster Alignment</span>
+<span class="text-on-surface">94.8%</span>
+</div>
+<div class="w-full bg-surface-container-highest h-1.5 rounded-full overflow-hidden">
+<div class="bg-primary h-full" style="width: 94.8%"></div>
+</div>
+</div>
+<div>
+<div class="flex justify-between text-[11px] text-on-surface-variant mb-1">
+<span>AST Parser Query Overlap</span>
+<span class="text-on-surface">98.1%</span>
+</div>
+<div class="w-full bg-surface-container-highest h-1.5 rounded-full overflow-hidden">
+<div class="bg-tertiary h-full" style="width: 98.1%"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Monospace Embedding Vector Snippet -->
+<div>
+<div class="flex items-center justify-between mb-2">
+<span class="text-label-md font-label-md text-on-surface-variant">Embedding Sample (dim 0..7)</span>
+<span class="text-[10px] font-code text-outline">Float32[1536]</span>
+</div>
+<div class="p-3 bg-slate-950 rounded border border-border-subtle font-code text-[11px] text-primary/80 overflow-x-auto">
+            [ 0.041829, -0.019382, 0.088219, 0.003418, -0.051280, 0.129381, 0.004192, 0.076211 ... ]
           </div>
-          <mat-progress-bar mode="determinate" [value]="result.score * 100" [color]="getScoreColor(result.score)"></mat-progress-bar>
-        </div>
-      </mat-card-content>
-
-      <mat-card-actions align="end" class="p-4 pt-0 mt-4">
-        <button mat-button color="primary" (click)="viewDetails(result)">View Details</button>
-      </mat-card-actions>
-    </mat-card>
-  </div>
+</div>
+<!-- Capability Schema Matrix -->
+<div>
+<h4 class="text-label-md font-label-md text-on-surface-variant mb-2">Capabilities &amp; Contracts</h4>
+<div class="space-y-1.5 text-xs">
+<div class="flex items-center justify-between p-2 rounded bg-surface-container border border-border-subtle">
+<span class="text-on-surface">github:pr:write</span>
+<span class="text-[10px] font-code px-1.5 py-0.5 rounded bg-surface-container-highest text-accent-success">Granted</span>
+</div>
+<div class="flex items-center justify-between p-2 rounded bg-surface-container border border-border-subtle">
+<span class="text-on-surface">ast:python:execute</span>
+<span class="text-[10px] font-code px-1.5 py-0.5 rounded bg-surface-container-highest text-accent-success">Sandboxed</span>
+</div>
+<div class="flex items-center justify-between p-2 rounded bg-surface-container border border-border-subtle">
+<span class="text-on-surface">system:diff:synthesize</span>
+<span class="text-[10px] font-code px-1.5 py-0.5 rounded bg-surface-container-highest text-accent-success">Granted</span>
+</div>
+</div>
+</div>
+<!-- Execution Environment Specs -->
+<div>
+<h4 class="text-label-md font-label-md text-on-surface-variant mb-2">Runtime Specifications</h4>
+<div class="grid grid-cols-2 gap-2 text-xs font-code">
+<div class="p-2.5 rounded bg-surface-container-low border border-border-subtle">
+<div class="text-[10px] text-outline">Memory Limit</div>
+<div class="text-on-surface font-semibold mt-0.5">512 MB</div>
+</div>
+<div class="p-2.5 rounded bg-surface-container-low border border-border-subtle">
+<div class="text-[10px] text-outline">Max Concurrency</div>
+<div class="text-on-surface font-semibold mt-0.5">16 Threads</div>
+</div>
+<div class="p-2.5 rounded bg-surface-container-low border border-border-subtle">
+<div class="text-[10px] text-outline">Default Context</div>
+<div class="text-on-surface font-semibold mt-0.5">32k Tokens</div>
+</div>
+<div class="p-2.5 rounded bg-surface-container-low border border-border-subtle">
+<div class="text-[10px] text-outline">Execution Engine</div>
+<div class="text-on-surface font-semibold mt-0.5">NodeJS/Py3.11</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Drawer Footer Actions -->
+<div class="p-4 border-t border-border-subtle flex items-center gap-2 bg-surface-container-low">
+<button class="flex-1 bg-primary text-on-primary hover:bg-primary-fixed py-2 px-3 rounded font-label-md text-label-md font-medium flex items-center justify-center gap-1.5 transition-all active:scale-[0.98]">
+<span class="material-symbols-outlined text-[16px]">play_arrow</span>
+<span>Instantiate in Workbench</span>
+</button>
+<button class="bg-surface-container-high hover:bg-surface-container-highest text-on-surface py-2 px-3 rounded text-label-md font-label-md font-medium border border-border-subtle transition-colors" onclick="toggleFlyout()">
+          Close
+        </button>
+</div>
+</aside>
+</div>
+<!-- Interactive JavaScript for micro-interactions -->
 </div>

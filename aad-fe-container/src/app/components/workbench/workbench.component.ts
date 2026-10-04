@@ -1,3 +1,4 @@
+import { TopBarComponent } from '../../shared/top-bar/top-bar.component';
 import {
   Component,
   OnInit,
@@ -30,7 +31,7 @@ import { APP_NAV_MENU_ITEMS } from '../../models/navigation';
 @Component({
   selector: 'app-workbench',
   standalone: true,
-  imports: [
+  imports: [TopBarComponent, 
     CommonModule,
     FormsModule,
     MatCardModule,
@@ -52,21 +53,21 @@ export class WorkbenchComponent implements OnInit, OnDestroy {
   readonly conceptGuideMappings: ConceptTabMapping[] = [
     {
       icon: 'folder',
-      iconColor: 'text-indigo-600',
+      iconColor: 'text-primary',
       title: '1. Sandboxed Filesystem',
       description:
         'Isolated bench files and assets safely partitioned per active project.',
     },
     {
       icon: 'chat',
-      iconColor: 'text-blue-600',
+      iconColor: 'text-primary',
       title: '2. Conversational Threads',
       description:
         'Multi-turn dialog, code editing, and tool execution history.',
     },
     {
       icon: 'psychology',
-      iconColor: 'text-amber-600',
+      iconColor: 'text-accent-warning',
       title: '3. Shared Bench Memory',
       description:
         'Working context, scratchpad notes, and persistent memory preserved across sessions.',

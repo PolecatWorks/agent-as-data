@@ -1,3 +1,4 @@
+import { TopBarComponent } from '../../shared/top-bar/top-bar.component';
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
@@ -26,7 +27,7 @@ export interface BusinessPillar {
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [
+  imports: [TopBarComponent, 
     CommonModule,
     MatCardModule,
     MatButtonModule,

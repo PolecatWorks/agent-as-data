@@ -1,24 +1,336 @@
-<div class="space-y-6 pt-6" *ngIf="guardrails">
+<div class="bg-background text-on-surface font-body-md text-body-md antialiased h-screen w-screen overflow-hidden flex flex-col" *ngIf="guardrails">
+
+<!-- ================= TOP APP BAR (from Shared Components JSON: TopNavBar) ================= -->
+<header class="w-full h-14 flex items-center justify-between px-space-lg border-b border-border-subtle bg-surface-container z-40 shrink-0">
+<!-- Left: Brand Logo & Global Nav -->
+<div class="flex items-center gap-space-lg">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-primary text-[22px]" data-icon="shield">shield</span>
+<span class="font-headline-md text-headline-md text-primary tracking-tight font-semibold">AgentHub Guardrails</span>
+</div>
+<!-- Navigation Links from JSON (Policies is active) -->
+<nav class="hidden md:flex items-center gap-space-md ml-space-md">
+<a class="border-b-2 border-primary text-primary font-headline-sm text-headline-sm pb-1 flex items-center gap-1.5" href="#policies">
+<span>Policies</span>
+</a>
+<a class="text-on-surface-variant font-body-md text-body-md hover:text-on-surface hover:bg-surface-variant transition-colors duration-150 px-2 py-1 rounded" href="#testbench">
+<span>Test Bench</span>
+</a>
+<a class="text-on-surface-variant font-body-md text-body-md hover:text-on-surface hover:bg-surface-variant transition-colors duration-150 px-2 py-1 rounded" href="#simulations">
+<span>Simulations</span>
+</a>
+<a class="text-on-surface-variant font-body-md text-body-md hover:text-on-surface hover:bg-surface-variant transition-colors duration-150 px-2 py-1 rounded" href="#telemetry">
+<span>Telemetry</span>
+</a>
+</nav>
+</div>
+<!-- Center Contextual Breadcrumbs & Cluster Tag -->
+<div class="hidden lg:flex items-center gap-space-sm text-on-surface-variant font-body-sm text-body-sm bg-surface-container-low px-3 py-1 rounded border border-border-subtle">
+<span class="text-on-surface-variant">Workspaces</span>
+<span class="text-outline">/</span>
+<span class="text-on-surface-variant">Policy &amp; Guardrails</span>
+<span class="text-outline">/</span>
+<span class="text-primary font-code font-medium">sec:DeterministicASTTaintGuard</span>
+<span class="bg-surface-variant text-on-surface px-1.5 py-0.5 rounded text-[10px] font-code border border-outline-variant">v2.4.0-verified</span>
+</div>
+<!-- Right: Search, Trailing Icons & Actions -->
+<div class="flex items-center gap-space-sm">
+<div class="relative hidden xl:block w-48">
+<span class="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-outline text-[18px]" data-icon="search">search</span>
+<input class="w-full bg-surface-container-lowest border border-border-subtle rounded text-xs pl-8 pr-2 py-1 text-on-surface placeholder:text-outline focus:outline-none focus:border-primary" placeholder="Search rules, AST nodes..." type="text"/>
+</div>
+<div class="flex items-center gap-1 border-r border-border-subtle pr-space-sm">
+<button class="p-1.5 rounded hover:bg-surface-variant text-on-surface-variant hover:text-on-surface transition-colors" title="Notifications">
+<span class="material-symbols-outlined text-[18px]" data-icon="notifications">notifications</span>
+</button>
+<button class="p-1.5 rounded hover:bg-surface-variant text-on-surface-variant hover:text-on-surface transition-colors" title="Terminal Console">
+<span class="material-symbols-outlined text-[18px]" data-icon="terminal">terminal</span>
+</button>
+<button class="p-1.5 rounded hover:bg-surface-variant text-on-surface-variant hover:text-on-surface transition-colors" title="Tune Parameters">
+<span class="material-symbols-outlined text-[18px]" data-icon="tune">tune</span>
+</button>
+</div>
+<!-- Action Buttons from JSON -->
+<button class="px-2.5 py-1 text-xs rounded border border-border-subtle text-on-surface bg-surface-container-high hover:bg-surface-variant transition-colors font-label-md text-label-md flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px] text-primary" data-icon="rule">rule</span>
+<span>Validate AST</span>
+</button>
+<button class="px-3 py-1 text-xs rounded bg-primary-container text-on-primary-container font-label-md text-label-md font-semibold hover:brightness-110 active:scale-[0.98] transition-all flex items-center gap-1.5 shadow-[0_0_12px_rgba(77,142,255,0.4)]">
+<span class="material-symbols-outlined text-[16px]" data-icon="bolt">bolt</span>
+<span>Deploy Rule Set</span>
+</button>
+</div>
+</header>
+<!-- ================= SUB-HEADER METRIC STRIP ================= -->
+<div class="w-full bg-surface-container-low border-b border-border-subtle px-space-lg py-1.5 flex flex-wrap items-center justify-between text-xs shrink-0">
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-1.5">
+<span class="inline-block w-2 h-2 rounded-full bg-accent-success animate-pulse"></span>
+<span class="text-on-surface font-label-md text-label-md">Mode: Active Enforcement</span>
+</div>
+<div class="text-outline">|</div>
+<div class="flex items-center gap-1 text-on-surface-variant">
+<span>Target:</span>
+<span class="font-code text-on-surface bg-surface-container-highest px-1.5 py-0.5 rounded border border-border-subtle text-[11px]">prod-guard-01</span>
+</div>
+</div>
+<!-- Metric Chips -->
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-1.5">
+<span class="text-outline font-label-md text-label-md">Active Nodes:</span>
+<span class="font-code text-primary font-semibold">124 bound agents</span>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="text-outline font-label-md text-label-md">Enforcement Latency:</span>
+<span class="font-code text-accent-success font-semibold">1.8ms</span>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="text-outline font-label-md text-label-md">False Positive Rate:</span>
+<span class="font-code text-on-surface font-semibold">0.001%</span>
+</div>
+<button class="text-outline hover:text-on-surface text-[11px] underline flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]" data-icon="file_download">file_download</span>
+        Export Policy (.yaml)
+      </button>
+</div>
+</div>
+<!-- ================= MAIN THREE-COLUMN WORKSPACE BODY ================= -->
+<div class="flex-1 min-h-0 flex w-full overflow-hidden">
+<!-- ================= 1. SIDE NAV BAR (from Shared Components JSON: SideNavBar) ================= -->
+<aside class="w-72 h-full flex flex-col justify-between p-space-md border-r border-border-subtle bg-surface-container-low shrink-0 select-none">
+<!-- Top Section: Header & Categories -->
+<div class="flex flex-col gap-3 min-h-0 overflow-y-auto">
+<!-- Cluster Header from JSON -->
+<div class="flex items-center justify-between pb-2 border-b border-border-subtle">
+<div class="flex items-center gap-2">
+<div class="w-7 h-7 rounded bg-secondary-container flex items-center justify-center text-primary border border-outline-variant">
+<span class="material-symbols-outlined text-[18px]" data-icon="schema">schema</span>
+</div>
+<div>
+<h2 class="font-headline-sm text-headline-sm text-primary leading-tight">Policy Workspace</h2>
+<p class="font-body-sm text-body-sm text-outline leading-none text-[11px]">cluster: prod-guard-01</p>
+</div>
+</div>
+<button class="p-1 rounded hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface" title="Cluster settings">
+<span class="material-symbols-outlined text-[18px]" data-icon="more_vert">more_vert</span>
+</button>
+</div>
+<!-- CTA from JSON -->
+<button class="w-full py-1.5 px-3 bg-secondary-container text-on-surface rounded-lg font-label-md text-label-md hover:bg-surface-variant transition-colors flex items-center justify-center gap-2 border border-outline-variant">
+<span class="material-symbols-outlined text-[16px] text-primary" data-icon="add">add</span>
+<span>New Guardrail</span>
+</button>
+<!-- Category Accordion Filters -->
+<div class="space-y-1">
+<div class="text-[11px] font-label-md text-label-md uppercase tracking-wider text-outline px-2 py-1">Guardrail Types</div>
+<button class="w-full flex items-center justify-between px-2 py-1 rounded text-xs text-on-surface bg-surface-container hover:bg-surface-container-high font-medium">
+<span class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px] text-primary" data-icon="grid_view">grid_view</span>
+<span>All Guardrails</span>
+</span>
+<span class="bg-surface-variant text-on-surface-variant px-1.5 py-0.2 rounded text-[10px] font-code">18</span>
+</button>
+<button class="w-full flex items-center justify-between px-2 py-1 rounded text-xs text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high">
+<span class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px] text-secondary" data-icon="psychology">psychology</span>
+<span>Behavioral Guardrails</span>
+</span>
+<span class="text-outline text-[11px] font-code">6</span>
+</button>
+<button class="w-full flex items-center justify-between px-2 py-1 rounded text-xs text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high">
+<span class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px] text-accent-warning" data-icon="security">security</span>
+<span>Security &amp; Injection Sinks</span>
+</span>
+<span class="text-outline text-[11px] font-code">8</span>
+</button>
+<button class="w-full flex items-center justify-between px-2 py-1 rounded text-xs text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high">
+<span class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px] text-tertiary" data-icon="lock">lock</span>
+<span>PII &amp; Data Privacy</span>
+</span>
+<span class="text-outline text-[11px] font-code">4</span>
+</button>
+<button class="w-full flex items-center justify-between px-2 py-1 rounded text-xs text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high">
+<span class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px] text-accent-success" data-icon="shield_with_heart">shield_with_heart</span>
+<span>Output Enclaves</span>
+</span>
+<span class="text-outline text-[11px] font-code">3</span>
+</button>
+</div>
+<!-- Guardrail Rules List -->
+<div class="mt-2 pt-2 border-t border-border-subtle flex flex-col gap-1.5">
+<div class="text-[11px] font-label-md text-label-md uppercase tracking-wider text-outline px-2">Active Policies</div>
+<!-- Item 1: Active Selection -->
+<div class="bg-secondary-container text-on-secondary-container font-headline-sm text-headline-sm rounded-lg px-space-md py-space-sm flex flex-col gap-1 cursor-pointer border border-primary/30">
+<div class="flex items-center justify-between">
+<span class="font-code text-xs text-primary font-semibold flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]" data-icon="shield">shield</span>
+                deterministic-ast-taint-guard
+              </span>
+<span class="bg-accent-error/20 text-accent-error text-[9px] font-bold px-1.5 py-0.2 rounded uppercase">Critical</span>
+</div>
+<div class="flex items-center justify-between text-[11px] text-on-surface-variant font-normal">
+<span>AST Sink Taint Check</span>
+<span class="text-accent-success flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-accent-success"></span> Enforced
+              </span>
+</div>
+</div>
+<!-- Item 2 -->
+<div class="text-on-surface-variant font-body-md text-body-md rounded-lg px-space-md py-space-sm hover:bg-surface-container-high transition-colors cursor-pointer flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="font-code text-xs text-on-surface flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px] text-outline" data-icon="rule">rule</span>
+                prompt-injection-boundary-v4
+              </span>
+<span class="bg-accent-warning/20 text-accent-warning text-[9px] font-bold px-1.5 py-0.2 rounded uppercase">High</span>
+</div>
+<div class="flex items-center justify-between text-[11px] text-outline">
+<span>Heuristic Boundary Check</span>
+<span class="text-accent-success">Enforced</span>
+</div>
+</div>
+<!-- Item 3 -->
+<div class="text-on-surface-variant font-body-md text-body-md rounded-lg px-space-md py-space-sm hover:bg-surface-container-high transition-colors cursor-pointer flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="font-code text-xs text-on-surface flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px] text-outline" data-icon="data_object">data_object</span>
+                cwe-89-sql-sanitizer-rule
+              </span>
+<span class="bg-accent-error/20 text-accent-error text-[9px] font-bold px-1.5 py-0.2 rounded uppercase">Critical</span>
+</div>
+<div class="flex items-center justify-between text-[11px] text-outline">
+<span>SQL Query Tokenizer</span>
+<span class="text-tertiary">Shadow/Test</span>
+</div>
+</div>
+<!-- Item 4 -->
+<div class="text-on-surface-variant font-body-md text-body-md rounded-lg px-space-md py-space-sm hover:bg-surface-container-high transition-colors cursor-pointer flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="font-code text-xs text-on-surface flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px] text-outline" data-icon="memory">memory</span>
+                wasm-memory-isolation-enclave
+              </span>
+<span class="bg-primary/20 text-primary text-[9px] font-bold px-1.5 py-0.2 rounded uppercase">Medium</span>
+</div>
+<div class="flex items-center justify-between text-[11px] text-outline">
+<span>Wasm Sandbox Sandbox</span>
+<span class="text-accent-success">Enforced</span>
+</div>
+</div>
+<!-- Item 5 -->
+<div class="text-on-surface-variant font-body-md text-body-md rounded-lg px-space-md py-space-sm hover:bg-surface-container-high transition-colors cursor-pointer flex flex-col gap-1 opacity-70">
+<div class="flex items-center justify-between">
+<span class="font-code text-xs text-on-surface flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px] text-outline" data-icon="block">block</span>
+                zero-data-exfiltration-policy
+              </span>
+<span class="bg-outline-variant text-outline text-[9px] font-bold px-1.5 py-0.2 rounded uppercase">Medium</span>
+</div>
+<div class="flex items-center justify-between text-[11px] text-outline">
+<span>Socket &amp; Egress Blocker</span>
+<span class="text-outline">Disabled</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Footer from SideNavBar JSON (Docs, Settings + Audit Logs) -->
+<div class="pt-3 border-t border-border-subtle flex flex-col gap-1 shrink-0">
+<a class="flex items-center gap-2 px-2 py-1.5 rounded text-xs text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors" href="#audit">
+<span class="material-symbols-outlined text-[16px]" data-icon="monitoring">monitoring</span>
+<span>Audit &amp; Enforcement Logs</span>
+</a>
+<a class="flex items-center gap-2 px-2 py-1.5 rounded text-xs text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors" href="#docs">
+<span class="material-symbols-outlined text-[16px]" data-icon="menu_book">menu_book</span>
+<span>Docs</span>
+</a>
+<a class="flex items-center gap-2 px-2 py-1.5 rounded text-xs text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors" href="#settings">
+<span class="material-symbols-outlined text-[16px]" data-icon="settings">settings</span>
+<span>Settings</span>
+</a>
+</div>
+</aside>
+<!-- ================= 2. MAIN CENTRAL EDITOR WORKSPACE ================= -->
+<main class="flex-1 min-w-0 flex flex-col bg-surface border-r border-border-subtle overflow-hidden">
+<!-- Editor File Tabs -->
+<div class="h-10 bg-surface-container-lowest border-b border-border-subtle flex items-center justify-between px-space-sm select-none">
+<div class="flex items-center gap-1 overflow-x-auto h-full">
+<!-- Active Tab -->
+<div class="h-full px-3 flex items-center gap-2 bg-surface border-t-2 border-primary text-primary font-code text-xs border-r border-border-subtle">
+<span class="material-symbols-outlined text-[15px] text-accent-warning" data-icon="description">description</span>
+<span>declarative_rule.yaml</span>
+<span class="w-1.5 h-1.5 rounded-full bg-primary/70"></span>
+</div>
+<!-- Other Tabs -->
+<div class="h-full px-3 flex items-center gap-2 text-on-surface-variant hover:text-on-surface font-code text-xs border-r border-border-subtle hover:bg-surface-container transition-colors cursor-pointer">
+<span class="material-symbols-outlined text-[15px] text-outline" data-icon="data_object">data_object</span>
+<span>ast_token_map.json</span>
+</div>
+<div class="h-full px-3 flex items-center gap-2 text-on-surface-variant hover:text-on-surface font-code text-xs border-r border-border-subtle hover:bg-surface-container transition-colors cursor-pointer">
+<span class="material-symbols-outlined text-[15px] text-outline" data-icon="account_tree">account_tree</span>
+<span>shacl_shapes.ttl</span>
+</div>
+<div class="h-full px-3 flex items-center gap-2 text-on-surface-variant hover:text-on-surface font-code text-xs border-r border-border-subtle hover:bg-surface-container transition-colors cursor-pointer">
+<span class="material-symbols-outlined text-[15px] text-outline" data-icon="tune">tune</span>
+<span>execution_profile.toml</span>
+</div>
+</div>
+<div class="flex items-center gap-1.5">
+<button class="p-1 rounded text-outline hover:text-on-surface hover:bg-surface-variant transition-colors" title="Split Screen">
+<span class="material-symbols-outlined text-[16px]" data-icon="vertical_split">vertical_split</span>
+</button>
+<button class="p-1 rounded text-outline hover:text-on-surface hover:bg-surface-variant transition-colors" title="Full Screen Canvas">
+<span class="material-symbols-outlined text-[16px]" data-icon="fullscreen">fullscreen</span>
+</button>
+</div>
+</div>
+<!-- Editor Sub-Toolbar -->
+<div class="h-8 bg-surface-container-low border-b border-border-subtle px-space-md flex items-center justify-between text-xs">
+<div class="flex items-center gap-3">
+<span class="font-code text-outline text-[11px] flex items-center gap-1">
+<span class="w-2 h-2 rounded-full bg-accent-success"></span>
+            YAML / SHACL v1.2
+          </span>
+<span class="text-border-subtle">|</span>
+<span class="text-accent-success font-label-md text-label-md flex items-center gap-1 text-[11px]">
+<span class="material-symbols-outlined text-[14px]" data-icon="check_circle">check_circle</span>
+            0 errors, 2 heuristics checked
+          </span>
+</div>
+<div class="flex items-center gap-2">
+<button class="px-2 py-0.5 rounded text-[11px] text-on-surface-variant hover:text-on-surface hover:bg-surface-variant transition-colors flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]" data-icon="auto_fix_high">auto_fix_high</span>
+            Auto-format
+          </button>
+<button class="px-2 py-0.5 rounded text-[11px] bg-surface-container text-primary hover:bg-surface-variant transition-colors flex items-center gap-1 border border-primary/20">
+<span class="material-symbols-outlined text-[14px]" data-icon="play_arrow">play_arrow</span>
+            Dry Run
+          </button>
+</div>
+</div>
+<div class="flex-1 min-h-0 overflow-y-auto p-4 space-y-6 bg-surface" *ngIf="guardrails">
   
   <!-- Section 1: Dynamic Input Guardrails (Dropdown Catalog Picker) -->
-  <div class="p-5 bg-amber-50/50 rounded-2xl border border-amber-200/80 space-y-5" *ngIf="guardrails.input_guardrails">
+  <div class="p-5 bg-surface-container-low rounded-2xl border border-border-subtle space-y-5" *ngIf="guardrails.input_guardrails">
     <div class="flex items-center space-x-3">
-      <mat-icon class="text-amber-600">shield</mat-icon>
+      <mat-icon class="text-primary">shield</mat-icon>
       <div>
-        <h4 class="text-sm font-bold text-slate-900 m-0">Input Guardrails Pipeline</h4>
-        <p class="text-xs text-slate-500 m-0">By default no input guardrails are active. Select a guardrail from the dropdown to add it, configure its parameters, or delete it.</p>
+        <h4 class="text-sm font-bold text-on-surface m-0">Input Guardrails Pipeline</h4>
+        <p class="text-xs text-on-surface-variant m-0">By default no input guardrails are active. Select a guardrail from the dropdown to add it, configure its parameters, or delete it.</p>
       </div>
     </div>
 
     <!-- Dropdown Add Guardrail Control -->
-    <div class="p-4 bg-white rounded-xl border border-amber-200 flex flex-col sm:flex-row gap-4 items-center">
+    <div class="p-4 bg-surface-container rounded-xl border border-border-subtle flex flex-col sm:flex-row gap-4 items-center">
       <mat-form-field appearance="outline" class="w-full sm:flex-1" matTooltip="Select an input guardrail from the catalog to activate">
         <mat-label>Select Input Guardrail to Add...</mat-label>
         <mat-select [(ngModel)]="selectedGuardrailTypeToAdd">
           @for (g of guardrailCatalog; track g.type) {
             <mat-option [value]="g.type">
-              <span class="font-semibold text-slate-800">{{ g.name }}</span>
-              <span class="text-xs text-slate-400 font-normal"> — {{ g.tier }}</span>
+              <span class="font-semibold text-on-surface">{{ g.name }}</span>
+              <span class="text-xs text-outline font-normal"> — {{ g.tier }}</span>
             </mat-option>
           }
         </mat-select>
@@ -29,23 +341,23 @@
     </div>
 
     <!-- Empty State -->
-    <div *ngIf="!guardrails.input_guardrails.active_guardrails || guardrails.input_guardrails.active_guardrails.length === 0" class="p-6 text-center bg-white/60 rounded-xl border border-dashed border-amber-300">
-      <p class="text-sm font-semibold text-slate-600 m-0">No active input guardrails configured.</p>
-      <p class="text-xs text-slate-400 m-0 mt-1">Use the dropdown above to add prompt injection checks, PII filters, vector matchers, or safety classifiers.</p>
+    <div *ngIf="!guardrails.input_guardrails.active_guardrails || guardrails.input_guardrails.active_guardrails.length === 0" class="p-6 text-center bg-surface-container/60 rounded-xl border border-dashed border-border-subtle">
+      <p class="text-sm font-semibold text-on-surface-variant m-0">No active input guardrails configured.</p>
+      <p class="text-xs text-outline m-0 mt-1">Use the dropdown above to add prompt injection checks, PII filters, vector matchers, or safety classifiers.</p>
     </div>
 
     <!-- Active Guardrails List -->
     <div class="space-y-4" *ngIf="guardrails.input_guardrails.active_guardrails && guardrails.input_guardrails.active_guardrails.length > 0">
       @for (g of guardrails.input_guardrails.active_guardrails; track g.id) {
-        <div class="p-5 bg-white rounded-xl border border-slate-200 space-y-4 shadow-sm relative">
+        <div class="p-5 bg-surface-container rounded-xl border border-border-subtle space-y-4 shadow-sm relative">
           <!-- Header with Name, Tier Badge, and Delete Action -->
-          <div class="flex justify-between items-start border-b border-slate-100 pb-3">
+          <div class="flex justify-between items-start border-b border-border-subtle pb-3">
             <div>
               <div class="flex items-center gap-2">
-                <h5 class="text-sm font-bold text-slate-900 m-0">{{ g.name }}</h5>
-                <span class="px-2 py-0.5 bg-amber-100 text-amber-900 font-bold text-[10px] rounded-md border border-amber-200">{{ g.tier }}</span>
+                <h5 class="text-sm font-bold text-on-surface m-0">{{ g.name }}</h5>
+                <span class="px-2 py-0.5 bg-primary/20 text-primary font-bold text-[10px] rounded-md border border-border-subtle">{{ g.tier }}</span>
               </div>
-              <p class="text-xs text-slate-500 m-0 mt-0.5">{{ g.description }}</p>
+              <p class="text-xs text-on-surface-variant m-0 mt-0.5">{{ g.description }}</p>
             </div>
             <button mat-icon-button color="warn" matTooltip="Delete this guardrail from pipeline" (click)="deleteGuardrail(g.id)">
               <mat-icon class="text-red-500">delete_outline</mat-icon>
@@ -55,15 +367,15 @@
           <!-- Guardrail Specific Configurations -->
 
           <!-- Type 1: Prompt Injection Interceptor -->
-          <div *ngIf="g.type === 'prompt_injection'" class="flex items-center justify-between p-3 bg-amber-50/40 rounded-lg border border-amber-200/60">
-            <span class="text-xs font-semibold text-slate-800">Heuristic Prompt Injection Signature Detection</span>
-            <span class="px-2.5 py-1 bg-emerald-100 text-emerald-800 text-xs font-bold rounded-md">ACTIVE</span>
+          <div *ngIf="g.type === 'prompt_injection'" class="flex items-center justify-between p-3 bg-surface-container-high rounded-lg border border-border-subtle/60">
+            <span class="text-xs font-semibold text-on-surface">Heuristic Prompt Injection Signature Detection</span>
+            <span class="px-2.5 py-1 bg-accent-success/20 text-accent-success text-xs font-bold rounded-md">ACTIVE</span>
           </div>
 
           <!-- Type 2: PII Regex Filtering -->
-          <div *ngIf="g.type === 'pii_regex'" class="flex items-center justify-between p-3 bg-amber-50/40 rounded-lg border border-amber-200/60">
-            <span class="text-xs font-semibold text-slate-800">Scan & Block SSNs, Emails, Credit Cards, API Credentials</span>
-            <span class="px-2.5 py-1 bg-emerald-100 text-emerald-800 text-xs font-bold rounded-md">ACTIVE</span>
+          <div *ngIf="g.type === 'pii_regex'" class="flex items-center justify-between p-3 bg-surface-container-high rounded-lg border border-border-subtle/60">
+            <span class="text-xs font-semibold text-on-surface">Scan & Block SSNs, Emails, Credit Cards, API Credentials</span>
+            <span class="px-2.5 py-1 bg-accent-success/20 text-accent-success text-xs font-bold rounded-md">ACTIVE</span>
           </div>
 
           <!-- Type 3: Max Input Token Limit -->
@@ -85,9 +397,9 @@
             </div>
             <div class="flex flex-wrap gap-2">
               @for (kw of g.config.blocked_input_keywords || []; track kw) {
-                <span class="px-3 py-1 bg-amber-100 text-amber-900 font-bold text-xs rounded-lg flex items-center gap-2 border border-amber-200">
+                <span class="px-3 py-1 bg-primary/20 text-primary font-bold text-xs rounded-lg flex items-center gap-2 border border-border-subtle">
                   🚫 {{ kw }}
-                  <button class="text-amber-700 hover:text-red-600 font-bold border-none bg-transparent cursor-pointer text-sm" (click)="removeKeywordFromGuardrail(g, kw)">×</button>
+                  <button class="text-primary hover:text-red-600 font-bold border-none bg-transparent cursor-pointer text-sm" (click)="removeKeywordFromGuardrail(g, kw)">×</button>
                 </span>
               }
             </div>
@@ -146,9 +458,9 @@
             </div>
             <div class="flex flex-wrap gap-2">
               @for (topic of g.config.allowed_domain_topics || []; track topic) {
-                <span class="px-3 py-1 bg-emerald-100 text-emerald-900 font-bold text-xs rounded-lg flex items-center gap-2 border border-emerald-200">
+                <span class="px-3 py-1 bg-accent-success/20 text-accent-success font-bold text-xs rounded-lg flex items-center gap-2 border border-emerald-200">
                   🎯 {{ topic }}
-                  <button class="text-emerald-700 hover:text-red-600 font-bold border-none bg-transparent cursor-pointer text-sm" (click)="removeTopicFromGuardrail(g, topic)">×</button>
+                  <button class="text-accent-success hover:text-red-600 font-bold border-none bg-transparent cursor-pointer text-sm" (click)="removeTopicFromGuardrail(g, topic)">×</button>
                 </span>
               }
             </div>
@@ -160,24 +472,24 @@
   </div>
 
   <!-- Section 2: Dynamic Output Guardrails (Dropdown Catalog Picker) -->
-  <div class="p-5 bg-indigo-50/50 rounded-2xl border border-indigo-200/80 space-y-5" *ngIf="guardrails.output_guardrails">
+  <div class="p-5 bg-surface-container-low rounded-2xl border border-border-subtle space-y-5" *ngIf="guardrails.output_guardrails">
     <div class="flex items-center space-x-3">
-      <mat-icon class="text-indigo-600">gavel</mat-icon>
+      <mat-icon class="text-secondary">gavel</mat-icon>
       <div>
-        <h4 class="text-sm font-bold text-slate-900 m-0">Output Guardrails Pipeline</h4>
-        <p class="text-xs text-slate-500 m-0">Post-execution data loss prevention, toxicity filtering, truthfulness grounding (NLI), and structural schema validation.</p>
+        <h4 class="text-sm font-bold text-on-surface m-0">Output Guardrails Pipeline</h4>
+        <p class="text-xs text-on-surface-variant m-0">Post-execution data loss prevention, toxicity filtering, truthfulness grounding (NLI), and structural schema validation.</p>
       </div>
     </div>
 
     <!-- Dropdown Add Output Guardrail Control -->
-    <div class="p-4 bg-white rounded-xl border border-indigo-200 flex flex-col sm:flex-row gap-4 items-center">
+    <div class="p-4 bg-surface-container rounded-xl border border-border-subtle flex flex-col sm:flex-row gap-4 items-center">
       <mat-form-field appearance="outline" class="w-full sm:flex-1" matTooltip="Select a post-execution output guardrail to activate">
         <mat-label>Select Output Guardrail to Add...</mat-label>
         <mat-select [(ngModel)]="selectedOutputGuardrailTypeToAdd">
           @for (g of outputGuardrailCatalog; track g.type) {
             <mat-option [value]="g.type">
-              <span class="font-semibold text-slate-800">{{ g.name }}</span>
-              <span class="text-xs text-slate-400 font-normal"> — {{ g.category }}</span>
+              <span class="font-semibold text-on-surface">{{ g.name }}</span>
+              <span class="text-xs text-outline font-normal"> — {{ g.category }}</span>
             </mat-option>
           }
         </mat-select>
@@ -188,23 +500,23 @@
     </div>
 
     <!-- Empty State -->
-    <div *ngIf="!guardrails.output_guardrails.active_guardrails || guardrails.output_guardrails.active_guardrails.length === 0" class="p-6 text-center bg-white/60 rounded-xl border border-dashed border-indigo-300">
-      <p class="text-sm font-semibold text-slate-600 m-0">No active output guardrails configured.</p>
-      <p class="text-xs text-slate-400 m-0 mt-1">Use the dropdown above to add secret redaction, PII NER masking, RAG grounding scoring, or JSON schema enforcement.</p>
+    <div *ngIf="!guardrails.output_guardrails.active_guardrails || guardrails.output_guardrails.active_guardrails.length === 0" class="p-6 text-center bg-surface-container/60 rounded-xl border border-dashed border-border-subtle">
+      <p class="text-sm font-semibold text-on-surface-variant m-0">No active output guardrails configured.</p>
+      <p class="text-xs text-outline m-0 mt-1">Use the dropdown above to add secret redaction, PII NER masking, RAG grounding scoring, or JSON schema enforcement.</p>
     </div>
 
     <!-- Active Output Guardrails List -->
     <div class="space-y-4" *ngIf="guardrails.output_guardrails.active_guardrails && guardrails.output_guardrails.active_guardrails.length > 0">
       @for (g of guardrails.output_guardrails.active_guardrails; track g.id) {
-        <div class="p-5 bg-white rounded-xl border border-slate-200 space-y-4 shadow-sm relative">
+        <div class="p-5 bg-surface-container rounded-xl border border-border-subtle space-y-4 shadow-sm relative">
           <!-- Header with Name, Category Badge, and Delete Action -->
-          <div class="flex justify-between items-start border-b border-slate-100 pb-3">
+          <div class="flex justify-between items-start border-b border-border-subtle pb-3">
             <div>
               <div class="flex items-center gap-2">
-                <h5 class="text-sm font-bold text-slate-900 m-0">{{ g.name }}</h5>
-                <span class="px-2 py-0.5 bg-indigo-100 text-indigo-900 font-bold text-[10px] rounded-md border border-indigo-200">{{ g.tier }}</span>
+                <h5 class="text-sm font-bold text-on-surface m-0">{{ g.name }}</h5>
+                <span class="px-2 py-0.5 bg-secondary/20 text-secondary font-bold text-[10px] rounded-md border border-border-subtle">{{ g.tier }}</span>
               </div>
-              <p class="text-xs text-slate-500 m-0 mt-0.5">{{ g.description }}</p>
+              <p class="text-xs text-on-surface-variant m-0 mt-0.5">{{ g.description }}</p>
             </div>
             <button mat-icon-button color="warn" matTooltip="Delete this output guardrail from pipeline" (click)="deleteOutputGuardrail(g.id)">
               <mat-icon class="text-red-500">delete_outline</mat-icon>
@@ -214,9 +526,9 @@
           <!-- Guardrail Specific Controls -->
 
           <!-- Secret & API Key Redaction -->
-          <div *ngIf="g.type === 'secret_redaction'" class="flex items-center justify-between p-3 bg-indigo-50/40 rounded-lg border border-indigo-200/60">
-            <span class="text-xs font-semibold text-slate-800">Automatic Masking of API Keys, RSA Keys, AWS Secrets & JWT Tokens</span>
-            <span class="px-2.5 py-1 bg-emerald-100 text-emerald-800 text-xs font-bold rounded-md">ACTIVE</span>
+          <div *ngIf="g.type === 'secret_redaction'" class="flex items-center justify-between p-3 bg-surface-container-high rounded-lg border border-border-subtle/60">
+            <span class="text-xs font-semibold text-on-surface">Automatic Masking of API Keys, RSA Keys, AWS Secrets & JWT Tokens</span>
+            <span class="px-2.5 py-1 bg-accent-success/20 text-accent-success text-xs font-bold rounded-md">ACTIVE</span>
           </div>
 
           <!-- PII & Sensitive Data Redaction (NER) -->
@@ -230,9 +542,9 @@
             </div>
             <div class="flex flex-wrap gap-2">
               @for (entity of g.config.pii_ner_entities || []; track entity) {
-                <span class="px-3 py-1 bg-indigo-100 text-indigo-900 font-bold text-xs rounded-lg flex items-center gap-2 border border-indigo-200">
+                <span class="px-3 py-1 bg-secondary/20 text-secondary font-bold text-xs rounded-lg flex items-center gap-2 border border-border-subtle">
                   🕵️ {{ entity }}
-                  <button class="text-indigo-700 hover:text-red-600 font-bold border-none bg-transparent cursor-pointer text-sm" (click)="removePiiEntityFromGuardrail(g, entity)">×</button>
+                  <button class="text-secondary hover:text-red-600 font-bold border-none bg-transparent cursor-pointer text-sm" (click)="removePiiEntityFromGuardrail(g, entity)">×</button>
                 </span>
               }
             </div>
@@ -249,18 +561,18 @@
             </div>
             <div class="flex flex-wrap gap-2">
               @for (item of g.config.infra_leak_types || []; track item) {
-                <span class="px-3 py-1 bg-rose-100 text-rose-900 font-bold text-xs rounded-lg flex items-center gap-2 border border-rose-200">
+                <span class="px-3 py-1 bg-accent-error/20 text-accent-error font-bold text-xs rounded-lg flex items-center gap-2 border border-border-subtle">
                   🚨 {{ item }}
-                  <button class="text-rose-700 hover:text-red-600 font-bold border-none bg-transparent cursor-pointer text-sm" (click)="removeInfraLeakTypeFromGuardrail(g, item)">×</button>
+                  <button class="text-accent-error hover:text-red-600 font-bold border-none bg-transparent cursor-pointer text-sm" (click)="removeInfraLeakTypeFromGuardrail(g, item)">×</button>
                 </span>
               }
             </div>
           </div>
 
           <!-- Strict JSON Schema Contract Enforcement -->
-          <div *ngIf="g.type === 'enforce_json_schema'" class="flex items-center justify-between p-3 bg-indigo-50/40 rounded-lg border border-indigo-200/60">
-            <span class="text-xs font-semibold text-slate-800">Validate Output Against Formal JSON Schema Specifications</span>
-            <span class="px-2.5 py-1 bg-emerald-100 text-emerald-800 text-xs font-bold rounded-md">ACTIVE</span>
+          <div *ngIf="g.type === 'enforce_json_schema'" class="flex items-center justify-between p-3 bg-surface-container-high rounded-lg border border-border-subtle/60">
+            <span class="text-xs font-semibold text-on-surface">Validate Output Against Formal JSON Schema Specifications</span>
+            <span class="px-2.5 py-1 bg-accent-success/20 text-accent-success text-xs font-bold rounded-md">ACTIVE</span>
           </div>
 
           <!-- Max Output Token Limit -->
@@ -282,9 +594,9 @@
             </div>
             <div class="flex flex-wrap gap-2">
               @for (kw of g.config.blocked_output_keywords || []; track kw) {
-                <span class="px-3 py-1 bg-indigo-100 text-indigo-900 font-bold text-xs rounded-lg flex items-center gap-2 border border-indigo-200">
+                <span class="px-3 py-1 bg-secondary/20 text-secondary font-bold text-xs rounded-lg flex items-center gap-2 border border-border-subtle">
                   🔒 {{ kw }}
-                  <button class="text-indigo-700 hover:text-red-600 font-bold border-none bg-transparent cursor-pointer text-sm" (click)="removeBlockedOutputKeywordFromGuardrail(g, kw)">×</button>
+                  <button class="text-secondary hover:text-red-600 font-bold border-none bg-transparent cursor-pointer text-sm" (click)="removeBlockedOutputKeywordFromGuardrail(g, kw)">×</button>
                 </span>
               }
             </div>
@@ -317,9 +629,9 @@
             </div>
             <div class="flex flex-wrap gap-2">
               @for (brand of g.config.banned_competitor_brands || []; track brand) {
-                <span class="px-3 py-1 bg-amber-100 text-amber-900 font-bold text-xs rounded-lg flex items-center gap-2 border border-amber-200">
+                <span class="px-3 py-1 bg-primary/20 text-primary font-bold text-xs rounded-lg flex items-center gap-2 border border-border-subtle">
                   🏷️ {{ brand }}
-                  <button class="text-amber-700 hover:text-red-600 font-bold border-none bg-transparent cursor-pointer text-sm" (click)="removeBannedBrandFromGuardrail(g, brand)">×</button>
+                  <button class="text-primary hover:text-red-600 font-bold border-none bg-transparent cursor-pointer text-sm" (click)="removeBannedBrandFromGuardrail(g, brand)">×</button>
                 </span>
               }
             </div>
@@ -334,9 +646,9 @@
           </div>
 
           <!-- Refusal & Off-Topic Detector -->
-          <div *ngIf="g.type === 'refusal_offtopic_detector'" class="flex items-center justify-between p-3 bg-indigo-50/40 rounded-lg border border-indigo-200/60">
-            <span class="text-xs font-semibold text-slate-800">Detect & Block Hallucinated Refusals ("As an AI language model...") and Off-Topic Drift</span>
-            <span class="px-2.5 py-1 bg-emerald-100 text-emerald-800 text-xs font-bold rounded-md">ACTIVE</span>
+          <div *ngIf="g.type === 'refusal_offtopic_detector'" class="flex items-center justify-between p-3 bg-surface-container-high rounded-lg border border-border-subtle/60">
+            <span class="text-xs font-semibold text-on-surface">Detect & Block Hallucinated Refusals ("As an AI language model...") and Off-Topic Drift</span>
+            <span class="px-2.5 py-1 bg-accent-success/20 text-accent-success text-xs font-bold rounded-md">ACTIVE</span>
           </div>
 
           <!-- Custom Structural & Regex Rules -->
@@ -350,9 +662,9 @@
             </div>
             <div class="flex flex-wrap gap-2">
               @for (rule of g.config.custom_regex_rules || []; track rule) {
-                <span class="px-3 py-1 bg-violet-100 text-violet-900 font-bold text-xs rounded-lg flex items-center gap-2 border border-violet-200 font-mono">
+                <span class="px-3 py-1 bg-tertiary/20 text-tertiary font-bold text-xs rounded-lg flex items-center gap-2 border border-border-subtle font-mono">
                   📐 {{ rule }}
-                  <button class="text-violet-700 hover:text-red-600 font-bold border-none bg-transparent cursor-pointer text-sm" (click)="removeCustomRegexRuleFromGuardrail(g, rule)">×</button>
+                  <button class="text-tertiary hover:text-red-600 font-bold border-none bg-transparent cursor-pointer text-sm" (click)="removeCustomRegexRuleFromGuardrail(g, rule)">×</button>
                 </span>
               }
             </div>
@@ -362,5 +674,199 @@
       }
     </div>
   </div>
+
+</div>
+
+</main>
+<!-- ================= 3. RIGHT PANEL: TEST SIMULATION & DIAGNOSTICS ================= -->
+<aside class="w-96 flex flex-col bg-surface-container-low border-l border-border-subtle shrink-0 overflow-hidden">
+<!-- Panel Tab Header -->
+<div class="h-10 bg-surface-container-lowest border-b border-border-subtle flex items-center justify-between px-space-md select-none">
+<div class="flex items-center gap-3">
+<button class="font-headline-sm text-xs text-primary border-b-2 border-primary py-2.5 flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[15px]" data-icon="science">science</span>
+<span>Live Simulation Test Bench</span>
+</button>
+<button class="font-body-md text-xs text-on-surface-variant hover:text-on-surface py-2.5 transition-colors">
+            Policy Diagnostics
+          </button>
+</div>
+<span class="material-symbols-outlined text-outline text-[16px] cursor-pointer hover:text-on-surface" data-icon="restart_alt" title="Reset test payload">restart_alt</span>
+</div>
+<!-- Panel Content (Scrollable) -->
+<div class="flex-1 min-h-0 overflow-y-auto p-4 space-y-4">
+<!-- Interactive Test Scenario Payload Box -->
+<div class="space-y-1.5">
+<div class="flex items-center justify-between">
+<label class="text-xs font-label-md text-label-md text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px] text-primary" data-icon="code">code</span>
+              Simulated Agent Call Payload
+            </label>
+<span class="text-[10px] font-code text-accent-warning">Unsanitized Agent Input</span>
+</div>
+<div class="bg-surface-card border border-border-subtle rounded-lg p-2.5 font-code text-xs relative group">
+<textarea class="w-full bg-transparent text-on-surface font-code text-xs border-none p-0 focus:ring-0 resize-none outline-none" rows="5" spellcheck="false">&#123;
+  "agent_id": "agent:AutoRefactor",
+  "invocation": "db.unsafeExecute",
+  "args": [
+    "SELECT * FROM users WHERE token = '" + req.body.token + "'"
+  ]
+&#125;</textarea>
+<div class="absolute bottom-2 right-2 flex items-center gap-1.5">
+<button class="px-2 py-0.5 bg-primary-container text-on-primary-container rounded font-label-md text-[11px] font-semibold flex items-center gap-1 hover:brightness-110 active:scale-95 transition-all">
+<span class="material-symbols-outlined text-[13px]" data-icon="play_arrow">play_arrow</span>
+                Run Sim
+              </button>
+</div>
+</div>
+</div>
+<!-- Instant Evaluation Result Card -->
+<div class="bg-surface-card border border-accent-error/40 rounded-lg p-3 space-y-2.5 relative overflow-hidden">
+<!-- Ambient gradient tint -->
+<div class="absolute top-0 right-0 w-24 h-24 bg-accent-error/5 rounded-full blur-xl pointer-events-none"></div>
+<!-- Outcome Banner -->
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-accent-error animate-ping"></span>
+<span class="font-headline-sm text-xs text-accent-error font-semibold tracking-wide">VIOLATION INTERCEPTED</span>
+</div>
+<span class="font-code text-[11px] text-on-surface-variant bg-surface-container px-1.5 py-0.5 rounded border border-border-subtle">
+              sim: 1.4ms
+            </span>
+</div>
+<!-- Match Detail -->
+<div class="space-y-1 text-xs">
+<div class="text-outline text-[11px]">Enforcement Match Reason:</div>
+<div class="font-code text-[11px] text-on-surface bg-surface-container-high p-2 rounded border border-border-subtle">
+              Matched forbidden sink <span class="text-accent-error font-bold">db.unsafeExecute</span> with unescaped AST node <span class="text-primary font-bold">#412</span> (req.body.token)
+            </div>
+</div>
+<!-- Suggested Remediation -->
+<div class="space-y-1 text-xs">
+<div class="text-outline text-[11px] flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px] text-accent-success" data-icon="auto_awesome">auto_awesome</span>
+              Suggested Automatic Remediation:
+            </div>
+<div class="font-code text-[11px] text-accent-success bg-accent-success/10 border border-accent-success/20 p-2 rounded">
+              sql`SELECT * FROM users WHERE token = $&#123;req.body.token&#125;`
+            </div>
+</div>
+<!-- Actions -->
+<div class="pt-1 flex items-center gap-2">
+<button class="flex-1 py-1 bg-surface-container-high hover:bg-surface-variant text-on-surface text-xs rounded border border-border-subtle font-label-md text-label-md transition-colors text-center">
+              Apply Auto-Patch
+            </button>
+<button class="px-2 py-1 bg-surface-container text-outline hover:text-on-surface text-xs rounded border border-border-subtle" title="Inspect AST Trace">
+<span class="material-symbols-outlined text-[15px]" data-icon="visibility">visibility</span>
+</button>
+</div>
+</div>
+<!-- Bound Agents & Entities Widget -->
+<div class="bg-surface-card border border-border-subtle rounded-lg p-3 space-y-2.5">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px] text-primary" data-icon="smart_toy">smart_toy</span>
+<span class="font-headline-sm text-xs text-on-surface">Bound Target Agents</span>
+</div>
+<span class="text-[11px] font-code text-primary bg-primary/10 px-1.5 py-0.2 rounded border border-primary/20">3 attached</span>
+</div>
+<div class="space-y-1.5">
+<!-- Agent 1 -->
+<div class="flex items-center justify-between p-2 rounded bg-surface-container-low border border-border-subtle text-xs hover:border-outline-variant transition-colors">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-accent-success"></span>
+<div>
+<div class="font-code text-on-surface text-[11px] font-medium">agent:CodeReviewSentinel</div>
+<div class="text-[10px] text-outline">v1.4.2 • 28 AST paths/sec</div>
+</div>
+</div>
+<button class="text-outline hover:text-accent-error p-1 transition-colors" title="Detach agent">
+<span class="material-symbols-outlined text-[14px]" data-icon="link_off">link_off</span>
+</button>
+</div>
+<!-- Agent 2 -->
+<div class="flex items-center justify-between p-2 rounded bg-surface-container-low border border-border-subtle text-xs hover:border-outline-variant transition-colors">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-accent-success"></span>
+<div>
+<div class="font-code text-on-surface text-[11px] font-medium">agent:AutoRefactor</div>
+<div class="text-[10px] text-outline">v2.0.1 • 142 AST paths/sec</div>
+</div>
+</div>
+<button class="text-outline hover:text-accent-error p-1 transition-colors" title="Detach agent">
+<span class="material-symbols-outlined text-[14px]" data-icon="link_off">link_off</span>
+</button>
+</div>
+<!-- Agent 3 -->
+<div class="flex items-center justify-between p-2 rounded bg-surface-container-low border border-border-subtle text-xs hover:border-outline-variant transition-colors">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-accent-warning"></span>
+<div>
+<div class="font-code text-on-surface text-[11px] font-medium">agent:SqlMigrationBot</div>
+<div class="text-[10px] text-outline">v0.9.8 • Shadow Mode</div>
+</div>
+</div>
+<button class="text-outline hover:text-accent-error p-1 transition-colors" title="Detach agent">
+<span class="material-symbols-outlined text-[14px]" data-icon="link_off">link_off</span>
+</button>
+</div>
+</div>
+<button class="w-full py-1 text-xs text-primary bg-primary/5 hover:bg-primary/10 rounded border border-primary/20 font-label-md text-label-md flex items-center justify-center gap-1 transition-colors">
+<span class="material-symbols-outlined text-[14px]" data-icon="add_link">add_link</span>
+            Attach Target Agent
+          </button>
+</div>
+</div>
+</aside>
+</div>
+<!-- ================= 4. BOTTOM COLLAPSIBLE CONSOLE / TERMINAL ================= -->
+<footer class="h-28 bg-surface-dark border-t border-border-subtle flex flex-col shrink-0 select-none">
+<!-- Console Bar Header -->
+<div class="h-7 bg-surface-container-lowest border-b border-border-subtle px-space-md flex items-center justify-between text-xs font-code">
+<div class="flex items-center gap-3">
+<span class="flex items-center gap-1 text-on-surface font-medium">
+<span class="material-symbols-outlined text-[15px] text-accent-success" data-icon="terminal">terminal</span>
+          Telemetry &amp; Enforcement Console
+        </span>
+<span class="text-outline text-[11px]">stream://prod-guard-01.lan/taint-stream</span>
+</div>
+<div class="flex items-center gap-3">
+<div class="flex items-center gap-1.5 text-[11px] text-on-surface-variant">
+<span class="w-1.5 h-1.5 rounded-full bg-accent-success"></span>
+<span>Buffer: Live</span>
+</div>
+<button class="text-outline hover:text-on-surface transition-colors" title="Clear console">
+<span class="material-symbols-outlined text-[14px]" data-icon="clear_all">clear_all</span>
+</button>
+<button class="text-outline hover:text-on-surface transition-colors" title="Toggle console height">
+<span class="material-symbols-outlined text-[14px]" data-icon="unfold_more">unfold_more</span>
+</button>
+</div>
+</div>
+<!-- Terminal Monospace Log Stream -->
+<div class="flex-1 min-h-0 overflow-y-auto p-2.5 font-code text-[11px] text-on-surface-variant leading-relaxed select-text space-y-1">
+<div class="flex items-center gap-2">
+<span class="text-outline">[16:42:08.102]</span>
+<span class="bg-accent-error/20 text-accent-error px-1 rounded text-[10px] font-bold">INTERCEPT</span>
+<span class="text-primary font-medium">agent:AutoRefactor</span>
+<span>&gt;&gt; Traversal halted on node #412. Unsanitized sink call `db.unsafeExecute`. Blake3: 9f8a3c...</span>
+<span class="text-accent-success ml-auto font-mono">1.8ms</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="text-outline">[16:42:07.940]</span>
+<span class="bg-accent-success/20 text-accent-success px-1 rounded text-[10px] font-bold">ENFORCED</span>
+<span class="text-primary font-medium">agent:CodeReviewSentinel</span>
+<span>&gt;&gt; AST verified. Safe template replacement injected into synthetic payload buffer.</span>
+<span class="text-accent-success ml-auto font-mono">1.2ms</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="text-outline">[16:42:06.315]</span>
+<span class="bg-surface-variant text-outline px-1 rounded text-[10px] font-bold">IDLE</span>
+<span class="text-on-surface-variant font-medium">cluster:prod-guard-01</span>
+<span>&gt;&gt; Sync verification hash completed with 0 drift across 124 bound agent nodes.</span>
+<span class="text-outline ml-auto font-mono">0.4ms</span>
+</div>
+</div>
+</footer>
 
 </div>

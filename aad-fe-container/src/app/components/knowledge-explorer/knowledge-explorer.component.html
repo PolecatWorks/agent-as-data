@@ -1,18 +1,14 @@
-<div class="h-full w-full flex flex-col bg-slate-50 overflow-hidden">
-  <!-- Top Bar -->
-  <div class="h-14 bg-white border-b border-slate-200 flex items-center justify-between px-4 shrink-0 shadow-sm z-10">
-    <div class="flex items-center gap-3">
-      <!-- Workspace View Switcher -->
-      <div class="flex items-center gap-1.5 px-2.5 py-1 -ml-2 rounded-lg hover:bg-slate-100 cursor-pointer transition-colors select-none group"
-           [matMenuTriggerFor]="appMenu"
-           data-testid="workspace-title-switcher"
-           title="Click to switch workspace">
-        <mat-icon class="text-indigo-600">explore</mat-icon>
-        <h1 class="text-lg font-black text-slate-800 m-0">Knowledge Explorer</h1>
+<!-- Replaced with merged mockup -->
+<div class="bg-surface text-on-surface antialiased font-body-md h-screen flex flex-col overflow-hidden select-none">
+  <!-- TopNavBar (Shared Component Anchor) -->
+  <header class="flex justify-between items-center h-14 px-gutter w-full bg-surface-dark border-b border-border-subtle z-30 shrink-0">
+    <div class="flex items-center gap-space-md">
+      <div class="flex items-center gap-space-xs cursor-pointer group" [matMenuTriggerFor]="appMenu">
+        <mat-icon class="text-primary text-xl">hub</mat-icon>
+        <span class="text-headline-sm font-headline-sm text-primary tracking-tight font-semibold">Knowledge Explorer</span>
         <mat-icon class="!w-4 !h-4 !text-base text-slate-400 group-hover:text-slate-700 transition-colors">expand_more</mat-icon>
       </div>
 
-      <!-- Zero-Footprint Concept Guide -->
       <app-concept-guide
         badge="Ecosystem Knowledge Map"
         title="Knowledge Explorer & Relational Tuples"
@@ -27,236 +23,237 @@
       </app-concept-guide>
     </div>
 
-    <!-- Predicate Filter Bar -->
-    <div class="hidden md:flex items-center gap-1.5 bg-slate-100 p-1 rounded-lg border border-slate-200/80">
-      <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider px-2">Tuples:</span>
-      @for (pred of availablePredicates; track pred) {
-        <button
-          type="button"
-          (click)="setPredicateFilter(pred)"
-          [class.bg-white]="activePredicateFilter === pred"
-          [class.text-indigo-600]="activePredicateFilter === pred"
-          [class.shadow-sm]="activePredicateFilter === pred"
-          [class.font-bold]="activePredicateFilter === pred"
-          [class.text-slate-600]="activePredicateFilter !== pred"
-          class="px-2.5 py-1 text-xs rounded-md transition-all hover:text-slate-900 flex items-center gap-1.5 cursor-pointer">
-          <span>{{ pred === 'all' ? 'All' : pred }}</span>
-          <span class="px-1.5 py-0.2 bg-slate-200/70 text-slate-600 rounded-full text-[10px] font-mono">
-            {{ predicateCounts[pred] || 0 }}
-          </span>
-        </button>
+    <!-- Hamburger Menu for App Navigation -->
+    <mat-menu #appMenu="matMenu">
+      @for (item of menuItems; track item.path) {
+        <a mat-menu-item [routerLink]="item.path" routerLinkActive="active-link">
+          <mat-icon>{{ item.icon }}</mat-icon>
+          <span>{{ item.label }}</span>
+        </a>
       }
-    </div>
+    </mat-menu>
+  </header>
 
-    <div class="flex items-center gap-2">
-      <!-- Hamburger Menu for App Navigation -->
-      <button mat-icon-button [matMenuTriggerFor]="appMenu" aria-label="Menu" class="text-slate-500 hover:text-slate-800">
-        <mat-icon>menu</mat-icon>
-      </button>
-
-      <mat-menu #appMenu="matMenu">
-        @for (item of menuItems; track item.path) {
-          <a mat-menu-item [routerLink]="item.path" routerLinkActive="active-link">
-            <mat-icon>{{ item.icon }}</mat-icon>
-            <span>{{ item.label }}</span>
-          </a>
-        }
-      </mat-menu>
+  <!-- Workspace Breadcrumb Bar -->
+  <div class="h-8 px-gutter bg-surface-container-lowest border-b border-border-subtle flex items-center justify-between text-body-sm text-on-surface-variant shrink-0">
+    <div class="flex items-center gap-1.5 text-xs">
+      <span class="hover:text-on-surface cursor-pointer">Knowledge Graph</span>
+      <span class="material-symbols-outlined text-xs text-outline">chevron_right</span>
+      <span class="text-primary font-medium">SPO Relational Triples</span>
     </div>
   </div>
 
-  <div class="flex-1 flex min-h-0 overflow-hidden relative">
+  <div class="flex-1 flex overflow-hidden">
+    <!-- SideNavBar -->
+    <aside class="w-72 bg-surface-container-lowest border-r border-border-subtle flex flex-col shrink-0 select-none">
+      <div class="p-space-md border-b border-border-subtle">
+        <div class="text-[10px] font-semibold text-outline uppercase tracking-wider mb-2">Predicate Filters</div>
+        <div class="space-y-1.5 text-xs">
+          @for (pred of availablePredicates; track pred) {
+            <label class="flex items-center justify-between px-2 py-1 rounded hover:bg-surface-container cursor-pointer transition-colors"
+                   (click)="setPredicateFilter(pred)">
+              <div class="flex items-center gap-2">
+                <input [checked]="activePredicateFilter === pred" class="rounded border-border-subtle bg-surface-container text-primary focus:ring-0 w-3.5 h-3.5" type="radio" name="predicate_filter"/>
+                <span class="font-code" [class.text-primary]="activePredicateFilter === pred" [class.text-outline]="activePredicateFilter !== pred">{{ pred === 'all' ? 'All' : pred }}</span>
+              </div>
+              <span class="text-[10px] font-code px-1.5 py-0.5 rounded bg-surface-container-highest text-primary">{{ predicateCounts[pred] || 0 }}</span>
+            </label>
+          }
+        </div>
+      </div>
+    </aside>
 
-    <!-- Physics Controls Panel -->
-    <div class="absolute bottom-4 left-4 z-20 flex flex-col items-start">
-      <button mat-mini-fab color="primary" (click)="isPhysicsPanelOpen = !isPhysicsPanelOpen" class="mb-2 shadow-lg hover:bg-indigo-700 bg-indigo-600 text-white flex items-center justify-center w-10 h-10 rounded-full">
-        <mat-icon class="text-white">tune</mat-icon>
-      </button>
+    <!-- Main Content -->
+    <main class="flex-1 flex flex-col min-w-0 bg-surface overflow-hidden relative">
+      <!-- Physics Controls Panel -->
+      <div class="absolute bottom-4 left-4 z-20 flex flex-col items-start">
+        <button (click)="isPhysicsPanelOpen = !isPhysicsPanelOpen" class="mb-2 shadow-lg bg-surface-container-highest text-primary hover:text-on-surface flex items-center justify-center w-10 h-10 rounded-full border border-border-subtle transition-colors">
+          <mat-icon>tune</mat-icon>
+        </button>
 
-      @if (isPhysicsPanelOpen) {
-      <div class="bg-white/95 backdrop-blur-sm border border-slate-200 rounded-lg shadow-xl p-4 w-72 text-sm text-slate-700 transform transition-all duration-300">
-        <div class="flex items-center justify-between mb-4 pb-2 border-b border-slate-100">
-          <h3 class="font-bold text-slate-800 m-0 flex items-center gap-1.5"><mat-icon class="text-indigo-600 !w-4 !h-4 !text-base">science</mat-icon> Physics Controls</h3>
-          <button mat-icon-button (click)="isPhysicsPanelOpen = false" class="scale-75 text-slate-400 hover:text-slate-700 m-[-8px]">
+        @if (isPhysicsPanelOpen) {
+        <div class="bg-surface-container-lowest border border-border-subtle rounded-lg shadow-xl p-4 w-72 text-sm text-on-surface transform transition-all duration-300">
+          <div class="flex items-center justify-between mb-4 pb-2 border-b border-border-subtle">
+            <h3 class="font-bold m-0 flex items-center gap-1.5"><mat-icon class="text-primary !w-4 !h-4 !text-base">science</mat-icon> Physics Controls</h3>
+            <button (click)="isPhysicsPanelOpen = false" class="scale-75 text-on-surface-variant hover:text-on-surface m-[-8px]">
+              <mat-icon>close</mat-icon>
+            </button>
+          </div>
+
+          <div class="space-y-4">
+            <div>
+              <div class="flex justify-between mb-1">
+                <label class="text-[11px] font-bold text-on-surface-variant uppercase">Gravitational Constant</label>
+                <span class="text-xs font-mono text-outline">{{ physicsOptions.gravitationalConstant }}</span>
+              </div>
+              <input type="range" min="-100" max="0" step="1" [(ngModel)]="physicsOptions.gravitationalConstant" (ngModelChange)="updatePhysics()" class="w-full accent-primary">
+            </div>
+
+            <div>
+              <div class="flex justify-between mb-1">
+                <label class="text-[11px] font-bold text-on-surface-variant uppercase">Central Gravity</label>
+                <span class="text-xs font-mono text-outline">{{ physicsOptions.centralGravity | number:'1.3-3' }}</span>
+              </div>
+              <input type="range" min="0" max="0.1" step="0.001" [(ngModel)]="physicsOptions.centralGravity" (ngModelChange)="updatePhysics()" class="w-full accent-primary">
+            </div>
+
+            <div>
+              <div class="flex justify-between mb-1">
+                <label class="text-[11px] font-bold text-on-surface-variant uppercase">Spring Length</label>
+                <span class="text-xs font-mono text-outline">{{ physicsOptions.springLength }}</span>
+              </div>
+              <input type="range" min="50" max="500" step="10" [(ngModel)]="physicsOptions.springLength" (ngModelChange)="updatePhysics()" class="w-full accent-primary">
+            </div>
+
+            <div>
+              <div class="flex justify-between mb-1">
+                <label class="text-[11px] font-bold text-on-surface-variant uppercase">Spring Constant</label>
+                <span class="text-xs font-mono text-outline">{{ physicsOptions.springConstant | number:'1.2-2' }}</span>
+              </div>
+              <input type="range" min="0.01" max="1" step="0.01" [(ngModel)]="physicsOptions.springConstant" (ngModelChange)="updatePhysics()" class="w-full accent-primary">
+            </div>
+          </div>
+        </div>
+        }
+      </div>
+
+      <!-- Graph container -->
+      <div id="network-graph" class="w-full h-full bg-[#070a10] absolute inset-0 z-0 border-r border-border-subtle"></div>
+
+      <!-- Info side panel with Relational Tuples -->
+      @if (selectedNode) {
+      <aside class="absolute right-0 top-0 bottom-0 w-96 bg-surface-container-low border-l border-border-subtle shadow-2xl z-10 flex flex-col transform transition-transform duration-300 overflow-y-auto">
+        <div class="p-4 border-b border-border-subtle bg-surface-container flex items-center justify-between shrink-0">
+          <div class="flex items-center gap-2">
+            <mat-icon [class]="getIconColor(selectedNode.type)">{{ getIcon(selectedNode.type) }}</mat-icon>
+            <div>
+              <h2 class="text-xs font-black uppercase tracking-wider text-on-surface-variant m-0">{{ selectedNode.type }}</h2>
+              <h3 class="text-sm font-bold text-on-surface m-0 truncate max-w-[200px]">{{ selectedNode.name || selectedNode.title }}</h3>
+            </div>
+          </div>
+          <button mat-icon-button (click)="closePanel()" class="scale-75 text-on-surface-variant hover:text-on-surface">
             <mat-icon>close</mat-icon>
           </button>
         </div>
 
-        <div class="space-y-4">
+        <div class="p-4 overflow-y-auto flex-1 space-y-5 text-xs">
+          <!-- Identity -->
           <div>
-            <div class="flex justify-between mb-1">
-              <label class="text-[11px] font-bold text-slate-500 uppercase">Gravitational Constant</label>
-              <span class="text-xs font-mono text-slate-600">{{ physicsOptions.gravitationalConstant }}</span>
+            <h4 class="text-[11px] font-bold text-outline uppercase tracking-wider mb-1">Entity Identifier</h4>
+            <p class="text-xs text-on-surface-variant font-code break-all bg-surface-container p-2 rounded border border-border-subtle select-all">{{ selectedNode.id }}</p>
+          </div>
+
+          <!-- Description -->
+          <div>
+            <h4 class="text-[11px] font-bold text-outline uppercase tracking-wider mb-1">Description</h4>
+            <p class="text-xs text-on-surface leading-relaxed">{{ selectedNode.description || 'No description available.' }}</p>
+          </div>
+
+          <!-- Tags -->
+          @if (selectedNode.tags && selectedNode.tags.length > 0) {
+          <div>
+            <h4 class="text-[11px] font-bold text-outline uppercase tracking-wider mb-1.5">Tags</h4>
+            <div class="flex flex-wrap gap-1">
+              @for (tag of selectedNode.tags; track tag) {
+              <span class="px-2 py-0.5 bg-surface-container-high border border-border-subtle text-on-surface rounded text-[10px] font-semibold uppercase tracking-wider">
+                {{ tag }}
+              </span>
+              }
             </div>
-            <input type="range" min="-100" max="0" step="1" [(ngModel)]="physicsOptions.gravitationalConstant" (ngModelChange)="updatePhysics()" class="w-full accent-indigo-600">
           </div>
+          }
 
+          <!-- Content if Knowledge Node -->
+          @if (selectedNode.content) {
           <div>
-            <div class="flex justify-between mb-1">
-              <label class="text-[11px] font-bold text-slate-500 uppercase">Central Gravity</label>
-              <span class="text-xs font-mono text-slate-600">{{ physicsOptions.centralGravity | number:'1.3-3' }}</span>
+            <h4 class="text-[11px] font-bold text-outline uppercase tracking-wider mb-1">Content Snippet</h4>
+            <p class="text-xs text-on-surface-variant bg-surface-container p-2 rounded border border-border-subtle max-h-32 overflow-y-auto">{{ selectedNode.content }}</p>
+          </div>
+          }
+
+          <!-- RELATIONAL TUPLES SECTION -->
+          <div class="pt-3 border-t border-border-subtle">
+            <div class="flex items-center justify-between mb-3">
+              <h4 class="text-[11px] font-black text-on-surface uppercase tracking-wider m-0 flex items-center gap-1.5">
+                <mat-icon class="!w-4 !h-4 !text-base text-primary">hub</mat-icon>
+                Relational Tuples
+              </h4>
+              <span class="px-2 py-0.5 bg-primary/10 border border-primary/20 text-primary rounded-full text-[10px] font-bold font-code">
+                {{ outboundTuples.length + inboundTuples.length }}
+              </span>
             </div>
-            <input type="range" min="0" max="0.1" step="0.001" [(ngModel)]="physicsOptions.centralGravity" (ngModelChange)="updatePhysics()" class="w-full accent-indigo-600">
-          </div>
 
-          <div>
-            <div class="flex justify-between mb-1">
-              <label class="text-[11px] font-bold text-slate-500 uppercase">Spring Length</label>
-              <span class="text-xs font-mono text-slate-600">{{ physicsOptions.springLength }}</span>
+            <!-- Outbound Tuples -->
+            @if (outboundTuples.length > 0) {
+            <div class="mb-4">
+              <span class="text-[10px] font-bold text-outline uppercase tracking-wider block mb-2">
+                Outbound Relationships ({{ outboundTuples.length }})
+              </span>
+              <div class="space-y-2">
+                @for (tuple of outboundTuples; track tuple.id) {
+                <div class="p-2.5 rounded-lg border border-border-subtle bg-surface-container-lowest hover:bg-surface-container hover:border-primary/50 transition-all text-xs">
+                  <div class="flex items-center gap-1.5 flex-wrap">
+                    <span class="font-bold text-on-surface truncate max-w-[100px]">{{ tuple.subjectName }}</span>
+                    <span class="px-1.5 py-0.5 rounded text-[10px] font-code font-bold border border-border-subtle bg-surface-container text-tertiary">
+                      {{ tuple.predicate }}
+                    </span>
+                    <mat-icon class="!w-3.5 !h-3.5 !text-sm text-outline">arrow_forward</mat-icon>
+                    <button
+                      type="button"
+                      (click)="selectAndFocusNode(tuple.objectId)"
+                      class="font-semibold text-primary hover:text-primary-container hover:underline flex items-center gap-1 cursor-pointer truncate max-w-[130px]"
+                      title="Focus on {{ tuple.objectName }}">
+                      <mat-icon class="!w-3.5 !h-3.5 !text-sm" [class]="getIconColor(tuple.objectType)">{{ getIcon(tuple.objectType) }}</mat-icon>
+                      <span>{{ tuple.objectName }}</span>
+                    </button>
+                  </div>
+                </div>
+                }
+              </div>
             </div>
-            <input type="range" min="50" max="500" step="10" [(ngModel)]="physicsOptions.springLength" (ngModelChange)="updatePhysics()" class="w-full accent-indigo-600">
-          </div>
+            }
 
-          <div>
-            <div class="flex justify-between mb-1">
-              <label class="text-[11px] font-bold text-slate-500 uppercase">Spring Constant</label>
-              <span class="text-xs font-mono text-slate-600">{{ physicsOptions.springConstant | number:'1.2-2' }}</span>
+            <!-- Inbound Tuples -->
+            @if (inboundTuples.length > 0) {
+            <div>
+              <span class="text-[10px] font-bold text-outline uppercase tracking-wider block mb-2">
+                Inbound Relationships ({{ inboundTuples.length }})
+              </span>
+              <div class="space-y-2">
+                @for (tuple of inboundTuples; track tuple.id) {
+                <div class="p-2.5 rounded-lg border border-border-subtle bg-surface-container-lowest hover:bg-surface-container hover:border-primary/50 transition-all text-xs">
+                  <div class="flex items-center gap-1.5 flex-wrap">
+                    <button
+                      type="button"
+                      (click)="selectAndFocusNode(tuple.subjectId)"
+                      class="font-semibold text-primary hover:text-primary-container hover:underline flex items-center gap-1 cursor-pointer truncate max-w-[120px]"
+                      title="Focus on {{ tuple.subjectName }}">
+                      <mat-icon class="!w-3.5 !h-3.5 !text-sm" [class]="getIconColor(tuple.subjectType)">{{ getIcon(tuple.subjectType) }}</mat-icon>
+                      <span>{{ tuple.subjectName }}</span>
+                    </button>
+                    <mat-icon class="!w-3.5 !h-3.5 !text-sm text-outline">arrow_forward</mat-icon>
+                    <span class="px-1.5 py-0.5 rounded text-[10px] font-code font-bold border border-border-subtle bg-surface-container text-tertiary">
+                      {{ tuple.predicate }}
+                    </span>
+                    <span class="font-bold text-on-surface truncate max-w-[110px]">{{ tuple.objectName }}</span>
+                  </div>
+                </div>
+                }
+              </div>
             </div>
-            <input type="range" min="0.01" max="1" step="0.01" [(ngModel)]="physicsOptions.springConstant" (ngModelChange)="updatePhysics()" class="w-full accent-indigo-600">
-          </div>
-        </div>
-      </div>
-      }
-    </div>
+            }
 
-    <!-- Full screen graph container -->
-    <div id="network-graph" class="w-full h-full bg-slate-50 absolute inset-0 z-0"></div>
-
-    <!-- Info side panel with Relational Tuples -->
-    @if (selectedNode) {
-    <div class="absolute right-0 top-0 bottom-0 w-96 bg-white border-l border-slate-200 shadow-2xl z-10 flex flex-col transform transition-transform duration-300">
-      <!-- Panel Header -->
-      <div class="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50 shrink-0">
-        <div class="flex items-center gap-2">
-          <mat-icon [class]="getIconColor(selectedNode.type)">{{ getIcon(selectedNode.type) }}</mat-icon>
-          <div>
-            <h2 class="text-xs font-black uppercase tracking-wider text-slate-400 m-0">{{ selectedNode.type }}</h2>
-            <h3 class="text-sm font-bold text-slate-800 m-0 truncate max-w-[200px]">{{ selectedNode.name || selectedNode.title }}</h3>
-          </div>
-        </div>
-        <button mat-icon-button (click)="closePanel()" class="scale-75 text-slate-400 hover:text-slate-700">
-          <mat-icon>close</mat-icon>
-        </button>
-      </div>
-
-      <!-- Panel Body -->
-      <div class="p-4 overflow-y-auto flex-1 space-y-5">
-        <!-- Identity -->
-        <div>
-          <h4 class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Entity Identifier</h4>
-          <p class="text-xs text-slate-500 font-mono break-all bg-slate-50 p-2 rounded border border-slate-100 select-all">{{ selectedNode.id }}</p>
-        </div>
-
-        <!-- Description -->
-        <div>
-          <h4 class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Description</h4>
-          <p class="text-xs text-slate-700 leading-relaxed">{{ selectedNode.description || 'No description available.' }}</p>
-        </div>
-
-        <!-- Tags -->
-        @if (selectedNode.tags && selectedNode.tags.length > 0) {
-        <div>
-          <h4 class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Tags</h4>
-          <div class="flex flex-wrap gap-1">
-            @for (tag of selectedNode.tags; track tag) {
-            <span class="px-2 py-0.5 bg-slate-100 border border-slate-200 text-slate-600 rounded text-[10px] font-semibold uppercase tracking-wider">
-              {{ tag }}
-            </span>
+            <!-- Empty State -->
+            @if (outboundTuples.length === 0 && inboundTuples.length === 0) {
+            <div class="p-4 rounded-lg border border-dashed border-border-subtle bg-surface-container-lowest text-center">
+              <mat-icon class="text-outline !w-6 !h-6 !text-2xl mb-1">hub</mat-icon>
+              <p class="text-xs text-on-surface-variant m-0">No relational tuples connected to this entity.</p>
+            </div>
             }
           </div>
         </div>
-        }
-
-        <!-- Content if Knowledge Node -->
-        @if (selectedNode.content) {
-        <div>
-          <h4 class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Content Snippet</h4>
-          <p class="text-xs text-slate-600 bg-slate-50 p-2 rounded border border-slate-100 max-h-32 overflow-y-auto">{{ selectedNode.content }}</p>
-        </div>
-        }
-
-        <!-- RELATIONAL TUPLES SECTION -->
-        <div class="pt-2 border-t border-slate-100">
-          <div class="flex items-center justify-between mb-3">
-            <h4 class="text-[11px] font-black text-slate-800 uppercase tracking-wider m-0 flex items-center gap-1.5">
-              <mat-icon class="!w-4 !h-4 !text-base text-indigo-600">hub</mat-icon>
-              Relational Tuples
-            </h4>
-            <span class="px-2 py-0.5 bg-indigo-50 border border-indigo-100 text-indigo-700 rounded-full text-[10px] font-bold font-mono">
-              {{ outboundTuples.length + inboundTuples.length }}
-            </span>
-          </div>
-
-          <!-- Outbound Tuples: [This] -> predicate -> (Target) -->
-          @if (outboundTuples.length > 0) {
-          <div class="mb-4">
-            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2">
-              Outbound Relationships ({{ outboundTuples.length }})
-            </span>
-            <div class="space-y-2">
-              @for (tuple of outboundTuples; track tuple.id) {
-              <div class="p-2.5 rounded-lg border border-slate-200 bg-slate-50/80 hover:bg-white hover:border-indigo-200 transition-all text-xs">
-                <div class="flex items-center gap-1.5 flex-wrap">
-                  <span class="font-bold text-slate-800 truncate max-w-[100px]">{{ tuple.subjectName }}</span>
-                  <span class="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold border" [ngClass]="getPredicateBadgeColor(tuple.predicate)">
-                    {{ tuple.predicate }}
-                  </span>
-                  <mat-icon class="!w-3.5 !h-3.5 !text-sm text-slate-400">arrow_forward</mat-icon>
-                  <button
-                    type="button"
-                    (click)="selectAndFocusNode(tuple.objectId)"
-                    class="font-semibold text-indigo-600 hover:text-indigo-800 hover:underline flex items-center gap-1 cursor-pointer truncate max-w-[130px]"
-                    title="Focus on {{ tuple.objectName }}">
-                    <mat-icon class="!w-3.5 !h-3.5 !text-sm" [class]="getIconColor(tuple.objectType)">{{ getIcon(tuple.objectType) }}</mat-icon>
-                    <span>{{ tuple.objectName }}</span>
-                  </button>
-                </div>
-              </div>
-              }
-            </div>
-          </div>
-          }
-
-          <!-- Inbound Tuples: (Source) -> predicate -> [This] -->
-          @if (inboundTuples.length > 0) {
-          <div>
-            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2">
-              Inbound Relationships ({{ inboundTuples.length }})
-            </span>
-            <div class="space-y-2">
-              @for (tuple of inboundTuples; track tuple.id) {
-              <div class="p-2.5 rounded-lg border border-slate-200 bg-slate-50/80 hover:bg-white hover:border-indigo-200 transition-all text-xs">
-                <div class="flex items-center gap-1.5 flex-wrap">
-                  <button
-                    type="button"
-                    (click)="selectAndFocusNode(tuple.subjectId)"
-                    class="font-semibold text-indigo-600 hover:text-indigo-800 hover:underline flex items-center gap-1 cursor-pointer truncate max-w-[120px]"
-                    title="Focus on {{ tuple.subjectName }}">
-                    <mat-icon class="!w-3.5 !h-3.5 !text-sm" [class]="getIconColor(tuple.subjectType)">{{ getIcon(tuple.subjectType) }}</mat-icon>
-                    <span>{{ tuple.subjectName }}</span>
-                  </button>
-                  <mat-icon class="!w-3.5 !h-3.5 !text-sm text-slate-400">arrow_forward</mat-icon>
-                  <span class="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold border" [ngClass]="getPredicateBadgeColor(tuple.predicate)">
-                    {{ tuple.predicate }}
-                  </span>
-                  <span class="font-bold text-slate-800 truncate max-w-[110px]">{{ tuple.objectName }}</span>
-                </div>
-              </div>
-              }
-            </div>
-          </div>
-          }
-
-          <!-- Empty State for Tuples -->
-          @if (outboundTuples.length === 0 && inboundTuples.length === 0) {
-          <div class="p-4 rounded-lg border border-dashed border-slate-200 bg-slate-50 text-center">
-            <mat-icon class="text-slate-300 !w-6 !h-6 !text-2xl mb-1">hub</mat-icon>
-            <p class="text-xs text-slate-500 m-0">No relational tuples connected to this entity.</p>
-          </div>
-          }
-        </div>
-      </div>
-    </div>
-    }
+      </aside>
+      }
+    </main>
   </div>
 </div>

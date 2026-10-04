@@ -1,0 +1,92 @@
+:host {
+  display: block;
+  height: 100%;
+}
+
+/* Custom Tailwind classes mapped from Mockup Config */
+.bg-background { background-color: #10131a; }
+.text-on-surface { color: #e1e2ec; }
+.bg-surface { background-color: #10131a; }
+.bg-surface-container-lowest { background-color: #0b0e15; }
+.bg-surface-container-low { background-color: #191b23; }
+.bg-surface-container { background-color: #1d2027; }
+.bg-surface-container-high { background-color: #272a31; }
+.bg-surface-container-highest { background-color: #32353c; }
+
+.border-border-subtle { border-color: #1e293b; }
+.border-surface-variant { border-color: #32353c; }
+
+.text-outline { color: #8c909f; }
+.text-outline-variant { color: #424754; }
+
+.text-primary { color: #adc6ff; }
+.bg-primary { background-color: #adc6ff; }
+.text-on-primary { color: #002e6a; }
+.border-primary { border-color: #adc6ff; }
+.border-primary-container { border-color: #4d8eff; }
+.bg-primary-fixed { background-color: #d8e2ff; }
+
+.text-on-surface-variant { color: #c2c6d6; }
+.hover\:bg-surface-container:hover { background-color: #1d2027; }
+.hover\:bg-surface-container-highest:hover { background-color: #32353c; }
+.hover\:text-on-surface:hover { color: #e1e2ec; }
+.hover\:bg-primary-fixed:hover { background-color: #d8e2ff; }
+.hover\:text-primary:hover { color: #adc6ff; }
+
+.text-accent-success { color: #10b981; }
+.bg-accent-success { background-color: #10b981; }
+.border-accent-success { border-color: #10b981; }
+.bg-accent-success\/10 { background-color: rgba(16, 185, 129, 0.1); }
+.bg-accent-success\/15 { background-color: rgba(16, 185, 129, 0.15); }
+.bg-accent-success\/20 { background-color: rgba(16, 185, 129, 0.2); }
+.bg-accent-success\/25 { background-color: rgba(16, 185, 129, 0.25); }
+.bg-accent-success\/30 { background-color: rgba(16, 185, 129, 0.3); }
+
+.text-accent-warning { color: #f59e0b; }
+.text-accent-error { color: #ef4444; }
+.border-accent-error { border-color: #ef4444; }
+.border-accent-error\/60 { border-color: rgba(239, 68, 68, 0.6); }
+
+.text-error { color: #ffb4ab; }
+.bg-error-container { background-color: #93000a; }
+.bg-error-container\/30 { background-color: rgba(147, 0, 10, 0.3); }
+.bg-error-container\/40 { background-color: rgba(147, 0, 10, 0.4); }
+
+.text-secondary { color: #b7c8e1; }
+.bg-secondary-container { background-color: #3a4a5f; }
+.text-on-secondary-container { color: #a9bad3; }
+.text-secondary-fixed { color: #d3e4fe; }
+
+.text-tertiary { color: #ffb786; }
+
+.bg-surface-card { background-color: #0f172a; }
+
+/* Fonts & Spacing */
+.font-body-md { font-family: "Inter", sans-serif; }
+.text-body-md { font-size: 14px; line-height: 20px; font-weight: 400; }
+.font-headline-sm { font-family: "Inter", sans-serif; }
+.text-headline-sm { font-size: 16px; line-height: 24px; font-weight: 600; }
+.font-label-md { font-family: "Inter", sans-serif; }
+.text-label-md { font-size: 12px; line-height: 16px; font-weight: 500; }
+.font-code { font-family: "JetBrains Mono", monospace; }
+.text-code { font-size: 12px; line-height: 18px; font-weight: 400; }
+
+.gap-space-sm { gap: 0.5rem; }
+.gap-space-md { gap: 1rem; }
+.gap-space-lg { gap: 1.5rem; }
+
+.p-space-sm { padding: 0.5rem; }
+.p-space-md { padding: 1rem; }
+.px-space-xs { padding-left: 0.25rem; padding-right: 0.25rem; }
+.px-space-md { padding-left: 1rem; padding-right: 1rem; }
+.py-space-sm { padding-top: 0.5rem; padding-bottom: 0.5rem; }
+.pt-space-md { padding-top: 1rem; }
+.pb-space-sm { padding-bottom: 0.5rem; }
+.pl-space-md { padding-left: 1rem; }
+.pr-space-md { padding-right: 1rem; }
+.mx-space-md { margin-left: 1rem; margin-right: 1rem; }
+
+/* Base dark mode classes so that tailwind utility styles blend well */
+.dark {
+  color-scheme: dark;
+}

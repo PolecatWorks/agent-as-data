@@ -3,4 +3,138 @@
   flex-direction: column;
   flex: 1;
   min-height: 0;
+
+  /* Custom Colors from Mockup */
+  --primary-fixed: #d8e2ff;
+  --inverse-surface: #e1e2ec;
+  --on-secondary-fixed-variant: #38485d;
+  --tertiary-container: #df7412;
+  --surface-container-low: #191b23;
+  --secondary: #b7c8e1;
+  --surface-container-lowest: #0b0e15;
+  --inverse-primary: #005ac2;
+  --accent-error: #ef4444;
+  --surface-container-high: #272a31;
+  --on-background: #e1e2ec;
+  --tertiary-fixed-dim: #ffb786;
+  --surface-variant: #32353c;
+  --surface-dim: #10131a;
+  --on-tertiary: #502400;
+  --primary: #adc6ff;
+  --secondary-container: #3a4a5f;
+  --surface-dark: #020617;
+  --on-secondary: #213145;
+  --outline: #8c909f;
+  --surface-tint: #adc6ff;
+  --on-secondary-container: #a9bad3;
+  --on-error: #690005;
+  --on-tertiary-container: #461f00;
+  --tertiary-fixed: #ffdcc6;
+  --outline-variant: #424754;
+  --on-tertiary-fixed: #311400;
+  --surface-container: #1d2027;
+  --surface-card: #0f172a;
+  --primary-container: #4d8eff;
+  --on-primary-container: #00285d;
+  --on-tertiary-fixed-variant: #723600;
+  --background: #10131a;
+  --accent-warning: #f59e0b;
+  --error: #ffb4ab;
+  --on-secondary-fixed: #0b1c30;
+  --secondary-fixed: #d3e4fe;
+  --on-surface: #e1e2ec;
+  --surface-container-highest: #32353c;
+  --surface-bright: #363941;
+  --on-error-container: #ffdad6;
+  --inverse-on-surface: #2e3038;
+  --error-container: #93000a;
+  --secondary-fixed-dim: #b7c8e1;
+  --border-subtle: #1e293b;
+  --tertiary: #ffb786;
+  --on-primary: #002e6a;
+  --primary-fixed-dim: #adc6ff;
+  --on-primary-fixed: #001a42;
+  --surface: #10131a;
+  --on-surface-variant: #c2c6d6;
+  --accent-success: #10b981;
+  --on-primary-fixed-variant: #004395;
 }
+
+/* Material Symbols Outlined */
+.material-symbols-outlined {
+  font-family: 'Material Symbols Outlined';
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 20;
+  font-size: 18px;
+  line-height: 1;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+/* Scrollbar Customization */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(16, 19, 26, 0.4);
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(66, 71, 84, 0.5);
+  border-radius: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(140, 144, 159, 0.8);
+}
+
+/* Helper classes for arbitrary colors in mockup */
+.bg-surface-container-lowest { background-color: var(--surface-container-lowest); }
+.bg-surface-container-low { background-color: var(--surface-container-low); }
+.bg-surface-container { background-color: var(--surface-container); }
+.bg-surface-container-high { background-color: var(--surface-container-high); }
+.bg-surface-container-highest { background-color: var(--surface-container-highest); }
+.bg-surface-dark { background-color: var(--surface-dark); }
+.bg-surface-card { background-color: var(--surface-card); }
+.bg-background { background-color: var(--background); }
+.bg-primary { background-color: var(--primary); }
+.bg-primary-container { background-color: var(--primary-container); }
+.bg-secondary-container { background-color: var(--secondary-container); }
+.bg-accent-success { background-color: var(--accent-success); }
+.bg-surface-dim { background-color: var(--surface-dim); }
+
+.text-on-surface { color: var(--on-surface); }
+.text-on-surface-variant { color: var(--on-surface-variant); }
+.text-outline { color: var(--outline); }
+.text-outline-variant { color: var(--outline-variant); }
+.text-primary { color: var(--primary); }
+.text-secondary { color: var(--secondary); }
+.text-tertiary { color: var(--tertiary); }
+.text-on-primary { color: var(--on-primary); }
+.text-on-primary-container { color: var(--on-primary-container); }
+.text-accent-success { color: var(--accent-success); }
+.text-accent-warning { color: var(--accent-warning); }
+.text-accent-error { color: var(--accent-error); }
+
+.border-border-subtle { border-color: var(--border-subtle); }
+.border-primary { border-color: var(--primary); }
+.border-outline { border-color: var(--outline); }
+
+/* Typography */
+.font-body-md, .font-body-sm, .font-label-md, .font-headline-sm, .font-headline-md, .font-headline-lg {
+  font-family: 'Inter', sans-serif;
+}
+.font-code {
+  font-family: 'JetBrains Mono', monospace;
+}
+.text-body-md { font-size: 14px; line-height: 20px; }
+.text-body-sm { font-size: 12px; line-height: 16px; }
+.text-label-md { font-size: 12px; line-height: 16px; font-weight: 500; }
+.text-headline-sm { font-size: 16px; line-height: 24px; font-weight: 600; }
+.text-headline-md { font-size: 20px; line-height: 28px; font-weight: 600; }
+.text-code { font-size: 12px; line-height: 18px; }
+
+/* Utilities */
+.hover\:bg-surface-container-high:hover { background-color: var(--surface-container-high); }
+.hover\:text-on-surface:hover { color: var(--on-surface); }
+.hover\:text-primary:hover { color: var(--primary); }
+.hover\:text-accent-error:hover { color: var(--accent-error); }
+.active\:scale-\[0\.98\]:active { transform: scale(0.98); }/* Appended from Stitch integration */

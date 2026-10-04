@@ -17,7 +17,7 @@ describe('ConceptGuideComponent', () => {
   const mockTabMappings: ConceptTabMapping[] = [
     {
       icon: 'build',
-      iconColor: 'text-indigo-600',
+      iconColor: 'text-primary',
       title: '1. Capability Requirements',
       description: 'Tools, state access, and environment permissions.',
     },
@@ -29,7 +29,7 @@ describe('ConceptGuideComponent', () => {
     },
     {
       icon: 'fact_check',
-      iconColor: 'text-emerald-600',
+      iconColor: 'text-accent-success',
       title: '3. Evaluation Criteria & Guardrails',
       description: 'Data protection and output grading.',
     },

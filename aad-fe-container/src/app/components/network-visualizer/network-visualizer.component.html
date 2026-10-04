@@ -1,143 +1,49 @@
-<div class="h-full w-full flex flex-row bg-slate-50 overflow-hidden">
-
-  <!-- Left Sidebar -->
-  <div [ngClass]="isSidebarCollapsed ? 'w-16' : 'w-72'" class="h-full bg-white border-r border-slate-200 shadow-sm flex flex-col transition-all duration-300 z-10 shrink-0 overflow-hidden">
-
-    <!-- Sidebar Header -->
-    <div class="p-4 border-b border-slate-100 flex items-center shrink-0 h-14" [ngClass]="isSidebarCollapsed ? 'justify-center px-0' : 'justify-between'">
-      <div class="flex items-center gap-2 overflow-hidden" *ngIf="!isSidebarCollapsed">
-        <div class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white font-bold shrink-0">
-          <mat-icon class="!w-5 !h-5 !text-xl">build</mat-icon>
+<div class="dark bg-[#10131a] text-[#e1e2ec] antialiased overflow-hidden h-full w-full flex flex-col font-body-md select-none">
+  <!-- TOP NAVIGATION BAR -->
+  <header class="flex justify-between items-center w-full px-4 h-14 bg-[#020617] border-b border-[#1e293b] shrink-0 z-30">
+    <!-- Brand Anchor & Product Identity -->
+    <div class="flex items-center space-x-4">
+      <div class="flex items-center space-x-2">
+        <span class="material-symbols-outlined text-[#adc6ff] text-xl" data-icon="hub">hub</span>
+        <span class="text-lg text-[#e1e2ec] font-semibold tracking-tight">AAD Network Graph</span>
+      </div>
+      <app-concept-guide
+        badge="7. Interactive Visual Topology"
+        title="Org Chart & Delegation Map (Network Graph)"
+        icon="account_tree"
+        triggerLabel="What is Network Graph?"
+        analogyTitle="The Org Chart Analogy"
+        analogyText="Think of the Network Graph like an interactive company org chart. It visually maps how agents, assigned skills, and trait contracts connect and delegate responsibilities across the organization."
+        [tabMappings]="conceptGuideMappings"
+        detailLink="/detail"
+        detailLinkLabel="Explore Network Architecture"
+        testIdPrefix="network-concept">
+      </app-concept-guide>
+    </div>
+    
+    <!-- Search Bar on Right & Trailing Actions -->
+    <div class="flex items-center space-x-4">
+      <!-- Search Input -->
+      <div class="relative w-64 md:w-80">
+        <div class="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-[#c2c6d6]">
+          <span class="material-symbols-outlined text-sm" data-icon="search">search</span>
         </div>
-        <span class="font-black text-slate-800 text-lg whitespace-nowrap">AAD</span>
+        <input class="w-full pl-8 pr-12 py-1.5 bg-[#0b0e15] border border-[#1e293b] rounded-lg text-sm text-[#e1e2ec] placeholder:text-[#424754] focus:outline-none focus:border-[#adc6ff] transition-all" 
+               placeholder="Search agents, skills, traits..." 
+               type="text"
+               [(ngModel)]="searchQuery"/>
       </div>
-      <button mat-icon-button (click)="toggleSidebar()" class="text-slate-400 hover:text-slate-700" [title]="isSidebarCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'">
-        <mat-icon>{{ isSidebarCollapsed ? 'chevron_right' : 'chevron_left' }}</mat-icon>
-      </button>
-    </div>
-
-    <!-- Search -->
-    <div class="p-3 border-b border-slate-100 shrink-0" *ngIf="!isSidebarCollapsed">
-      <div class="relative">
-        <mat-icon class="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 !w-4 !h-4 !text-base">search</mat-icon>
-        <input type="text" placeholder="Search agents, skills, traits..."
-               class="w-full pl-9 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
-               [(ngModel)]="searchQuery" />
-      </div>
-    </div>
-
-    <!-- Loading -->
-    <div *ngIf="isLoading" class="flex justify-center items-center py-10 text-slate-400 gap-3">
-      <mat-spinner diameter="24"></mat-spinner>
-      <span class="text-xs" *ngIf="!isSidebarCollapsed">Loading registry data...</span>
-    </div>
-
-    <!-- Entity List -->
-    <div class="flex-1 min-h-0 overflow-y-auto py-2" *ngIf="!isLoading">
-      <div *ngIf="getFilteredEntities().length === 0 && !isSidebarCollapsed" class="text-center py-8 text-slate-400 text-xs">
-        No matching entities found.
-      </div>
-
-      <div class="space-y-2 px-2 pb-2">
-        @for (entity of getFilteredEntities(); track entity.id) {
-          <div class="group p-3 rounded-xl border transition-all cursor-pointer bg-white"
-               [ngClass]="selectedEntity?.id === entity.id && selectedEntity?.type === entity.type ? 'border-emerald-500 shadow-sm ring-1 ring-emerald-500/20' : 'border-slate-200 hover:border-slate-300'"
-               (click)="selectEntity(entity)"
-               [matTooltip]="entity.name"
-               matTooltipPosition="right"
-               [matTooltipDisabled]="!isSidebarCollapsed">
-
-            <!-- Expanded View -->
-            <div class="flex flex-col w-full" *ngIf="!isSidebarCollapsed">
-              <div class="flex justify-between items-start">
-                <div class="flex items-start gap-3 overflow-hidden flex-1">
-                  <mat-icon class="shrink-0 text-slate-400 mt-0.5"
-                            [ngClass]="{'text-emerald-600': selectedEntity?.id === entity.id && selectedEntity?.type === entity.type}">
-                    {{ getEntityIcon(entity.type) }}
-                  </mat-icon>
-                  <div class="flex-1 min-w-0">
-                    <h5 class="text-sm font-bold text-slate-900 m-0 truncate leading-tight mt-0.5">{{ entity.name }}</h5>
-                  </div>
-                </div>
-
-                <div class="flex items-center gap-1 ml-2 shrink-0">
-                  <span class="px-2.5 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded-md">
-                    v{{ entity.version || '1.0.0' }}
-                  </span>
-                </div>
-              </div>
-
-              <!-- Description -->
-              <p *ngIf="entity.description" class="text-xs text-slate-500 m-0 mt-2 line-clamp-2 leading-relaxed">
-                {{ entity.description }}
-              </p>
-
-              <!-- Tags -->
-              <div *ngIf="entity.tags && entity.tags.length > 0" class="flex flex-wrap gap-1 pt-2">
-                @for (tag of entity.tags; track tag) {
-                  <span class="px-2 py-0.5 bg-slate-100 text-slate-600 text-[10px] font-mono rounded">
-                    #{{ tag }}
-                  </span>
-                }
-              </div>
-            </div>
-
-            <!-- Collapsed View -->
-            <div class="flex justify-center items-center" *ngIf="isSidebarCollapsed">
-               <mat-icon class="text-slate-400 transition-colors"
-                        [ngClass]="{'text-emerald-600': selectedEntity?.id === entity.id && selectedEntity?.type === entity.type}">
-                {{ getEntityIcon(entity.type) }}
-              </mat-icon>
-            </div>
-          </div>
-        }
-      </div>
-    </div>
-  </div>
-
-  <!-- Right Area (Workspace) -->
-  <div class="flex-1 flex flex-col min-w-0 overflow-hidden bg-slate-50 relative">
-
-    <!-- Top Bar -->
-    <div class="h-14 bg-white border-b border-slate-200 flex items-center justify-between px-4 shrink-0 shadow-sm z-10">
-
-      <!-- Left side of top bar (Title & View Switcher + Concept Guide) -->
-      <div class="flex items-center gap-3">
-        <div class="flex items-center gap-1.5 px-2.5 py-1 -ml-2 rounded-lg hover:bg-slate-100 cursor-pointer transition-colors select-none group"
-             [matMenuTriggerFor]="appMenu"
-             data-testid="workspace-title-switcher"
-             title="Click to switch workspace">
-          <mat-icon class="text-emerald-600">account_tree</mat-icon>
-          <h1 class="text-lg font-black text-slate-800 m-0">Network Graph Visualizer</h1>
-          <mat-icon class="!w-4 !h-4 !text-base text-slate-400 group-hover:text-slate-700 transition-colors">expand_more</mat-icon>
-        </div>
-
-        <!-- Zero-Footprint Reusable Concept Guide -->
-        <app-concept-guide
-          badge="7. Interactive Visual Topology"
-          title="Org Chart & Delegation Map (Network Graph)"
-          icon="account_tree"
-          triggerLabel="What is Network Graph?"
-          analogyTitle="The Org Chart Analogy"
-          analogyText="Think of the Network Graph like an interactive company org chart. It visually maps how agents, assigned skills, and trait contracts connect and delegate responsibilities across the organization."
-          [tabMappings]="conceptGuideMappings"
-          detailLink="/detail"
-          detailLinkLabel="Explore Network Architecture"
-          testIdPrefix="network-concept">
-        </app-concept-guide>
-      </div>
-
-      <!-- Right side of top bar (Actions) -->
-      <div class="flex items-center gap-2">
-        <button mat-flat-button color="primary" class="!rounded-lg !px-4 !font-bold h-9 mr-2" (click)="loadAllData()">
-          <mat-icon class="mr-1">refresh</mat-icon> Reload Data
+      
+      <!-- Action Buttons -->
+      <div class="flex items-center space-x-2">
+        <button class="hidden md:flex items-center space-x-1 px-3 py-1.5 rounded-lg bg-[#1d2027] hover:bg-[#272a31] text-[#e1e2ec] text-sm border border-[#1e293b] transition-all duration-150" (click)="loadAllData()">
+          <span class="material-symbols-outlined text-sm" data-icon="refresh">refresh</span>
+          <span>Reload Data</span>
         </button>
-
-        <!-- Hamburger Menu for App Navigation -->
-        <button mat-icon-button [matMenuTriggerFor]="appMenu" aria-label="Menu" class="text-slate-500 hover:text-slate-800">
-          <mat-icon>menu</mat-icon>
+        <button [matMenuTriggerFor]="appMenu" class="flex items-center space-x-1 px-3 py-1.5 rounded-lg bg-[#adc6ff] text-[#002e6a] font-medium text-sm hover:brightness-110 transition-all duration-150">
+          <span class="material-symbols-outlined text-sm" data-icon="menu">menu</span>
+          <span>Menu</span>
         </button>
-
         <mat-menu #appMenu="matMenu">
           @for (item of menuItems; track item.path) {
             <a mat-menu-item [routerLink]="item.path" routerLinkActive="active-link">
@@ -146,93 +52,152 @@
             </a>
           }
         </mat-menu>
-
-        <div class="w-px h-6 bg-slate-200 mx-1"></div> <!-- Divider -->
-
-        <!-- View Toggle Icon (Mock) -->
-        <button mat-icon-button class="text-slate-500 hover:text-slate-800" title="Change View">
-          <mat-icon>view_column</mat-icon>
-        </button>
-
-        <!-- User Profile (Mock) -->
-        <button mat-icon-button class="ml-1">
-          <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-amber-400 to-orange-500 border-2 border-white shadow-sm flex items-center justify-center text-white font-bold text-sm">
-            BG
-          </div>
-        </button>
+      </div>
+      
+      <!-- Operator Avatar -->
+      <div class="flex items-center pl-2 border-l border-[#1e293b]">
+        <div class="w-8 h-8 rounded-full bg-[#3a4a5f] border border-[#adc6ff]/30 flex items-center justify-center text-[#adc6ff] text-xs font-semibold">
+          BG
+        </div>
       </div>
     </div>
+  </header>
 
-    <!-- Workspace Content (Scrollable) -->
-    <div class="flex-1 min-h-0 overflow-y-auto p-6 flex flex-col">
-      <!-- Right Panel: Diagram Viewer -->
-      @if (selectedEntity) {
-        <mat-card class="!rounded-2xl border border-slate-200/80 shadow-sm flex-1 flex flex-col min-h-0 overflow-hidden">
-          <div class="p-6 bg-slate-50/80 border-b border-slate-200/60 flex justify-between items-center gap-4 flex-wrap">
-            <div>
-              <h2 class="text-base font-black text-slate-800 m-0">
-                {{ getEntityIcon(selectedEntity.type) }} {{ selectedEntity.name }}
-              </h2>
-              <p class="text-xs text-slate-400 m-0 mt-0.5">
-                {{ getEntityTypeLabel(selectedEntity.type) }} &mdash; ID: {{ selectedEntity.id }}
+  <!-- MAIN WORKSPACE LAYOUT -->
+  <div class="flex-1 flex overflow-hidden relative">
+    <!-- LEFT SIDEBAR: Entities & Controls -->
+    <aside class="flex flex-col h-full p-4 border-r border-[#1e293b] bg-[#0f172a] transition-all duration-300 z-20 shrink-0"
+           [ngClass]="isSidebarCollapsed ? 'w-16 items-center' : 'w-72'">
+      
+      <!-- Sidebar Header -->
+      <div class="flex items-center justify-between pb-2 border-b border-[#1e293b] mb-3 w-full">
+        <div class="flex items-center space-x-2 overflow-hidden" *ngIf="!isSidebarCollapsed">
+          <div class="w-6 h-6 rounded bg-[#4d8eff]/20 flex items-center justify-center text-[#adc6ff] shrink-0">
+            <span class="material-symbols-outlined text-sm" data-icon="bubble_chart">bubble_chart</span>
+          </div>
+          <h2 class="text-sm font-semibold text-[#e1e2ec] leading-tight truncate">Entities</h2>
+        </div>
+        <button class="p-1 hover:bg-[#1d2027] rounded text-[#c2c6d6] transition-colors shrink-0" (click)="toggleSidebar()" [title]="isSidebarCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'">
+          <span class="material-symbols-outlined text-sm">{{ isSidebarCollapsed ? 'chevron_right' : 'chevron_left' }}</span>
+        </button>
+      </div>
+
+      <!-- Loading -->
+      <div *ngIf="isLoading" class="flex justify-center items-center py-10 text-[#c2c6d6] gap-3">
+        <mat-spinner diameter="24"></mat-spinner>
+        <span class="text-xs" *ngIf="!isSidebarCollapsed">Loading...</span>
+      </div>
+
+      <!-- Entity List -->
+      <div class="flex-1 overflow-y-auto space-y-2 pb-2 w-full" *ngIf="!isLoading">
+        <div *ngIf="getFilteredEntities().length === 0 && !isSidebarCollapsed" class="text-center py-8 text-[#c2c6d6] text-xs">
+          No matching entities found.
+        </div>
+
+        @for (entity of getFilteredEntities(); track entity.id) {
+          <div class="group p-2 rounded-lg border transition-all cursor-pointer bg-[#191b23] w-full"
+               [ngClass]="selectedEntity?.id === entity.id && selectedEntity?.type === entity.type ? 'border-[#adc6ff] shadow-sm' : 'border-[#1e293b] hover:border-[#424754]'"
+               (click)="selectEntity(entity)"
+               [matTooltip]="entity.name"
+               matTooltipPosition="right"
+               [matTooltipDisabled]="!isSidebarCollapsed">
+            
+            <div class="flex flex-col w-full" *ngIf="!isSidebarCollapsed">
+              <div class="flex justify-between items-start">
+                <div class="flex items-start gap-2 overflow-hidden flex-1">
+                  <mat-icon class="shrink-0 text-[#c2c6d6] text-sm"
+                            [ngClass]="{'text-[#adc6ff]': selectedEntity?.id === entity.id && selectedEntity?.type === entity.type}">
+                    {{ getEntityIcon(entity.type) }}
+                  </mat-icon>
+                  <div class="flex-1 min-w-0">
+                    <h5 class="text-xs font-bold text-[#e1e2ec] m-0 truncate leading-tight">{{ entity.name }}</h5>
+                  </div>
+                </div>
+              </div>
+              <p *ngIf="entity.description" class="text-[10px] text-[#c2c6d6] m-0 mt-1 line-clamp-2 leading-relaxed">
+                {{ entity.description }}
               </p>
             </div>
 
-            <div class="flex items-center gap-4 flex-wrap sm:flex-nowrap ml-auto">
-              <!-- Trace Depth Slider -->
-              <div class="flex items-center gap-3 bg-white border border-slate-200 rounded-xl px-4 py-2 shadow-sm min-w-[200px] max-w-xs">
-                <mat-icon class="text-emerald-600 !text-lg shrink-0">device_hub</mat-icon>
-                <div class="flex flex-col gap-1 w-full">
-                  <div class="flex justify-between items-center">
-                    <span class="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Trace Depth</span>
-                    <span class="text-xs font-black text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-md px-1.5 py-0.5 min-w-[24px] text-center tabular-nums">{{ traceDepth }}</span>
-                  </div>
-                  <input
-                    type="range"
-                    min="1"
-                    max="10"
-                    step="1"
-                    [(ngModel)]="traceDepth"
-                    (input)="onDepthChange()"
-                    class="w-full h-1.5 rounded-full appearance-none cursor-pointer accent-emerald-500 bg-slate-200"
-                    style="background: linear-gradient(to right, #10b981 0%, #10b981 calc((var(--v, {{ traceDepth }}) - 1) / 9 * 100%), #e2e8f0 calc((var(--v, {{ traceDepth }}) - 1) / 9 * 100%), #e2e8f0 100%)"
-                  />
-                  <div class="flex justify-between text-[9px] text-slate-400 font-mono">
-                    <span>1</span>
-                    <span>5</span>
-                    <span>10</span>
-                  </div>
-                </div>
-              </div>
-
-              <button mat-stroked-button class="!rounded-xl !font-semibold !text-emerald-600 !border-emerald-200 hover:!bg-emerald-50 shrink-0" (click)="buildAndRenderDiagram()">
-                <mat-icon>refresh</mat-icon> Re-render
-              </button>
+            <div class="flex justify-center items-center w-full" *ngIf="isSidebarCollapsed">
+               <mat-icon class="text-[#c2c6d6] transition-colors text-sm"
+                        [ngClass]="{'text-[#adc6ff]': selectedEntity?.id === entity.id && selectedEntity?.type === entity.type}">
+                {{ getEntityIcon(entity.type) }}
+              </mat-icon>
             </div>
           </div>
+        }
+      </div>
 
-          <mat-card-content class="p-6 flex-1 bg-white overflow-y-auto flex flex-col">
-            @if (renderError) {
-              <div class="flex justify-center items-center h-full">
-                <div class="text-center text-red-500 text-xs font-mono bg-red-50 border border-red-200 rounded-xl p-4 w-full max-w-md">
-                  <mat-icon class="text-red-400 mb-2">error_outline</mat-icon>
-                  <p class="m-0">{{ renderError }}</p>
-                </div>
+      <!-- Traversal Depth Segment -->
+      <div class="mt-4 pt-3 border-t border-[#1e293b] w-full" *ngIf="!isSidebarCollapsed">
+        <label class="block text-xs font-semibold text-[#c2c6d6] mb-1.5 flex justify-between">
+          <span>Trace Depth</span>
+          <span class="text-[#adc6ff]">{{ traceDepth }}</span>
+        </label>
+        <input
+          type="range"
+          min="1"
+          max="10"
+          step="1"
+          [(ngModel)]="traceDepth"
+          (input)="onDepthChange()"
+          class="w-full h-1 bg-[#272a31] rounded appearance-none cursor-pointer accent-[#adc6ff]"
+        />
+        <div class="flex justify-between text-[9px] text-[#c2c6d6] mt-1">
+          <span>1</span>
+          <span>5</span>
+          <span>10</span>
+        </div>
+      </div>
+      
+      <!-- Re-render CTA Button -->
+      <button *ngIf="!isSidebarCollapsed" class="w-full mt-3 py-2 px-3 rounded-lg bg-[#4d8eff] text-[#00285d] font-medium text-sm hover:brightness-105 active:scale-[0.99] transition-all" (click)="buildAndRenderDiagram()">
+        Re-render Graph
+      </button>
+
+    </aside>
+
+    <!-- CENTER GRAPH VISUALIZATION CANVAS -->
+    <main class="flex-1 relative overflow-hidden graph-grid-bg flex flex-col bg-[#0b0e15]">
+      @if (selectedEntity) {
+        <!-- HUD Top Toolbar -->
+        <div class="absolute top-4 left-4 right-4 flex items-center justify-between pointer-events-none z-10">
+          <div class="flex items-center space-x-2 bg-[#0f172a]/90 backdrop-blur-md px-3 py-1.5 rounded-lg border border-[#1e293b] shadow pointer-events-auto">
+            <div class="w-2 h-2 rounded-full bg-[#10b981] animate-ping"></div>
+            <span class="text-xs text-[#e1e2ec] font-medium">{{ getEntityTypeLabel(selectedEntity.type) }} Visualizer</span>
+            <span class="text-xs text-[#c2c6d6] ml-2">ID: {{ selectedEntity.id }}</span>
+          </div>
+          
+          <!-- Navigation Dock -->
+          <div class="flex items-center space-x-1 bg-[#0f172a]/90 backdrop-blur-md p-1 rounded-lg border border-[#1e293b] shadow pointer-events-auto">
+            <button class="w-7 h-7 flex items-center justify-center rounded text-[#c2c6d6] hover:text-[#e1e2ec] hover:bg-[#1d2027]" title="Re-render" (click)="buildAndRenderDiagram()">
+              <span class="material-symbols-outlined text-sm" data-icon="refresh">refresh</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="w-full h-full relative p-6 mt-12 flex flex-col">
+          @if (renderError) {
+            <div class="flex justify-center items-center h-full z-10 pointer-events-auto">
+              <div class="text-center text-[#ef4444] text-xs bg-[#191b23] border border-[#ffb4ab] rounded-xl p-4 w-full max-w-md">
+                <mat-icon class="mb-2">error_outline</mat-icon>
+                <p class="m-0">{{ renderError }}</p>
               </div>
-            } @else {
-              <div #mermaidContainer class="w-full h-full flex justify-center items-center overflow-auto" (click)="onMermaidClick($event)"></div>
-            }
-          </mat-card-content>
-        </mat-card>
+            </div>
+          } @else {
+            <div #mermaidContainer class="w-full h-full flex justify-center items-center overflow-auto z-0 cursor-grab active:cursor-grabbing [&>svg]:!max-w-full [&>svg]:!max-h-full" (click)="onMermaidClick($event)"></div>
+          }
+        </div>
       } @else {
-        <div class="flex-1 flex flex-col items-center justify-center bg-white rounded-2xl border border-slate-200 shadow-sm text-slate-400">
-          <mat-icon class="!w-16 !h-16 !text-6xl text-slate-200 mb-4">account_tree</mat-icon>
-          <h3 class="text-sm font-bold text-slate-700 m-0">No Entity Selected</h3>
-          <p class="text-xs text-slate-400 max-w-xs text-center mt-1">
+        <div class="flex-1 flex flex-col items-center justify-center text-[#c2c6d6] z-10">
+          <span class="material-symbols-outlined text-6xl text-[#32353c] mb-4" data-icon="account_tree">account_tree</span>
+          <h3 class="text-sm font-bold text-[#e1e2ec] m-0">No Entity Selected</h3>
+          <p class="text-xs max-w-xs text-center mt-1">
             Choose an agent, skill, or trait from the list to visualize its network connections and delegation graph.
           </p>
         </div>
       }
-    </div>
+    </main>
   </div>
 </div>

@@ -193,7 +193,7 @@ export class DetailComponent {
       path: '/workbench',
       actionText: 'Open Workbench',
       colorClass:
-        'text-indigo-600 bg-indigo-50 border-indigo-200 hover:border-indigo-400',
+        'text-primary bg-indigo-50 border-indigo-200 hover:border-indigo-400',
       badge: 'Primary Execution',
       capabilities: [
         'Bench Filesystem Isolation',
@@ -211,7 +211,7 @@ export class DetailComponent {
       path: '/agents',
       actionText: 'Browse Agents',
       colorClass:
-        'text-blue-600 bg-blue-50 border-blue-200 hover:border-blue-400',
+        'text-primary bg-blue-50 border-blue-200 hover:border-blue-400',
       badge: 'Declarative Spec',
       capabilities: [
         'Immutable agent_revisions',
@@ -229,7 +229,7 @@ export class DetailComponent {
       path: '/traits',
       actionText: 'Manage Traits',
       colorClass:
-        'text-emerald-600 bg-emerald-50 border-emerald-200 hover:border-emerald-400',
+        'text-accent-success bg-emerald-50 border-emerald-200 hover:border-emerald-400',
       badge: 'Abstract Contracts',
       capabilities: [
         'Decoupled Agent Delegation',
@@ -283,7 +283,7 @@ export class DetailComponent {
       path: '/interactive-testing',
       actionText: 'Launch Studio',
       colorClass:
-        'text-amber-600 bg-amber-50 border-amber-200 hover:border-amber-400',
+        'text-accent-warning bg-amber-50 border-amber-200 hover:border-amber-400',
       badge: 'Live Playground',
       capabilities: [
         'Real-Time SSE Streaming',

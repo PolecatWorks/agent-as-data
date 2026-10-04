@@ -1,376 +1,334 @@
-<div class="h-full w-full flex flex-row bg-slate-50 overflow-hidden">
-
-  <!-- Left Sidebar -->
-  <div [ngClass]="isSidebarCollapsed ? 'w-16' : 'w-72'" class="h-full bg-white border-r border-slate-200 shadow-sm flex flex-col transition-all duration-300 z-10 shrink-0 overflow-hidden">
-
-    <!-- Sidebar Header -->
-    <div class="p-4 border-b border-slate-100 flex items-center shrink-0 h-14" [ngClass]="isSidebarCollapsed ? 'justify-center px-0' : 'justify-between'">
-      <div class="flex items-center gap-2 overflow-hidden" *ngIf="!isSidebarCollapsed">
-        <div class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white font-bold shrink-0">
-          <mat-icon class="!w-5 !h-5 !text-xl">build</mat-icon>
-        </div>
-        <span class="font-black text-slate-800 text-lg whitespace-nowrap">AAD</span>
+<div class="bg-background text-on-surface antialiased h-screen flex flex-col overflow-hidden font-body-md text-body-md select-none">
+  <!-- TOP NAV BAR -->
+  <header class="w-full h-14 flex items-center justify-between px-space-lg border-b border-border-subtle bg-surface-dark shrink-0 z-30">
+    <div class="flex items-center gap-space-md">
+      <div class="flex items-center gap-space-sm cursor-pointer" [matMenuTriggerFor]="appMenu">
+        <span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">dataset</span>
+        <span class="font-headline-sm text-headline-sm font-semibold text-primary tracking-tight">AgentHub OS</span>
+        <span class="font-code text-code px-1.5 py-0.5 rounded bg-surface-container-high text-on-surface-variant border border-border-subtle">v2.4.0</span>
       </div>
-      <button mat-icon-button (click)="toggleSidebar()" class="text-slate-400 hover:text-slate-700" [title]="isSidebarCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'">
-        <mat-icon>{{ isSidebarCollapsed ? 'chevron_right' : 'chevron_left' }}</mat-icon>
-      </button>
+      <div class="h-4 w-[1px] bg-border-subtle"></div>
+      <nav class="flex items-center gap-2 font-body-sm text-body-sm text-on-surface-variant">
+        <span class="hover:text-on-surface cursor-pointer transition-colors duration-150">Registry</span>
+        <span class="material-symbols-outlined text-outline-variant text-[14px]">chevron_right</span>
+        <span class="text-primary font-medium">Traits Catalog</span>
+      </nav>
+      <app-concept-guide
+        badge="2. Enforceable Behavioral Contracts"
+        title="Job Roles & Safety Rules (Traits)"
+        icon="verified"
+        triggerLabel="What are Traits?"
+        analogyTitle="The Hiring Analogy"
+        analogyText="Think of Traits like verified job certifications. They define what tools the AI is allowed to touch, what company policies it must never violate, and what data protection guardrails stay active."
+        [tabMappings]="conceptGuideMappings"
+        detailLink="/detail"
+        detailLinkLabel="Explore Trait Architecture"
+        testIdPrefix="traits-concept">
+      </app-concept-guide>
     </div>
 
-    <!-- Search -->
-    <div class="p-3 border-b border-slate-100 shrink-0" *ngIf="!isSidebarCollapsed">
-      <div class="relative">
-        <mat-icon class="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 !w-4 !h-4 !text-base">search</mat-icon>
-        <input type="text" placeholder="Search traits..."
-               class="w-full pl-9 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
-               [(ngModel)]="searchQuery" />
-      </div>
+    <!-- Center: Top Nav Global Links -->
+    <div class="hidden lg:flex items-center gap-6">
+      <a class="text-primary font-semibold border-b-2 border-primary pb-1 font-body-md text-body-md" href="javascript:void(0)">Registry</a>
+      <a class="text-on-surface-variant hover:text-on-surface transition-colors duration-150 pb-1 font-body-md text-body-md" href="javascript:void(0)">Orchestrator</a>
+      <a class="text-on-surface-variant hover:text-on-surface transition-colors duration-150 pb-1 font-body-md text-body-md" href="javascript:void(0)">Telemetry</a>
+      <a class="text-on-surface-variant hover:text-on-surface transition-colors duration-150 pb-1 font-body-md text-body-md" href="javascript:void(0)">Settings</a>
     </div>
 
-    <!-- Trait List -->
-    <div class="flex-1 min-h-0 overflow-y-auto py-2">
-      <div *ngIf="filteredTraitContracts.length === 0 && !isSidebarCollapsed" class="text-center py-8 text-slate-400 text-xs">
-        No traits found.
+    <!-- Right: Cluster Telemetry Status, Search & Action Cluster -->
+    <div class="flex items-center gap-space-md">
+      <!-- Quick Command Input -->
+      <div class="relative flex items-center">
+        <span class="material-symbols-outlined absolute left-2.5 text-outline-variant text-[16px]">search</span>
+        <input type="text" placeholder="Search traits..." [(ngModel)]="searchQuery" class="w-48 xl:w-56 h-8 pl-8 pr-12 rounded bg-surface-container-low border border-border-subtle font-body-sm text-body-sm text-on-surface placeholder:text-outline focus:outline-none focus:border-primary transition-colors"/>
       </div>
-
-      <div class="space-y-2 px-2 pb-2">
-        <div *ngFor="let trait of filteredTraitContracts"
-             class="group p-3 rounded-xl border transition-all cursor-pointer bg-white"
-             [ngClass]="selectedTraitContract?.id === trait.id ? 'border-indigo-500 shadow-sm ring-1 ring-indigo-500/20' : 'border-slate-200 hover:border-slate-300'"
-             (click)="selectTraitContract(trait)"
-             [matTooltip]="trait.name"
-             matTooltipPosition="right"
-             [matTooltipDisabled]="!isSidebarCollapsed">
-
-          <!-- Expanded View -->
-          <div class="flex flex-col w-full" *ngIf="!isSidebarCollapsed">
-            <div class="flex justify-between items-start">
-              <div class="flex items-start gap-3 overflow-hidden flex-1">
-                <mat-icon class="shrink-0 text-slate-400 mt-0.5"
-                          [ngClass]="{'text-indigo-600': selectedTraitContract?.id === trait.id}">
-                  verified
-                </mat-icon>
-                <div class="flex-1 min-w-0">
-                  <h5 class="text-sm font-bold text-slate-900 m-0 truncate leading-tight mt-0.5">{{ trait.name }}</h5>
-                </div>
-              </div>
-
-              <div class="flex items-center gap-1 ml-2 shrink-0">
-                <span class="px-2.5 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded-md">
-                  v{{ trait.version }}
-                </span>
-              </div>
-            </div>
-
-            <!-- Description -->
-            <p *ngIf="trait.description" class="text-xs text-slate-500 m-0 mt-2 line-clamp-2 leading-relaxed">
-              {{ trait.description }}
-            </p>
-
-            <!-- Tags -->
-            <div *ngIf="trait.tags && trait.tags.length > 0" class="flex flex-wrap gap-1 pt-2">
-              <span *ngFor="let tag of trait.tags" class="px-2 py-0.5 bg-slate-100 text-slate-600 text-[10px] font-mono rounded">
-                #{{ tag }}
-              </span>
-            </div>
-          </div>
-
-          <!-- Collapsed View -->
-          <div class="flex justify-center items-center" *ngIf="isSidebarCollapsed">
-             <mat-icon class="text-slate-400 transition-colors"
-                      [ngClass]="{'text-indigo-600': selectedTraitContract?.id === trait.id}">
-              verified
-            </mat-icon>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Right Area (Workspace) -->
-  <div class="flex-1 flex flex-col min-w-0 overflow-hidden bg-slate-50 relative">
-
-    <!-- Top Bar -->
-    <div class="h-14 bg-white border-b border-slate-200 flex items-center justify-between px-4 shrink-0 shadow-sm z-10">
-      <!-- Left side of top bar (Title + Zero-Footprint Concept Guide Trigger) -->
-      <div class="flex items-center gap-3">
-        <div class="flex items-center gap-1.5 px-2.5 py-1 -ml-2 rounded-lg hover:bg-slate-100 cursor-pointer transition-colors select-none group"
-             [matMenuTriggerFor]="appMenu"
-             data-testid="workspace-title-switcher"
-             title="Click to switch workspace">
-          <mat-icon class="text-indigo-600">verified</mat-icon>
-          <h1 class="text-lg font-black text-slate-800 m-0">Traits Registry</h1>
-          <mat-icon class="!w-4 !h-4 !text-base text-slate-400 group-hover:text-slate-700 transition-colors">expand_more</mat-icon>
-        </div>
-
-        <!-- Zero-Footprint Reusable Concept Guide -->
-        <app-concept-guide
-          badge="2. Enforceable Behavioral Contracts"
-          title="Job Roles & Safety Rules (Traits)"
-          icon="verified"
-          triggerLabel="What are Traits?"
-          analogyTitle="The Hiring Analogy"
-          analogyText="Think of Traits like verified job certifications. They define what tools the AI is allowed to touch, what company policies it must never violate, and what data protection guardrails stay active."
-          [tabMappings]="conceptGuideMappings"
-          detailLink="/detail"
-          detailLinkLabel="Explore Trait Architecture"
-          testIdPrefix="traits-concept">
-        </app-concept-guide>
-      </div>
-
-      <!-- Right side of top bar (Actions) -->
+      <!-- Primary & Trailing Actions -->
       <div class="flex items-center gap-2">
-        <button mat-flat-button color="primary" class="!rounded-lg !px-4 !font-bold h-9 mr-2" (click)="createNewTraitContract()">
-          <mat-icon class="mr-1">add</mat-icon> New Trait
-        </button>
-
-        <!-- Hamburger Menu for App Navigation -->
-        <button mat-icon-button [matMenuTriggerFor]="appMenu" aria-label="Menu" class="text-slate-500 hover:text-slate-800">
-          <mat-icon>menu</mat-icon>
-        </button>
-
-        <mat-menu #appMenu="matMenu">
-          @for (item of menuItems; track item.path) {
-            <a mat-menu-item [routerLink]="item.path" routerLinkActive="active-link">
-              <mat-icon>{{ item.icon }}</mat-icon>
-              <span>{{ item.label }}</span>
-            </a>
-          }
-        </mat-menu>
-
-        <div class="w-px h-6 bg-slate-200 mx-1"></div> <!-- Divider -->
-
-        <!-- View Toggle Icon (Mock) -->
-        <button mat-icon-button class="text-slate-500 hover:text-slate-800" title="Change View">
-          <mat-icon>view_column</mat-icon>
-        </button>
-
-        <!-- User Profile (Mock) -->
-        <button mat-icon-button class="ml-1">
-          <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-amber-400 to-orange-500 border-2 border-white shadow-sm flex items-center justify-center text-white font-bold text-sm">
-            BG
-          </div>
+        <button class="h-8 px-3 rounded bg-surface-container border border-border-subtle text-on-surface hover:bg-surface-container-high transition-colors duration-150 flex items-center gap-1.5 font-label-md text-label-md" (click)="createNewTraitContract()">
+          <span class="material-symbols-outlined text-[16px]">add</span>
+          <span>New Trait</span>
         </button>
       </div>
-    </div>
 
-    <!-- Workspace Content (Scrollable) -->
-    <div class="flex-1 min-h-0 overflow-y-auto p-6">
-      <!-- Right Column: Trait Definition Editor Form with Dedicated Tabs -->
-          @if (selectedTraitContract || isEditing) {
-        <mat-card class="!rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
-          <div class="p-6 bg-slate-50/80 border-b border-slate-200/60 flex justify-between items-center">
-            <div>
-              <h2 class="text-base font-black text-slate-800 m-0">
-                {{ isEditing ? (selectedTraitContract ? 'Edit Trait Definition' : 'Create Trait Definition Specification') : 'Trait Specification Blueprint' }}
-              </h2>
-              @if (selectedTraitContract) {
-                <p class="text-xs text-slate-400 m-0 mt-0.5">ID: {{ selectedTraitContract.id }}</p>
-              }
+      <button mat-icon-button [matMenuTriggerFor]="appMenu" class="text-slate-500 hover:text-slate-800">
+        <mat-icon>menu</mat-icon>
+      </button>
+
+      <mat-menu #appMenu="matMenu">
+        @for (item of menuItems; track item.path) {
+          <a mat-menu-item [routerLink]="item.path" routerLinkActive="active-link">
+            <mat-icon>{{ item.icon }}</mat-icon>
+            <span>{{ item.label }}</span>
+          </a>
+        }
+      </mat-menu>
+    </div>
+  </header>
+
+  <!-- WORKSPACE BODY (Flex Row) -->
+  <div class="flex-1 flex min-h-0 overflow-hidden">
+    
+    <!-- LEFT SIDEBAR -->
+    <aside [ngClass]="isSidebarCollapsed ? 'w-16' : 'w-72'" class="h-full flex flex-col justify-between p-space-md border-r border-border-subtle bg-surface-container-lowest shrink-0 select-none overflow-y-auto transition-all duration-300">
+      <div>
+        <!-- Sidebar Workspace Header -->
+        <div class="flex items-center justify-between pb-space-md border-b border-border-subtle mb-space-md">
+          <div class="flex items-center gap-space-sm" *ngIf="!isSidebarCollapsed">
+            <div class="w-8 h-8 rounded bg-surface-container-high border border-border-subtle flex items-center justify-center text-primary">
+              <span class="material-symbols-outlined">category</span>
             </div>
-            <div class="flex flex-col items-end gap-1">
-              <div class="flex gap-2">
-                @if (!isEditing && selectedTraitContract) {
-                  <button mat-stroked-button color="warn" class="!rounded-xl !font-semibold" (click)="deleteTraitContract()">
-                    <mat-icon>delete</mat-icon> Delete
-                  </button>
-                  <button mat-stroked-button class="!rounded-xl !font-semibold" (click)="enableEdit()">
-                    <mat-icon>edit</mat-icon> Edit
-                  </button>
-                }
-                @if (isEditing) {
-                  <button mat-stroked-button class="!rounded-xl !font-bold" (click)="cancelEdit()">
-                    Cancel
-                  </button>
-                  <button mat-flat-button color="accent" class="!rounded-xl !font-bold" (click)="saveTraitContract()">
-                    <mat-icon>save</mat-icon> Save
-                  </button>
-                }
+            <div>
+              <div class="font-headline-sm text-headline-sm font-semibold text-on-surface">Trait Catalog</div>
+              <div class="font-body-sm text-body-sm text-on-surface-variant">v2.4 Production Engine</div>
+            </div>
+          </div>
+          <button class="p-1 text-outline hover:text-on-surface rounded hover:bg-surface-container" (click)="toggleSidebar()">
+            <span class="material-symbols-outlined">{{ isSidebarCollapsed ? 'chevron_right' : 'chevron_left' }}</span>
+          </button>
+        </div>
+
+        <button *ngIf="!isSidebarCollapsed" (click)="createNewTraitContract()" class="w-full h-8 mb-space-md px-space-md rounded bg-surface-container border border-border-subtle text-primary font-label-md text-label-md flex items-center justify-center gap-1.5 hover:bg-surface-container-high transition-colors">
+          <span class="material-symbols-outlined text-[16px]">add</span>
+          <span>New Trait Rule</span>
+        </button>
+
+        <div *ngIf="filteredTraitContracts.length === 0 && !isSidebarCollapsed" class="text-center py-8 text-outline text-xs">
+          No traits found.
+        </div>
+
+        <!-- Trait List -->
+        <div class="space-y-2">
+          <div *ngFor="let trait of filteredTraitContracts"
+               class="group p-3 rounded-xl border transition-all cursor-pointer bg-surface-card"
+               [ngClass]="selectedTraitContract?.id === trait.id ? 'border-primary shadow-sm ring-1 ring-primary/20 bg-primary/5' : 'border-border-subtle hover:border-outline'"
+               (click)="selectTraitContract(trait)"
+               [matTooltip]="trait.name"
+               matTooltipPosition="right"
+               [matTooltipDisabled]="!isSidebarCollapsed">
+            
+            <div class="flex flex-col w-full" *ngIf="!isSidebarCollapsed">
+              <div class="flex justify-between items-start">
+                <div class="flex items-start gap-3 overflow-hidden flex-1">
+                  <span class="material-symbols-outlined shrink-0 text-outline mt-0.5" [ngClass]="{'text-primary': selectedTraitContract?.id === trait.id}">verified</span>
+                  <div class="flex-1 min-w-0">
+                    <h5 class="text-sm font-bold text-on-surface m-0 truncate leading-tight mt-0.5">{{ trait.name }}</h5>
+                  </div>
+                </div>
+                <div class="flex items-center gap-1 ml-2 shrink-0">
+                  <span class="px-2.5 py-0.5 bg-surface-container-high text-on-surface-variant text-[10px] font-bold rounded-md border border-border-subtle">
+                    v{{ trait.version }}
+                  </span>
+                </div>
               </div>
-              @if (selectedTraitContract || traitForm.version) {
-                <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
-                  Version: {{ selectedTraitContract?.version || traitForm.version }}
+              <p *ngIf="trait.description" class="text-xs text-on-surface-variant m-0 mt-2 line-clamp-2 leading-relaxed">
+                {{ trait.description }}
+              </p>
+              <div *ngIf="trait.tags && trait.tags.length > 0" class="flex flex-wrap gap-1 pt-2">
+                <span *ngFor="let tag of trait.tags" class="px-2 py-0.5 bg-surface-container text-on-surface-variant text-[10px] font-mono rounded border border-border-subtle">
+                  #{{ tag }}
+                </span>
+              </div>
+            </div>
+
+            <div class="flex justify-center items-center" *ngIf="isSidebarCollapsed">
+              <span class="material-symbols-outlined text-outline transition-colors" [ngClass]="{'text-primary': selectedTraitContract?.id === trait.id}">verified</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- MAIN SCROLLABLE CONTENT CANVAS -->
+    <main class="flex-1 min-h-0 overflow-y-auto p-6 bg-background flex flex-col gap-6 relative">
+      @if (selectedTraitContract || isEditing) {
+        <section class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-border-subtle">
+          <div class="space-y-1">
+            <div class="flex items-center gap-3">
+              <h1 class="font-headline-lg text-headline-lg font-bold text-on-surface tracking-tight">
+                {{ isEditing ? (selectedTraitContract ? 'Edit Trait Definition' : 'Create Trait Definition Specification') : 'Trait Specification Blueprint' }}
+              </h1>
+              @if (selectedTraitContract) {
+                <span class="px-2 py-0.5 rounded-full bg-surface-container-high border border-border-subtle font-code text-[11px] text-primary flex items-center gap-1">
+                  ID: {{ selectedTraitContract.id }}
+                </span>
+                <span class="px-2 py-0.5 rounded-full bg-surface-container-high border border-accent-success/30 font-code text-[11px] text-accent-success flex items-center gap-1.5">
+                  Version: {{ selectedTraitContract.version || traitForm.version }}
                 </span>
               }
             </div>
           </div>
+          
+          <div class="flex items-center gap-2 self-start md:self-auto">
+            @if (!isEditing && selectedTraitContract) {
+              <button class="h-9 px-3.5 rounded bg-surface-container border border-border-subtle text-accent-error hover:bg-surface-container-high transition-colors font-label-md text-label-md flex items-center gap-2" (click)="deleteTraitContract()">
+                <span class="material-symbols-outlined text-[16px]">delete</span> Delete
+              </button>
+              <button class="h-9 px-4 rounded bg-primary text-on-primary hover:bg-primary-fixed transition-colors font-label-md text-label-md font-semibold flex items-center gap-2 shadow-sm" (click)="enableEdit()">
+                <span class="material-symbols-outlined text-[18px]">edit</span> Edit
+              </button>
+            }
+            @if (isEditing) {
+              <button class="h-9 px-3.5 rounded bg-surface-container border border-border-subtle text-on-surface hover:bg-surface-container-high transition-colors font-label-md text-label-md flex items-center gap-2" (click)="cancelEdit()">
+                Cancel
+              </button>
+              <button class="h-9 px-4 rounded bg-primary text-on-primary hover:bg-primary-fixed transition-colors font-label-md text-label-md font-semibold flex items-center gap-2 shadow-sm" (click)="saveTraitContract()">
+                <span class="material-symbols-outlined text-[18px]">save</span> Save
+              </button>
+            }
+          </div>
+        </section>
 
-          @if (showDeleteConfirm) {
-            <div class="p-3 bg-red-50 border-b border-red-200 text-red-900 text-xs font-semibold flex items-center justify-between px-6">
-              <span class="flex items-center gap-1.5">
-                <mat-icon class="!w-4 !h-4 !text-base text-red-600">warning</mat-icon>
-                Warning: Deleting this trait will permanently remove it and all its constraints from the registry. Confirm deletion?
-              </span>
-              <div class="flex gap-2">
-                <button mat-button color="warn" class="!text-xs !font-bold" (click)="deleteTraitContract()">Confirm Delete</button>
-                <button mat-button class="!text-xs" (click)="cancelDelete()">Cancel</button>
-              </div>
+        @if (showDeleteConfirm) {
+          <div class="p-3 bg-error-container/20 border-b border-error/50 text-error text-xs font-semibold flex items-center justify-between px-6 rounded-lg mb-4">
+            <span class="flex items-center gap-1.5">
+              <span class="material-symbols-outlined text-[16px]">warning</span>
+              Warning: Deleting this trait will permanently remove it and all its constraints from the registry. Confirm deletion?
+            </span>
+            <div class="flex gap-2">
+              <button class="px-3 py-1 rounded bg-error text-on-error font-bold text-xs" (click)="deleteTraitContract()">Confirm Delete</button>
+              <button class="px-3 py-1 rounded bg-surface-container text-on-surface text-xs" (click)="cancelDelete()">Cancel</button>
+            </div>
+          </div>
+        }
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div class="space-y-1 text-left">
+            <label class="text-xs font-bold text-outline">Name</label>
+            <input type="text" [(ngModel)]="traitForm.name" placeholder="e.g. SecurityAuditor" [disabled]="!isEditing"
+                   class="w-full px-3 py-2 bg-surface-dark border border-border-subtle rounded-xl text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary disabled:opacity-50 transition-all" />
+          </div>
+          <div class="space-y-1 text-left">
+            <label class="text-xs font-bold text-outline">Owner</label>
+            <input type="text" [(ngModel)]="traitForm.owner_id" placeholder="Owner UUID..." [disabled]="!isEditing"
+                   class="w-full px-3 py-2 bg-surface-dark border border-border-subtle rounded-xl text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary disabled:opacity-50 transition-all" />
+          </div>
+        </div>
+
+        <div class="space-y-1 text-left">
+          <label class="text-xs font-bold text-outline">Description</label>
+          <textarea rows="2" [(ngModel)]="traitForm.description" placeholder="Describe what this trait represents..." [disabled]="!isEditing"
+                    class="w-full px-3 py-2 bg-surface-dark border border-border-subtle rounded-xl text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary disabled:opacity-50 transition-all"></textarea>
+        </div>
+
+        <div class="space-y-2 text-left">
+          <label class="text-xs font-bold text-outline block">Tags</label>
+          @if (isEditing) {
+            <div class="flex gap-2 mb-2">
+              <input type="text" placeholder="Add tag..." [(ngModel)]="newTag" (keyup.enter)="addTag()"
+                     class="flex-1 px-3 py-1.5 bg-surface-dark border border-border-subtle rounded-xl text-xs text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" />
+              <button class="px-3 py-1.5 rounded-xl border border-border-subtle bg-surface-container text-on-surface text-xs" (click)="addTag()">Add</button>
             </div>
           }
-
-          <mat-card-content class="p-6 space-y-6">
-
-            <!-- Name & Owner ID -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <!-- Name -->
-              <div class="space-y-1 text-left">
-                <label class="text-xs font-bold text-slate-500">Name</label>
-                <input id="trait-name-input" type="text" [(ngModel)]="traitForm.name" placeholder="e.g. SecurityAuditor" [disabled]="!isEditing"
-                       class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 disabled:bg-slate-50 disabled:text-slate-500 transition-all" />
-              </div>
-              <!-- Owner ID -->
-              <div class="space-y-1 text-left">
-                <label class="text-xs font-bold text-slate-500">Owner</label>
-                <input id="trait-owner-input" type="text" [(ngModel)]="traitForm.owner_id" placeholder="Owner UUID..." [disabled]="!isEditing"
-                       class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 disabled:bg-slate-50 disabled:text-slate-500 transition-all" />
-              </div>
-            </div>
-
-            <!-- Description -->
-            <div class="space-y-1 text-left">
-              <label class="text-xs font-bold text-slate-500">Description</label>
-              <textarea id="trait-description-input" rows="2" [(ngModel)]="traitForm.description" placeholder="Describe what this trait represents..." [disabled]="!isEditing"
-                        class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 disabled:bg-slate-50 disabled:text-slate-500 transition-all"></textarea>
-            </div>
-
-            <!-- Tags -->
-            <div class="space-y-2 text-left">
-              <label class="text-xs font-bold text-slate-500 block">Tags</label>
-              @if (isEditing) {
-                <div class="flex gap-2 mb-2">
-                  <input type="text" placeholder="Add tag..." [(ngModel)]="newTag" (keyup.enter)="addTag()"
-                         class="flex-1 px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all" />
-                  <button mat-stroked-button class="!rounded-xl !text-xs" (click)="addTag()">Add</button>
-                </div>
-              }
-              <div class="flex flex-wrap gap-1.5">
-                @for (tag of traitForm.tags || []; track tag) {
-                  <mat-chip-row [removable]="isEditing" (removed)="removeTag(tag)" class="!bg-emerald-50 !text-emerald-700 !text-xs !font-bold">
-                    {{ tag }}
-                    @if (isEditing) {
-                      <button matChipRemove class="!text-emerald-400 hover:!text-emerald-600"><mat-icon>cancel</mat-icon></button>
-                    }
-                  </mat-chip-row>
+          <div class="flex flex-wrap gap-1.5">
+            @for (tag of traitForm.tags || []; track tag) {
+              <div class="flex items-center px-2 py-1 rounded bg-surface-container-high text-primary text-xs font-bold border border-border-subtle">
+                {{ tag }}
+                @if (isEditing) {
+                  <button class="ml-2 text-outline hover:text-error" (click)="removeTag(tag)"><span class="material-symbols-outlined text-[14px]">cancel</span></button>
                 }
               </div>
-            </div>
+            }
+          </div>
+        </div>
 
-            <!-- DEDICATED TABS: Core Specification Elements vs Execution Guardrails -->
-            <mat-tab-group class="border-b border-slate-200">
+        <mat-tab-group class="border-b border-border-subtle mt-4">
+          <!-- TAB 1: Core Specification Elements -->
+          <mat-tab label="Core Specification Elements">
+            <div class="space-y-6 pt-6">
               
-              <!-- TAB 1: Core Trait Elements (Capabilities, Invariants, Criteria, Tags) -->
-              <mat-tab label="Core Specification Elements">
-                <div class="space-y-6 pt-6">
-
-                  <!-- Element 1: Capability Requirements -->
-                  <div class="p-5 bg-blue-50/50 rounded-xl border border-blue-200/80 space-y-3">
-                    <div>
-                      <h4 class="text-sm font-bold text-blue-950 m-0 flex items-center gap-2">
-                        🛠️ 1. Capability Requirements
-                      </h4>
-                      <p class="text-xs text-blue-700 m-0">Tools, state access, or environmental interactions the agent must possess to execute this trait</p>
-                    </div>
-
-                    @if (isEditing) {
-                      <div class="flex gap-2">
-                        <input type="text" placeholder="e.g. Read access to source code AST parser" [(ngModel)]="newRequirement" (keyup.enter)="addRequirement()"
-                               class="flex-1 px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all" />
-                        <button mat-stroked-button class="!rounded-xl !text-sm" (click)="addRequirement()">Add</button>
-                      </div>
-                    }
-
-                    <div class="space-y-2 pt-1">
-                      @for (req of traitForm.capability_requirements || []; track req) {
-                        <div class="p-3 bg-white rounded-lg border border-blue-200 flex justify-between items-center text-xs font-semibold text-slate-800">
-                          <span class="flex items-center gap-2">🔹 {{ req }}</span>
-                          @if (isEditing) {
-                            <button class="text-slate-400 hover:text-red-600 font-bold border-none bg-transparent cursor-pointer text-sm" (click)="removeRequirement(req)">×</button>
-                          }
-                        </div>
-                      }
-                    </div>
-                  </div>
-
-                  <!-- Element 2: Behavioral Invariants -->
-                  <div class="p-5 bg-amber-50/50 rounded-xl border border-amber-200/80 space-y-3">
-                    <div>
-                      <h4 class="text-sm font-bold text-amber-950 m-0 flex items-center gap-2">
-                        🛑 2. Behavioral Invariants
-                      </h4>
-                      <p class="text-xs text-amber-700 m-0">Strict constraints and invariants the agent MUST ALWAYS or MUST NEVER violate</p>
-                    </div>
-
-                    @if (isEditing) {
-                      <div class="flex gap-2">
-                        <input type="text" placeholder="e.g. MUST NEVER execute untrusted binaries during audit" [(ngModel)]="newInvariant" (keyup.enter)="addInvariant()"
-                               class="flex-1 px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all" />
-                        <button mat-stroked-button class="!rounded-xl !text-sm" (click)="addInvariant()">Add</button>
-                      </div>
-                    }
-
-                    <div class="space-y-2 pt-1">
-                      @for (inv of traitForm.behavioral_invariants || []; track inv) {
-                        <div class="p-3 bg-white rounded-lg border border-amber-200 flex justify-between items-center text-xs font-semibold text-slate-800">
-                          <span class="flex items-center gap-2">⚠️ {{ inv }}</span>
-                          @if (isEditing) {
-                            <button class="text-slate-400 hover:text-red-600 font-bold border-none bg-transparent cursor-pointer text-sm" (click)="removeInvariant(inv)">×</button>
-                          }
-                        </div>
-                      }
-                    </div>
-                  </div>
-
-                  <!-- Element 3: Evaluation Criteria -->
-                  <div class="p-5 bg-emerald-50/50 rounded-xl border border-emerald-200/80 space-y-3">
-                    <div>
-                      <h4 class="text-sm font-bold text-emerald-950 m-0 flex items-center gap-2">
-                        ⚖️ 3. Evaluation Criteria
-                      </h4>
-                      <p class="text-xs text-emerald-700 m-0">Semantic guidelines and scoring rubrics for LLM judges or evaluators to grade performance</p>
-                    </div>
-
-                    @if (isEditing) {
-                      <div class="flex gap-2">
-                        <input type="text" placeholder="e.g. Zero false negatives on OWASP Top 10 benchmark" [(ngModel)]="newCriterion" (keyup.enter)="addCriterion()"
-                               class="flex-1 px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all" />
-                        <button mat-stroked-button class="!rounded-xl !text-sm" (click)="addCriterion()">Add</button>
-                      </div>
-                    }
-
-                    <div class="space-y-2 pt-1">
-                      @for (crit of traitForm.evaluation_criteria || []; track crit) {
-                        <div class="p-3 bg-white rounded-lg border border-emerald-200 flex justify-between items-center text-xs font-semibold text-slate-800">
-                          <span class="flex items-center gap-2">✅ {{ crit }}</span>
-                          @if (isEditing) {
-                            <button class="text-slate-400 hover:text-red-600 font-bold border-none bg-transparent cursor-pointer text-sm" (click)="removeCriterion(crit)">×</button>
-                          }
-                        </div>
-                      }
-                    </div>
-                  </div>
-
+              <!-- Element 1: Capability Requirements -->
+              <div class="p-5 bg-surface-container-low rounded-xl border border-border-subtle space-y-3">
+                <div>
+                  <h4 class="text-sm font-bold text-primary m-0 flex items-center gap-2">🛠️ 1. Capability Requirements</h4>
+                  <p class="text-xs text-outline m-0">Tools, state access, or environmental interactions the agent must possess to execute this trait</p>
                 </div>
-              </mat-tab>
+                @if (isEditing) {
+                  <div class="flex gap-2">
+                    <input type="text" placeholder="e.g. Read access to source code AST parser" [(ngModel)]="newRequirement" (keyup.enter)="addRequirement()"
+                           class="flex-1 px-3 py-2 bg-surface-dark border border-border-subtle rounded-xl text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all" />
+                    <button class="px-4 py-2 rounded-xl border border-border-subtle bg-surface-container text-on-surface text-sm" (click)="addRequirement()">Add</button>
+                  </div>
+                }
+                <div class="space-y-2 pt-1">
+                  @for (req of traitForm.capability_requirements || []; track req) {
+                    <div class="p-3 bg-surface-dark rounded-lg border border-border-subtle flex justify-between items-center text-xs font-semibold text-on-surface">
+                      <span class="flex items-center gap-2">🔹 {{ req }}</span>
+                      @if (isEditing) {
+                        <button class="text-outline hover:text-error font-bold border-none bg-transparent cursor-pointer text-sm" (click)="removeRequirement(req)">×</button>
+                      }
+                    </div>
+                  }
+                </div>
+              </div>
 
-              <!-- TAB 2: DEDICATED TRAIT GUARDRAILS TAB -->
-              <mat-tab label="Trait Execution Guardrails">
-                <app-guardrails-editor [(guardrails)]="traitForm.guardrails"></app-guardrails-editor>
-              </mat-tab>
+              <!-- Element 2: Behavioral Invariants -->
+              <div class="p-5 bg-surface-container-low rounded-xl border border-border-subtle space-y-3">
+                <div>
+                  <h4 class="text-sm font-bold text-accent-warning m-0 flex items-center gap-2">🛑 2. Behavioral Invariants</h4>
+                  <p class="text-xs text-outline m-0">Strict constraints and invariants the agent MUST ALWAYS or MUST NEVER violate</p>
+                </div>
+                @if (isEditing) {
+                  <div class="flex gap-2">
+                    <input type="text" placeholder="e.g. MUST NEVER execute untrusted binaries during audit" [(ngModel)]="newInvariant" (keyup.enter)="addInvariant()"
+                           class="flex-1 px-3 py-2 bg-surface-dark border border-border-subtle rounded-xl text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all" />
+                    <button class="px-4 py-2 rounded-xl border border-border-subtle bg-surface-container text-on-surface text-sm" (click)="addInvariant()">Add</button>
+                  </div>
+                }
+                <div class="space-y-2 pt-1">
+                  @for (inv of traitForm.behavioral_invariants || []; track inv) {
+                    <div class="p-3 bg-surface-dark rounded-lg border border-border-subtle flex justify-between items-center text-xs font-semibold text-on-surface">
+                      <span class="flex items-center gap-2">⚠️ {{ inv }}</span>
+                      @if (isEditing) {
+                        <button class="text-outline hover:text-error font-bold border-none bg-transparent cursor-pointer text-sm" (click)="removeInvariant(inv)">×</button>
+                      }
+                    </div>
+                  }
+                </div>
+              </div>
 
-            </mat-tab-group>
+              <!-- Element 3: Evaluation Criteria -->
+              <div class="p-5 bg-surface-container-low rounded-xl border border-border-subtle space-y-3">
+                <div>
+                  <h4 class="text-sm font-bold text-accent-success m-0 flex items-center gap-2">⚖️ 3. Evaluation Criteria</h4>
+                  <p class="text-xs text-outline m-0">Semantic guidelines and scoring rubrics for LLM judges or evaluators to grade performance</p>
+                </div>
+                @if (isEditing) {
+                  <div class="flex gap-2">
+                    <input type="text" placeholder="e.g. Zero false negatives on OWASP Top 10 benchmark" [(ngModel)]="newCriterion" (keyup.enter)="addCriterion()"
+                           class="flex-1 px-3 py-2 bg-surface-dark border border-border-subtle rounded-xl text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all" />
+                    <button class="px-4 py-2 rounded-xl border border-border-subtle bg-surface-container text-on-surface text-sm" (click)="addCriterion()">Add</button>
+                  </div>
+                }
+                <div class="space-y-2 pt-1">
+                  @for (crit of traitForm.evaluation_criteria || []; track crit) {
+                    <div class="p-3 bg-surface-dark rounded-lg border border-border-subtle flex justify-between items-center text-xs font-semibold text-on-surface">
+                      <span class="flex items-center gap-2">✅ {{ crit }}</span>
+                      @if (isEditing) {
+                        <button class="text-outline hover:text-error font-bold border-none bg-transparent cursor-pointer text-sm" (click)="removeCriterion(crit)">×</button>
+                      }
+                    </div>
+                  }
+                </div>
+              </div>
 
-          </mat-card-content>
-        </mat-card>
+            </div>
+          </mat-tab>
+
+          <!-- TAB 2: Guardrails -->
+          <mat-tab label="Trait Execution Guardrails">
+            <app-guardrails-editor [(guardrails)]="traitForm.guardrails"></app-guardrails-editor>
+          </mat-tab>
+        </mat-tab-group>
+
       } @else {
-        <div class="flex flex-col items-center justify-center py-24 bg-white rounded-2xl border border-slate-200 shadow-sm text-slate-400">
-          <mat-icon class="!w-16 !h-16 !text-6xl text-slate-200 mb-4">gavel</mat-icon>
-          <h3 class="text-sm font-bold text-slate-700 m-0">No Trait Selected</h3>
-          <p class="text-xs text-slate-400 max-w-xs text-center mt-1">
+        <div class="flex flex-col items-center justify-center py-24 bg-surface-card rounded-2xl border border-border-subtle shadow-sm text-outline">
+          <span class="material-symbols-outlined text-[64px] mb-4 text-border-subtle">gavel</span>
+          <h3 class="text-sm font-bold text-on-surface m-0">No Trait Selected</h3>
+          <p class="text-xs text-outline max-w-xs text-center mt-1">
             Choose a trait from the list, or register a new one to begin editing its configuration.
           </p>
         </div>
       }
-
-    </div>
-
+    </main>
   </div>
 </div>

@@ -1,3 +1,4 @@
+import { TopBarComponent } from '../../shared/top-bar/top-bar.component';
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -38,7 +39,7 @@ export interface TestEntity {
 @Component({
   selector: 'app-interactive-testing',
   standalone: true,
-  imports: [
+  imports: [TopBarComponent, 
     CommonModule,
     FormsModule,
     MatCardModule,
@@ -61,21 +62,21 @@ export class InteractiveTestingComponent implements OnInit {
   readonly conceptGuideMappings: ConceptTabMapping[] = [
     {
       icon: 'visibility',
-      iconColor: 'text-indigo-600',
+      iconColor: 'text-primary',
       title: '1. Prompt & Trait Inspector',
       description:
         'Live inspection of compiled system prompts, attached skills, and active trait contracts.',
     },
     {
       icon: 'stream',
-      iconColor: 'text-emerald-600',
+      iconColor: 'text-accent-success',
       title: '2. Real-Time Token Streaming',
       description:
         'Low-latency Server-Sent Events (SSE) token streaming and step-by-step reasoning traces.',
     },
     {
       icon: 'play_arrow',
-      iconColor: 'text-blue-600',
+      iconColor: 'text-primary',
       title: '3. Dynamic Sandbox Execution',
       description:
         'Safe pre-production execution with custom test inputs and runtime model switching.',

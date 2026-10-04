@@ -77,21 +77,21 @@ export class NetworkVisualizerComponent implements OnInit, AfterViewInit {
   readonly conceptGuideMappings: ConceptTabMapping[] = [
     {
       icon: 'account_tree',
-      iconColor: 'text-indigo-600',
+      iconColor: 'text-primary',
       title: '1. Teammate Node Hierarchies',
       description:
         'Visualizes individual autonomous agent nodes and their communication links.',
     },
     {
       icon: 'verified',
-      iconColor: 'text-emerald-600',
+      iconColor: 'text-accent-success',
       title: '2. Trait Contract Boundaries',
       description:
         'Highlights enforced capability boundaries, permissions, and behavioral invariants.',
     },
     {
       icon: 'extension',
-      iconColor: 'text-blue-600',
+      iconColor: 'text-primary',
       title: '3. Skill Delegation Edges',
       description:
         'Displays tool routing paths and procedural skill delegations between agents.',

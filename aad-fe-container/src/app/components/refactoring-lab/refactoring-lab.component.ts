@@ -50,7 +50,7 @@ export class RefactoringLabComponent implements OnInit {
     },
     {
       icon: 'content_cut',
-      iconColor: 'text-indigo-600',
+      iconColor: 'text-primary',
       title: '2. Redundant Skill Pruning',
       description:
         'Flags overlapping capabilities across skills to keep agent prompts lean and deterministic.',
