@@ -42,6 +42,38 @@ graph TD
 
 ## UI Consistency & Standard Global Navigation
 
+### Common Reusable Components Library
+To ensure maximum maintainability and visual consistency, the frontend application MUST implement a standard set of reusable Angular Standalone Components. These components will form the foundation of all application views:
+
+1. **Global Top Navbar (`<app-top-navbar>`)**:
+   - **Purpose**: A single, parameterized component (`h-14 bg-white border-b border-slate-200 shadow-sm`) used uniformly across all primary screens.
+   - **Features**: Accepts inputs for context (workspace title, icon), handles the hamburger app menu, click-to-switch workspace dropdown, layout toggles, and user profile avatar.
+   - **Concept Guide Integration**: Mounts the `<app-concept-guide>` component directly within the navbar.
+
+2. **Entity Sidebar List (`<app-entity-sidebar-list>`)**:
+   - **Purpose**: A collapsible, independently scrolling left-hand panel (`w-72` expanded / `w-16` collapsed) used for navigating lists of entities.
+   - **Features**: Pinned search/filter input, virtual scrolling, and content projection for pluggable list items. Used across all registries, testing studios, and the workbench.
+
+3. **Standard Entity Card (`<app-entity-card>`)**:
+   - **Purpose**: A unified card component representing domain entities (Agents, Skills, Tools, Traits, Knowledge Nodes).
+   - **Features**: Standardized slots for `icon`, `title`, `version` pill, `description` snippet, and metadata badges (e.g., `N Skills`, `N Tools`). Consistent hover states and click events.
+
+4. **Zero-Footprint Concept Guide (`<app-concept-guide>`)**:
+   - **Purpose**: Interactive popover trigger pill used for domain education without consuming active working area.
+   - **Features**: 200ms debounce hover, pinned click state, plain-English analogies, and architecture deep-link routing.
+
+5. **Detail Form Action Bar (`<app-detail-action-bar>`)**:
+   - **Purpose**: Action bar positioned in the header of entity detail/edit views.
+   - **Features**: Standardized action buttons (Edit, Delete, Promote, Sync) with built-in confirmation dialogs.
+
+6. **Terminal Console / Stream Viewer (`<app-terminal-console>`)**:
+   - **Purpose**: A dark-themed (`bg-slate-950`) console window for real-time SSE token streaming, execution logs, and output rendering.
+   - **Features**: Auto-scrolling, syntax highlighting, status badge integration, and copy-to-clipboard functionality.
+
+7. **Empty State & Error Canvas (`<app-empty-state>`)**:
+   - **Purpose**: Consistent messaging when lists are empty, searches yield no results, or errors occur.
+   - **Features**: Standardized illustration/icon slots, descriptive text, and primary call-to-action buttons.
+
 ### Global Top Bar & Navigation Menu Specification
 All views across the application must share an identical, standardized top bar (`h-14 bg-white border-b border-slate-200 shadow-sm`) and navigation menu to ensure a seamless, uniform developer experience:
 - **Left Context / Title Area & Quick View Switcher**: Displays a pill badge/container with the module icon, current workspace name (e.g. `Agents Registry`, `Traits Registry`, `Skills Registry`, `Workbench`, `Interactive Testing Studio`, `Knowledge & SPO Tuple Inspector`), and an interactive dropdown affordance (`expand_more` or `unfold_more`):
