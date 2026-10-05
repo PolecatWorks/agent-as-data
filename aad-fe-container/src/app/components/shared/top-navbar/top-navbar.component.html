@@ -1,0 +1,130 @@
+<header class="h-14 bg-white border-b border-slate-200 shadow-sm flex items-center px-4 shrink-0">
+  <!-- Left Side: Menu + Title -->
+  <div class="flex items-center gap-3">
+    <!-- App Menu Trigger -->
+    <button mat-icon-button [matMenuTriggerFor]="appMenu" class="text-slate-600 hover:text-slate-900 focus:outline-none" aria-label="Open App Menu">
+      <mat-icon>menu</mat-icon>
+    </button>
+    
+    <!-- Title / View Switcher -->
+    <div class="flex items-center gap-1.5 px-2 py-1 -ml-2 rounded-lg cursor-pointer hover:bg-slate-100/80 transition-colors select-none" [matMenuTriggerFor]="workspaceSwitcher">
+      <mat-icon class="text-indigo-600 !w-5 !h-5 !text-[20px]">{{ workspaceIcon }}</mat-icon>
+      <span class="font-semibold text-slate-800 tracking-tight text-sm">{{ workspaceTitle }}</span>
+      <mat-icon class="text-slate-400 !w-4 !h-4 !text-[16px]">unfold_more</mat-icon>
+    </div>
+
+    <!-- Divider -->
+    <div *ngIf="conceptGuideConfig" class="h-6 w-px bg-slate-200 mx-2"></div>
+
+    <!-- Concept Guide Pill -->
+    <app-concept-guide *ngIf="conceptGuideConfig"
+      [badge]="conceptGuideConfig.badge"
+      [title]="conceptGuideConfig.title"
+      [icon]="conceptGuideConfig.icon"
+      [triggerLabel]="conceptGuideConfig.triggerLabel"
+      [analogyTitle]="conceptGuideConfig.analogyTitle"
+      [analogyText]="conceptGuideConfig.analogyText"
+      [tabMappings]="conceptGuideConfig.tabMappings"
+      [detailLink]="conceptGuideConfig.detailLink"
+      [detailLinkLabel]="conceptGuideConfig.detailLinkLabel"
+      [testIdPrefix]="conceptGuideConfig.testIdPrefix"
+      [accentColor]="conceptGuideConfig.accentColor || 'indigo'">
+    </app-concept-guide>
+  </div>
+
+  <div class="flex-1"></div>
+
+  <!-- Right side controls (e.g. Profile) -->
+  <div class="flex items-center gap-4">
+    <!-- Primary View Action Projection Slot -->
+    <ng-content select="[primary-action]"></ng-content>
+
+    <button mat-icon-button class="text-slate-500 hover:text-slate-800 transition-colors" aria-label="Toggle Layout">
+      <mat-icon>view_column</mat-icon>
+    </button>
+    <!-- Avatar -->
+    <div class="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 font-bold text-xs flex items-center justify-center cursor-pointer border border-indigo-200">
+      BG
+    </div>
+  </div>
+</header>
+
+<!-- Global App Menu (Hamburger) -->
+<mat-menu #appMenu="matMenu" class="min-w-[240px]">
+  <div class="px-4 py-2 text-xs font-bold tracking-wider text-slate-500 uppercase">Core Registries</div>
+  <a mat-menu-item routerLink="/traits">
+    <mat-icon class="text-amber-500">verified</mat-icon>
+    <span>Traits Registry</span>
+  </a>
+  <a mat-menu-item routerLink="/tools">
+    <mat-icon class="text-rose-500">dns</mat-icon>
+    <span>Remote Tools</span>
+  </a>
+  <a mat-menu-item routerLink="/skills">
+    <mat-icon class="text-indigo-500">extension</mat-icon>
+    <span>Skills Registry</span>
+  </a>
+  <a mat-menu-item routerLink="/agents">
+    <mat-icon class="text-blue-500">smart_toy</mat-icon>
+    <span>Agents Registry</span>
+  </a>
+
+  <div class="h-px bg-slate-100 my-1"></div>
+  <div class="px-4 py-2 text-xs font-bold tracking-wider text-slate-500 uppercase">Workspaces</div>
+  <a mat-menu-item routerLink="/workbench">
+    <mat-icon class="text-slate-600">work</mat-icon>
+    <span>Workbench</span>
+  </a>
+  <a mat-menu-item routerLink="/interactive-testing">
+    <mat-icon class="text-purple-500">bug_report</mat-icon>
+    <span>Interactive Testing Studio</span>
+  </a>
+  <a mat-menu-item routerLink="/refactoring-lab">
+    <mat-icon class="text-emerald-500">build_circle</mat-icon>
+    <span>Refactoring Lab</span>
+  </a>
+
+  <div class="h-px bg-slate-100 my-1"></div>
+  <div class="px-4 py-2 text-xs font-bold tracking-wider text-slate-500 uppercase">Knowledge Base</div>
+  <a mat-menu-item routerLink="/knowledge-inspector">
+    <mat-icon class="text-cyan-600">library_books</mat-icon>
+    <span>Knowledge Inspector</span>
+  </a>
+  <a mat-menu-item routerLink="/knowledge-explorer">
+    <mat-icon class="text-blue-600">explore</mat-icon>
+    <span>Knowledge Explorer</span>
+  </a>
+  <a mat-menu-item routerLink="/agent-context">
+    <mat-icon class="text-teal-600">search</mat-icon>
+    <span>Agent Context Search</span>
+  </a>
+  <a mat-menu-item routerLink="/network-visualizer">
+    <mat-icon class="text-indigo-400">account_tree</mat-icon>
+    <span>Network Graph</span>
+  </a>
+</mat-menu>
+
+<!-- Context Switcher Menu -->
+<mat-menu #workspaceSwitcher="matMenu" class="min-w-[200px]">
+  <a mat-menu-item routerLink="/agents">
+    <mat-icon class="text-blue-500">smart_toy</mat-icon>
+    <span>Agents Registry</span>
+  </a>
+  <a mat-menu-item routerLink="/traits">
+    <mat-icon class="text-amber-500">verified</mat-icon>
+    <span>Traits Registry</span>
+  </a>
+  <a mat-menu-item routerLink="/skills">
+    <mat-icon class="text-indigo-500">extension</mat-icon>
+    <span>Skills Registry</span>
+  </a>
+  <a mat-menu-item routerLink="/tools">
+    <mat-icon class="text-rose-500">dns</mat-icon>
+    <span>Tools</span>
+  </a>
+  <div class="h-px bg-slate-100 my-1"></div>
+  <a mat-menu-item routerLink="/workbench">
+    <mat-icon class="text-slate-600">work</mat-icon>
+    <span>Workbench</span>
+  </a>
+</mat-menu>

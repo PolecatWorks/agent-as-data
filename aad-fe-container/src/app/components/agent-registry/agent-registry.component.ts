@@ -25,6 +25,7 @@ import {
   ConceptGuideComponent,
   ConceptTabMapping,
 } from '../concept-guide/concept-guide.component';
+import { TopNavbarComponent } from '../shared/top-navbar/top-navbar.component';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { marked } from 'marked';
 import { forkJoin } from 'rxjs';
@@ -50,6 +51,7 @@ export interface LLMModelOption {
     MatSelectModule,
     MatSlideToggleModule,
     MatIconModule,
+    TopNavbarComponent,
     MatChipsModule,
     MatTabsModule,
     MatBadgeModule,
