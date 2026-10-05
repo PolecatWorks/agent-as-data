@@ -1,4 +1,28 @@
-<div class="h-full w-full flex flex-row bg-slate-50 overflow-hidden">
+<div class="h-full w-full flex flex-col bg-slate-50 overflow-hidden">
+
+  <!-- Top Bar -->
+    <app-top-navbar
+      workspaceTitle="Agents Registry"
+      workspaceIcon="smart_toy"
+      [conceptGuideConfig]="{
+        badge: '3. Declarative AI Teammates',
+        title: 'Digital Teammates (Agents)',
+        icon: 'smart_toy',
+        triggerLabel: 'What are Agents?',
+        analogyTitle: 'The Digital Teammate Analogy',
+        analogyText: 'Think of Agents like specialized digital teammates. Each agent has a clear job description, core personality, assigned skills, and verified trait contracts determining what they can and cannot do.',
+        tabMappings: conceptGuideMappings,
+        detailLink: '/detail',
+        detailLinkLabel: 'Explore Agent Architecture',
+        testIdPrefix: 'agents-concept'
+      }">
+      <button primary-action mat-flat-button color="primary" class="!rounded-lg !px-4 !font-bold h-9" (click)="createNewAgent()">
+        <mat-icon class="mr-1">add</mat-icon> New Agent
+      </button>
+    </app-top-navbar>
+
+  <div class="flex-1 flex flex-row min-h-0 overflow-hidden relative">
+
 
   <!-- Left Sidebar -->
   <div [ngClass]="isSidebarCollapsed ? 'w-16' : 'w-72'" class="h-full bg-white border-r border-slate-200 shadow-sm flex flex-col transition-all duration-300 z-10 shrink-0 overflow-hidden">
@@ -99,75 +123,10 @@
     </div>
   </div>
 
-  <!-- Right Area (Workspace) -->
-  <div class="flex-1 flex flex-col min-w-0 overflow-hidden bg-slate-50 relative">
-
-    <!-- Top Bar -->
-    <div class="h-14 bg-white border-b border-slate-200 flex items-center justify-between px-4 shrink-0 shadow-sm z-10">
-      <!-- Left side of top bar (Title & View Switcher) -->
-      <div class="flex items-center gap-3">
-        <div class="flex items-center gap-1.5 px-2.5 py-1 -ml-2 rounded-lg hover:bg-slate-100 cursor-pointer transition-colors select-none group"
-             [matMenuTriggerFor]="appMenu"
-             data-testid="workspace-title-switcher"
-             title="Click to switch workspace">
-          <mat-icon class="text-indigo-600">smart_toy</mat-icon>
-          <h1 class="text-lg font-black text-slate-800 m-0">Agents Registry</h1>
-          <mat-icon class="!w-4 !h-4 !text-base text-slate-400 group-hover:text-slate-700 transition-colors">expand_more</mat-icon>
-        </div>
-
-        <!-- Zero-Footprint Reusable Concept Guide -->
-        <app-concept-guide
-          badge="3. Declarative AI Teammates"
-          title="Digital Teammates (Agents)"
-          icon="smart_toy"
-          triggerLabel="What are Agents?"
-          analogyTitle="The Digital Teammate Analogy"
-          analogyText="Think of Agents like specialized digital teammates. Each agent has a clear job description, core personality, assigned skills, and verified trait contracts determining what they can and cannot do."
-          [tabMappings]="conceptGuideMappings"
-          detailLink="/detail"
-          detailLinkLabel="Explore Agent Architecture"
-          testIdPrefix="agents-concept">
-        </app-concept-guide>
-      </div>
-
-      <!-- Right side of top bar (Actions) -->
-      <div class="flex items-center gap-2">
-        <button mat-flat-button color="primary" class="!rounded-lg !px-4 !font-bold h-9 mr-2" (click)="createNewAgent()">
-          <mat-icon class="mr-1">add</mat-icon> New Agent
-        </button>
-
-        <!-- Hamburger Menu for App Navigation -->
-        <button mat-icon-button [matMenuTriggerFor]="appMenu" aria-label="Menu" class="text-slate-500 hover:text-slate-800">
-          <mat-icon>menu</mat-icon>
-        </button>
-
-        <mat-menu #appMenu="matMenu">
-          @for (item of menuItems; track item.path) {
-            <a mat-menu-item [routerLink]="item.path" routerLinkActive="active-link">
-              <mat-icon>{{ item.icon }}</mat-icon>
-              <span>{{ item.label }}</span>
-            </a>
-          }
-        </mat-menu>
-
-        <div class="w-px h-6 bg-slate-200 mx-1"></div> <!-- Divider -->
-
-        <!-- View Toggle Icon (Mock) -->
-        <button mat-icon-button class="text-slate-500 hover:text-slate-800" title="Change View">
-          <mat-icon>view_column</mat-icon>
-        </button>
-
-        <!-- User Profile (Mock) -->
-        <button mat-icon-button class="ml-1">
-          <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-amber-400 to-orange-500 border-2 border-white shadow-sm flex items-center justify-center text-white font-bold text-sm">
-            BG
-          </div>
-        </button>
-      </div>
-    </div>
+  
 
     <!-- Workspace Content (Scrollable) -->
-    <div class="flex-1 min-h-0 overflow-y-auto p-6">
+    <div class="flex-1 min-w-0 overflow-y-auto bg-slate-50 p-6">
 <!-- Right Column: Agent Definition Editor Form -->
           @if (selectedAgent || isEditing) {
         <mat-card class="!rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
