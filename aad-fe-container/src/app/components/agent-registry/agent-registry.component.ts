@@ -27,6 +27,7 @@ import {
 } from '../concept-guide/concept-guide.component';
 import { TopNavbarComponent } from '../shared/top-navbar/top-navbar.component';
 import { EntitySidebarListComponent } from '../shared/entity-sidebar-list/entity-sidebar-list.component';
+import { EntityAttachmentManagerComponent } from '../shared/entity-attachment-manager/entity-attachment-manager.component';
 
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { marked } from 'marked';
@@ -45,6 +46,7 @@ export interface LLMModelOption {
   standalone: true,
   imports: [
     EntitySidebarListComponent,
+    EntityAttachmentManagerComponent,
     CommonModule,
     FormsModule,
     RouterModule,
@@ -173,6 +175,32 @@ export class AgentRegistryComponent implements OnInit {
   ];
 
   allTools: any[] = [];
+
+  get availableToolsForAttachment() {
+    return this.allTools.map(t => ({
+      id: t.id,
+      name: t.server_name,
+      description: 'MCP Server version ' + t.version
+    }));
+  }
+
+  get availableAgentsForAttachment() {
+    return this.agents
+      .filter(a => a.id !== this.agentForm.id)
+      .map(a => ({
+        id: a.id,
+        name: a.name,
+        description: a.description
+      }));
+  }
+
+  get availableTraitsForAttachment() {
+    return this.traitContracts.map(t => ({
+      id: t.name,
+      name: t.name,
+      description: t.description
+    }));
+  }
   allSkills: any[] = [];
 
   // Trait Contracts Editor State
