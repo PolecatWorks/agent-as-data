@@ -25,8 +25,6 @@ import {
   ConceptGuideComponent,
   ConceptTabMapping,
 } from '../concept-guide/concept-guide.component';
-import { TopNavbarComponent } from '../shared/top-navbar/top-navbar.component';
-import { EntitySidebarListComponent } from '../shared/entity-sidebar-list/entity-sidebar-list.component';
 import { EntityAttachmentManagerComponent } from '../shared/entity-attachment-manager/entity-attachment-manager.component';
 
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
@@ -42,10 +40,9 @@ export interface LLMModelOption {
 }
 
 @Component({
-  selector: 'app-agent-registry',
+  selector: 'app-agent-detail',
   standalone: true,
   imports: [
-    EntitySidebarListComponent,
     EntityAttachmentManagerComponent,
     CommonModule,
     FormsModule,
@@ -56,7 +53,6 @@ export interface LLMModelOption {
     MatSelectModule,
     MatSlideToggleModule,
     MatIconModule,
-    TopNavbarComponent,
     MatChipsModule,
     MatTabsModule,
     MatBadgeModule,
@@ -67,10 +63,10 @@ export interface LLMModelOption {
     ConceptGuideComponent,
   ],
 
-  templateUrl: './agent-registry.component.html',
-  styleUrl: './agent-registry.component.scss',
+  templateUrl: './agent-detail.component.html',
+  styleUrl: './agent-detail.component.scss',
 })
-export class AgentRegistryComponent implements OnInit {
+export class AgentDetailComponent implements OnInit {
   isSidebarCollapsed = false;
 
   menuItems = APP_NAV_MENU_ITEMS;

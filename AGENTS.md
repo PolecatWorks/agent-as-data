@@ -93,3 +93,4 @@ Both dev servers have **watch/hot-reload enabled** — do **NOT** manually kill 
 - **No Hardcoded Defaults in Runtime Code**: Using fallback defaults in runtime code (e.g. `.unwrap_or(...)`, `.unwrap_or_else(...)`, or hardcoded URLs/ports/timeouts) is strictly prohibited. If a configuration value is required for operation, it must be declared in the configuration schema, populated in configuration files, and verified in `AppConfig::validate()`.
 - **Fail-Fast Validation**: Any missing, empty, or malformed configuration must fail immediately at service startup before opening database pools, binding listeners, or starting background workers.
 
+
