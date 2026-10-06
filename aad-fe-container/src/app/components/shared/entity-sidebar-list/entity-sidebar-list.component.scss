@@ -14,3 +14,7 @@
     background-color: #94a3b8;
   }
 }
+
+::ng-deep .cdk-virtual-scroll-content-wrapper {
+  width: 100%;
+}

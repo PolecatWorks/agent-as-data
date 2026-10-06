@@ -39,7 +39,7 @@
     </div>
 
     <!-- The actual scroll viewport -->
-    <cdk-virtual-scroll-viewport [itemSize]="itemSize" class="h-full w-full custom-scrollbar">
+    <cdk-virtual-scroll-viewport [itemSize]="itemSize" class="h-full w-full overflow-x-hidden custom-scrollbar">
       <div class="px-2 pb-2">
         <ng-container *cdkVirtualFor="let item of items; trackBy: trackById">
           <!-- Wrapper padding to match original spacing -->
