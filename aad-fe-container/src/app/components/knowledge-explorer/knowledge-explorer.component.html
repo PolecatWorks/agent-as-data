@@ -1,173 +1,23 @@
 <div class="h-full w-full flex flex-col bg-slate-50 overflow-hidden">
-  <!-- Top Bar -->
-  <div class="h-14 bg-white border-b border-slate-200 flex items-center justify-between px-4 shrink-0 shadow-sm z-10">
-    <div class="flex items-center gap-3">
-      <!-- Workspace View Switcher -->
-      <div class="flex items-center gap-1.5 px-2.5 py-1 -ml-2 rounded-lg hover:bg-slate-100 cursor-pointer transition-colors select-none group"
-           [matMenuTriggerFor]="appMenu"
-           data-testid="workspace-title-switcher"
-           title="Click to switch workspace">
-        <mat-icon class="text-indigo-600">explore</mat-icon>
-        <h1 class="text-lg font-black text-slate-800 m-0">Knowledge Explorer</h1>
-        <mat-icon class="!w-4 !h-4 !text-base text-slate-400 group-hover:text-slate-700 transition-colors">expand_more</mat-icon>
-      </div>
-
-      <!-- Zero-Footprint Concept Guide -->
-      <app-concept-guide
-        badge="Ecosystem Knowledge Map"
-        title="Knowledge Explorer & Relational Tuples"
-        icon="explore"
-        triggerLabel="What is Knowledge Explorer?"
-        analogyTitle="The Organizational Nervous System"
-        analogyText="Knowledge Explorer maps the living connections across your autonomous enterprise. Just as brain synapses link memories and reflexes, relational tuples connect worker personas (Agents), standard procedures (Skills), execution capabilities (Tools), and corporate policies (Traits) into an auditable graph."
-        [tabMappings]="conceptGuideMappings"
-        detailLink="/detail"
-        testIdPrefix="knowledge-explorer"
-        accentColor="indigo">
-      </app-concept-guide>
-    </div>
-
-    <!-- Predicate Filter Bar -->
-    <div class="hidden md:flex items-center gap-1.5 bg-slate-100 p-1 rounded-lg border border-slate-200/80">
-      <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider px-2">Tuples:</span>
-      @for (pred of availablePredicates; track pred) {
-        <button
-          type="button"
-          (click)="setPredicateFilter(pred)"
-          [class.bg-white]="activePredicateFilter === pred"
-          [class.text-indigo-600]="activePredicateFilter === pred"
-          [class.shadow-sm]="activePredicateFilter === pred"
-          [class.font-bold]="activePredicateFilter === pred"
-          [class.text-slate-600]="activePredicateFilter !== pred"
-          class="px-2.5 py-1 text-xs rounded-md transition-all hover:text-slate-900 flex items-center gap-1.5 cursor-pointer">
-          <span>{{ pred === 'all' ? 'All' : pred }}</span>
-          <span class="px-1.5 py-0.2 bg-slate-200/70 text-slate-600 rounded-full text-[10px] font-mono">
-            {{ predicateCounts[pred] || 0 }}
-          </span>
-        </button>
-      }
-    </div>
-
-    <div class="flex items-center gap-2">
-      <!-- Hamburger Menu for App Navigation -->
-      <button mat-icon-button [matMenuTriggerFor]="appMenu" aria-label="Menu" class="text-slate-500 hover:text-slate-800">
-        <mat-icon>menu</mat-icon>
-      </button>
-
-      <mat-menu #appMenu="matMenu">
-        @for (item of menuItems; track item.path) {
-          <a mat-menu-item [routerLink]="item.path" routerLinkActive="active-link">
-            <mat-icon>{{ item.icon }}</mat-icon>
-            <span>{{ item.label }}</span>
-          </a>
-        }
-      </mat-menu>
-    </div>
-  </div>
-
-  <div class="flex-1 flex min-h-0 overflow-hidden relative">
-
-    <!-- Physics Controls Panel -->
-    <div class="absolute bottom-4 left-4 z-20 flex flex-col items-start">
-      <button mat-mini-fab color="primary" (click)="isPhysicsPanelOpen = !isPhysicsPanelOpen" class="mb-2 shadow-lg hover:bg-indigo-700 bg-indigo-600 text-white flex items-center justify-center w-10 h-10 rounded-full">
-        <mat-icon class="text-white">tune</mat-icon>
-      </button>
-
-      @if (isPhysicsPanelOpen) {
-      <div class="bg-white/95 backdrop-blur-sm border border-slate-200 rounded-lg shadow-xl p-4 w-72 text-sm text-slate-700 transform transition-all duration-300">
-        <div class="flex items-center justify-between mb-4 pb-2 border-b border-slate-100">
-          <h3 class="font-bold text-slate-800 m-0 flex items-center gap-1.5"><mat-icon class="text-indigo-600 !w-4 !h-4 !text-base">science</mat-icon> Physics Controls</h3>
-          <button mat-icon-button (click)="isPhysicsPanelOpen = false" class="scale-75 text-slate-400 hover:text-slate-700 m-[-8px]">
-            <mat-icon>close</mat-icon>
-          </button>
-        </div>
-
-        <div class="space-y-4">
-          <div>
-            <div class="flex justify-between mb-1">
-              <label class="text-[11px] font-bold text-slate-500 uppercase">Gravitational Constant</label>
-              <span class="text-xs font-mono text-slate-600">{{ physicsOptions.gravitationalConstant }}</span>
-            </div>
-            <input type="range" min="-100" max="0" step="1" [(ngModel)]="physicsOptions.gravitationalConstant" (ngModelChange)="updatePhysics()" class="w-full accent-indigo-600">
-          </div>
-
-          <div>
-            <div class="flex justify-between mb-1">
-              <label class="text-[11px] font-bold text-slate-500 uppercase">Central Gravity</label>
-              <span class="text-xs font-mono text-slate-600">{{ physicsOptions.centralGravity | number:'1.3-3' }}</span>
-            </div>
-            <input type="range" min="0" max="0.1" step="0.001" [(ngModel)]="physicsOptions.centralGravity" (ngModelChange)="updatePhysics()" class="w-full accent-indigo-600">
-          </div>
-
-          <div>
-            <div class="flex justify-between mb-1">
-              <label class="text-[11px] font-bold text-slate-500 uppercase">Spring Length</label>
-              <span class="text-xs font-mono text-slate-600">{{ physicsOptions.springLength }}</span>
-            </div>
-            <input type="range" min="50" max="500" step="10" [(ngModel)]="physicsOptions.springLength" (ngModelChange)="updatePhysics()" class="w-full accent-indigo-600">
-          </div>
-
-          <div>
-            <div class="flex justify-between mb-1">
-              <label class="text-[11px] font-bold text-slate-500 uppercase">Spring Constant</label>
-              <span class="text-xs font-mono text-slate-600">{{ physicsOptions.springConstant | number:'1.2-2' }}</span>
-            </div>
-            <input type="range" min="0.01" max="1" step="0.01" [(ngModel)]="physicsOptions.springConstant" (ngModelChange)="updatePhysics()" class="w-full accent-indigo-600">
-          </div>
-        </div>
-      </div>
-      }
-    </div>
-
-    <!-- Full screen graph container -->
-    <div id="network-graph" class="w-full h-full bg-slate-50 absolute inset-0 z-0"></div>
-
-    <!-- Info side panel with Relational Tuples -->
-    @if (selectedNode) {
-    <div class="absolute right-0 top-0 bottom-0 w-96 bg-white border-l border-slate-200 shadow-2xl z-10 flex flex-col transform transition-transform duration-300">
-      <!-- Panel Header -->
-      <div class="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50 shrink-0">
-        <div class="flex items-center gap-2">
-          <mat-icon [class]="getIconColor(selectedNode.type)">{{ getIcon(selectedNode.type) }}</mat-icon>
-          <div>
-            <h2 class="text-xs font-black uppercase tracking-wider text-slate-400 m-0">{{ selectedNode.type }}</h2>
-            <h3 class="text-sm font-bold text-slate-800 m-0 truncate max-w-[200px]">{{ selectedNode.name || selectedNode.title }}</h3>
-          </div>
-        </div>
-        <button mat-icon-button (click)="closePanel()" class="scale-75 text-slate-400 hover:text-slate-700">
-          <mat-icon>close</mat-icon>
-        </button>
-      </div>
-
-      <!-- Panel Body -->
-      <div class="p-4 overflow-y-auto flex-1 space-y-5">
-        <!-- Identity -->
-        <div>
-          <h4 class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Entity Identifier</h4>
-          <p class="text-xs text-slate-500 font-mono break-all bg-slate-50 p-2 rounded border border-slate-100 select-all">{{ selectedNode.id }}</p>
-        </div>
-
-        <!-- Description -->
-        <div>
-          <h4 class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Description</h4>
-          <p class="text-xs text-slate-700 leading-relaxed">{{ selectedNode.description || 'No description available.' }}</p>
-        </div>
-
-        <!-- Tags -->
-        @if (selectedNode.tags && selectedNode.tags.length > 0) {
-        <div>
-          <h4 class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Tags</h4>
-          <div class="flex flex-wrap gap-1">
-            @for (tag of selectedNode.tags; track tag) {
-            <span class="px-2 py-0.5 bg-slate-100 border border-slate-200 text-slate-600 rounded text-[10px] font-semibold uppercase tracking-wider">
-              {{ tag }}
-            </span>
-            }
-          </div>
-        </div>
-        }
-
-        <!-- Content if Knowledge Node -->
+    <!-- Top Bar -->
+  <app-top-navbar
+    workspaceTitle="Knowledge Explorer"
+    workspaceIcon="explore"
+    [conceptGuideConfig]="{
+      badge: 'Ecosystem Knowledge Map',
+      title: 'Knowledge Explorer & Relational Tuples',
+      icon: 'explore',
+      triggerLabel: 'What is Knowledge Explorer?',
+      analogyTitle: 'The Organizational Nervous System',
+      analogyText: 'Knowledge Explorer maps the living connections across your autonomous enterprise. Just as brain synapses link memories and reflexes, relational tuples connect worker personas (Agents), standard procedures (Skills), execution capabilities (Tools), and corporate policies (Traits) into an auditable graph.',
+      tabMappings: conceptGuideMappings,
+      detailLink: '/detail',
+      detailLinkLabel: '',
+      testIdPrefix: 'knowledge-explorer'
+    }">
+    
+  </app-top-navbar>
+<!-- Content if Knowledge Node -->
         @if (selectedNode.content) {
         <div>
           <h4 class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Content Snippet</h4>

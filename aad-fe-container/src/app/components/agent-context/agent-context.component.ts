@@ -1,4 +1,6 @@
 import { Component } from '@angular/core';
+import { TopNavbarComponent } from '../shared/top-navbar/top-navbar.component';
+
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -21,6 +23,7 @@ import {
   selector: 'app-agent-context',
   standalone: true,
   imports: [
+    TopNavbarComponent,
     CommonModule,
     FormsModule,
     RouterModule,

@@ -1,70 +1,25 @@
 <div class="h-full w-full flex flex-col bg-slate-50 overflow-hidden">
-  <!-- Top Bar -->
-  <div class="h-14 bg-white border-b border-slate-200 flex items-center justify-between px-4 shrink-0 shadow-sm z-10">
-    <!-- Left side of top bar (Title & View Switcher + Concept Guide) -->
-    <div class="flex items-center gap-3">
-      <div class="flex items-center gap-1.5 px-2.5 py-1 -ml-2 rounded-lg hover:bg-slate-100 cursor-pointer transition-colors select-none group"
-           [matMenuTriggerFor]="appMenu"
-           data-testid="workspace-title-switcher"
-           title="Click to switch workspace">
-        <mat-icon class="text-purple-600">build_circle</mat-icon>
-        <h1 class="text-lg font-black text-slate-800 m-0">Agent Refactoring & Compression Lab</h1>
-        <mat-icon class="!w-4 !h-4 !text-base text-slate-400 group-hover:text-slate-700 transition-colors">expand_more</mat-icon>
-      </div>
-
-      <!-- Zero-Footprint Reusable Concept Guide -->
-      <app-concept-guide
-        badge="8. AI Governance & Quality Control"
-        title="AI Governance & Quality Control (Refactoring Lab)"
-        icon="build_circle"
-        triggerLabel="What is Refactoring Lab?"
-        analogyTitle="The Quality Control Analogy"
-        analogyText="Think of the Refactoring Lab like automated AI governance and quality control. It analyzes semantic overlap, identifies redundant agent prompts, and detects conflicting trait rules before deployment."
-        [tabMappings]="conceptGuideMappings"
-        detailLink="/detail"
-        detailLinkLabel="Explore Refactoring Architecture"
-        testIdPrefix="refactoring-concept">
-      </app-concept-guide>
-    </div>
-
-    <!-- Right side of top bar (Actions) -->
-    <div class="flex items-center gap-2">
-      <button mat-flat-button color="primary" class="!rounded-lg !px-4 !font-bold h-9 mr-2" [disabled]="isScanning" (click)="runScan()">
+    <!-- Top Bar -->
+  <app-top-navbar
+    workspaceTitle="Refactoring Lab"
+    workspaceIcon="build_circle"
+    [conceptGuideConfig]="{
+      badge: '8. AI Governance & Quality Control',
+      title: 'AI Governance & Quality Control (Refactoring Lab)',
+      icon: 'build_circle',
+      triggerLabel: 'What is Refactoring Lab?',
+      analogyTitle: 'The Quality Control Analogy',
+      analogyText: 'Think of the Refactoring Lab like automated AI governance and quality control. It analyzes semantic overlap, identifies redundant agent prompts, and detects conflicting trait rules before deployment.',
+      tabMappings: conceptGuideMappings,
+      detailLink: '/detail',
+      detailLinkLabel: 'Explore Refactoring Architecture',
+      testIdPrefix: 'refactoring-concept'
+    }">
+    <button primary-action mat-flat-button color="primary" class="!rounded-lg !px-4 !font-bold h-9 mr-2" [disabled]="isScanning" (click)="runScan()">
         <mat-icon class="mr-1">auto_fix_high</mat-icon> Trigger Vector Scan
       </button>
-
-      <!-- Hamburger Menu for App Navigation -->
-      <button mat-icon-button [matMenuTriggerFor]="appMenu" aria-label="Menu" class="text-slate-500 hover:text-slate-800">
-        <mat-icon>menu</mat-icon>
-      </button>
-
-      <mat-menu #appMenu="matMenu">
-        @for (item of menuItems; track item.path) {
-          <a mat-menu-item [routerLink]="item.path" routerLinkActive="active-link">
-            <mat-icon>{{ item.icon }}</mat-icon>
-            <span>{{ item.label }}</span>
-          </a>
-        }
-      </mat-menu>
-
-      <div class="w-px h-6 bg-slate-200 mx-1"></div> <!-- Divider -->
-
-      <!-- View Toggle Icon (Mock) -->
-      <button mat-icon-button class="text-slate-500 hover:text-slate-800" title="Change View">
-        <mat-icon>view_column</mat-icon>
-      </button>
-
-      <!-- User Profile (Mock) -->
-      <button mat-icon-button class="ml-1">
-        <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-amber-400 to-orange-500 border-2 border-white shadow-sm flex items-center justify-center text-white font-bold text-sm">
-          BG
-        </div>
-      </button>
-    </div>
-  </div>
-
-  <!-- Workspace: 3 Columns Grid with Independent Scrolling Lists -->
-  <div class="flex-1 min-h-0 p-6 flex flex-col overflow-hidden">
+  </app-top-navbar>
+<div class="flex-1 min-h-0 p-6 flex flex-col overflow-hidden">
     <div class="flex-1 min-h-0 grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
 
       <!-- Column 1: Overlap Clusters Card -->

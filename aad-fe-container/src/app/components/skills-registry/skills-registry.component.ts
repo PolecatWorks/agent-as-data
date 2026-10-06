@@ -1,4 +1,6 @@
 import { Component, OnInit } from '@angular/core';
+import { TopNavbarComponent } from '../shared/top-navbar/top-navbar.component';
+
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
@@ -26,6 +28,7 @@ import { APP_NAV_MENU_ITEMS } from '../../models/navigation';
   selector: 'app-skills-registry',
   standalone: true,
   imports: [
+    TopNavbarComponent,
     CommonModule,
     FormsModule,
     RouterModule,

@@ -5,6 +5,8 @@ import {
   ViewChild,
   AfterViewInit,
 } from '@angular/core';
+import { TopNavbarComponent } from '../shared/top-navbar/top-navbar.component';
+
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
@@ -55,6 +57,7 @@ export interface SelectableEntity {
   selector: 'app-network-visualizer',
   standalone: true,
   imports: [
+    TopNavbarComponent,
     CommonModule,
     FormsModule,
     RouterModule,

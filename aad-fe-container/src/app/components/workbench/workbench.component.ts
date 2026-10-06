@@ -6,6 +6,8 @@ import {
   ViewChild,
   ElementRef,
 } from '@angular/core';
+import { TopNavbarComponent } from '../shared/top-navbar/top-navbar.component';
+
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
@@ -31,6 +33,7 @@ import { APP_NAV_MENU_ITEMS } from '../../models/navigation';
   selector: 'app-workbench',
   standalone: true,
   imports: [
+    TopNavbarComponent,
     CommonModule,
     FormsModule,
     MatCardModule,

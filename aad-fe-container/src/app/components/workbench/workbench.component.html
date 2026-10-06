@@ -1,4 +1,36 @@
-<div class="h-full w-full flex flex-row bg-slate-50 overflow-hidden">
+<div class="h-full w-full flex flex-col bg-slate-50 overflow-hidden">
+
+  <!-- Top Bar -->
+  <app-top-navbar
+    workspaceTitle="Workbench"
+    workspaceIcon="home_repair_service"
+    [conceptGuideConfig]="{
+      badge: '5. Multi-Turn Project Workspaces',
+      title: 'Active Project Rooms (Workbenches)',
+      icon: 'home_repair_service',
+      triggerLabel: 'What are Workbenches?',
+      analogyTitle: 'The Active Project Room Analogy',
+      analogyText: 'Think of Workbenches like dedicated project war rooms. Each bench provides an isolated workspace filesystem, focused conversational threads, and working memory where agents collaborate without cross-project contamination.',
+      tabMappings: conceptGuideMappings,
+      detailLink: '/detail',
+      detailLinkLabel: 'Explore Workbench Architecture',
+      testIdPrefix: 'workbench-concept'
+    }">
+    <div navbar-context class="flex items-center gap-1 text-slate-500 text-xs shrink-0 pl-1">
+      <mat-icon class="!w-3 !h-3 !text-xs text-slate-400">chevron_right</mat-icon>
+      <span class="px-2 py-0.5 bg-indigo-50 border border-indigo-200 text-indigo-700 font-bold rounded-md flex items-center gap-1">
+        <mat-icon class="!w-3 !h-3 !text-[12px]">folder_shared</mat-icon>
+        Bench: {{ activeBench ? activeBench.name : 'None' }}
+      </span>
+      <mat-icon class="!w-3 !h-3 !text-xs text-slate-400" *ngIf="activeThread">chevron_right</mat-icon>
+      <span class="font-medium text-slate-800 truncate max-w-[200px]" *ngIf="activeThread">
+        {{ activeThread.title }}
+      </span>
+    </div>
+  </app-top-navbar>
+
+  <div class="flex-1 flex flex-row min-h-0 overflow-hidden relative">
+
 
   <!-- Left Sidebar -->
   <div [ngClass]="isSidebarCollapsed ? 'w-16' : 'w-72'" class="h-full bg-white border-r border-slate-200 shadow-sm flex flex-col transition-all duration-300 z-10 shrink-0 overflow-hidden">
@@ -223,82 +255,8 @@
     </div>
   </div>
 
-  <!-- Right Area (Workspace) -->
-  <div class="flex-1 flex flex-col min-w-0 overflow-hidden bg-slate-50 relative">
+  
 
-    <!-- Top Bar with Active Bench Badge & Breadcrumb -->
-    <div class="h-14 bg-white border-b border-slate-200 flex items-center justify-between px-4 shrink-0 shadow-sm z-10">
-
-      <!-- Left side of top bar (Breadcrumb & Active Bench Pill) -->
-      <div class="flex items-center gap-3 overflow-hidden">
-        <div class="flex items-center gap-1 text-slate-500 text-xs shrink-0">
-          <div class="flex items-center gap-1 px-2 py-1 -ml-1 rounded-lg hover:bg-slate-100 cursor-pointer transition-colors select-none group"
-               [matMenuTriggerFor]="appMenu"
-               data-testid="workspace-title-switcher"
-               title="Click to switch workspace">
-            <mat-icon class="!w-4 !h-4 !text-base text-indigo-600">home_repair_service</mat-icon>
-            <span class="font-bold text-slate-800 text-sm">Workbench</span>
-            <mat-icon class="!w-3.5 !h-3.5 !text-xs text-slate-400 group-hover:text-slate-700 transition-colors">expand_more</mat-icon>
-          </div>
-          <mat-icon class="!w-3 !h-3 !text-xs text-slate-400">chevron_right</mat-icon>
-          <span class="px-2 py-0.5 bg-indigo-50 border border-indigo-200 text-indigo-700 font-bold rounded-md flex items-center gap-1">
-            <mat-icon class="!w-3 !h-3 !text-[12px]">folder_shared</mat-icon>
-            Bench: {{ activeBench ? activeBench.name : 'None' }}
-          </span>
-          <mat-icon class="!w-3 !h-3 !text-xs text-slate-400" *ngIf="activeThread">chevron_right</mat-icon>
-          <span class="font-medium text-slate-800 truncate max-w-[200px]" *ngIf="activeThread">
-            {{ activeThread.title }}
-          </span>
-        </div>
-
-        <!-- Zero-Footprint Reusable Concept Guide -->
-        <app-concept-guide
-          badge="5. Multi-Turn Project Workspaces"
-          title="Active Project Rooms (Workbenches)"
-          icon="home_repair_service"
-          triggerLabel="What are Workbenches?"
-          analogyTitle="The Active Project Room Analogy"
-          analogyText="Think of Workbenches like dedicated project war rooms. Each bench provides an isolated workspace filesystem, focused conversational threads, and working memory where agents collaborate without cross-project contamination."
-          [tabMappings]="conceptGuideMappings"
-          detailLink="/detail"
-          detailLinkLabel="Explore Workbench Architecture"
-          testIdPrefix="workbench-concept">
-        </app-concept-guide>
-      </div>
-
-      <!-- Right side of top bar (Actions) -->
-      <div class="flex items-center gap-2">
-        <!-- Hamburger Menu for App Navigation -->
-        <button mat-icon-button [matMenuTriggerFor]="appMenu" aria-label="Menu" class="text-slate-500 hover:text-slate-800">
-          <mat-icon>menu</mat-icon>
-        </button>
-
-        <mat-menu #appMenu="matMenu">
-          @for (item of menuItems; track item.path) {
-            <a mat-menu-item [routerLink]="item.path" routerLinkActive="active-link">
-              <mat-icon>{{ item.icon }}</mat-icon>
-              <span>{{ item.label }}</span>
-            </a>
-          }
-        </mat-menu>
-
-        <div class="w-px h-6 bg-slate-200 mx-1"></div> <!-- Divider -->
-
-        <!-- View Toggle Icon (Mock) -->
-        <button mat-icon-button class="text-slate-500 hover:text-slate-800" title="Change View">
-          <mat-icon>view_column</mat-icon>
-        </button>
-
-        <!-- User Profile (Mock) -->
-        <button mat-icon-button class="ml-1">
-          <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-amber-400 to-orange-500 border-2 border-white shadow-sm flex items-center justify-center text-white font-bold text-sm">
-            BG
-          </div>
-        </button>
-      </div>
-    </div>
-
-    <!-- Split Content Area -->
     <div class="flex-1 flex flex-row overflow-hidden relative">
 
       <!-- Conversation Pane -->

@@ -1,58 +1,12 @@
 <div class="h-full w-full flex flex-col bg-slate-50 overflow-hidden">
-  <!-- Top Bar (Standard Global Top Bar) -->
-  <div class="h-14 bg-white border-b border-slate-200 flex items-center justify-between px-4 shrink-0 shadow-sm z-10">
-    <!-- Left side of top bar (Title + Back) -->
-    <div class="flex items-center gap-2">
-      <a mat-icon-button routerLink="/home" title="Back to Home" class="text-slate-500 hover:text-slate-800">
-        <mat-icon>arrow_back</mat-icon>
-      </a>
-      <div class="flex items-center gap-1.5 px-2.5 py-1 -ml-1 rounded-lg hover:bg-slate-100 cursor-pointer transition-colors select-none group"
-           [matMenuTriggerFor]="appMenu"
-           data-testid="workspace-title-switcher"
-           title="Click to switch workspace">
-        <div class="p-1.5 bg-indigo-50 text-indigo-600 rounded-lg flex items-center justify-center">
-          <mat-icon class="!w-5 !h-5 !text-lg">account_tree</mat-icon>
-        </div>
-        <h1 class="text-base font-black text-slate-800 m-0 tracking-tight">System Architecture & Technical Detail</h1>
-        <mat-icon class="!w-4 !h-4 !text-base text-slate-400 group-hover:text-slate-700 transition-colors">expand_more</mat-icon>
-      </div>
-      <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
-        Technical Deep-Dive
-      </span>
-    </div>
-
-    <!-- Right side of top bar (Actions) -->
-    <div class="flex items-center gap-2">
-      <a mat-flat-button color="primary" class="!rounded-xl !h-8 !px-3 !text-xs !font-semibold" routerLink="/workbench">
-        <mat-icon class="!w-4 !h-4 !text-base mr-1">chat</mat-icon> Open Workbench
-      </a>
-
-      <div class="w-px h-6 bg-slate-200 mx-1"></div>
-
-      <!-- Hamburger Menu for App Navigation -->
-      <button mat-icon-button [matMenuTriggerFor]="appMenu" aria-label="Menu" class="text-slate-500 hover:text-slate-800">
-        <mat-icon>menu</mat-icon>
-      </button>
-
-      <mat-menu #appMenu="matMenu">
-        @for (item of menuItems; track item.path) {
-          <a mat-menu-item [routerLink]="item.path">
-            <mat-icon>{{ item.icon }}</mat-icon>
-            <span>{{ item.label }}</span>
-          </a>
-        }
-      </mat-menu>
-
-      <!-- User Profile (Mock) -->
-      <button mat-icon-button class="ml-1">
-        <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-amber-400 to-orange-500 border-2 border-white shadow-sm flex items-center justify-center text-white font-bold text-sm">
-          BG
-        </div>
-      </button>
-    </div>
-  </div>
-
-  <!-- Content Container (Scrollable) -->
+    <!-- Top Bar -->
+  <app-top-navbar
+    workspaceTitle="Architecture Blueprint"
+    workspaceIcon="architecture"
+    >
+    
+  </app-top-navbar>
+<!-- Content Container (Scrollable) -->
   <div class="flex-1 min-h-0 overflow-y-auto p-6 space-y-8 max-w-7xl w-full mx-auto">
 
     <!-- Hero / Architecture Overview -->

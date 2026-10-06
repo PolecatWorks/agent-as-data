@@ -5,6 +5,8 @@ import {
   ChangeDetectorRef,
   ViewChild,
 } from '@angular/core';
+import { TopNavbarComponent } from '../shared/top-navbar/top-navbar.component';
+
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -32,6 +34,7 @@ import { APP_NAV_MENU_ITEMS } from '../../models/navigation';
   selector: 'app-traits-registry',
   standalone: true,
   imports: [
+    TopNavbarComponent,
     CommonModule,
     FormsModule,
     MatCardModule,
@@ -54,7 +57,12 @@ import { APP_NAV_MENU_ITEMS } from '../../models/navigation';
   styleUrl: './traits-registry.component.scss',
 })
 export class TraitsRegistryComponent implements OnInit {
-  @ViewChild(ConceptGuideComponent) conceptGuide?: ConceptGuideComponent;
+  @ViewChild(TopNavbarComponent) topNavbar?: TopNavbarComponent;
+  @ViewChild(ConceptGuideComponent) private _directConceptGuide?: ConceptGuideComponent;
+
+  get conceptGuide(): ConceptGuideComponent | undefined {
+    return this.topNavbar?.conceptGuide ?? this._directConceptGuide;
+  }
 
   isSidebarCollapsed = false;
   menuItems = APP_NAV_MENU_ITEMS;
