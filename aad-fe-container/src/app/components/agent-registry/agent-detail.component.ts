@@ -340,10 +340,37 @@ export class AgentDetailComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.loadAgents();
+    // We still load lists to populate the Attachment Manager dropdowns
+    this.loadAgents(); // loads all agents so we can select sub-agents
     this.loadTraits();
     this.loadTools();
     this.loadSkills();
+    
+    // Listen to route params to fetch the specific agent
+    this.route.paramMap.subscribe(params => {
+      const id = params.get('id');
+      if (this.route.snapshot.routeConfig?.path === "new") {
+        this.selectedAgent = null;
+        this.isEditing = true;
+        this.agentForm = {
+          name: '',
+          description: '',
+          tags: [],
+          implements_traits: [],
+          uses_traits: [],
+          attached_tools: [],
+          attached_agents: [],
+          attached_skills: [],
+          current_version: '1.0.0',
+          judge_threshold: 0.8,
+          model: 'claude-3-5-sonnet-v2',
+          agent_definition: '',
+        };
+      } else if (id) {
+        this.loadAgent(id);
+      }
+    });
+
     this.route.queryParams.subscribe((queryParams) => {
       this.isEditing = queryParams['edit'] === 'true';
     });
@@ -414,171 +441,61 @@ export class AgentDetailComponent implements OnInit {
     });
   }
 
-  loadAgents(): void {
-    this.apiService.getAgents().subscribe({
-      next: (data) => {
-        this.agents = data;
-        const routeId = this.route.snapshot.paramMap.get('id');
-        this.applySelectedAgentFromRoute(routeId);
-      },
-      error: () => {
-        this.agents = [
-          {
-            id: '11111111-1111-1111-1111-111111111111',
-            name: 'SecurityAuditorAgent',
-            description:
-              'Automated static analysis and security vulnerability inspector.',
-            tags: ['security', 'audit', 'rust'],
-            implements_traits: ['SecurityAuditor', 'CodeReviewer'],
-            uses_traits: ['security', 'audit', 'rust'],
-            current_version: '3.0.0',
-            owner_id: 'owner-sec-team',
-            judge_threshold: 0.9,
-            model: 'claude-3-5-sonnet-v2',
-            agent_definition:
-              'You are a principal security engineer. Analyze code for OWASP vulnerabilities and timing attacks.',
-          },
-          {
-            id: '22222222-2222-2222-2222-222222222222',
-            name: 'RefactoringCompilerAgent',
-            description:
-              'Scans agent networks to detect circular dependencies and overlap clusters.',
-            tags: ['compiler', 'refactoring', 'dag'],
-            implements_traits: ['Compiler', 'NetworkOptimizer'],
-            uses_traits: ['SecurityAuditor'],
-            current_version: '1.0.0',
-            owner_id: 'owner-core-team',
-            judge_threshold: 0.85,
-            model: 'llama-3.3-70b-instruct',
-            agent_definition:
-              'You are an agent network compiler. Validate DAG topologies and trait compatibility.',
-          },
-        ];
-        const routeId = this.route.snapshot.paramMap.get('id');
-        this.applySelectedAgentFromRoute(routeId);
-      },
-    });
-  }
-
-  private applySelectedAgentFromRoute(routeId: string | null): void {
-    if (routeId) {
-      const match = this.agents.find(
-        (a) => a.id === routeId || a.id.startsWith(routeId),
-      );
-      if (match) {
-        this.selectAgent(match);
-        return;
-      }
-    }
-    if (this.agents.length > 0 && !this.selectedAgent) {
-      const filtered = this.getFilteredAgents();
-      if (filtered.length > 0) {
-        this.selectAgent(filtered[0]);
-      }
-    }
-  }
-
-  selectAgent(agent: Agent, keepEdit = false): void {
-    this.apiService.getAgent(agent.id!).subscribe({
+  loadAgent(id: string): void {
+    this.apiService.getAgent(id).subscribe({
       next: (fullAgent) => {
         this.selectedAgent = fullAgent;
         this.agentForm = {
           ...fullAgent,
           guardrails: fullAgent.guardrails || {
             input_guardrails: {
-              active_guardrails:
-                fullAgent.input_guardrails?.map((gType: string) => ({
-                  id: 'g-' + Math.random().toString(36).substring(2, 9),
-                  type: gType,
-                  name: gType.replace('_', ' ').toUpperCase(),
-                  tier: 'Deterministic',
-                  description: 'Imported guardrail constraint',
-                  config: {},
-                })) || [],
+              active_guardrails: fullAgent.input_guardrails?.map((gType: string) => ({
+                id: 'g-' + Math.random().toString(36).substring(2, 9),
+                type: gType,
+                name: gType.replace('_', ' ').toUpperCase(),
+                tier: 'Deterministic',
+                description: 'Imported guardrail constraint',
+                config: {},
+              })) || [],
             },
             output_guardrails: {
-              active_guardrails:
-                fullAgent.output_guardrails?.map((gType: string) => ({
-                  id: 'og-' + Math.random().toString(36).substring(2, 9),
-                  type: gType,
-                  name: gType.replace('_', ' ').toUpperCase(),
-                  tier: 'Deterministic',
-                  description: 'Imported guardrail constraint',
-                  config: {},
-                })) || [],
+              active_guardrails: fullAgent.output_guardrails?.map((gType: string) => ({
+                id: 'og-' + Math.random().toString(36).substring(2, 9),
+                type: gType,
+                name: gType.replace('_', ' ').toUpperCase(),
+                tier: 'Deterministic',
+                description: 'Imported guardrail constraint',
+                config: {},
+              })) || [],
             },
           },
         };
-        this.isEditing = keepEdit;
-        this.showDeleteConfirm = false;
-        this.router.navigate(['/agents', fullAgent.id], {
-          queryParams: keepEdit ? { edit: 'true' } : {},
-        });
+        // If edit mode query param is set, keep editing
+        if (!this.isEditing) {
+            this.isEditing = false;
+        }
       },
-      error: () => {
-        this.selectedAgent = agent;
-        this.agentForm = {
-          ...agent,
-          guardrails: agent.guardrails || {
-            input_guardrails: { active_guardrails: [] },
-            output_guardrails: { active_guardrails: [] },
-          },
-        };
-        this.isEditing = keepEdit;
-        this.showDeleteConfirm = false;
-        this.router.navigate(['/agents', agent.id], {
-          queryParams: keepEdit ? { edit: 'true' } : {},
-        });
-      },
+      error: (err) => {
+        this.snackBar.open(`Error loading agent details`, 'Close', { duration: 3000 });
+      }
     });
   }
 
-  createNewAgent(): void {
-    this.selectedAgent = null;
-    this.agentForm = {
-      name: '',
-      description: '',
-      tags: [],
-      implements_traits: [],
-      uses_traits: [],
-      attached_tools: [],
-      attached_agents: [],
-      attached_skills: [],
-      current_version: '1.0.0',
-      owner_id: '00000000-0000-0000-0000-000000000000',
-      judge_threshold: 0.8,
-      model: 'claude-3-5-sonnet-v2',
-      read_groups: [],
-      write_groups: [],
-      execute_groups: [],
-      agent_definition: '',
-      guardrails: {
-        input_guardrails: { active_guardrails: [] },
-        output_guardrails: { active_guardrails: [] },
-      },
-    };
-    this.isEditing = true;
-    this.showDeleteConfirm = false;
-    // Removed navigation to avoid flickering when already on the same route.
-  }
-
-  enableEdit(): void {
-    this.isEditing = true;
-    if (this.selectedAgent) {
-      this.router.navigate(['/agents', this.selectedAgent.id], {
-        queryParams: { edit: 'true' },
-      });
-    } else {
-      this.router.navigate(['/agents'], { queryParams: { edit: 'true' } });
-    }
+  loadAgents(): void {
+    this.apiService.getAgents().subscribe({
+      next: (data) => {
+        this.agents = data;
+      }
+    });
   }
 
   cancelEdit(): void {
-    if (this.selectedAgent) {
-      this.selectAgent(this.selectedAgent, false);
+    this.isEditing = false;
+    if (this.selectedAgent && this.selectedAgent.id) {
+      this.loadAgent(this.selectedAgent.id);
+      this.router.navigate(["/agents", this.selectedAgent.id]);
     } else {
-      this.isEditing = false;
-      this.router.navigate(['/agents'], { queryParams: {} });
+      this.router.navigate(["/agents"]);
     }
   }
 
@@ -632,49 +549,22 @@ export class AgentDetailComponent implements OnInit {
     if (this.selectedAgent && this.selectedAgent.id) {
       this.apiService.updateAgent(this.selectedAgent.id, payload).subscribe({
         next: (res) => {
-          this.snackBar.open('Agent updated successfully!', 'Close', {
-            duration: 3000,
-          });
-          this.loadAgents();
+          this.snackBar.open('Agent updated successfully!', 'Close', { duration: 3000 });
+          this.loadAgent(this.selectedAgent!.id!);
         },
         error: () => {
-          const idx = this.agents.findIndex(
-            (a) => a.id === this.selectedAgent!.id,
-          );
-          if (idx >= 0) {
-            this.agents[idx] = { ...this.agents[idx], ...payload } as Agent;
-          }
-          this.snackBar.open('Updated agent specifications locally.', 'Close', {
-            duration: 3000,
-          });
+          this.snackBar.open('Updated agent specifications locally.', 'Close', { duration: 3000 });
         },
       });
     } else {
       this.apiService.createAgent(payload).subscribe({
         next: (newAgent) => {
-          this.snackBar.open('Agent created successfully!', 'Close', {
-            duration: 3000,
-          });
-          const processedAgent = {
-            ...newAgent,
-            id: newAgent.id || (newAgent as any).agent_id,
-          };
-          this.agents.push(processedAgent);
-          this.selectAgent(processedAgent);
-          this.loadAgents();
+          this.snackBar.open('Agent created successfully!', 'Close', { duration: 3000 });
+          const newId = newAgent.id || (newAgent as any).agent_id;
+          this.router.navigate(['/agents', newId]);
         },
         error: () => {
-          const fallbackId = 'agent-' + Date.now();
-          const newAgent: Agent = {
-            ...payload,
-            id: fallbackId,
-            current_version: '1.0.0',
-          } as Agent;
-          this.agents.push(newAgent);
-          this.selectAgent(newAgent);
-          this.snackBar.open('Created new agent locally.', 'Close', {
-            duration: 3000,
-          });
+          this.snackBar.open('Created new agent locally.', 'Close', { duration: 3000 });
         },
       });
     }
@@ -684,42 +574,12 @@ export class AgentDetailComponent implements OnInit {
     if (this.selectedAgent && this.selectedAgent.id) {
       this.apiService.deleteAgent(this.selectedAgent.id).subscribe({
         next: (deletedAgent) => {
-          const agentName =
-            deletedAgent.name || this.selectedAgent?.name || 'Agent';
-          this.snackBar.open(
-            `Deleted agent ${agentName} successfully!`,
-            'Close',
-            { duration: 3000 },
-          );
-          const deleteId = deletedAgent.id || this.selectedAgent?.id;
-          this.agents = this.agents.filter((a) => a.id !== deleteId);
-          if (this.agents.length > 0) {
-            const filtered = this.getFilteredAgents();
-            if (filtered.length > 0) {
-              this.selectAgent(filtered[0]);
-            }
-          } else {
-            this.selectedAgent = null;
-            this.createNewAgent();
-          }
-          this.loadAgents();
+          this.snackBar.open('Deleted agent successfully!', 'Close', { duration: 3000 });
+          this.router.navigate(['/agents']);
         },
         error: () => {
-          this.agents = this.agents.filter(
-            (a) => a.id !== this.selectedAgent!.id,
-          );
-          this.snackBar.open('Deleted agent specifications locally.', 'Close', {
-            duration: 3000,
-          });
-          if (this.agents.length > 0) {
-            const filtered = this.getFilteredAgents();
-            if (filtered.length > 0) {
-              this.selectAgent(filtered[0]);
-            }
-          } else {
-            this.selectedAgent = null;
-            this.createNewAgent();
-          }
+          this.snackBar.open('Deleted agent specifications locally.', 'Close', { duration: 3000 });
+          this.router.navigate(['/agents']);
         },
       });
     }
@@ -1087,5 +947,14 @@ export class AgentDetailComponent implements OnInit {
           },
         });
     }
+  }
+
+  enableEdit(): void {
+    this.isEditing = true;
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { edit: 'true' },
+      queryParamsHandling: 'merge'
+    });
   }
 }

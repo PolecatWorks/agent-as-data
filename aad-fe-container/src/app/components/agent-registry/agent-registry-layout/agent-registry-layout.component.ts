@@ -1,13 +1,15 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
-import { TopNavbarComponent } from '../shared/top-navbar/top-navbar.component';
-import { EntitySidebarListComponent } from '../shared/entity-sidebar-list/entity-sidebar-list.component';
+import { TopNavbarComponent } from '../../shared/top-navbar/top-navbar.component';
+import { EntitySidebarListComponent } from '../../shared/entity-sidebar-list/entity-sidebar-list.component';
 import { MatIconModule } from '@angular/material/icon';
-import { MatButtonModule } from '@angular/material/button';
+import { MatButtonModule,
+    } from '@angular/material/button';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { ApiService, Agent } from '../../services/api.service';
-import { ConceptTabMapping } from '../concept-guide/concept-guide.component';
+import { ApiService, Agent } from '../../../services/api.service';
+import { ConceptTabMapping } from '../../concept-guide/concept-guide.component';
 
 @Component({
   selector: 'app-agent-registry-layout',
@@ -18,7 +20,8 @@ import { ConceptTabMapping } from '../concept-guide/concept-guide.component';
     TopNavbarComponent, 
     EntitySidebarListComponent,
     MatIconModule,
-    MatButtonModule
+    MatButtonModule,
+    MatTooltipModule
   ],
   templateUrl: './agent-registry-layout.component.html',
   styleUrl: './agent-registry-layout.component.scss'
@@ -29,9 +32,9 @@ export class AgentRegistryLayoutComponent implements OnInit {
   isSidebarCollapsed: boolean = false;
 
   conceptGuideMappings: ConceptTabMapping[] = [
-    { title: 'Overview', icon: 'visibility', type: 'info', content: 'Agents act as autonomous nodes that reason through context, utilize Tools, execute Skills, and interface with Knowledge to fulfill complex tasks.' },
-    { title: 'Configuration', icon: 'settings', type: 'settings', content: 'Agents are declarative configurations defined by a System Prompt, Temperature, attached Skills, Tools, and Trait Contracts.' },
-    { title: 'Trait Compliance', icon: 'shield_with_heart', type: 'security', content: 'Agents implement Trait Contracts to guarantee they possess specific operational signatures before they are assigned to multi-turn workflows.' }
+    { title: 'Overview', icon: 'visibility', description: 'Agents act as autonomous nodes that reason through context, utilize Tools, execute Skills, and interface with Knowledge to fulfill complex tasks.', iconColor: 'text-indigo-500' },
+    { title: 'Configuration', icon: 'settings', description: 'Agents are declarative configurations defined by a System Prompt, Temperature, attached Skills, Tools, and Trait Contracts.', iconColor: 'text-indigo-500' },
+    { title: 'Trait Compliance', icon: 'shield_with_heart', description: 'Agents implement Trait Contracts to guarantee they possess specific operational signatures before they are assigned to multi-turn workflows.', iconColor: 'text-indigo-500' }
   ];
 
   constructor(
@@ -62,7 +65,7 @@ export class AgentRegistryLayoutComponent implements OnInit {
   }
 
   createNewAgent() {
-    this.router.navigate(['/agents'], { queryParams: { create: 'true' } });
+    this.router.navigate(['/agents/new']);
   }
 
   onSelectAgent(agent: Agent) {

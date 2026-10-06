@@ -6,8 +6,15 @@ export const routes: Routes = [
   { path: '', redirectTo: 'home', pathMatch: 'full' },
   { path: 'home', loadComponent: () => import('./components/home/home.component').then(m => m.HomeComponent) },
   { path: 'detail', loadComponent: () => import('./components/detail/detail.component').then(m => m.DetailComponent) },
-  { path: 'agents', loadComponent: () => import('./components/agent-registry/agent-registry.component').then(m => m.AgentRegistryComponent) },
-  { path: 'agents/:id', loadComponent: () => import('./components/agent-registry/agent-registry.component').then(m => m.AgentRegistryComponent) },
+  { 
+    path: 'agents', 
+    loadComponent: () => import('./components/agent-registry/agent-registry-layout/agent-registry-layout.component').then(m => m.AgentRegistryLayoutComponent),
+    children: [
+      { path: '', loadComponent: () => import('./components/agent-registry/agent-empty/agent-empty.component').then(m => m.AgentEmptyComponent), pathMatch: 'full' },
+      { path: 'new', loadComponent: () => import('./components/agent-registry/agent-detail.component').then(m => m.AgentDetailComponent) },
+      { path: ':id', loadComponent: () => import('./components/agent-registry/agent-detail.component').then(m => m.AgentDetailComponent) }
+    ]
+  },
   { path: 'traits', loadComponent: () => import('./components/traits-registry/traits-registry.component').then(m => m.TraitsRegistryComponent) },
   { path: 'traits/:id', loadComponent: () => import('./components/traits-registry/traits-registry.component').then(m => m.TraitsRegistryComponent) },
   { path: 'skills', loadComponent: () => import('./components/skills-registry/skills-registry.component').then(m => m.SkillsRegistryComponent) },

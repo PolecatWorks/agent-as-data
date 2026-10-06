@@ -25,6 +25,6 @@ export class AgentEmptyComponent {
   constructor(private router: Router) {}
   
   createNewAgent() {
-    this.router.navigate(['/agents'], { queryParams: { create: 'true' } });
+    this.router.navigate(['/agents/new']);
   }
 }
