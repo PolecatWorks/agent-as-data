@@ -1,7 +1,6 @@
 <!-- Workspace Content (Scrollable) -->
 <div class="h-full w-full overflow-y-auto bg-slate-50 p-6">
 <!-- Right Column: Agent Definition Editor Form -->
-          @if (selectedAgent || isEditing) {
         <mat-card class="!rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
           <div class="p-6 bg-slate-50/80 border-b border-slate-200/60 flex justify-between items-center">
             <div>
@@ -140,6 +139,7 @@
                   </div>
                 }
               </div>
+
             </div>
 
             <!-- Dedicated Tabs -->
@@ -217,14 +217,4 @@
 
           </mat-card-content>
         </mat-card>
-      } @else {
-        <div class="flex flex-col items-center justify-center py-24 bg-white rounded-2xl border border-slate-200 shadow-sm text-slate-400">
-          <mat-icon class="!w-16 !h-16 !text-6xl text-slate-200 mb-4">smart_toy</mat-icon>
-          <h3 class="text-sm font-bold text-slate-700 m-0">No Agent Selected</h3>
-          <p class="text-xs text-slate-400 max-w-xs text-center mt-1">
-            Choose an agent from the list, or register a new one to begin editing its configuration.
-          </p>
-        </div>
-      }
     </div>
-  </div>
