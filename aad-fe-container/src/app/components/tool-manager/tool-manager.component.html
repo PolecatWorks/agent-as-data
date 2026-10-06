@@ -24,49 +24,27 @@
   <div class="flex-1 flex flex-row min-h-0 overflow-hidden relative">
 
 
-  <!-- Left Sidebar -->
-  <div [ngClass]="isSidebarCollapsed ? 'w-16' : 'w-72'" class="h-full bg-white border-r border-slate-200 shadow-sm flex flex-col transition-all duration-300 z-10 shrink-0 overflow-hidden">
+    <!-- Left Sidebar -->
+  <app-entity-sidebar-list
+    [(isCollapsed)]="isSidebarCollapsed"
+    [items]="getFilteredServers()"
+    [itemTemplate]="serverCardTemplate"
+    [itemSize]="96"
+    searchPlaceholder="Search tools by name..."
+    emptyMessage="No matching tools found."
+    (searchChange)="searchQuery = $event">
+  </app-entity-sidebar-list>
 
-    <!-- Sidebar Header -->
-    <div class="p-4 border-b border-slate-100 flex items-center shrink-0 h-14" [ngClass]="isSidebarCollapsed ? 'justify-center px-0' : 'justify-between'">
-      <div class="flex items-center gap-2 overflow-hidden" *ngIf="!isSidebarCollapsed">
-        <div class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white font-bold shrink-0">
-          <mat-icon class="!w-5 !h-5 !text-xl">build</mat-icon>
-        </div>
-        <span class="font-black text-slate-800 text-lg whitespace-nowrap">AAD</span>
-      </div>
-      <button mat-icon-button (click)="toggleSidebar()" class="text-slate-400 hover:text-slate-700" [title]="isSidebarCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'">
-        <mat-icon>{{ isSidebarCollapsed ? 'chevron_right' : 'chevron_left' }}</mat-icon>
-      </button>
-    </div>
-
-    <!-- Search -->
-    <div class="p-3 border-b border-slate-100 shrink-0" *ngIf="!isSidebarCollapsed">
-      <div class="relative">
-        <mat-icon class="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 !w-4 !h-4 !text-base">search</mat-icon>
-        <input type="text" placeholder="Search tools by name..."
-               class="w-full pl-9 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
-               [(ngModel)]="searchQuery" />
-      </div>
-    </div>
-
-    <!-- Tool List -->
-    <div class="flex-1 min-h-0 overflow-y-auto py-2">
-      <div *ngIf="getFilteredServers().length === 0 && !isSidebarCollapsed" class="text-center py-8 text-slate-400 text-xs">
-        No matching tools found.
-      </div>
-
-      <div class="space-y-2 px-2 pb-2">
-        @for (s of getFilteredServers(); track s.id) {
-          <div class="group p-3 rounded-xl border transition-all cursor-pointer bg-white"
+  <ng-template #serverCardTemplate let-s let-collapsed="collapsed">
+    <div class="group p-3 rounded-xl border transition-all cursor-pointer bg-white"
                [ngClass]="selectedServer?.id === s.id ? 'border-indigo-500 shadow-sm ring-1 ring-indigo-500/20' : 'border-slate-200 hover:border-slate-300'"
                (click)="selectServer(s)"
                [matTooltip]="s.server_name"
                matTooltipPosition="right"
-               [matTooltipDisabled]="!isSidebarCollapsed">
+               [matTooltipDisabled]="!collapsed">
 
             <!-- Expanded View -->
-            <div class="flex flex-col w-full" *ngIf="!isSidebarCollapsed">
+            <div class="flex flex-col w-full" *ngIf="!collapsed">
               <div class="flex justify-between items-start">
                 <div class="flex items-start gap-3 overflow-hidden flex-1">
                   <mat-icon class="shrink-0 text-slate-400 mt-0.5"
@@ -103,21 +81,16 @@
             </div>
 
             <!-- Collapsed View -->
-            <div class="flex justify-center items-center" *ngIf="isSidebarCollapsed">
+            <div class="flex justify-center items-center" *ngIf="collapsed">
                <mat-icon class="text-slate-400 transition-colors"
                         [ngClass]="{'text-indigo-600': selectedServer?.id === s.id}">
                 dns
               </mat-icon>
             </div>
           </div>
-        }
-      </div>
-    </div>
-  </div>
+  </ng-template>
 
-  
-
-    <!-- Workspace Content (Scrollable) -->
+<!-- Workspace Content (Scrollable) -->
     <div class="flex-1 min-w-0 overflow-y-auto bg-slate-50 p-6">
       <!-- Right Content Panel: Tool Details & Editor -->
           @if (selectedServer || isEditing) {

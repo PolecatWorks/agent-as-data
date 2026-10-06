@@ -1,5 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { TopNavbarComponent } from '../shared/top-navbar/top-navbar.component';
+import { EntitySidebarListComponent } from '../shared/entity-sidebar-list/entity-sidebar-list.component';
+
 
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -41,6 +43,7 @@ export interface KnowledgeNodeProposal {
   selector: 'app-knowledge-inspector',
   standalone: true,
   imports: [
+    EntitySidebarListComponent,
     TopNavbarComponent,
     CommonModule,
     FormsModule,

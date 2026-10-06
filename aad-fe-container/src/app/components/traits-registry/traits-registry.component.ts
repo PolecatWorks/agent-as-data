@@ -6,6 +6,8 @@ import {
   ViewChild,
 } from '@angular/core';
 import { TopNavbarComponent } from '../shared/top-navbar/top-navbar.component';
+import { EntitySidebarListComponent } from '../shared/entity-sidebar-list/entity-sidebar-list.component';
+
 
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
@@ -34,6 +36,7 @@ import { APP_NAV_MENU_ITEMS } from '../../models/navigation';
   selector: 'app-traits-registry',
   standalone: true,
   imports: [
+    EntitySidebarListComponent,
     TopNavbarComponent,
     CommonModule,
     FormsModule,

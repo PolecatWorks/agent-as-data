@@ -1,5 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { TopNavbarComponent } from '../shared/top-navbar/top-navbar.component';
+import { EntitySidebarListComponent } from '../shared/entity-sidebar-list/entity-sidebar-list.component';
+
 
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -28,6 +30,7 @@ import { APP_NAV_MENU_ITEMS } from '../../models/navigation';
   selector: 'app-skills-registry',
   standalone: true,
   imports: [
+    EntitySidebarListComponent,
     TopNavbarComponent,
     CommonModule,
     FormsModule,
