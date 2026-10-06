@@ -26,7 +26,6 @@ export class EntitySidebarListComponent {
   // Default header props if not using custom projection
   @Input() headerTitle: string = 'AAD';
   @Input() headerIcon: string = 'build';
-  @Input() useCustomHeader: boolean = false;
 
   @Output() searchChange = new EventEmitter<string>();
 

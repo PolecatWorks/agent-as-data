@@ -1,0 +1,11 @@
+--- aad-fe-container/src/app/components/shared/entity-sidebar-list/entity-sidebar-list.component.ts
++++ aad-fe-container/src/app/components/shared/entity-sidebar-list/entity-sidebar-list.component.ts
+@@ -32,5 +32,9 @@
+   onSearchChange() {
+     this.searchChange.emit(this.searchQuery);
+   }
++
++  trackById(index: number, item: any): any {
++    return item.id || index;
++  }
+ }

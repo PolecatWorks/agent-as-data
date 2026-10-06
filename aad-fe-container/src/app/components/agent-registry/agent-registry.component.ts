@@ -26,6 +26,8 @@ import {
   ConceptTabMapping,
 } from '../concept-guide/concept-guide.component';
 import { TopNavbarComponent } from '../shared/top-navbar/top-navbar.component';
+import { EntitySidebarListComponent } from '../shared/entity-sidebar-list/entity-sidebar-list.component';
+
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { marked } from 'marked';
 import { forkJoin } from 'rxjs';
@@ -42,6 +44,7 @@ export interface LLMModelOption {
   selector: 'app-agent-registry',
   standalone: true,
   imports: [
+    EntitySidebarListComponent,
     CommonModule,
     FormsModule,
     RouterModule,
