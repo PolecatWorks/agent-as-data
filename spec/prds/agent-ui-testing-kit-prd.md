@@ -394,6 +394,17 @@ sequenceDiagram
 
 ---
 
+## Frontend UI Architecture Standards
+
+To ensure deep-linking works perfectly, isolate component states, and prevent massive single-file templates, the frontend application MUST strictly adhere to the following routing pattern:
+
+- **Nested Routing for Master-Detail Views**: Always use Angular nested routes (parent layout with `<router-outlet>`) rather than monolithic components that manually track selected IDs.
+- **Layout Component** (e.g. `AgentRegistryComponent` mapped to `/agents`): Renders the global layout (Top Navbar) and the Master view (Entity Sidebar List), containing a `<router-outlet>` in the main content area.
+- **Detail Component** (e.g. `AgentDetailComponent` mapped to `/agents/:id`): Renders the specific details and edit forms for the selected entity, loading data based on the route param.
+- **Index/Empty State Component** (mapped to `/agents` `pathMatch: 'full'`): Renders an empty state encouraging the user to select an entity.
+
+---
+
 ## User Journeys: Testing Agents, Skills & Traits via UI
 
 ### Journey 1: Interactive Agent & Skill Testing via Playground
