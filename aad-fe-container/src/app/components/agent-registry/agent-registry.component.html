@@ -250,198 +250,60 @@
                 <div class="space-y-6 pt-6">
 
                   <!-- Section 1: Attached Tools & APIs -->
-                  <div class="p-5 bg-blue-50/30 rounded-xl border border-blue-200/50 space-y-3">
-                    <h4 class="text-sm font-bold text-blue-950 m-0 flex items-center gap-2">🛠️ Tools & System APIs</h4>
-                    
-                    @if (isEditing) {
-                      <div class="space-y-2">
-                        <input type="text" [(ngModel)]="toolSearchQuery" placeholder="Filter registered MCP tools by server name..."
-                               class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all" />
-
-                        <div class="flex flex-wrap gap-2 p-3 bg-white rounded-xl border border-slate-200 max-h-36 overflow-y-auto">
-                          @for (m of getFilteredAvailableTools(); track m.id) {
-                            <button mat-stroked-button color="primary" class="!rounded-lg !text-xs !font-bold" [matTooltip]="getToolDescription(m.id)" (click)="attachTool(m.id)">
-                              + {{ m.server_name }}
-                            </button>
-                          } @empty {
-                            <span class="text-xs text-slate-400 italic">No MCP tools available to attach.</span>
-                          }
-                        </div>
-                      </div>
-                    }
-
-                    <div class="space-y-1.5 pt-2">
-                      <div class="flex flex-wrap gap-2">
-                        @for (mcpId of agentForm.attached_tools || []; track mcpId) {
-                          <span class="px-3 py-1 bg-blue-100 text-blue-900 font-bold text-xs rounded-xl flex items-center gap-2 border border-blue-200" [matTooltip]="getToolDescription(mcpId)">
-                            🛠️ {{ getToolName(mcpId) }}
-                            @if (isEditing) {
-                              <button class="text-blue-700 hover:text-red-600 font-bold border-none bg-transparent cursor-pointer text-sm" (click)="detachTool(mcpId)">×</button>
-                            }
-                          </span>
-                        } @empty {
-                          <span class="text-xs text-slate-400 italic">No tools attached.</span>
-                        }
-                      </div>
-                    </div>
-                  </div>
+                  <app-entity-attachment-manager
+                    title="🛠️ Tools & System APIs"
+                    themeColor="blue"
+                    [availableEntities]="availableToolsForAttachment"
+                    [attachedIds]="agentForm.attached_tools || []"
+                    [isEditing]="isEditing"
+                    (attach)="attachTool($event)"
+                    (detach)="detachTool($event)">
+                  </app-entity-attachment-manager>
 
                   <!-- Section 3: Attached Skill Packages -->
-                  <div class="p-5 bg-teal-50/30 rounded-xl border border-teal-200/50 space-y-3">
-                    <h4 class="text-sm font-bold text-teal-950 m-0 flex items-center gap-2">⚡ Skill Packages</h4>
-                    
-                    @if (isEditing) {
-                      <div class="space-y-2">
-                        <input type="text" [(ngModel)]="skillSearchQuery" placeholder="Filter registered skills by name or description..."
-                               class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all" />
-
-                        <div class="flex flex-wrap gap-2 p-3 bg-white rounded-xl border border-slate-200 max-h-36 overflow-y-auto">
-                          @for (s of getFilteredAvailableSkills(); track s.id) {
-                            <button mat-stroked-button color="primary" class="!rounded-lg !text-xs !font-bold" [matTooltip]="s.description || 'No description available'" (click)="attachSkill(s.id!)">
-                              + {{ s.name }}
-                            </button>
-                          } @empty {
-                            <span class="text-xs text-slate-400 italic">No skills available to attach.</span>
-                          }
-                        </div>
-                      </div>
-                    }
-
-                    <div class="space-y-1.5 pt-2">
-                      <div class="flex flex-wrap gap-2">
-                        @for (skillId of agentForm.attached_skills || []; track skillId) {
-                          <span class="px-3 py-1 bg-teal-100 text-teal-900 font-bold text-xs rounded-xl flex items-center gap-2 border border-teal-200" [matTooltip]="getSkillName(skillId)">
-                            ⚡ {{ getSkillName(skillId) }}
-                            @if (isEditing) {
-                              <button class="text-teal-700 hover:text-red-600 font-bold border-none bg-transparent cursor-pointer text-sm" (click)="detachSkill(skillId)">×</button>
-                            }
-                          </span>
-                        } @empty {
-                          <span class="text-xs text-slate-400 italic">No skills attached.</span>
-                        }
-                      </div>
-                    </div>
-                  </div>
+                  <app-entity-attachment-manager
+                    title="⚡ Skill Packages"
+                    themeColor="teal"
+                    [availableEntities]="allSkills"
+                    [attachedIds]="agentForm.attached_skills || []"
+                    [isEditing]="isEditing"
+                    (attach)="attachSkill($event)"
+                    (detach)="detachSkill($event)">
+                  </app-entity-attachment-manager>
 
                   <!-- Section 2: Attached Sub-Agents -->
-                  <div class="p-5 bg-purple-50/30 rounded-xl border border-purple-200/50 space-y-3">
-                    <h4 class="text-sm font-bold text-purple-950 m-0 flex items-center gap-2">🤖 Sub-Agents (Multi-Agent Network)</h4>
-                    
-                    @if (isEditing) {
-                      <div class="space-y-2">
-                        <input type="text" [(ngModel)]="agentSearchQuery" placeholder="Filter registered agents by name or description..."
-                               class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all" />
-
-                        <div class="flex flex-wrap gap-2 p-3 bg-white rounded-xl border border-slate-200 max-h-36 overflow-y-auto">
-                          @for (a of getFilteredAvailableAgents(); track a.id) {
-                            <button mat-stroked-button color="primary" class="!rounded-lg !text-xs !font-bold" [matTooltip]="a.description || 'No description available'" (click)="attachAgent(a.id!)">
-                              + {{ a.name }}
-                            </button>
-                          } @empty {
-                            <span class="text-xs text-slate-400 italic">No sub-agents available to attach.</span>
-                          }
-                        </div>
-                      </div>
-                    }
-
-                    <div class="space-y-1.5 pt-2">
-                      <div class="flex flex-wrap gap-2">
-                        @for (subId of agentForm.attached_agents || []; track subId) {
-                          <span class="px-3 py-1 bg-purple-100 text-purple-900 font-bold text-xs rounded-xl flex items-center gap-2 border border-purple-200" [matTooltip]="getAgentName(subId)">
-                            🤖 {{ getAgentName(subId) }}
-                            @if (isEditing) {
-                              <button class="text-purple-700 hover:text-red-600 font-bold border-none bg-transparent cursor-pointer text-sm" (click)="detachAgent(subId)">×</button>
-                            }
-                          </span>
-                        } @empty {
-                          <span class="text-xs text-slate-400 italic">No sub-agents attached.</span>
-                        }
-                      </div>
-                    </div>
-                  </div>
+                  <app-entity-attachment-manager
+                    title="🤖 Sub-Agents (Multi-Agent Network)"
+                    themeColor="purple"
+                    [availableEntities]="availableAgentsForAttachment"
+                    [attachedIds]="agentForm.attached_agents || []"
+                    [isEditing]="isEditing"
+                    (attach)="attachAgent($event)"
+                    (detach)="detachAgent($event)">
+                  </app-entity-attachment-manager>
 
                   <!-- Section 4: Implemented Trait Contracts -->
-                  <div class="p-5 bg-emerald-50/50 rounded-xl border border-emerald-200/80 space-y-4">
-                    <div>
-                      <h4 class="text-sm font-bold text-emerald-950 m-0 flex items-center gap-2">🛡️ Trait Contracts</h4>
-                    </div>
-                    
-                    @if (isEditing) {
-                      <div class="space-y-2">
-                        <mat-form-field appearance="outline" class="w-full" matTooltip="Type to filter registered trait interface contracts">
-                          <mat-label>Search Registered Trait Contracts...</mat-label>
-                          <input matInput [(ngModel)]="traitSearchQuery" placeholder="Filter traits e.g. SecurityAuditor">
-                        </mat-form-field>
-
-                        <div class="flex flex-wrap gap-2 p-3 bg-white rounded-xl border border-slate-200 max-h-36 overflow-y-auto">
-                          @for (t of filteredTraitsCatalog; track t) {
-                            <button mat-stroked-button color="primary" class="!rounded-lg !text-xs" [matTooltip]="getTraitDescription(t)" (click)="attachTraitFromCatalog(t)">
-                              + {{ t }}
-                            </button>
-                          } @empty {
-                            <span class="text-xs text-slate-400 italic">No traits available to attach.</span>
-                          }
-                        </div>
-                      </div>
-                    }
-
-                    <div class="space-y-2 pt-2 border-t border-slate-200">
-                      <div class="flex flex-wrap gap-2">
-                        @for (trait of agentForm.implements_traits; track trait) {
-                          <span class="px-3 py-1 bg-emerald-100 text-emerald-800 font-bold text-xs rounded-xl flex items-center gap-2 border border-emerald-200" [matTooltip]="getTraitDescription(trait)">
-                            🛡️ {{ trait }}
-                            @if (isEditing) {
-                              <button class="text-emerald-600 hover:text-red-600 font-bold border-none bg-transparent cursor-pointer text-sm" (click)="removeTrait(trait)">×</button>
-                            }
-                          </span>
-                        } @empty {
-                          <span class="text-xs text-slate-400 italic">No traits attached.</span>
-                        }
-                      </div>
-                    </div>
-                  </div>
+                  <app-entity-attachment-manager
+                    title="🛡️ Trait Contracts"
+                    themeColor="emerald"
+                    [availableEntities]="availableTraitsForAttachment"
+                    [attachedIds]="agentForm.implements_traits || []"
+                    [isEditing]="isEditing"
+                    (attach)="attachTraitFromCatalog($event)"
+                    (detach)="removeTrait($event)">
+                  </app-entity-attachment-manager>
 
 
                   <!-- Section 5: Used Trait Contracts -->
-                  <div class="p-5 bg-indigo-50/50 rounded-xl border border-indigo-200/80 space-y-4">
-                    <div>
-                      <h4 class="text-sm font-bold text-indigo-950 m-0 flex items-center gap-2">🔗 Used Trait Contracts</h4>
-                    </div>
-
-                    @if (isEditing) {
-                      <div class="space-y-2">
-                        <mat-form-field appearance="outline" class="w-full" matTooltip="Type to filter registered trait interface contracts to depend on">
-                          <mat-label>Search Registered Used Trait Contracts...</mat-label>
-                          <input matInput [(ngModel)]="usesTraitSearchQuery" placeholder="Filter traits e.g. SecurityAuditor">
-                        </mat-form-field>
-
-                        <div class="flex flex-wrap gap-2 p-3 bg-white rounded-xl border border-slate-200 max-h-36 overflow-y-auto">
-                          @for (t of filteredUsesTraitsCatalog; track t) {
-                            <button mat-stroked-button color="primary" class="!rounded-lg !text-xs" [matTooltip]="getTraitDescription(t)" (click)="attachUsesTraitFromCatalog(t)">
-                              + {{ t }}
-                            </button>
-                          } @empty {
-                            <span class="text-xs text-slate-400 italic">No traits available to attach.</span>
-                          }
-                        </div>
-                      </div>
-                    }
-
-                    <div class="space-y-2 pt-2 border-t border-slate-200">
-                      <div class="flex flex-wrap gap-2">
-                        @for (trait of agentForm.uses_traits; track trait) {
-                          <span class="px-3 py-1 bg-indigo-100 text-indigo-800 font-bold text-xs rounded-xl flex items-center gap-2 border border-indigo-200" [matTooltip]="getTraitDescription(trait)">
-                            🔗 {{ trait }}
-                            @if (isEditing) {
-                              <button class="text-indigo-600 hover:text-red-600 font-bold border-none bg-transparent cursor-pointer text-sm" (click)="removeUsesTrait(trait)">×</button>
-                            }
-                          </span>
-                        } @empty {
-                          <span class="text-xs text-slate-400 italic">No used traits attached.</span>
-                        }
-                      </div>
-                    </div>
-                  </div>
+                  <app-entity-attachment-manager
+                    title="🔗 Used Trait Contracts"
+                    themeColor="indigo"
+                    [availableEntities]="availableTraitsForAttachment"
+                    [attachedIds]="agentForm.uses_traits || []"
+                    [isEditing]="isEditing"
+                    (attach)="attachUsesTraitFromCatalog($event)"
+                    (detach)="removeUsesTrait($event)">
+                  </app-entity-attachment-manager>
 
 
                 </div>
