@@ -204,6 +204,7 @@ flowchart TD
 | **Phase 18** | [35-knowledge-markdown-document-retention-spec.md](./35-knowledge-markdown-document-retention-spec.md) | `complete` | Knowledge Markdown Document Retention & Bidirectional Concept Provenance | [Knowledge PRD](../prds/knowledge-data-system-prd.md) | Phase 18 Spec (Depends on Spec 33) |
 | **Phase 19** | [36-knowledge-inspector-router-selection-spec.md](./36-knowledge-inspector-router-selection-spec.md) | `complete` | Knowledge Inspector Router State Synchronization & Deep Linking | [Knowledge PRD](../prds/knowledge-data-system-prd.md), [Agent UI PRD](../prds/agent-ui-testing-kit-prd.md) | Phase 19 Spec (Depends on Spec 29 & Spec 35) |
 | **Phase 20** | [37-common-reusable-components-library-spec.md](./37-common-reusable-components-library-spec.md) | `draft` | Common Reusable Components Library | [Agent UI PRD](../prds/agent-ui-testing-kit-prd.md) | Phase 20 Spec (Depends on UI standards) |
+| **Phase 21** | [38-ui-nested-routing-refactor-spec.md](./38-ui-nested-routing-refactor-spec.md) | `draft` | UI Nested Routing Refactor (Layouts, Outlets, Master-Detail decoupling) | [Nested Routing PRD](../prds/ui-nested-routing-refactor-prd.md) | Phase 21 Spec |
 
 - [CLI Manifest Tool Spec](./cli-manifest-tool-spec.md)
 
