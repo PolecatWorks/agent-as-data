@@ -1,4 +1,6 @@
 import { Component, OnInit } from '@angular/core';
+import { TopNavbarComponent } from '../shared/top-navbar/top-navbar.component';
+
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
@@ -39,6 +41,7 @@ export interface TestEntity {
   selector: 'app-interactive-testing',
   standalone: true,
   imports: [
+    TopNavbarComponent,
     CommonModule,
     FormsModule,
     MatCardModule,

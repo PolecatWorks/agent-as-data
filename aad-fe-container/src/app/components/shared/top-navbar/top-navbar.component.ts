@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { Component, Input, Output, EventEmitter, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
@@ -32,4 +32,6 @@ export class TopNavbarComponent {
   @Input() workspaceIcon: string = '';
   @Input() conceptGuideConfig: ConceptGuideConfig | null = null;
   @Output() menuToggle = new EventEmitter<void>();
+
+  @ViewChild(ConceptGuideComponent) conceptGuide?: ConceptGuideComponent;
 }

@@ -1,4 +1,30 @@
-<div class="h-full w-full flex flex-row bg-slate-50 overflow-hidden">
+<div class="h-full w-full flex flex-col bg-slate-50 overflow-hidden">
+
+  <!-- Top Bar -->
+  <app-top-navbar
+    workspaceTitle="Interactive Testing Studio"
+    workspaceIcon="bug_report"
+    [conceptGuideConfig]="{
+      badge: '6. Live Pre-Production Sandbox',
+      title: 'Pre-Production Sandbox (Testing Studio)',
+      icon: 'bug_report',
+      triggerLabel: 'What is Testing Studio?',
+      analogyTitle: 'The Pre-Production Sandbox Analogy',
+      analogyText: 'Think of the Testing Studio like an interactive staging sandbox. Safely preview how agents reason, test dynamic trait bindings, inspect system prompts, and verify outputs before deploying to live workflows.',
+      tabMappings: conceptGuideMappings,
+      detailLink: '/detail',
+      detailLinkLabel: 'Explore Testing Architecture',
+      testIdPrefix: 'testing-concept'
+    }">
+    <button primary-action mat-flat-button color="primary" class="!rounded-lg !px-4 !font-bold h-9 ml-2 !inline-flex !items-center !justify-center"
+                [disabled]="isExecuting || !selectedEntity" (click)="runExecution()">
+          <mat-icon class="mr-1 !w-5 !h-5 !text-[20px] !leading-none flex items-center justify-center">play_arrow</mat-icon>
+          <span>Execute</span>
+        </button>
+  </app-top-navbar>
+
+  <div class="flex-1 flex flex-row min-h-0 overflow-hidden relative">
+
 
   <!-- Left Sidebar -->
   <div [ngClass]="isSidebarCollapsed ? 'w-16' : 'w-72'" class="h-full bg-white border-r border-slate-200 shadow-sm flex flex-col transition-all duration-300 z-10 shrink-0 overflow-hidden">
@@ -111,93 +137,7 @@
     }
   </div>
 
-  <!-- Right Area (Workspace) -->
-  <div class="flex-1 flex flex-col min-w-0 overflow-hidden bg-slate-50 relative">
-
-    <!-- Top Bar -->
-    <div class="h-14 bg-white border-b border-slate-200 flex items-center justify-between px-4 shrink-0 shadow-sm z-10">
-      <!-- Left side of top bar (Title & View Switcher) -->
-      <div class="flex items-center gap-3">
-        <div class="flex items-center gap-1.5 px-2.5 py-1 -ml-2 rounded-lg hover:bg-slate-100 cursor-pointer transition-colors select-none group"
-             [matMenuTriggerFor]="appMenu"
-             data-testid="workspace-title-switcher"
-             title="Click to switch workspace">
-          <mat-icon class="text-indigo-600 !w-6 !h-6 !text-[24px] !leading-none flex items-center justify-center">bug_report</mat-icon>
-          <h1 class="text-lg font-black text-slate-800 m-0">Interactive Testing Studio</h1>
-          <mat-icon class="!w-4 !h-4 !text-base text-slate-400 group-hover:text-slate-700 transition-colors">expand_more</mat-icon>
-        </div>
-
-        <!-- Zero-Footprint Reusable Concept Guide -->
-        <app-concept-guide
-          badge="6. Live Pre-Production Sandbox"
-          title="Pre-Production Sandbox (Testing Studio)"
-          icon="bug_report"
-          triggerLabel="What is Testing Studio?"
-          analogyTitle="The Pre-Production Sandbox Analogy"
-          analogyText="Think of the Testing Studio like an interactive staging sandbox. Safely preview how agents reason, test dynamic trait bindings, inspect system prompts, and verify outputs before deploying to live workflows."
-          [tabMappings]="conceptGuideMappings"
-          detailLink="/detail"
-          detailLinkLabel="Explore Testing Architecture"
-          testIdPrefix="testing-concept">
-        </app-concept-guide>
-      </div>
-
-      <!-- Right side of top bar (Actions & Navigation) -->
-      <div class="flex items-center gap-2">
-        <!-- Model Selection Dropdown (Ollama local runtime) -->
-        <div class="flex items-center bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-full px-3 py-1 text-xs font-semibold text-slate-700 gap-1.5 transition-colors cursor-pointer"
-             [matMenuTriggerFor]="modelMenu" title="Select Ollama Model">
-          <mat-icon class="!w-4 !h-4 !text-[16px] text-slate-500 !leading-none flex items-center justify-center">memory</mat-icon>
-          <span>{{ selectedModel }}</span>
-          <mat-icon class="!w-4 !h-4 !text-[16px] text-slate-400 !leading-none flex items-center justify-center">expand_more</mat-icon>
-        </div>
-
-        <mat-menu #modelMenu="matMenu">
-          @for (model of availableModels; track model) {
-            <button mat-menu-item (click)="selectModel(model)" [class.font-bold]="selectedModel === model">
-              <mat-icon [class.text-indigo-600]="selectedModel === model">
-                {{ selectedModel === model ? 'check' : 'smart_toy' }}
-              </mat-icon>
-              <span>{{ model }}</span>
-            </button>
-          }
-        </mat-menu>
-
-        <button mat-flat-button color="primary" class="!rounded-lg !px-4 !font-bold h-9 ml-2 !inline-flex !items-center !justify-center"
-                [disabled]="isExecuting || !selectedEntity" (click)="runExecution()">
-          <mat-icon class="mr-1 !w-5 !h-5 !text-[20px] !leading-none flex items-center justify-center">play_arrow</mat-icon>
-          <span>Execute</span>
-        </button>
-
-        <!-- Hamburger Menu for App Navigation -->
-        <button mat-icon-button [matMenuTriggerFor]="appMenu" aria-label="Menu" class="text-slate-500 hover:text-slate-800">
-          <mat-icon>menu</mat-icon>
-        </button>
-
-        <mat-menu #appMenu="matMenu">
-          @for (item of menuItems; track item.path) {
-            <a mat-menu-item [routerLink]="item.path" routerLinkActive="active-link">
-              <mat-icon>{{ item.icon }}</mat-icon>
-              <span>{{ item.label }}</span>
-            </a>
-          }
-        </mat-menu>
-
-        <div class="w-px h-6 bg-slate-200 mx-1"></div> <!-- Divider -->
-
-        <!-- View Toggle Icon (Mock) -->
-        <button mat-icon-button class="text-slate-500 hover:text-slate-800" title="Change View">
-          <mat-icon>view_column</mat-icon>
-        </button>
-
-        <!-- User Profile (Mock) -->
-        <button mat-icon-button class="ml-1">
-          <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-amber-400 to-orange-500 border-2 border-white shadow-sm flex items-center justify-center text-white font-bold text-sm">
-            BG
-          </div>
-        </button>
-      </div>
-    </div>
+  
 
     <!-- Workspace Content (Scrollable) -->
     <div class="flex-1 min-h-0 overflow-y-auto p-6 space-y-5">

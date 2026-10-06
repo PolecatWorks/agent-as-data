@@ -6,6 +6,8 @@ import {
   NgZone,
   ChangeDetectorRef,
 } from '@angular/core';
+import { TopNavbarComponent } from '../shared/top-navbar/top-navbar.component';
+
 import { CommonModule, TitleCasePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -44,6 +46,7 @@ export interface SystemTuple {
   selector: 'app-knowledge-explorer',
   standalone: true,
   imports: [
+    TopNavbarComponent,
     CommonModule,
     FormsModule,
     RouterModule,
