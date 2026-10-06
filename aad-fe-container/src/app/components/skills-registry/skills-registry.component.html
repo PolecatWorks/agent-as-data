@@ -282,119 +282,37 @@
               <mat-tab label="Capabilities & Traits">
                 <div class="pt-6 space-y-6">
                   <!-- Section 2: Referred Tools -->
-                  <div class="p-5 bg-blue-50/30 rounded-xl border border-blue-200/50 space-y-3">
-                    <h4 class="text-sm font-bold text-blue-950 m-0 flex items-center gap-2">🛠️ Tools & System APIs</h4>
-                    
-                    @if (isEditing) {
-                      <div class="space-y-2">
-                        <input type="text" [(ngModel)]="toolSearchQuery" placeholder="Filter registered tools by name..."
-                               class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all" />
-
-                        <div class="flex flex-wrap gap-2 p-3 bg-white rounded-xl border border-slate-200 max-h-36 overflow-y-auto">
-                          @for (m of getFilteredAvailableTools(); track m.id) {
-                            <button mat-stroked-button color="primary" class="!rounded-lg !text-xs !font-bold" [matTooltip]="getToolDescription(m.id)" (click)="attachTool(m.id)">
-                              + {{ m.server_name }}
-                            </button>
-                          } @empty {
-                            <span class="text-xs text-slate-400 italic">No tools available to attach.</span>
-                          }
-                        </div>
-                      </div>
-                    }
-
-                    <div class="space-y-1.5 pt-2">
-                      <div class="flex flex-wrap gap-2">
-                        @for (mcpId of skillForm.attached_tools || []; track mcpId) {
-                          <span class="px-3 py-1 bg-blue-100 text-blue-900 font-bold text-xs rounded-xl flex items-center gap-2 border border-blue-200" [matTooltip]="getToolDescription(mcpId)">
-                            🛠️ {{ getToolName(mcpId) }}
-                            @if (isEditing) {
-                              <button class="text-blue-700 hover:text-red-600 font-bold border-none bg-transparent cursor-pointer text-sm" (click)="detachTool(mcpId)">×</button>
-                            }
-                          </span>
-                        } @empty {
-                          <span class="text-xs text-slate-400 italic">No tools attached.</span>
-                        }
-                      </div>
-                    </div>
-                  </div>
+                  <app-entity-attachment-manager
+                    title="🛠️ Tools & System APIs"
+                    themeColor="blue"
+                    [availableEntities]="availableToolsForAttachment"
+                    [attachedIds]="skillForm.attached_tools || []"
+                    [isEditing]="isEditing"
+                    (attach)="attachTool($event)"
+                    (detach)="detachTool($event)">
+                  </app-entity-attachment-manager>
 
                   <!-- Section 1: Referred Skills -->
-                  <div class="p-5 bg-indigo-50/30 rounded-xl border border-indigo-200/50 space-y-3">
-                    <h4 class="text-sm font-bold text-indigo-950 m-0 flex items-center gap-2">⚡ Skill Packages</h4>
-                    
-                    @if (isEditing) {
-                      <div class="space-y-2">
-                        <input type="text" [(ngModel)]="skillSearchQuery" placeholder="Filter registered skills by name or description..."
-                               class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all" />
-
-                        <div class="flex flex-wrap gap-2 p-3 bg-white rounded-xl border border-slate-200 max-h-36 overflow-y-auto">
-                          @for (s of getFilteredAvailableSkills(); track s.id) {
-                            <button mat-stroked-button color="primary" class="!rounded-lg !text-xs !font-bold" [matTooltip]="s.description || 'No description available'" (click)="attachSkill(s.id!)">
-                              + {{ s.name }}
-                            </button>
-                          } @empty {
-                            <span class="text-xs text-slate-400 italic">No skills available to attach.</span>
-                          }
-                        </div>
-                      </div>
-                    }
-
-                    <div class="space-y-1.5 pt-2">
-                      <div class="flex flex-wrap gap-2">
-                        @for (skillId of skillForm.attached_skills || []; track skillId) {
-                          <span class="px-3 py-1 bg-indigo-100 text-indigo-900 font-bold text-xs rounded-xl flex items-center gap-2 border border-indigo-200" [matTooltip]="getSkillName(skillId)">
-                            ⚡ {{ getSkillName(skillId) }}
-                            @if (isEditing) {
-                              <button class="text-indigo-700 hover:text-red-600 font-bold border-none bg-transparent cursor-pointer text-sm" (click)="detachSkill(skillId)">×</button>
-                            }
-                          </span>
-                        } @empty {
-                          <span class="text-xs text-slate-400 italic">No skills attached.</span>
-                        }
-                      </div>
-                    </div>
-                  </div>
+                  <app-entity-attachment-manager
+                    title="⚡ Skill Packages"
+                    themeColor="indigo"
+                    [availableEntities]="availableSkillsForAttachment"
+                    [attachedIds]="skillForm.attached_skills || []"
+                    [isEditing]="isEditing"
+                    (attach)="attachSkill($event)"
+                    (detach)="detachSkill($event)">
+                  </app-entity-attachment-manager>
 
                   <!-- Section 3: Implemented Trait Contracts -->
-                  <div class="p-5 bg-emerald-50/50 rounded-xl border border-emerald-200/80 space-y-4">
-                    <div>
-                      <h4 class="text-sm font-bold text-emerald-950 m-0 flex items-center gap-2">🛡️ Trait Contracts</h4>
-                    </div>
-                    
-                    @if (isEditing) {
-                      <div class="space-y-2">
-                        <div class="relative">
-                          <input type="text" [(ngModel)]="traitSearchQuery" placeholder="Search registered traits..."
-                                 class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all" />
-                        </div>
-
-                        <div class="flex flex-wrap gap-2 p-3 bg-white rounded-xl border border-slate-200 max-h-36 overflow-y-auto">
-                          @for (t of filteredTraitsCatalog; track t) {
-                            <button mat-stroked-button color="primary" class="!rounded-lg !text-xs !font-bold" [matTooltip]="getTraitDescription(t)" (click)="attachTraitFromCatalog(t)">
-                              + {{ t }}
-                            </button>
-                          } @empty {
-                            <span class="text-xs text-slate-400 italic">No traits available to attach.</span>
-                          }
-                        </div>
-                      </div>
-                    }
-
-                    <div class="space-y-2 pt-2 border-t border-slate-200">
-                      <div class="flex flex-wrap gap-2">
-                        @for (trait of skillForm.implements_traits || []; track trait) {
-                          <span class="px-3 py-1 bg-emerald-100 text-emerald-800 font-bold text-xs rounded-xl flex items-center gap-2 border border-emerald-200" [matTooltip]="getTraitDescription(trait)">
-                            🛡️ {{ trait }}
-                            @if (isEditing) {
-                              <button class="text-emerald-600 hover:text-red-600 font-bold border-none bg-transparent cursor-pointer text-sm" (click)="removeTrait(trait)">×</button>
-                            }
-                          </span>
-                        } @empty {
-                          <span class="text-xs text-slate-400 italic">No traits attached.</span>
-                        }
-                      </div>
-                    </div>
-                  </div>
+                  <app-entity-attachment-manager
+                    title="🛡️ Trait Contracts"
+                    themeColor="emerald"
+                    [availableEntities]="availableTraitsForAttachment"
+                    [attachedIds]="skillForm.implements_traits || []"
+                    [isEditing]="isEditing"
+                    (attach)="attachTraitFromCatalog($event)"
+                    (detach)="removeTrait($event)">
+                  </app-entity-attachment-manager>
                 </div>
               </mat-tab>
 

@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { TopNavbarComponent } from '../shared/top-navbar/top-navbar.component';
 import { EntitySidebarListComponent } from '../shared/entity-sidebar-list/entity-sidebar-list.component';
+import { EntityAttachmentManagerComponent } from '../shared/entity-attachment-manager/entity-attachment-manager.component';
 
 
 import { CommonModule } from '@angular/common';
@@ -31,6 +32,7 @@ import { APP_NAV_MENU_ITEMS } from '../../models/navigation';
   standalone: true,
   imports: [
     EntitySidebarListComponent,
+    EntityAttachmentManagerComponent,
     TopNavbarComponent,
     CommonModule,
     FormsModule,
@@ -83,6 +85,32 @@ export class SkillsRegistryComponent implements OnInit {
     this.isSidebarCollapsed = !this.isSidebarCollapsed;
   }
   skills: Skill[] = [];
+
+  get availableSkillsForAttachment() {
+    return this.skills
+      .filter(s => s.id !== this.skillForm.id)
+      .map(s => ({
+        id: s.id || '',
+        name: s.name,
+        description: s.description
+      }));
+  }
+
+  get availableTraitsForAttachment() {
+    return this.traitContracts.map(t => ({
+      id: t.name,
+      name: t.name,
+      description: t.description
+    }));
+  }
+
+  get availableToolsForAttachment() {
+    return this.allTools.map(t => ({
+      id: t.id,
+      name: t.server_name || t.name,
+      description: 'MCP Server version ' + (t.version || 'unknown')
+    }));
+  }
   selectedSkill: Skill | null = null;
   searchQuery: string = '';
   isEditing: boolean = false;
