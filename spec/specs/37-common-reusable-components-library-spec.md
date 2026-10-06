@@ -58,6 +58,13 @@ To ensure maximum maintainability and visual consistency, the frontend applicati
   - Inputs: `@Input() title: string`, `@Input() message: string`, `@Input() icon: string`, `@Input() actionLabel: string`.
   - Outputs: `@Output() actionClick: EventEmitter<void>`.
 
+### 8. Entity Attachment Manager (`<app-entity-attachment-manager>`)
+- **Outcome**: A single, encapsulated component for managing the attachment of associated entities (e.g., Skills to Agents, Traits to Skills).
+- **Contract**:
+  - Inputs: `@Input() title: string`, `@Input() themeColor: string` (e.g., `'indigo'`, `'emerald'`), `@Input() availableEntities: {id: string, name: string, description: string}[]`, `@Input() attachedIds: string[]`, `@Input() isEditing: boolean`.
+  - Outputs: `@Output() attach: EventEmitter<string>`, `@Output() detach: EventEmitter<string>`.
+  - Internally manages search/filter state for the available entities list.
+
 ## Test Strategy
 
 ### Unit Tests (Jasmine/Karma)
@@ -65,9 +72,11 @@ To ensure maximum maintainability and visual consistency, the frontend applicati
 - **Event Emitters**: Verify that clicks on cards, buttons in the action bar, and the empty state trigger the correct output events.
 - **Concept Guide State**: Test the hover debounce and click-to-pin logic of `<app-concept-guide>`.
 - **Terminal Auto-scroll**: Verify `<app-terminal-console>` scrolls to the bottom when new stream data is appended.
+- **Entity Attachment Manager**: Verify search filtering logic correctly filters `availableEntities` and that `attach`/`detach` events emit the correct ID.
 
 ### Integration Tests (Playwright / UI Automation)
 - **Visual Parity**: Verify that all screens using the `<app-top-navbar>` exhibit identical height, borders, and layout constraints.
 - **Sidebar Collapse**: Test that `<app-entity-sidebar-list>` smoothly transitions between expanded (`w-72`) and collapsed (`w-16`) states.
 - **Concept Guide Positioning**: Ensure `<app-concept-guide>` popovers do not push down page content and close when clicking outside.
 - **Action Bar Dialogs**: End-to-end verification that clicking "Delete" on `<app-detail-action-bar>` opens a confirmation dialog, and confirming proceeds with the intended action.
+- **Entity Attachment Flow**: Test end-to-end flow of searching for an entity, clicking to attach it, verifying it appears as a pill, and clicking the 'x' to detach it in edit mode.
