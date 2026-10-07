@@ -29,7 +29,7 @@ import { marked } from 'marked';
 import { APP_NAV_MENU_ITEMS } from '../../models/navigation';
 
 @Component({
-  selector: 'app-skills-registry',
+  selector: 'app-skill-detail',
   standalone: true,
   imports: [
     EntitySidebarListComponent,
@@ -51,14 +51,11 @@ import { APP_NAV_MENU_ITEMS } from '../../models/navigation';
     MatMenuModule,
     ConceptGuideComponent,
   ],
-  templateUrl: './skills-registry.component.html',
-  styleUrl: './skills-registry.component.scss',
+  templateUrl: './skill-detail.component.html',
+  styleUrl: './skill-detail.component.scss',
 })
-export class SkillsRegistryComponent implements OnInit {
-  isSidebarCollapsed = false;
-
-  menuItems = APP_NAV_MENU_ITEMS;
-
+export class SkillDetailComponent implements OnInit {
+  
   readonly conceptGuideMappings: ConceptTabMapping[] = [
     {
       icon: 'description',
@@ -83,9 +80,6 @@ export class SkillsRegistryComponent implements OnInit {
     },
   ];
 
-  toggleSidebar() {
-    this.isSidebarCollapsed = !this.isSidebarCollapsed;
-  }
   skills: Skill[] = [];
 
   get availableSkillsForAttachment() {
@@ -162,13 +156,18 @@ export class SkillsRegistryComponent implements OnInit {
     this.loadSkills();
     this.loadTools();
     this.loadTraits();
-    this.route.params.subscribe((params) => {
-      if (params['id']) {
-        this.loadSkill(params['id']);
+    this.route.paramMap.subscribe(params => {
+      const id = params.get('id');
+      if (this.route.snapshot.routeConfig?.path === "new") {
+        this.startNewSkill();
+      } else if (id) {
+        this.loadSkill(id);
       }
     });
     this.route.queryParams.subscribe((queryParams) => {
-      this.isEditing = queryParams['edit'] === 'true';
+      if (this.route.snapshot.routeConfig?.path !== "new") {
+        this.isEditing = queryParams['edit'] === 'true';
+      }
     });
   }
 
@@ -206,7 +205,7 @@ export class SkillsRegistryComponent implements OnInit {
         this.skills = skills;
         const routeId = this.route.snapshot.params['id'];
         if (!routeId && this.skills.length > 0) {
-          const filtered = this.getFilteredSkills();
+          const filtered = this.skills;
           if (filtered.length > 0) {
             this.selectSkill(filtered[0]);
           }
@@ -434,7 +433,7 @@ export class SkillsRegistryComponent implements OnInit {
           this.showDeleteConfirm = false;
           this.loadSkills();
           if (this.skills.length > 0) {
-            const filtered = this.getFilteredSkills();
+            const filtered = this.skills;
             if (filtered.length > 0) {
               this.selectSkill(filtered[0]);
             }
@@ -473,17 +472,6 @@ export class SkillsRegistryComponent implements OnInit {
         },
       });
     }
-  }
-
-  getFilteredSkills(): Skill[] {
-    const query = this.searchQuery.toLowerCase().trim();
-    if (!query) return this.skills;
-    return this.skills.filter(
-      (s) =>
-        s.name.toLowerCase().includes(query) ||
-        s.description.toLowerCase().includes(query) ||
-        s.tags.some((t) => t.toLowerCase().includes(query)),
-    );
   }
 
   getRenderedMarkdown(text: string): SafeHtml {
