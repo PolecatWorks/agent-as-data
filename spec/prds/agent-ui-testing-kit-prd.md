@@ -78,6 +78,11 @@ To ensure maximum maintainability and visual consistency, the frontend applicati
    - **Purpose**: A unified interface for building relationships between domain entities (e.g., attaching Skills to Agents, Traits to Skills).
    - **Features**: Encapsulates a search/filter input for available entities, a scrollable list of addable items, and a display area for currently attached entities represented as removable pill badges.
 
+9. **Code Editor Textarea (`<app-code-editor-textarea>`)**:
+   - **Purpose**: A dark-themed, monospaced textarea component used for capturing raw code, JSON configurations, and system prompts.
+   - **Features**: Consistent styling (dark background, syntax-specific text colors like emerald/indigo), built-in form control binding (ControlValueAccessor), and monospaced typography. Ensures a single point of upgrade if transitioning to a rich code editor library later.
+
+
 ### Global Top Bar & Navigation Menu Specification
 All views across the application must share an identical, standardized top bar (`h-14 bg-white border-b border-slate-200 shadow-sm`) and navigation menu to ensure a seamless, uniform developer experience:
 - **Left Context / Title Area & Quick View Switcher**: Displays a pill badge/container with the module icon, current workspace name (e.g. `Agents Registry`, `Traits Registry`, `Skills Registry`, `Workbench`, `Interactive Testing Studio`, `Knowledge & SPO Tuple Inspector`), and an interactive dropdown affordance (`expand_more` or `unfold_more`):
