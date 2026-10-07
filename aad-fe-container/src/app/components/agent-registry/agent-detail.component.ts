@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
+import { CodeEditorTextareaComponent } from '../shared/code-editor-textarea/code-editor-textarea.component';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
@@ -43,6 +44,7 @@ export interface LLMModelOption {
   selector: 'app-agent-detail',
   standalone: true,
   imports: [
+    CodeEditorTextareaComponent,
     EntityAttachmentManagerComponent,
     CommonModule,
     FormsModule,

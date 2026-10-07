@@ -4,6 +4,7 @@ import { EntitySidebarListComponent } from '../shared/entity-sidebar-list/entity
 
 
 import { CommonModule } from '@angular/common';
+import { CodeEditorTextareaComponent } from '../shared/code-editor-textarea/code-editor-textarea.component';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
@@ -25,6 +26,7 @@ import {
   selector: 'app-tool-manager',
   standalone: true,
   imports: [
+    CodeEditorTextareaComponent,
     EntitySidebarListComponent,
     TopNavbarComponent,
     CommonModule,

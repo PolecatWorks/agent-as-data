@@ -367,8 +367,9 @@
             <label class="text-xs font-bold text-slate-600">Input Arguments (JSON)</label>
             <span class="text-[10px] text-slate-400">Pre-populated from JSON Schema</span>
           </div>
-          <textarea rows="4" [(ngModel)]="testArgsJson"
-                    class="w-full font-mono text-xs p-3 bg-slate-900 text-emerald-400 rounded-xl border border-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"></textarea>
+          <app-code-editor-textarea [rows]="4" [(ngModel)]="testArgsJson" codeColor="emerald" placeholder="{
+  &quot;key&quot;: &quot;value&quot;
+}"></app-code-editor-textarea>
         </div>
 
         @if (testError) {
