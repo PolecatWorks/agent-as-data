@@ -17,8 +17,15 @@ export const routes: Routes = [
   },
   { path: 'traits', loadComponent: () => import('./components/traits-registry/traits-registry.component').then(m => m.TraitsRegistryComponent) },
   { path: 'traits/:id', loadComponent: () => import('./components/traits-registry/traits-registry.component').then(m => m.TraitsRegistryComponent) },
-  { path: 'skills', loadComponent: () => import('./components/skills-registry/skills-registry.component').then(m => m.SkillsRegistryComponent) },
-  { path: 'skills/:id', loadComponent: () => import('./components/skills-registry/skills-registry.component').then(m => m.SkillsRegistryComponent) },
+  {
+    path: 'skills',
+    loadComponent: () => import('./components/skills-registry/skills-registry-layout/skills-registry-layout.component').then(m => m.SkillsRegistryLayoutComponent),
+    children: [
+      { path: '', loadComponent: () => import('./components/skills-registry/skill-empty/skill-empty.component').then(m => m.SkillEmptyComponent), pathMatch: 'full' },
+      { path: 'new', loadComponent: () => import('./components/skills-registry/skill-detail.component').then(m => m.SkillDetailComponent) },
+      { path: ':id', loadComponent: () => import('./components/skills-registry/skill-detail.component').then(m => m.SkillDetailComponent) }
+    ]
+  },
 
   { path: 'interactive-testing', loadComponent: () => import('./components/interactive-testing/interactive-testing.component').then(m => m.InteractiveTestingComponent) },
   { path: 'network-visualizer', loadComponent: () => import('./components/network-visualizer/network-visualizer.component').then(m => m.NetworkVisualizerComponent) },

@@ -1,0 +1,66 @@
+<div class="h-full w-full flex flex-col bg-slate-50 overflow-hidden">
+  <app-top-navbar
+    workspaceTitle="Skills Registry"
+    workspaceIcon="extension"
+    [conceptGuideConfig]="{
+      badge: '4. Standard Operating Procedures',
+      title: 'Standard Operating Procedures (Skills)',
+      icon: 'extension',
+      triggerLabel: 'What are Skills?',
+      analogyTitle: 'The SOP Analogy',
+      analogyText: 'Think of Skills like standard operating procedures (SOPs). They are modular, deterministic instruction packages with typed schemas that any authorized agent can invoke to execute specific tasks.',
+      tabMappings: conceptGuideMappings,
+      detailLink: '/detail',
+      detailLinkLabel: 'Explore Skill Architecture',
+      testIdPrefix: 'skills-concept'
+    }">
+    <button primary-action mat-flat-button color="primary" class="!rounded-lg !px-4 !font-bold h-9" (click)="createNewSkill()">
+      <mat-icon class="mr-1">add</mat-icon> New Skill
+    </button>
+  </app-top-navbar>
+
+  <div class="flex-1 flex flex-row min-h-0 overflow-hidden relative">
+    <app-entity-sidebar-list
+      [(isCollapsed)]="isSidebarCollapsed"
+      [items]="getFilteredSkills()"
+      [itemTemplate]="skillCardTemplate"
+      [itemSize]="96"
+      searchPlaceholder="Search skills by name..."
+      emptyMessage="No matching skills found."
+      (searchChange)="searchQuery = $event">
+    </app-entity-sidebar-list>
+
+    <ng-template #skillCardTemplate let-skill let-collapsed="collapsed">
+      <div class="group p-3 rounded-xl border transition-all cursor-pointer bg-white border-slate-200 hover:border-slate-300"
+           (click)="onSelectSkill(skill)"
+           routerLinkActive="!border-indigo-500 !shadow-sm !ring-1 !ring-indigo-500/20"
+           [routerLink]="['/skills', skill.id]">
+        <div class="flex flex-col w-full" *ngIf="!collapsed">
+          <div class="flex justify-between items-start">
+            <div class="flex items-start gap-3 overflow-hidden flex-1">
+              <mat-icon class="shrink-0 text-slate-400 mt-0.5">extension</mat-icon>
+              <div class="flex-1 min-w-0">
+                <h5 class="text-sm font-bold text-slate-900 m-0 truncate leading-tight mt-0.5" [matTooltip]="skill.name">{{ skill.name }}</h5>
+              </div>
+            </div>
+            <div class="flex items-center gap-1 ml-2 shrink-0">
+              <span class="px-2.5 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded-md">
+                v{{ skill.current_version || '1' }}
+              </span>
+            </div>
+          </div>
+          <p class="text-xs text-slate-500 m-0 line-clamp-2 leading-relaxed mt-2" *ngIf="!collapsed" [matTooltip]="skill.description || 'No description'">
+            {{ skill.description || 'No description provided.' }}
+          </p>
+        </div>
+        <div *ngIf="collapsed" class="flex justify-center" [matTooltip]="skill.name">
+          <mat-icon class="text-indigo-500">extension</mat-icon>
+        </div>
+      </div>
+    </ng-template>
+
+    <div class="flex-1 min-w-0 h-full overflow-hidden bg-white/50 relative" [class.ml-16]="isSidebarCollapsed">
+      <router-outlet></router-outlet>
+    </div>
+  </div>
+</div>
