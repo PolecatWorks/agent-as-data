@@ -65,6 +65,14 @@ To ensure maximum maintainability and visual consistency, the frontend applicati
   - Outputs: `@Output() attach: EventEmitter<string>`, `@Output() detach: EventEmitter<string>`.
   - Internally manages search/filter state for the available entities list.
 
+
+### 9. Code Editor Textarea (`<app-code-editor-textarea>`)
+- **Outcome**: A dark-themed, monospaced textarea component for code, JSON, and prompts that implements `ControlValueAccessor` for direct `[(ngModel)]` or reactive forms binding.
+- **Contract**:
+  - Inputs: `@Input() placeholder: string = ''`, `@Input() rows: number = 10`, `@Input() codeColor: 'emerald' | 'indigo' | 'amber' = 'emerald'`, `@Input() disabled: boolean = false`.
+  - Implements `ControlValueAccessor` to act as a native form control.
+  - Automatically manages dark styling, monospace font, and focus rings.
+
 ## Test Strategy
 
 ### Unit Tests (Jasmine/Karma)
@@ -73,6 +81,7 @@ To ensure maximum maintainability and visual consistency, the frontend applicati
 - **Concept Guide State**: Test the hover debounce and click-to-pin logic of `<app-concept-guide>`.
 - **Terminal Auto-scroll**: Verify `<app-terminal-console>` scrolls to the bottom when new stream data is appended.
 - **Entity Attachment Manager**: Verify search filtering logic correctly filters `availableEntities` and that `attach`/`detach` events emit the correct ID.
+- **Code Editor Textarea**: Verify it implements `ControlValueAccessor` correctly (writes values, registers `onChange`/`onTouched`), applies the correct theme color classes, and binds disabled state properly.
 
 ### Integration Tests (Playwright / UI Automation)
 - **Visual Parity**: Verify that all screens using the `<app-top-navbar>` exhibit identical height, borders, and layout constraints.
