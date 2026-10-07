@@ -11,3 +11,6 @@ integration-tests/*.xml
 .garden/
 integration-tests/.venv/
 integration-tests/reports/
+
+# Temporary Agent Scratch Files
+scratch/
