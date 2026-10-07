@@ -1,0 +1,10 @@
+<textarea
+  [rows]="rows"
+  [placeholder]="placeholder"
+  [disabled]="disabled"
+  [value]="value"
+  (input)="onInput($event)"
+  class="font-mono text-sm leading-relaxed w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 disabled:opacity-50 transition-all custom-scrollbar shadow-inner"
+  [ngClass]="textClass"
+  spellcheck="false"
+></textarea>

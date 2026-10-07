@@ -5,6 +5,7 @@ import { EntityAttachmentManagerComponent } from '../shared/entity-attachment-ma
 
 
 import { CommonModule } from '@angular/common';
+import { CodeEditorTextareaComponent } from '../shared/code-editor-textarea/code-editor-textarea.component';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
@@ -33,6 +34,7 @@ import { APP_NAV_MENU_ITEMS } from '../../models/navigation';
   imports: [
     EntitySidebarListComponent,
     EntityAttachmentManagerComponent,
+    CodeEditorTextareaComponent,
     TopNavbarComponent,
     CommonModule,
     FormsModule,
