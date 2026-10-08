@@ -5,8 +5,8 @@ import {
   ChangeDetectorRef,
   ViewChild,
 } from '@angular/core';
-import { TopNavbarComponent } from '../../components/shared/top-navbar/top-navbar.component';
-import { EntitySidebarListComponent } from '../../components/shared/entity-sidebar-list/entity-sidebar-list.component';
+import { TopNavbarComponent } from '../shared/top-navbar/top-navbar.component';
+import { EntitySidebarListComponent } from '../shared/entity-sidebar-list/entity-sidebar-list.component';
 
 
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
@@ -24,11 +24,11 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatMenuModule } from '@angular/material/menu';
 import { ApiService, TraitContract } from '../../services/api.service';
-import { GuardrailsEditorComponent } from '../../components/guardrails-editor/guardrails-editor.component';
+import { GuardrailsEditorComponent } from '../guardrails-editor/guardrails-editor.component';
 import {
   ConceptGuideComponent,
   ConceptTabMapping,
-} from '../../components/concept-guide/concept-guide.component';
+} from '../concept-guide/concept-guide.component';
 import { forkJoin } from 'rxjs';
 import { APP_NAV_MENU_ITEMS } from '../../models/navigation';
 
