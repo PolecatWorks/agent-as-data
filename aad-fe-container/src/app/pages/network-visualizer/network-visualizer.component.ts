@@ -729,6 +729,24 @@ export class NetworkVisualizerComponent implements OnInit, AfterViewInit {
     try {
       const { svg } = await mermaid.render(id, code);
       this.mermaidContainer.nativeElement.innerHTML = svg;
+
+      setTimeout(() => {
+        if (!this.mermaidContainer) return;
+        const nodesWithTitle = this.mermaidContainer.nativeElement.querySelectorAll('g.node[title]');
+        nodesWithTitle.forEach((node: Element) => {
+          const titleText = node.getAttribute('title');
+          if (titleText) {
+            const titleEl = document.createElementNS('http://www.w3.org/2000/svg', 'title');
+            titleEl.textContent = titleText;
+            node.appendChild(titleEl);
+            const innerDiv = node.querySelector('div');
+            if (innerDiv) {
+              innerDiv.setAttribute('title', titleText);
+            }
+            node.removeAttribute('title');
+          }
+        });
+      }, 0);
     } catch (e: any) {
       console.error('Mermaid render error:', e);
       this.renderError = e?.message || 'Failed to render diagram.';
