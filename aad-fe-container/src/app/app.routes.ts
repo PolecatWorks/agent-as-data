@@ -33,8 +33,15 @@ export const routes: Routes = [
   { path: 'refactoring-lab', loadComponent: () => import('./pages/refactoring-lab/refactoring-lab.component').then(m => m.RefactoringLabComponent) },
   { path: 'knowledge-inspector', loadComponent: () => import('./pages/knowledge-inspector/knowledge-inspector.component').then(m => m.KnowledgeInspectorComponent) },
   { path: 'knowledge-inspector/:id', loadComponent: () => import('./pages/knowledge-inspector/knowledge-inspector.component').then(m => m.KnowledgeInspectorComponent) },
-  { path: 'tools', loadComponent: () => import('./pages/tool-manager/tool-manager.component').then(m => m.ToolManagerComponent) },
-  { path: 'tools/:id', loadComponent: () => import('./pages/tool-manager/tool-manager.component').then(m => m.ToolManagerComponent) },
+  { 
+    path: 'tools', 
+    loadComponent: () => import('./pages/tool-manager/tool-manager-layout/tool-manager-layout.component').then(m => m.ToolManagerLayoutComponent),
+    children: [
+      { path: '', loadComponent: () => import('./pages/tool-manager/tool-empty/tool-empty.component').then(m => m.ToolEmptyComponent), pathMatch: 'full' },
+      { path: 'new', loadComponent: () => import('./pages/tool-manager/tool-detail.component').then(m => m.ToolDetailComponent) },
+      { path: ':id', loadComponent: () => import('./pages/tool-manager/tool-detail.component').then(m => m.ToolDetailComponent) }
+    ]
+  },
   { path: 'workbench', loadComponent: () => import('./pages/workbench/workbench.component').then(m => m.WorkbenchComponent) },
   { path: 'workbench/:benchId', loadComponent: () => import('./pages/workbench/workbench.component').then(m => m.WorkbenchComponent) },
   { path: 'workbench/:benchId/:threadId', loadComponent: () => import('./pages/workbench/workbench.component').then(m => m.WorkbenchComponent) },
