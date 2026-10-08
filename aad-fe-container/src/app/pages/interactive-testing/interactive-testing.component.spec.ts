@@ -162,12 +162,11 @@ describe('InteractiveTestingComponent', () => {
     );
   });
 
-  it('should render the workspace title as an interactive view switcher trigger with dropdown affordance', () => {
+  it('should render the workspace title ', () => {
     const switcher = fixture.nativeElement.querySelector(
-      '[data-testid="workspace-title-switcher"]',
+      '[data-testid="workspace-title"]',
     );
     expect(switcher).toBeTruthy();
     expect(switcher.textContent).toContain('Interactive Testing Studio');
-    expect(switcher.textContent).toContain('expand_more');
   });
 });

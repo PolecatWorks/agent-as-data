@@ -43,10 +43,10 @@ describe('AgentContextComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  it('should render the workspace title view switcher dropdown trigger', () => {
+  it('should render the workspace title workspace title', () => {
     const compiled = fixture.nativeElement as HTMLElement;
     const titleSwitcher = compiled.querySelector(
-      '[data-testid="workspace-title-switcher"]',
+      '[data-testid="workspace-title"]',
     );
     expect(titleSwitcher).toBeTruthy();
     expect(titleSwitcher?.textContent).toContain('Agent Context Search');

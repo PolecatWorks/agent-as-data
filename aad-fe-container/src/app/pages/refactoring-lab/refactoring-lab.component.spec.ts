@@ -28,15 +28,14 @@ describe('RefactoringLabComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  it('should render the workspace title as an interactive view switcher trigger with dropdown affordance', () => {
+  it('should render the workspace title ', () => {
     const switcher = fixture.nativeElement.querySelector(
-      '[data-testid="workspace-title-switcher"]',
+      '[data-testid="workspace-title"]',
     );
     expect(switcher).toBeTruthy();
     expect(switcher.textContent).toContain(
       'Agent Refactoring & Compression Lab',
     );
-    expect(switcher.textContent).toContain('expand_more');
   });
 
   it('should render the zero-footprint concept guide trigger and configuration in top bar', () => {

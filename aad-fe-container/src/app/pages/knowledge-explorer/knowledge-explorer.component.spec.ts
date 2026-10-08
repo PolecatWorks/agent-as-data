@@ -150,14 +150,13 @@ describe('KnowledgeExplorerComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  it('should render the workspace title as an interactive view switcher trigger with dropdown affordance', () => {
+  it('should render the workspace title ', () => {
     fixture.detectChanges();
     const switcher = fixture.nativeElement.querySelector(
-      '[data-testid="workspace-title-switcher"]',
+      '[data-testid="workspace-title"]',
     );
     expect(switcher).toBeTruthy();
     expect(switcher.textContent).toContain('Knowledge Explorer');
-    expect(switcher.textContent).toContain('expand_more');
   });
 
   it('should hydrate agents and extract relational tuples for has_skill, uses_tool, implements, and requires_trait', () => {
