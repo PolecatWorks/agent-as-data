@@ -34,7 +34,7 @@
       <div class="group p-3 rounded-xl border transition-all cursor-pointer bg-white border-slate-200 hover:border-slate-300"
            (click)="onSelectTrait(trait)"
            routerLinkActive="!border-emerald-500 !shadow-sm !ring-1 !ring-emerald-500/20"
-           [routerLink]="['/traits', trait.name]">
+           [routerLink]="['/traits', trait.id]">
         <div class="flex flex-col w-full" *ngIf="!collapsed">
           <div class="flex justify-between items-start">
             <div class="flex items-start gap-3 overflow-hidden flex-1">
