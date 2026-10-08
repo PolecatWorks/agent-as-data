@@ -64,6 +64,7 @@ export class TraitsRegistryLayoutComponent implements OnInit {
              this.apiService.getTrait(id).subscribe({
                 next: (fullTrait: TraitContract) => {
                    this.traits[index] = fullTrait;
+                   this.traits = [...this.traits];
                 }
              });
           });
