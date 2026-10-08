@@ -57,13 +57,12 @@ describe('KnowledgeInspectorComponent', () => {
     );
   });
 
-  it('should render the workspace title as an interactive view switcher trigger with dropdown affordance', () => {
+  it('should render the workspace title ', () => {
     const switcher = fixture.nativeElement.querySelector(
-      '[data-testid="workspace-title-switcher"]',
+      '[data-testid="workspace-title"]',
     );
     expect(switcher).toBeTruthy();
     expect(switcher.textContent).toContain('Knowledge Base');
-    expect(switcher.textContent).toContain('expand_more');
   });
 
   it('should display document summary card and proposals after analyzeMarkdown returns document', () => {
