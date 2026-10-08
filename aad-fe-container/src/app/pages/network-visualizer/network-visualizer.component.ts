@@ -743,15 +743,19 @@ export class NetworkVisualizerComponent implements OnInit, AfterViewInit {
     const target = event.target as HTMLElement;
     const anchor = target.closest('a');
 
-    if (anchor && anchor.href) {
-      const url = new URL(anchor.href);
-      // Check if it's an internal link intended for routing
-      if (
-        url.origin === window.location.origin &&
-        url.pathname.startsWith('/network-visualizer/')
-      ) {
-        event.preventDefault(); // Prevent full page reload
-        this.router.navigateByUrl(url.pathname);
+    if (anchor) {
+      const href = anchor.getAttribute('href');
+      if (href) {
+        try {
+          const url = new URL(href, window.location.origin);
+          if (
+            url.origin === window.location.origin &&
+            url.pathname.startsWith('/network-visualizer/')
+          ) {
+            event.preventDefault();
+            this.router.navigateByUrl(url.pathname);
+          }
+        } catch (e) {}
       }
     }
   }
