@@ -73,7 +73,7 @@ export class ToolManagerLayoutComponent implements OnInit {
   loadServers(): void {
     this.apiService.getTools().subscribe({
       next: (servers) => {
-        this.mcpServers = servers;
+        this.mcpServers = servers; if (this.mcpServers.length > 0 && this.router.url.split('?')[0] === '/tools') { this.router.navigate(['/tools', this.mcpServers[0].id]); }
       },
       error: () => {
         this.mcpServers = [];

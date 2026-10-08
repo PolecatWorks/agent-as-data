@@ -54,7 +54,7 @@ export class TraitsRegistryLayoutComponent implements OnInit {
     this.apiService.getTraits().subscribe({
       next: (listRes: any) => {
         const ids = listRes.ids || [];
-        if (ids.length > 0) {
+        if (ids.length > 0) { if (this.router.url.split('?')[0] === '/traits') { this.router.navigate(['/traits', ids[0]]); }
           // In a real app we'd fetch bulk or use a summary endpoint, 
           // but for the layout we need names and descriptions.
           // Since getTraits just returns IDs, we'll fetch them individually.

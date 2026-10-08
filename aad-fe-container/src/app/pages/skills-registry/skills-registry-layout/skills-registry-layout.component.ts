@@ -53,7 +53,7 @@ export class SkillsRegistryLayoutComponent implements OnInit {
   loadSkills(): void {
     this.apiService.getSkills().subscribe({
       next: (skills) => {
-        this.skills = skills;
+        this.skills = skills; if (this.skills.length > 0 && this.router.url.split('?')[0] === '/skills') { this.router.navigate(['/skills', this.skills[0].id]); }
       },
       error: (err) => {
         console.error('Failed to load skills', err);

@@ -50,7 +50,7 @@ export class AgentRegistryLayoutComponent implements OnInit {
   loadAgents(): void {
     this.apiService.getAgents().subscribe({
       next: (list) => {
-        this.agents = list;
+        this.agents = list; if (this.agents.length > 0 && this.router.url.split('?')[0] === '/agents') { this.router.navigate(['/agents', this.agents[0].id]); }
       },
       error: (err) => {
         this.snackBar.open(`Error loading agents: ${err.message || err}`, 'Close', { duration: 5000 });

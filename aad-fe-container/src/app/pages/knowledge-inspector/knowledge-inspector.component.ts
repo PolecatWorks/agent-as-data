@@ -159,7 +159,7 @@ export class KnowledgeInspectorComponent implements OnInit {
     this.apiService.getKnowledgeNodes().subscribe((nodes) => {
       this.nodes = nodes || [];
       const routeId = this.route.snapshot.paramMap.get('id');
-      if (routeId && (!this.selectedNode || this.selectedNode.id !== routeId)) {
+      if (!routeId && this.nodes.length > 0 && this.router.url.split('?')[0] === '/knowledge-inspector') { this.router.navigate(['/knowledge-inspector', this.nodes[0].id]); } else if (routeId && (!this.selectedNode || this.selectedNode.id !== routeId)) {
         this.handleRouteSelection(routeId);
       }
     });
