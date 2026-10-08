@@ -1,7 +1,7 @@
 # Spec 38: UI Nested Routing Refactor
 
 ## Status
-`draft`
+`complete`
 
 ## Reference PRD
 [UI Nested Routing Refactor PRD](../prds/ui-nested-routing-refactor-prd.md)
