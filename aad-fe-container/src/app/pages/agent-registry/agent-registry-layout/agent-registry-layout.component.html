@@ -40,18 +40,18 @@
         <div class="flex items-start justify-between gap-2">
           <div class="flex-1 min-w-0">
             <div class="flex items-center gap-2 mb-1">
-              <mat-icon class="!w-4 !h-4 text-[16px] text-indigo-500" [matTooltip]="'Model: ' + (agent.model || 'Unknown')">smart_toy</mat-icon>
-              <h3 class="font-bold text-slate-900 m-0 truncate text-sm" [matTooltip]="agent.name">{{ agent.name }}</h3>
+              <mat-icon class="!w-4 !h-4 text-[16px] text-indigo-500" >smart_toy</mat-icon>
+              <h3 class="font-bold text-slate-900 m-0 truncate text-sm" >{{ agent.name }}</h3>
             </div>
-            <p class="text-xs text-slate-500 m-0 line-clamp-2 leading-relaxed" *ngIf="!collapsed" [matTooltip]="agent.description || 'No description'">
+            <p class="text-xs text-slate-500 m-0 line-clamp-2 leading-relaxed" *ngIf="!collapsed" >
               {{ agent.description || 'No description provided.' }}
             </p>
           </div>
           <div *ngIf="!collapsed && (agent.attached_skills?.length || agent.attached_tools?.length)" class="flex flex-col items-end gap-1 shrink-0">
-            <span *ngIf="agent.attached_skills?.length" class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-teal-50 text-[10px] font-bold text-teal-700 ring-1 ring-inset ring-teal-600/20" matTooltip="Attached Skills">
+            <span *ngIf="agent.attached_skills?.length" class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-teal-50 text-[10px] font-bold text-teal-700 ring-1 ring-inset ring-teal-600/20">
               <mat-icon class="!w-3 !h-3 text-[12px]">bolt</mat-icon> {{ agent.attached_skills.length }}
             </span>
-            <span *ngIf="agent.attached_tools?.length" class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-blue-50 text-[10px] font-bold text-blue-700 ring-1 ring-inset ring-blue-600/20" matTooltip="Attached Tools">
+            <span *ngIf="agent.attached_tools?.length" class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-blue-50 text-[10px] font-bold text-blue-700 ring-1 ring-inset ring-blue-600/20">
               <mat-icon class="!w-3 !h-3 text-[12px]">build</mat-icon> {{ agent.attached_tools.length }}
             </span>
           </div>

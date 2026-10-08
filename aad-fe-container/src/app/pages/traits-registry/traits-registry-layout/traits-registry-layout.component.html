@@ -40,15 +40,15 @@
             <div class="flex items-start gap-3 overflow-hidden flex-1">
               <mat-icon class="shrink-0 text-slate-400 mt-0.5">verified</mat-icon>
               <div class="flex-1 min-w-0">
-                <h5 class="text-sm font-bold text-slate-900 m-0 truncate leading-tight mt-0.5" [matTooltip]="trait.name">{{ trait.name }}</h5>
+                <h5 class="text-sm font-bold text-slate-900 m-0 truncate leading-tight mt-0.5" >{{ trait.name }}</h5>
               </div>
             </div>
           </div>
-          <p class="text-xs text-slate-500 m-0 line-clamp-2 leading-relaxed mt-2" *ngIf="!collapsed" [matTooltip]="trait.description || 'No description'">
+          <p class="text-xs text-slate-500 m-0 line-clamp-2 leading-relaxed mt-2" *ngIf="!collapsed" >
             {{ trait.description || 'No description provided.' }}
           </p>
         </div>
-        <div *ngIf="collapsed" class="flex justify-center" [matTooltip]="trait.name">
+        <div *ngIf="collapsed" class="flex justify-center" >
           <mat-icon class="text-emerald-500">verified</mat-icon>
         </div>
       </div>
