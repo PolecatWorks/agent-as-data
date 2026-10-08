@@ -15,8 +15,15 @@ export const routes: Routes = [
       { path: ':id', loadComponent: () => import('./pages/agent-registry/agent-detail.component').then(m => m.AgentDetailComponent) }
     ]
   },
-  { path: 'traits', loadComponent: () => import('./pages/traits-registry/traits-registry.component').then(m => m.TraitsRegistryComponent) },
-  { path: 'traits/:id', loadComponent: () => import('./pages/traits-registry/traits-registry.component').then(m => m.TraitsRegistryComponent) },
+  {
+    path: 'traits',
+    loadComponent: () => import('./pages/traits-registry/traits-registry-layout/traits-registry-layout.component').then(m => m.TraitsRegistryLayoutComponent),
+    children: [
+      { path: '', loadComponent: () => import('./pages/traits-registry/trait-empty/trait-empty.component').then(m => m.TraitEmptyComponent), pathMatch: 'full' },
+      { path: 'new', loadComponent: () => import('./pages/traits-registry/trait-detail.component').then(m => m.TraitDetailComponent) },
+      { path: ':id', loadComponent: () => import('./pages/traits-registry/trait-detail.component').then(m => m.TraitDetailComponent) }
+    ]
+  },
   {
     path: 'skills',
     loadComponent: () => import('./pages/skills-registry/skills-registry-layout/skills-registry-layout.component').then(m => m.SkillsRegistryLayoutComponent),

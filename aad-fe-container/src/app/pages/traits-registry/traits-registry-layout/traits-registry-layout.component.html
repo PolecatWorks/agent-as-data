@@ -1,0 +1,61 @@
+<div class="h-full w-full flex flex-col bg-slate-50 overflow-hidden">
+  <app-top-navbar
+    workspaceTitle="Traits Registry"
+    workspaceIcon="verified"
+    [conceptGuideConfig]="{
+      badge: '5. Behavioral Contracts',
+      title: 'Behavioral Contracts (Traits)',
+      icon: 'verified',
+      triggerLabel: 'What are Traits?',
+      analogyTitle: 'The Contract Analogy',
+      analogyText: 'Think of Traits like legally binding behavioral contracts. Agents must strictly adhere to the guardrails, compliance rules, and formatting requirements defined in the traits assigned to them.',
+      tabMappings: conceptGuideMappings,
+      detailLink: '/detail',
+      detailLinkLabel: 'Explore Trait Architecture',
+      testIdPrefix: 'traits-concept'
+    }">
+    <button primary-action mat-flat-button color="primary" class="!rounded-lg !px-4 !font-bold h-9" (click)="createNewTrait()">
+      <mat-icon class="mr-1">add</mat-icon> New Trait
+    </button>
+  </app-top-navbar>
+
+  <div class="flex-1 flex flex-row min-h-0 overflow-hidden relative">
+    <app-entity-sidebar-list
+      [(isCollapsed)]="isSidebarCollapsed"
+      [items]="getFilteredTraits()"
+      [itemTemplate]="traitCardTemplate"
+      [itemSize]="96"
+      searchPlaceholder="Search traits by name..."
+      emptyMessage="No matching traits found."
+      (searchChange)="searchQuery = $event">
+    </app-entity-sidebar-list>
+
+    <ng-template #traitCardTemplate let-trait let-collapsed="collapsed">
+      <div class="group p-3 rounded-xl border transition-all cursor-pointer bg-white border-slate-200 hover:border-slate-300"
+           (click)="onSelectTrait(trait)"
+           routerLinkActive="!border-emerald-500 !shadow-sm !ring-1 !ring-emerald-500/20"
+           [routerLink]="['/traits', trait.name]">
+        <div class="flex flex-col w-full" *ngIf="!collapsed">
+          <div class="flex justify-between items-start">
+            <div class="flex items-start gap-3 overflow-hidden flex-1">
+              <mat-icon class="shrink-0 text-slate-400 mt-0.5">verified</mat-icon>
+              <div class="flex-1 min-w-0">
+                <h5 class="text-sm font-bold text-slate-900 m-0 truncate leading-tight mt-0.5" [matTooltip]="trait.name">{{ trait.name }}</h5>
+              </div>
+            </div>
+          </div>
+          <p class="text-xs text-slate-500 m-0 line-clamp-2 leading-relaxed mt-2" *ngIf="!collapsed" [matTooltip]="trait.description || 'No description'">
+            {{ trait.description || 'No description provided.' }}
+          </p>
+        </div>
+        <div *ngIf="collapsed" class="flex justify-center" [matTooltip]="trait.name">
+          <mat-icon class="text-emerald-500">verified</mat-icon>
+        </div>
+      </div>
+    </ng-template>
+
+    <div class="flex-1 min-w-0 h-full overflow-hidden bg-white/50 relative" [class.ml-16]="isSidebarCollapsed">
+      <router-outlet></router-outlet>
+    </div>
+  </div>
+</div>
