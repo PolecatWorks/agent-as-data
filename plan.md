@@ -1,21 +1,19 @@
-1. **Backend Implementation (`aad-be-container`)**:
-   - Create `aad-be-container/src/models/search.rs` (already did this but need to make sure).
-   - Implement `POST /api/v1/search/semantic` endpoint in a new file `aad-be-container/src/webserver/search.rs`. It will mock embeddings for now or do text search if no real embeddings exist, joining with `agents`, `skills`, `tools`, `traits` to get `name`, `description`, `tags`.
-   - Update `aad-be-container/src/webserver/mod.rs` to include the `search` module and route the endpoint under `/v1/search`.
+1. **Define HTML Tooltip Function**
+   - Create a helper method in `knowledge-explorer.component.ts` called `createHtmlTooltip(name: string, description: string | undefined): HTMLElement` (or return an HTML string if `vis-network` supports it).
+   - This function will format the `name` and `description` (or fallback "not description" if absent) into an HTML layout.
 
-2. **Frontend Implementation (`aad-fe-container`)**:
-   - Create `SemanticSearchComponent` at `aad-fe-container/src/app/pages/semantic-search/semantic-search.component.ts`.
-   - Create the corresponding template (`.html`) and styles (`.scss`).
-   - The UI should have a search input and display suggestion cards (name, description, tags, type, similarity score).
-   - The card should have a "View Details" button navigating to the entity detail page.
-   - Update `app.routes.ts` to map `/semantic-search` to this component.
-   - Add backend API call in the component or in a new/existing service (e.g. `SearchService`).
+2. **Update Entity Node Processors to Include `title`**
+   - **Process Agents:** Pass `title: this.createHtmlTooltip(agent.name, agent.description)` in `newNodes.push`.
+   - **Process Skills:** Pass `title: this.createHtmlTooltip(skill.name, skill.description)` in `newNodes.push`.
+   - **Process Tools:** Pass `title: this.createHtmlTooltip(toolName, tool.description)` in `newNodes.push`.
+   - **Process Traits:** Pass `title: this.createHtmlTooltip(trait.name, trait.description)` in `newNodes.push`.
+   - **Process Knowledge Nodes:** Pass `title: this.createHtmlTooltip(title, node.description || node.content)` in `newNodes.push`.
+   - Do the same for inline-created traits and concepts within tuples mapping logic.
 
-3. **Pre-commit Steps**:
-   - Ensure proper testing, verification, review, and reflection are done by following pre-commit instructions.
+3. **Verify Vis-Network HTML Rendering Support**
+   - Ensure `vis-network` renders HTML tooltips correctly by passing raw HTML string or a DOM element.
 
-4. **Update Spec Status**:
-   - Change `spec/specs/13-semantic-search-page-spec.md` status from `draft` to `complete`.
+4. **Complete Pre-Commit Steps**
+   - Ensure proper testing, verification, review, and reflection are done by calling `pre_commit_instructions` and adhering to it.
 
-5. **Submit**:
-   - Submit the changes using the `submit` tool.
+5. **Submit Change**
