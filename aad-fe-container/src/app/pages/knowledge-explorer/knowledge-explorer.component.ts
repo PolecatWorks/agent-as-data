@@ -294,6 +294,7 @@ export class KnowledgeExplorerComponent implements OnInit, AfterViewInit {
           newNodes.push({
             id: agent.id,
             label: agent.name,
+            title: this.createHtmlTooltip(agent.name, agent.description),
             color: {
               background: '#f3e8ff',
               border: '#a855f7',
@@ -310,6 +311,7 @@ export class KnowledgeExplorerComponent implements OnInit, AfterViewInit {
           newNodes.push({
             id: skillId,
             label: skill.name,
+            title: this.createHtmlTooltip(skill.name, skill.description),
             color: {
               background: '#fef3c7',
               border: '#f59e0b',
@@ -335,6 +337,7 @@ export class KnowledgeExplorerComponent implements OnInit, AfterViewInit {
           newNodes.push({
             id: toolId,
             label: toolName,
+            title: this.createHtmlTooltip(toolName, tool.description),
             color: {
               background: '#dbeafe',
               border: '#3b82f6',
@@ -357,6 +360,7 @@ export class KnowledgeExplorerComponent implements OnInit, AfterViewInit {
           newNodes.push({
             id: traitId,
             label: trait.name,
+            title: this.createHtmlTooltip(trait.name, trait.description),
             color: {
               background: '#d1fae5',
               border: '#10b981',
@@ -373,6 +377,7 @@ export class KnowledgeExplorerComponent implements OnInit, AfterViewInit {
           newNodes.push({
             id: node.id,
             label: title,
+            title: this.createHtmlTooltip(title, node.description),
             shape: 'square',
             color: {
               background: '#e0e7ff',
@@ -471,6 +476,7 @@ export class KnowledgeExplorerComponent implements OnInit, AfterViewInit {
                 newNodes.push({
                   id: tid,
                   label: traitRef,
+                  title: this.createHtmlTooltip(traitRef, undefined),
                   color: {
                     background: '#d1fae5',
                     border: '#10b981',
@@ -500,6 +506,7 @@ export class KnowledgeExplorerComponent implements OnInit, AfterViewInit {
                 newNodes.push({
                   id: tid,
                   label: traitRef,
+                  title: this.createHtmlTooltip(traitRef, undefined),
                   color: {
                     background: '#d1fae5',
                     border: '#10b981',
@@ -559,6 +566,7 @@ export class KnowledgeExplorerComponent implements OnInit, AfterViewInit {
                 newNodes.push({
                   id: tid,
                   label: traitRef,
+                  title: this.createHtmlTooltip(traitRef, undefined),
                   color: {
                     background: '#d1fae5',
                     border: '#10b981',
@@ -593,6 +601,7 @@ export class KnowledgeExplorerComponent implements OnInit, AfterViewInit {
                   newNodes.push({
                     id: conceptId,
                     label: kt.object,
+                    title: this.createHtmlTooltip(kt.object, undefined),
                     shape: 'box',
                     color: {
                       background: '#f8fafc',
@@ -802,6 +811,20 @@ export class KnowledgeExplorerComponent implements OnInit, AfterViewInit {
       default:
         return 'text-slate-600';
     }
+  }
+
+
+  createHtmlTooltip(name: string, description: string | undefined): HTMLElement {
+    const desc = description || 'not description';
+    const div = document.createElement('div');
+    div.style.maxWidth = '300px';
+    div.style.padding = '8px';
+    div.style.fontFamily = 'sans-serif';
+    div.innerHTML = `
+      <strong>${name}</strong><br>
+      <span style="font-size: 12px; color: #4b5563;">${desc}</span>
+    `;
+    return div;
   }
 
   updatePhysics(): void {
