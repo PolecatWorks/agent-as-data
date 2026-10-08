@@ -1,0 +1,25 @@
+<div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col mb-6 relative">
+  <!-- Top colored accent line -->
+  <div class="absolute top-0 left-0 right-0 h-1" [ngClass]="themeClasses.accentBorder"></div>
+  
+  <!-- Header -->
+  <div class="px-6 py-5 border-b border-slate-100 flex items-start gap-4 bg-slate-50/50">
+    <!-- Icon block -->
+    <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border"
+         [ngClass]="themeClasses.iconContainer">
+      <mat-icon [ngClass]="themeClasses.iconText">{{ icon }}</mat-icon>
+    </div>
+    
+    <div class="flex-1 min-w-0 pt-0.5">
+      <h3 class="text-base font-bold text-slate-800 m-0">{{ title }}</h3>
+      @if (description) {
+        <p class="text-xs text-slate-500 m-0 mt-1 leading-relaxed">{{ description }}</p>
+      }
+    </div>
+  </div>
+  
+  <!-- Content Body -->
+  <div class="p-6">
+    <ng-content></ng-content>
+  </div>
+</div>

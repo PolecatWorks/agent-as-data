@@ -89,3 +89,16 @@ To ensure maximum maintainability and visual consistency, the frontend applicati
 - **Concept Guide Positioning**: Ensure `<app-concept-guide>` popovers do not push down page content and close when clicking outside.
 - **Action Bar Dialogs**: End-to-end verification that clicking "Delete" on `<app-detail-action-bar>` opens a confirmation dialog, and confirming proceeds with the intended action.
 - **Entity Attachment Flow**: Test end-to-end flow of searching for an entity, clicking to attach it, verifying it appears as a pill, and clicking the 'x' to detach it in edit mode.
+
+### 10. Form Section Card (`<app-form-section>`)
+- **Outcome**: Colored Container Cards for standardizing settings groups across all registry detail views (Agents, Skills, Traits, Tools).
+- **Contract**:
+  - Inputs: `@Input() title: string`, `@Input() icon: string`, `@Input() themeColor: 'indigo' | 'emerald' | 'amber' | 'blue' = 'indigo'`, `@Input() description?: string`.
+  - Content Projection: Uses `<ng-content>` to project form fields (inputs, textareas, selects) into the card body.
+  - Automatically handles top border coloring based on the `themeColor` (e.g., `border-t-indigo-500`).
+
+### 11. Entity Pill (`<app-entity-pill>`)
+- **Outcome**: Standardized tags for rendering statuses, associations, and metadata tags consistently across all views.
+- **Contract**:
+  - Inputs: `@Input() label: string`, `@Input() icon?: string`, `@Input() themeColor: 'indigo' | 'emerald' | 'amber' | 'slate' | 'red' = 'slate'`, `@Input() isRemovable: boolean = false`.
+  - Outputs: `@Output() removed: EventEmitter<void>`.
