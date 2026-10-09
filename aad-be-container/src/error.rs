@@ -73,13 +73,22 @@ impl axum::response::IntoResponse for AppError {
                 axum::http::StatusCode::INTERNAL_SERVER_ERROR,
                 format!("Config Error: {}", error),
             ),
-            AppError::DatabaseError(error) => {
-                tracing::error!("Database error: {}", error);
-                (
-                    axum::http::StatusCode::INTERNAL_SERVER_ERROR,
-                    "Database Error".to_string(),
-                )
-            }
+            AppError::DatabaseError(error) => match error {
+                sqlx::Error::RowNotFound => {
+                    tracing::debug!("Database resource not found");
+                    (
+                        axum::http::StatusCode::NOT_FOUND,
+                        "Resource not found".to_string(),
+                    )
+                }
+                _ => {
+                    tracing::error!("Database error: {}", error);
+                    (
+                        axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+                        "Database Error".to_string(),
+                    )
+                }
+            },
         };
 
         (status, axum::Json(ErrorResponse { message })).into_response()

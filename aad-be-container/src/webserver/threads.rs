@@ -1,9 +1,8 @@
 use axum::{
-    Json,
-    extract::{Path, State},
+    Json, Router,
+    extract::{Path, Query, State},
     http::StatusCode,
     routing::{get, post},
-    Router,
 };
 use uuid::Uuid;
 
@@ -19,9 +18,11 @@ use rig::completion::Prompt;
 
 pub fn router() -> Router<AppState> {
     Router::new()
-        .route("/", post(list_threads))
-        .route("/create", post(create_thread))
-        .route("/{id}", get(get_thread).put(update_thread).delete(delete_thread))
+        .route("/", get(list_threads).post(create_thread))
+        .route(
+            "/{id}",
+            get(get_thread).put(update_thread).delete(delete_thread),
+        )
         .route("/{id}/messages", get(list_messages).post(create_message))
         .route("/{id}/runs/active", get(get_active_run))
         .route("/{id}/runs/active/cancel", post(cancel_active_run))
@@ -30,29 +31,20 @@ pub fn router() -> Router<AppState> {
 
 pub async fn list_threads(
     State(state): State<AppState>,
-    Json(payload): Json<ListThreadsRequest>,
-) -> Result<Json<Vec<Thread>>, (StatusCode, String)> {
-    let mut query_builder = sqlx::QueryBuilder::new("SELECT * FROM threads WHERE owner_id = ");
-    query_builder.push_bind(payload.owner_id);
-
-    query_builder.push(" ORDER BY created_at DESC ");
-
+    Query(payload): Query<ListThreadsRequest>,
+) -> Result<Json<Vec<Thread>>, crate::error::AppError> {
     let opts = PageOptions::defaulting(payload.pagination.unwrap_or_default());
-    query_builder.push(" LIMIT ");
-    query_builder.push_bind(opts.size.unwrap());
-    query_builder.push(" OFFSET ");
-    query_builder.push_bind(opts.page.unwrap() * opts.size.unwrap());
+    let limit = opts.size.unwrap();
+    let offset = opts.page.unwrap() * limit;
 
-    let threads = query_builder
-        .build_query_as::<Thread>()
-        .fetch_all(&state.pool)
-        .await
-        .map_err(|e| {
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                format!("Failed to list threads: {}", e),
-            )
-        })?;
+    let threads = sqlx::query_as::<_, Thread>(
+        "SELECT * FROM threads WHERE owner_id = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3",
+    )
+    .bind(payload.owner_id)
+    .bind(limit as i64)
+    .bind(offset as i64)
+    .fetch_all(&state.pool)
+    .await?;
 
     Ok(Json(threads))
 }
@@ -60,7 +52,7 @@ pub async fn list_threads(
 pub async fn create_thread(
     State(state): State<AppState>,
     Json(payload): Json<CreateThreadRequest>,
-) -> Result<(StatusCode, Json<Thread>), (StatusCode, String)> {
+) -> Result<(StatusCode, Json<Thread>), crate::error::AppError> {
     tracing::info!("Creating thread '{}'", payload.title);
     let tags_json = payload.tags.map(|t| sqlx::types::Json(t));
 
@@ -69,12 +61,11 @@ pub async fn create_thread(
         Some(bid) => bid,
         None => {
             let default_bench = sqlx::query_as::<_, crate::models::Bench>(
-                "SELECT * FROM benches WHERE owner_id = $1 ORDER BY created_at ASC LIMIT 1"
+                "SELECT * FROM benches WHERE owner_id = $1 ORDER BY created_at ASC LIMIT 1",
             )
             .bind(payload.owner_id)
             .fetch_optional(&state.pool)
-            .await
-            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to lookup bench: {}", e)))?;
+            .await?;
 
             match default_bench {
                 Some(b) => b.id,
@@ -91,7 +82,7 @@ pub async fn create_thread(
                     .bind(&fs_path)
                     .fetch_one(&state.pool)
                     .await
-                    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to create default bench: {}", e)))?;
+                    ?;
                     b.id
                 }
             }
@@ -108,18 +99,23 @@ pub async fn create_thread(
     .bind(tags_json)
     .fetch_one(&state.pool)
     .await
-    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to create thread: {}", e)))?;
+    ?;
 
     // Ensure the bench workspace directory exists
     let workspace_path = crate::webserver::fs::get_workspace_root(bench_id);
     if let Err(e) = std::fs::create_dir_all(&workspace_path) {
-        return Err((
-            StatusCode::INTERNAL_SERVER_ERROR,
-            format!("Failed to create bench workspace directory: {}", e),
-        ));
+        return Err(crate::error::AppError::Message(format!(
+            "Failed to create bench workspace directory: {}",
+            e
+        )));
     }
 
-    tracing::info!("Thread '{}' created successfully (ID: {}, Bench: {})", thread.title, thread.id, bench_id);
+    tracing::info!(
+        "Thread '{}' created successfully (ID: {}, Bench: {})",
+        thread.title,
+        thread.id,
+        bench_id
+    );
 
     Ok((StatusCode::CREATED, Json(thread)))
 }
@@ -127,24 +123,20 @@ pub async fn create_thread(
 pub async fn get_thread(
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
-) -> Result<Json<Thread>, (StatusCode, String)> {
+) -> Result<Json<Thread>, crate::error::AppError> {
     let thread = sqlx::query_as::<_, Thread>("SELECT * FROM threads WHERE id = $1")
         .bind(id)
-        .fetch_optional(&state.pool)
-        .await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to get thread: {}", e)))?;
+        .fetch_one(&state.pool)
+        .await?;
 
-    match thread {
-        Some(t) => Ok(Json(t)),
-        None => Err((StatusCode::NOT_FOUND, "Thread not found".to_string())),
-    }
+    Ok(Json(thread))
 }
 
 pub async fn update_thread(
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
     Json(payload): Json<UpdateThreadRequest>,
-) -> Result<Json<Thread>, (StatusCode, String)> {
+) -> Result<Json<Thread>, crate::error::AppError> {
     tracing::info!("Updating thread (ID: {}, title: '{}')", id, payload.title);
     let tags_json = payload.tags.map(|t| sqlx::types::Json(t));
 
@@ -155,33 +147,28 @@ pub async fn update_thread(
     .bind(&payload.description)
     .bind(tags_json)
     .bind(id)
-    .fetch_optional(&state.pool)
-    .await
-    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to update thread: {}", e)))?;
+    .fetch_one(&state.pool)
+    .await?;
 
-    match thread {
-        Some(t) => {
-            tracing::info!("Thread updated successfully (ID: {})", id);
-            Ok(Json(t))
-        }
-        None => Err((StatusCode::NOT_FOUND, "Thread not found".to_string())),
-    }
+    tracing::info!("Thread updated successfully (ID: {})", id);
+    Ok(Json(thread))
 }
 
 pub async fn delete_thread(
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
-) -> Result<StatusCode, (StatusCode, String)> {
+) -> Result<StatusCode, crate::error::AppError> {
     tracing::info!("Deleting thread ID: {}", id);
 
     let res = sqlx::query("DELETE FROM threads WHERE id = $1")
         .bind(id)
         .execute(&state.pool)
-        .await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to delete thread: {}", e)))?;
+        .await?;
 
     if res.rows_affected() == 0 {
-        return Err((StatusCode::NOT_FOUND, "Thread not found".to_string()));
+        return Err(crate::error::AppError::NotFound(
+            "Thread not found".to_string(),
+        ));
     }
 
     tracing::info!("Thread deleted successfully (ID: {})", id);
@@ -191,14 +178,13 @@ pub async fn delete_thread(
 pub async fn list_messages(
     State(state): State<AppState>,
     Path(thread_id): Path<Uuid>,
-) -> Result<Json<Vec<Message>>, (StatusCode, String)> {
+) -> Result<Json<Vec<Message>>, crate::error::AppError> {
     let messages = sqlx::query_as::<_, Message>(
-        "SELECT * FROM messages WHERE thread_id = $1 ORDER BY created_at ASC"
+        "SELECT * FROM messages WHERE thread_id = $1 ORDER BY created_at ASC",
     )
     .bind(thread_id)
     .fetch_all(&state.pool)
-    .await
-    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to list messages: {}", e)))?;
+    .await?;
 
     Ok(Json(messages))
 }
@@ -210,7 +196,7 @@ async fn process_thread_message(
     run_id: Option<Uuid>,
     user_content: &str,
     history: &[Message],
-) -> Option<String> {
+) -> Result<String, crate::error::AppError> {
     let workspace_root = crate::webserver::fs::get_workspace_root(bench_id);
     let mut files = Vec::new();
     if let Ok(entries) = std::fs::read_dir(&workspace_root) {
@@ -230,7 +216,7 @@ async fn process_thread_message(
 
     // Fetch bench working memory to include in baseline prompt preamble
     let bench_memory = sqlx::query_scalar::<_, String>(
-        "SELECT content FROM bench_memory WHERE bench_id = $1 AND memory_type = 'working' LIMIT 1"
+        "SELECT content FROM bench_memory WHERE bench_id = $1 AND memory_type = 'working' LIMIT 1",
     )
     .bind(bench_id)
     .fetch_optional(&state.pool)
@@ -242,7 +228,10 @@ async fn process_thread_message(
     let memory_summary = if bench_memory.trim().is_empty() {
         "No shared bench memory recorded yet.".to_string()
     } else {
-        format!("Shared Bench Working Memory:\n\"\"\"\n{}\n\"\"\"", bench_memory.trim())
+        format!(
+            "Shared Bench Working Memory:\n\"\"\"\n{}\n\"\"\"",
+            bench_memory.trim()
+        )
     };
 
     let system_prompt = format!(
@@ -261,7 +250,13 @@ async fn process_thread_message(
 
     tracing::info!(
         "LLM Prompt dispatched [Bench: {} | Thread: {} | Model: {} | Endpoint: {} | Prior turns: {}]:\n--- PREAMBLE ---\n{}\n--- CURRENT PROMPT ---\n{}",
-        bench_id, thread_id, state.config.llm.model, state.config.llm.ollama_url, rig_history.len(), system_prompt, user_content
+        bench_id,
+        thread_id,
+        state.config.llm.model,
+        state.config.llm.ollama_url,
+        rig_history.len(),
+        system_prompt,
+        user_content
     );
 
     let client_builder = rig::providers::ollama::Client::builder()
@@ -269,7 +264,8 @@ async fn process_thread_message(
         .api_key(rig_core::client::Nothing);
 
     let llm_res = if let Ok(client) = client_builder.build() {
-        let agent = client.agent(&state.config.llm.model)
+        let agent = client
+            .agent(&state.config.llm.model)
             .preamble(&system_prompt)
             .tool(crate::llm_tools::ReadFileTool { bench_id })
             .tool(crate::llm_tools::WriteFileTool { bench_id })
@@ -277,10 +273,20 @@ async fn process_thread_message(
             .tool(crate::llm_tools::ListFilesTool { bench_id })
             .tool(crate::llm_tools::DeleteFileTool { bench_id })
             .tool(crate::llm_tools::RenameFileTool { bench_id })
-            .tool(crate::llm_tools::ReadBenchMemoryTool { bench_id, pool: state.pool.clone() })
-            .tool(crate::llm_tools::UpdateBenchMemoryTool { bench_id, pool: state.pool.clone() })
-            .tool(crate::llm_tools::ListSkillsTool { pool: state.pool.clone() })
-            .tool(crate::llm_tools::ViewSkillTool { pool: state.pool.clone() })
+            .tool(crate::llm_tools::ReadBenchMemoryTool {
+                bench_id,
+                pool: state.pool.clone(),
+            })
+            .tool(crate::llm_tools::UpdateBenchMemoryTool {
+                bench_id,
+                pool: state.pool.clone(),
+            })
+            .tool(crate::llm_tools::ListSkillsTool {
+                pool: state.pool.clone(),
+            })
+            .tool(crate::llm_tools::ViewSkillTool {
+                pool: state.pool.clone(),
+            })
             .default_max_turns(5)
             .build();
 
@@ -292,31 +298,32 @@ async fn process_thread_message(
             Ok(Ok(response)) => {
                 // Check if the response contains a raw tool call emitted as text (common with open-weight models like Qwen)
                 let trimmed = response.trim();
-                let tool_call_json: Option<serde_json::Value> = if trimmed.starts_with('{') && trimmed.ends_with('}') {
-                    serde_json::from_str(trimmed).ok()
-                } else if let Some(start) = trimmed.find("```json") {
-                    let after = &trimmed[start + 7..];
-                    if let Some(end) = after.find("```") {
-                        serde_json::from_str(after[..end].trim()).ok()
+                let tool_call_json: Option<serde_json::Value> =
+                    if trimmed.starts_with('{') && trimmed.ends_with('}') {
+                        serde_json::from_str(trimmed).ok()
+                    } else if let Some(start) = trimmed.find("```json") {
+                        let after = &trimmed[start + 7..];
+                        if let Some(end) = after.find("```") {
+                            serde_json::from_str(after[..end].trim()).ok()
+                        } else {
+                            None
+                        }
+                    } else if let Some(start) = trimmed.find('{') {
+                        if let Some(end) = trimmed.rfind('}') {
+                            serde_json::from_str(&trimmed[start..=end]).ok()
+                        } else {
+                            None
+                        }
+                    } else if let Some(start) = trimmed.find("<tool_call>") {
+                        if let Some(end) = trimmed.find("</tool_call>") {
+                            let json_slice = &trimmed[start + 11..end].trim();
+                            serde_json::from_str(json_slice).ok()
+                        } else {
+                            None
+                        }
                     } else {
                         None
-                    }
-                } else if let Some(start) = trimmed.find('{') {
-                    if let Some(end) = trimmed.rfind('}') {
-                        serde_json::from_str(&trimmed[start..=end]).ok()
-                    } else {
-                        None
-                    }
-                } else if let Some(start) = trimmed.find("<tool_call>") {
-                    if let Some(end) = trimmed.find("</tool_call>") {
-                        let json_slice = &trimmed[start + 11..end].trim();
-                        serde_json::from_str(json_slice).ok()
-                    } else {
-                        None
-                    }
-                } else {
-                    None
-                };
+                    };
 
                 if let Some(call_obj) = tool_call_json {
                     if let Some(tool_name) = call_obj.get("name").and_then(|v| v.as_str()) {
@@ -325,15 +332,32 @@ async fn process_thread_message(
 
                         if let Some(rid) = run_id {
                             if is_run_cancelled(&state.pool, rid).await {
-                                tracing::info!("Run {} was cancelled before executing tool '{}'", rid, tool_name);
+                                tracing::info!(
+                                    "Run {} was cancelled before executing tool '{}'",
+                                    rid,
+                                    tool_name
+                                );
                                 record_cancellation_message(&state.pool, thread_id, rid).await;
-                                return None;
+                                return Err(crate::error::AppError::Message(
+                                    "Cancelled".to_string(),
+                                ));
                             }
-                            set_run_phase(&state.pool, rid, "executing_tool", Some(tool_name)).await;
+                            set_run_phase(&state.pool, rid, "executing_tool", Some(tool_name))
+                                .await;
                         }
 
-                        tracing::info!("Detected raw tool call for '{}' in agent output, executing against bench workspace {}", tool_name, bench_id);
-                        let tool_result = crate::llm_tools::execute_workspace_tool(bench_id, tool_name, args, Some(&state.pool)).await;
+                        tracing::info!(
+                            "Detected raw tool call for '{}' in agent output, executing against bench workspace {}",
+                            tool_name,
+                            bench_id
+                        );
+                        let tool_result = crate::llm_tools::execute_workspace_tool(
+                            bench_id,
+                            tool_name,
+                            args,
+                            Some(&state.pool),
+                        )
+                        .await;
 
                         if let Some(rid) = run_id {
                             set_run_phase(&state.pool, rid, "thinking", None).await;
@@ -341,65 +365,89 @@ async fn process_thread_message(
 
                         match tool_result {
                             Ok(output) => {
-                                tracing::info!("Tool '{}' executed successfully: {}", tool_name, output);
+                                tracing::info!(
+                                    "Tool '{}' executed successfully: {}",
+                                    tool_name,
+                                    output
+                                );
                                 // Append assistant tool call and tool result to conversation turns, then prompt agent for final answer
                                 let mut followup_history = rig_history;
                                 followup_history.push(rig::completion::Message::user(user_content));
-                                followup_history.push(rig::completion::Message::assistant(&response));
+                                followup_history
+                                    .push(rig::completion::Message::assistant(&response));
                                 followup_history.push(rig::completion::Message::user(&format!(
                                     "Tool '{}' executed successfully with output: {}. Please provide a helpful response to the user based on this result.",
                                     tool_name, output
                                 )));
 
-                                let second_prompt_future = agent.prompt("Summarize the result for the user.").history(followup_history);
-                                match tokio::time::timeout(timeout_duration, second_prompt_future).await {
-                                    Ok(Ok(final_answer)) => Some(final_answer),
+                                let second_prompt_future = agent
+                                    .prompt("Summarize the result for the user.")
+                                    .history(followup_history);
+                                match tokio::time::timeout(timeout_duration, second_prompt_future)
+                                    .await
+                                {
+                                    Ok(Ok(final_answer)) => Ok(final_answer),
                                     Ok(Err(e)) => {
-                                        tracing::warn!("Agent follow-up after tool execution failed: {}", e);
-                                        Some(format_tool_execution_result(tool_name, &output))
+                                        tracing::warn!(
+                                            "Agent follow-up after tool execution failed: {}",
+                                            e
+                                        );
+                                        Ok(format_tool_execution_result(tool_name, &output))
                                     }
                                     Err(_) => {
-                                        tracing::warn!("Agent follow-up after tool execution timed out");
-                                        Some(format_tool_execution_result(tool_name, &output))
+                                        tracing::warn!(
+                                            "Agent follow-up after tool execution timed out"
+                                        );
+                                        Ok(format_tool_execution_result(tool_name, &output))
                                     }
                                 }
                             }
                             Err(err_msg) => {
-                                tracing::warn!("Tool '{}' execution failed: {}", tool_name, err_msg);
-                                Some(format!("Attempted to execute tool `{}` but encountered an error: {}", tool_name, err_msg))
+                                tracing::warn!(
+                                    "Tool '{}' execution failed: {}",
+                                    tool_name,
+                                    err_msg
+                                );
+                                Ok(format!(
+                                    "Attempted to execute tool `{}` but encountered an error: {}",
+                                    tool_name, err_msg
+                                ))
                             }
                         }
                     } else {
-                        Some(response)
+                        Ok(response)
                     }
                 } else {
-                    Some(response)
+                    Ok(response)
                 }
             }
             Ok(Err(e)) => {
-                tracing::warn!("Rig Agent execution failed: {}", e);
-                None
+                let err_msg = format!("Rig Agent execution failed: {}", e);
+                tracing::warn!("{}", err_msg);
+                Err(crate::error::AppError::Message(err_msg))
             }
             Err(_) => {
-                tracing::warn!("Rig Agent execution timed out after {}s", timeout_secs);
-                None
+                let err_msg = format!("Rig Agent execution timed out after {}s", timeout_secs);
+                tracing::warn!("{}", err_msg);
+                Err(crate::error::AppError::Message(err_msg))
             }
         }
     } else {
-        None
+        Err(crate::error::AppError::Message(
+            "Failed to build Rig client".to_string(),
+        ))
     };
 
-    if let Some(text) = llm_res {
-        Some(text)
-    } else {
-        if let Some(rid) = run_id {
-            if is_run_cancelled(&state.pool, rid).await {
-                return None;
+    match llm_res {
+        Ok(text) => Ok(text),
+        Err(e) => {
+            if let Some(rid) = run_id {
+                if is_run_cancelled(&state.pool, rid).await {
+                    return Err(crate::error::AppError::Message("Cancelled".to_string()));
+                }
             }
+            Err(e)
         }
-        // If the LLM failed, we should NOT return a dummy hardcoded response.
-        // Returning None allows the caller to mark the run as failed so the user knows.
-        None
     }
 }
 
@@ -407,12 +455,16 @@ pub async fn create_message(
     State(state): State<AppState>,
     Path(thread_id): Path<Uuid>,
     Json(payload): Json<CreateMessageRequest>,
-) -> Result<(StatusCode, Json<CreateMessageResponse>), (StatusCode, String)> {
-    tracing::info!("Creating message in thread {} (role: {})", thread_id, payload.role);
+) -> Result<(StatusCode, Json<CreateMessageResponse>), crate::error::AppError> {
+    tracing::info!(
+        "Creating message in thread {} (role: {})",
+        thread_id,
+        payload.role
+    );
 
     // Retrieve previous conversation history before storing new message
     let prior_messages = sqlx::query_as::<_, Message>(
-        "SELECT * FROM messages WHERE thread_id = $1 ORDER BY created_at ASC"
+        "SELECT * FROM messages WHERE thread_id = $1 ORDER BY created_at ASC",
     )
     .bind(thread_id)
     .fetch_all(&state.pool)
@@ -420,14 +472,13 @@ pub async fn create_message(
     .unwrap_or_default();
 
     let message = sqlx::query_as::<_, Message>(
-        "INSERT INTO messages (thread_id, role, content) VALUES ($1, $2, $3) RETURNING *"
+        "INSERT INTO messages (thread_id, role, content) VALUES ($1, $2, $3) RETURNING *",
     )
     .bind(thread_id)
     .bind(&payload.role)
     .bind(&payload.content)
     .fetch_one(&state.pool)
-    .await
-    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to create message: {}", e)))?;
+    .await?;
 
     if payload.role == "user" {
         let thread_record = sqlx::query_as::<_, Thread>("SELECT * FROM threads WHERE id = $1")
@@ -445,69 +496,101 @@ pub async fn create_message(
         .bind(bench_id)
         .fetch_one(&state.pool)
         .await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to create thread run: {}", e)))?;
+        ?;
 
         let run_id = run.id;
         let state_clone = state.clone();
         let content_clone = payload.content.clone();
 
         tokio::spawn(async move {
-            let assistant_reply = process_thread_message(&state_clone, thread_id, bench_id, Some(run_id), &content_clone, &prior_messages).await;
-            if let Some(reply) = assistant_reply {
-                if is_run_cancelled(&state_clone.pool, run_id).await {
-                    record_cancellation_message(&state_clone.pool, thread_id, run_id).await;
-                    return;
+            let assistant_reply_result = process_thread_message(
+                &state_clone,
+                thread_id,
+                bench_id,
+                Some(run_id),
+                &content_clone,
+                &prior_messages,
+            )
+            .await;
+
+            let parsed_result = match assistant_reply_result {
+                Ok(reply) => Ok(reply),
+                Err(e) => {
+                    let err_str = match e {
+                        crate::error::AppError::Message(msg) => msg,
+                        other => other.to_string(),
+                    };
+                    Err(err_str)
                 }
+            };
 
-                let _ = sqlx::query(
-                    "INSERT INTO messages (thread_id, role, content) VALUES ($1, 'assistant', $2)"
-                )
-                .bind(thread_id)
-                .bind(&reply)
-                .execute(&state_clone.pool)
-                .await;
+            match parsed_result {
+                Ok(reply) => {
+                    if is_run_cancelled(&state_clone.pool, run_id).await {
+                        record_cancellation_message(&state_clone.pool, thread_id, run_id).await;
+                        return;
+                    }
 
-                let _ = sqlx::query(
-                    "UPDATE thread_runs SET status = 'completed', current_phase = 'completed', updated_at = NOW() WHERE id = $1"
-                )
-                .bind(run_id)
-                .execute(&state_clone.pool)
-                .await;
-            } else if is_run_cancelled(&state_clone.pool, run_id).await {
-                record_cancellation_message(&state_clone.pool, thread_id, run_id).await;
-            } else {
-                let _ = sqlx::query(
-                    "UPDATE thread_runs SET status = 'failed', current_phase = 'failed', error = 'Execution produced no reply', updated_at = NOW() WHERE id = $1"
-                )
-                .bind(run_id)
-                .execute(&state_clone.pool)
-                .await;
+                    let _ = sqlx::query(
+                        "INSERT INTO messages (thread_id, role, content) VALUES ($1, 'assistant', $2)"
+                    )
+                    .bind(thread_id)
+                    .bind(&reply)
+                    .execute(&state_clone.pool)
+                    .await;
+
+                    let _ = sqlx::query(
+                        "UPDATE thread_runs SET status = 'completed', current_phase = 'completed', updated_at = NOW() WHERE id = $1"
+                    )
+                    .bind(run_id)
+                    .execute(&state_clone.pool)
+                    .await;
+                }
+                Err(err_str) => {
+                    if is_run_cancelled(&state_clone.pool, run_id).await {
+                        record_cancellation_message(&state_clone.pool, thread_id, run_id).await;
+                    } else {
+                        let _ = sqlx::query(
+                            "UPDATE thread_runs SET status = 'failed', current_phase = 'failed', error = $1, updated_at = NOW() WHERE id = $2"
+                        )
+                        .bind(err_str)
+                        .bind(run_id)
+                        .execute(&state_clone.pool)
+                        .await;
+                    }
+                }
             }
         });
 
-        Ok((StatusCode::ACCEPTED, Json(CreateMessageResponse {
-            message,
-            run_id: Some(run_id),
-        })))
+        Ok((
+            StatusCode::ACCEPTED,
+            Json(CreateMessageResponse {
+                message,
+                run_id: Some(run_id),
+            }),
+        ))
     } else {
-        Ok((StatusCode::CREATED, Json(CreateMessageResponse {
-            message,
-            run_id: None,
-        })))
+        Ok((
+            StatusCode::CREATED,
+            Json(CreateMessageResponse {
+                message,
+                run_id: None,
+            }),
+        ))
     }
 }
 
 pub async fn get_active_run(
     State(state): State<AppState>,
     Path(thread_id): Path<Uuid>,
-) -> Result<(StatusCode, Json<Option<ThreadRun>>), (StatusCode, String)> {
+) -> Result<(StatusCode, Json<Option<ThreadRun>>), crate::error::AppError> {
     let run = sqlx::query_as::<_, ThreadRun>(
         "SELECT * FROM thread_runs WHERE thread_id = $1 AND status IN ('pending', 'running') ORDER BY created_at DESC LIMIT 1"
     )
     .bind(thread_id)
     .fetch_optional(&state.pool)
     .await
-    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to query active run: {}", e)))?;
+    ?;
 
     match run {
         Some(r) => Ok((StatusCode::OK, Json(Some(r)))),
@@ -518,7 +601,7 @@ pub async fn get_active_run(
 pub async fn cancel_active_run(
     State(state): State<AppState>,
     Path(thread_id): Path<Uuid>,
-) -> Result<Json<CancelRunResponse>, (StatusCode, String)> {
+) -> Result<Json<CancelRunResponse>, crate::error::AppError> {
     tracing::info!("Cancellation requested for thread {}", thread_id);
     let active_runs = sqlx::query_as::<_, ThreadRun>(
         "SELECT * FROM thread_runs WHERE thread_id = $1 AND status IN ('pending', 'running') ORDER BY created_at DESC"
@@ -548,14 +631,13 @@ pub async fn cancel_active_run(
 pub async fn list_thread_runs(
     State(state): State<AppState>,
     Path(thread_id): Path<Uuid>,
-) -> Result<Json<Vec<ThreadRun>>, (StatusCode, String)> {
+) -> Result<Json<Vec<ThreadRun>>, crate::error::AppError> {
     let runs = sqlx::query_as::<_, ThreadRun>(
-        "SELECT * FROM thread_runs WHERE thread_id = $1 ORDER BY created_at DESC LIMIT 20"
+        "SELECT * FROM thread_runs WHERE thread_id = $1 ORDER BY created_at DESC LIMIT 20",
     )
     .bind(thread_id)
     .fetch_all(&state.pool)
-    .await
-    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to list thread runs: {}", e)))?;
+    .await?;
 
     Ok(Json(runs))
 }
@@ -629,7 +711,10 @@ mod tests {
     fn test_format_tool_execution_result_success() {
         let json = r#"{"success":true,"message":"Successfully wrote to ben.md"}"#;
         let formatted = format_tool_execution_result("write_file", json);
-        assert_eq!(formatted, "Executed `write_file` (success): Successfully wrote to ben.md");
+        assert_eq!(
+            formatted,
+            "Executed `write_file` (success): Successfully wrote to ben.md"
+        );
     }
 
     #[test]
@@ -645,4 +730,3 @@ mod tests {
         assert_eq!(formatted, "Executed `custom_tool`: plain text output");
     }
 }
-
