@@ -367,6 +367,9 @@ flowchart TD
 
 ### 12. Robot Framework Integration Testing Suite (Ref: `sward-warden/integration-tests`)
 - **Declarative User Journey Robot Tests**: `/integration-tests/tests/*.robot` test cases mapping 1-to-1 to all 12 user journeys, covering 24 tests total (all currently passing).
+- **LLM-as-a-Judge Evaluation Framework**: To verify non-deterministic AI features in the Interactive Testing Studio, the suite employs an LLM-as-a-Judge evaluation pattern using a custom Robot library (`LLMJudgeLibrary.py`).
+  - **Architecture**: The custom Python module utilizes `langchain` (or `langchain-community`) to connect directly to the same local Ollama endpoint used by the backend `rig-core`.
+  - **Mechanics**: Instead of strictly asserting exact strings, the robot test extracts the completed response from the UI (e.g. after execution in the terminal console) and passes it to the judge LLM alongside the original prompt context. The judge LLM evaluates if the response logically fulfills the criteria (e.g., "Is this a valid summary of the provided text?").
 - **Python Integration Libraries**: Custom Python helper modules (`AADRequests.py`) extending Robot Framework for authenticated REST requests, database seeding, and state verification.
 - **Idempotent Seed Test**: `test_seed_exemplar_data.robot` seeds the database with exemplar data using upsert semantics — safe to re-run at any time without constraint conflicts.
 - **UI Journey Tests (Playwright/Browser Library)**: `test_journey_11_trait_editor_ui.robot` drives a headless Chromium instance to verify the Trait Editor UI lifecycle (create, persist, delete) in sync with the backend REST API.
@@ -411,6 +414,15 @@ To ensure deep-linking works perfectly, isolate component states, and prevent ma
 ---
 
 ## User Journeys: Testing Agents, Skills & Traits via UI
+
+### Journey 1.5: Automated Interactive Testing Studio Verification (LLM-as-a-Judge)
+**Scenario**: An integration test verifies that the Interactive Testing Studio properly executes an agent and that the non-deterministic output is logically sound.
+1. A Robot Framework test navigates to the **Interactive Agent Testing Studio** (`/interactive-testing`) via Playwright.
+2. The test selects a simple "Summarizer Agent" and inputs a known, verbose text payload into the prompt.
+3. The test clicks **Execute** and waits for the SSE stream in the terminal console to complete.
+4. The test extracts the final streamed output text from the UI console.
+5. Using the custom `LLMJudgeLibrary.py` (powered by LangChain + Ollama), the test passes the original input text and the extracted output to the Judge LLM with a verification prompt: *"Does the output accurately summarize the input text without losing core meaning? Reply exactly YES or NO."*
+6. The test asserts that the LLM Judge returns YES, verifying the agent behavior non-deterministically.
 
 ### Journey 1: Interactive Agent & Skill Testing via Playground
 **Scenario**: A developer finishes modifying an agent's system prompt or a skill's instructions and wants to verify its behavior before saving.
