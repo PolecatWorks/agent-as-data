@@ -1,13 +1,16 @@
 use axum::{
+    Json, Router,
     extract::{Path, State},
     http::StatusCode,
     routing::{get, post},
-    Json, Router,
 };
 use uuid::Uuid;
 
 use crate::{
-    models::{Bench, CreateBenchRequest, CreateThreadRequest, ListBenchesRequest, PageOptions, Thread, UpdateBenchRequest},
+    models::{
+        Bench, CreateBenchRequest, CreateThreadRequest, ListBenchesRequest, PageOptions, Thread,
+        UpdateBenchRequest,
+    },
     state::AppState,
     webserver::fs::get_workspace_root,
 };
@@ -16,17 +19,22 @@ pub fn router() -> Router<AppState> {
     Router::new()
         .route("/", get(list_benches_get).post(list_benches))
         .route("/create", post(create_bench))
-        .route("/{id}", get(get_bench).put(update_bench).delete(delete_bench))
-        .route("/{id}/threads", get(list_bench_threads).post(create_bench_thread))
+        .route(
+            "/{id}",
+            get(get_bench).put(update_bench).delete(delete_bench),
+        )
+        .route(
+            "/{id}/threads",
+            get(list_bench_threads).post(create_bench_thread),
+        )
 }
 
 pub async fn list_benches_get(
     State(state): State<AppState>,
-) -> Result<Json<Vec<Bench>>, (StatusCode, String)> {
+) -> Result<Json<Vec<Bench>>, crate::error::AppError> {
     let benches = sqlx::query_as::<_, Bench>("SELECT * FROM benches ORDER BY updated_at DESC")
         .fetch_all(&state.pool)
-        .await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to list benches: {}", e)))?;
+        .await?;
 
     Ok(Json(benches))
 }
@@ -34,7 +42,7 @@ pub async fn list_benches_get(
 pub async fn list_benches(
     State(state): State<AppState>,
     Json(payload): Json<ListBenchesRequest>,
-) -> Result<Json<Vec<Bench>>, (StatusCode, String)> {
+) -> Result<Json<Vec<Bench>>, crate::error::AppError> {
     let mut query_builder = sqlx::QueryBuilder::new("SELECT * FROM benches WHERE owner_id = ");
     query_builder.push_bind(payload.owner_id);
     query_builder.push(" ORDER BY updated_at DESC ");
@@ -48,8 +56,7 @@ pub async fn list_benches(
     let benches = query_builder
         .build_query_as::<Bench>()
         .fetch_all(&state.pool)
-        .await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to list benches: {}", e)))?;
+        .await?;
 
     Ok(Json(benches))
 }
@@ -57,7 +64,7 @@ pub async fn list_benches(
 pub async fn create_bench(
     State(state): State<AppState>,
     Json(payload): Json<CreateBenchRequest>,
-) -> Result<(StatusCode, Json<Bench>), (StatusCode, String)> {
+) -> Result<(StatusCode, Json<Bench>), crate::error::AppError> {
     tracing::info!("Creating bench '{}'", payload.name);
 
     let bench_id = Uuid::new_v4();
@@ -73,15 +80,15 @@ pub async fn create_bench(
     .bind(&fs_path)
     .fetch_one(&state.pool)
     .await
-    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to create bench: {}", e)))?;
+    ?;
 
     // Create the isolated workspace directory for this bench
     let workspace_path = get_workspace_root(bench.id);
     if let Err(e) = std::fs::create_dir_all(&workspace_path) {
-        return Err((
-            StatusCode::INTERNAL_SERVER_ERROR,
-            format!("Failed to create bench workspace directory: {}", e),
-        ));
+        return Err(crate::error::AppError::Message(format!(
+            "Failed to create bench workspace directory: {}",
+            e
+        )));
     }
 
     // Automatically scaffold an initial "General" thread for the bench
@@ -96,7 +103,11 @@ pub async fn create_bench(
     .fetch_one(&state.pool)
     .await;
 
-    tracing::info!("Bench '{}' created successfully (ID: {})", bench.name, bench.id);
+    tracing::info!(
+        "Bench '{}' created successfully (ID: {})",
+        bench.name,
+        bench.id
+    );
 
     Ok((StatusCode::CREATED, Json(bench)))
 }
@@ -104,24 +115,20 @@ pub async fn create_bench(
 pub async fn get_bench(
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
-) -> Result<Json<Bench>, (StatusCode, String)> {
+) -> Result<Json<Bench>, crate::error::AppError> {
     let bench = sqlx::query_as::<_, Bench>("SELECT * FROM benches WHERE id = $1")
         .bind(id)
-        .fetch_optional(&state.pool)
-        .await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to get bench: {}", e)))?;
+        .fetch_one(&state.pool)
+        .await?;
 
-    match bench {
-        Some(b) => Ok(Json(b)),
-        None => Err((StatusCode::NOT_FOUND, "Bench not found".to_string())),
-    }
+    Ok(Json(bench))
 }
 
 pub async fn update_bench(
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
     Json(payload): Json<UpdateBenchRequest>,
-) -> Result<Json<Bench>, (StatusCode, String)> {
+) -> Result<Json<Bench>, crate::error::AppError> {
     tracing::info!("Updating bench ID: {}", id);
 
     let bench = sqlx::query_as::<_, Bench>(
@@ -129,38 +136,33 @@ pub async fn update_bench(
             name = COALESCE($1, name), 
             description = COALESCE($2, description), 
             updated_at = NOW() 
-         WHERE id = $3 RETURNING *"
+         WHERE id = $3 RETURNING *",
     )
     .bind(&payload.name)
     .bind(&payload.description)
     .bind(id)
-    .fetch_optional(&state.pool)
-    .await
-    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to update bench: {}", e)))?;
+    .fetch_one(&state.pool)
+    .await?;
 
-    match bench {
-        Some(b) => {
-            tracing::info!("Bench updated successfully (ID: {})", id);
-            Ok(Json(b))
-        }
-        None => Err((StatusCode::NOT_FOUND, "Bench not found".to_string())),
-    }
+    tracing::info!("Bench updated successfully (ID: {})", id);
+    Ok(Json(bench))
 }
 
 pub async fn delete_bench(
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
-) -> Result<StatusCode, (StatusCode, String)> {
+) -> Result<StatusCode, crate::error::AppError> {
     tracing::info!("Deleting bench ID: {}", id);
 
     let res = sqlx::query("DELETE FROM benches WHERE id = $1")
         .bind(id)
         .execute(&state.pool)
-        .await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to delete bench: {}", e)))?;
+        .await?;
 
     if res.rows_affected() == 0 {
-        return Err((StatusCode::NOT_FOUND, "Bench not found".to_string()));
+        return Err(crate::error::AppError::NotFound(
+            "Bench not found".to_string(),
+        ));
     }
 
     // Clean up bench workspace directory
@@ -176,14 +178,13 @@ pub async fn delete_bench(
 pub async fn list_bench_threads(
     State(state): State<AppState>,
     Path(bench_id): Path<Uuid>,
-) -> Result<Json<Vec<Thread>>, (StatusCode, String)> {
+) -> Result<Json<Vec<Thread>>, crate::error::AppError> {
     let threads = sqlx::query_as::<_, Thread>(
-        "SELECT * FROM threads WHERE bench_id = $1 ORDER BY updated_at DESC, created_at DESC"
+        "SELECT * FROM threads WHERE bench_id = $1 ORDER BY updated_at DESC, created_at DESC",
     )
     .bind(bench_id)
     .fetch_all(&state.pool)
-    .await
-    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to list bench threads: {}", e)))?;
+    .await?;
 
     Ok(Json(threads))
 }
@@ -192,8 +193,12 @@ pub async fn create_bench_thread(
     State(state): State<AppState>,
     Path(bench_id): Path<Uuid>,
     Json(payload): Json<CreateThreadRequest>,
-) -> Result<(StatusCode, Json<Thread>), (StatusCode, String)> {
-    tracing::info!("Creating thread '{}' under bench {}", payload.title, bench_id);
+) -> Result<(StatusCode, Json<Thread>), crate::error::AppError> {
+    tracing::info!(
+        "Creating thread '{}' under bench {}",
+        payload.title,
+        bench_id
+    );
     let tags_json = payload.tags.map(|t| sqlx::types::Json(t));
 
     let thread = sqlx::query_as::<_, Thread>(
@@ -206,7 +211,7 @@ pub async fn create_bench_thread(
     .bind(tags_json)
     .fetch_one(&state.pool)
     .await
-    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to create thread: {}", e)))?;
+    ?;
 
     Ok((StatusCode::CREATED, Json(thread)))
 }
