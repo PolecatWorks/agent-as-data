@@ -1,9 +1,8 @@
 use axum::{
-    Json,
-    extract::{State, Path},
+    Json, Router,
+    extract::{Path, State},
     http::StatusCode,
     routing::{get, post},
-    Router,
 };
 use sqlx::{PgPool, Row};
 use uuid::Uuid;
@@ -13,10 +12,9 @@ use rig_core::completion::CompletionModel;
 
 use crate::{
     models::{
-        AnalyzeMarkdownRequest, AnalyzeMarkdownResponse, GraphTraverseRequest,
-        GraphTraverseResult, ImportDocumentRequest, ImportDocumentResponse, KnowledgeNode,
-        KnowledgeNodeProposal, KnowledgeSearchRequest, KnowledgeSearchResult, KnowledgeTuple,
-        Triple,
+        AnalyzeMarkdownRequest, AnalyzeMarkdownResponse, GraphTraverseRequest, GraphTraverseResult,
+        ImportDocumentRequest, ImportDocumentResponse, KnowledgeNode, KnowledgeNodeProposal,
+        KnowledgeSearchRequest, KnowledgeSearchResult, KnowledgeTuple, Triple,
     },
     state::AppState,
 };
@@ -28,7 +26,12 @@ pub fn router() -> Router<AppState> {
         .route("/graph/traverse", post(traverse_graph))
         .route("/analyze-markdown", post(analyze_markdown))
         .route("/import-document", post(import_document))
-        .route("/{id}", get(get_knowledge).put(update_knowledge).delete(delete_knowledge))
+        .route(
+            "/{id}",
+            get(get_knowledge)
+                .put(update_knowledge)
+                .delete(delete_knowledge),
+        )
         .route("/{id}/tuples", get(get_knowledge_tuples))
         .route("/{id}/derived-concepts", get(get_derived_concepts))
 }
@@ -58,7 +61,10 @@ struct LlmDocumentMetadata {
     tags: Option<Vec<String>>,
 }
 
-pub fn extract_markdown_metadata(markdown: &str, suggested_topic: Option<&str>) -> KnowledgeNodeProposal {
+pub fn extract_markdown_metadata(
+    markdown: &str,
+    suggested_topic: Option<&str>,
+) -> KnowledgeNodeProposal {
     let mut title = String::new();
     let mut description = String::new();
 
@@ -99,8 +105,8 @@ pub fn parse_llm_markdown_analysis(
 ) -> Result<AnalyzeMarkdownResponse, String> {
     let fallback_doc = extract_markdown_metadata(markdown, suggested_topic);
 
-    let parsed_val: serde_json::Value = serde_json::from_str(content)
-        .map_err(|e| format!("Invalid JSON: {}", e))?;
+    let parsed_val: serde_json::Value =
+        serde_json::from_str(content).map_err(|e| format!("Invalid JSON: {}", e))?;
 
     if parsed_val.is_array() {
         let proposals: Vec<KnowledgeNodeProposal> = serde_json::from_value(parsed_val)
@@ -143,16 +149,13 @@ pub fn parse_llm_markdown_analysis(
 pub async fn analyze_markdown(
     State(state): State<AppState>,
     Json(payload): Json<AnalyzeMarkdownRequest>,
-) -> Result<Json<AnalyzeMarkdownResponse>, (StatusCode, String)> {
+) -> Result<Json<AnalyzeMarkdownResponse>, crate::error::AppError> {
     let builder = rig_core::providers::ollama::Client::builder()
         .base_url(&state.config.llm.ollama_url)
         .api_key(rig_core::client::Nothing);
 
     let ollama_client = builder.build().map_err(|e| {
-        (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            format!("Failed to initialize Ollama client: {}", e),
-        )
+        crate::error::AppError::Message(format!("Failed to initialize Ollama client: {}", e))
     })?;
 
     let model = ollama_client.completion_model(&state.config.llm.model);
@@ -177,30 +180,42 @@ pub async fn analyze_markdown(
         .temperature(0.2)
         .max_tokens(4096);
 
-    let response = tokio::time::timeout(std::time::Duration::from_secs(state.config.llm.timeout_secs), request.send())
-        .await
-        .map_err(|e| (StatusCode::GATEWAY_TIMEOUT, format!("LLM request timed out: {}", e)))?
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("LLM error: {}", e)))?;
+    let response = tokio::time::timeout(
+        std::time::Duration::from_secs(state.config.llm.timeout_secs),
+        request.send(),
+    )
+    .await
+    .map_err(|e| crate::error::AppError::Message(format!("LLM request timed out: {}", e)))?
+    .map_err(|e| crate::error::AppError::Message(format!("LLM error: {}", e)))?;
 
     if let Some(choice) = response.choice.first() {
         if let rig_core::completion::message::AssistantContent::Text(text) = choice {
             let content = text.text.trim();
             // Try to strip markdown code blocks if the LLM included them despite instructions
             let content = if content.starts_with("```json") {
-                content.trim_start_matches("```json").trim_end_matches("```").trim()
+                content
+                    .trim_start_matches("```json")
+                    .trim_end_matches("```")
+                    .trim()
             } else if content.starts_with("```") {
-                content.trim_start_matches("```").trim_end_matches("```").trim()
+                content
+                    .trim_start_matches("```")
+                    .trim_end_matches("```")
+                    .trim()
             } else {
                 content
             };
 
-            match parse_llm_markdown_analysis(content, &payload.markdown, payload.suggested_topic.as_deref()) {
+            match parse_llm_markdown_analysis(
+                content,
+                &payload.markdown,
+                payload.suggested_topic.as_deref(),
+            ) {
                 Ok(resp) => return Ok(Json(resp)),
                 Err(e) => {
                     tracing::error!("Failed to parse LLM response as JSON: {}", e);
                     tracing::error!("Raw LLM response: {}", content);
-                    return Err((
-                        StatusCode::INTERNAL_SERVER_ERROR,
+                    return Err(crate::error::AppError::Message(
                         format!("Failed to parse LLM output: {}", e),
                     ));
                 }
@@ -208,8 +223,7 @@ pub async fn analyze_markdown(
         }
     }
 
-    Err((
-        StatusCode::INTERNAL_SERVER_ERROR,
+    Err(crate::error::AppError::Message(
         "Failed to extract knowledge from LLM response".to_string(),
     ))
 }
@@ -217,17 +231,21 @@ pub async fn analyze_markdown(
 pub async fn import_document(
     State(pool): State<PgPool>,
     Json(payload): Json<ImportDocumentRequest>,
-) -> Result<(StatusCode, Json<ImportDocumentResponse>), (StatusCode, String)> {
+) -> Result<(StatusCode, Json<ImportDocumentResponse>), crate::error::AppError> {
     if payload.document.title.trim().is_empty() || payload.document.content.trim().is_empty() {
-        return Err((StatusCode::BAD_REQUEST, "Document title and content are required".to_string()));
+        return Err(crate::error::AppError::BadRequest(
+            "Document title and content are required".to_string(),
+        ));
     }
 
     let mut tx = pool.begin().await.map_err(|e| {
-        (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to start transaction: {}", e))
+        crate::error::AppError::Message(format!("Failed to start transaction: {}", e))
     })?;
 
     let doc_id = Uuid::new_v4();
-    let concept_ids: Vec<Uuid> = (0..payload.concepts.len()).map(|_| Uuid::new_v4()).collect();
+    let concept_ids: Vec<Uuid> = (0..payload.concepts.len())
+        .map(|_| Uuid::new_v4())
+        .collect();
 
     let doc_meta = serde_json::json!({
         "is_source_document": true,
@@ -252,7 +270,7 @@ pub async fn import_document(
     .bind(doc_meta)
     .fetch_one(&mut *tx)
     .await
-    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to insert document: {}", e)))?;
+    .map_err(|e| crate::error::AppError::Message( format!("Failed to insert document: {}", e)))?;
 
     // Embeddings for parent document
     let doc_chunks = chunk_text(&payload.document.content, 200);
@@ -270,7 +288,9 @@ pub async fn import_document(
         .bind(chunk)
         .execute(&mut *tx)
         .await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Chunk Insert Error for Document: {}", e)))?;
+        .map_err(|e| {
+            crate::error::AppError::Message(format!("Chunk Insert Error for Document: {}", e))
+        })?;
     }
 
     let mut created_concepts = Vec::new();
@@ -300,7 +320,7 @@ pub async fn import_document(
         .bind(child_meta)
         .fetch_one(&mut *tx)
         .await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to insert concept node: {}", e)))?;
+        .map_err(|e| crate::error::AppError::Message( format!("Failed to insert concept node: {}", e)))?;
 
         // Concept embeddings
         let concept_chunks = chunk_text(&concept.content, 200);
@@ -318,7 +338,9 @@ pub async fn import_document(
             .bind(chunk)
             .execute(&mut *tx)
             .await
-            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Chunk Insert Error for Concept: {}", e)))?;
+            .map_err(|e| {
+                crate::error::AppError::Message(format!("Chunk Insert Error for Concept: {}", e))
+            })?;
         }
 
         if payload.create_tuples {
@@ -344,7 +366,7 @@ pub async fn import_document(
             .bind(tuple_meta)
             .execute(&mut *tx)
             .await
-            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Tuple Insert Error: {}", e)))?;
+            .map_err(|e| crate::error::AppError::Message( format!("Tuple Insert Error: {}", e)))?;
 
             tuples_created += 1;
         }
@@ -353,7 +375,7 @@ pub async fn import_document(
     }
 
     tx.commit().await.map_err(|e| {
-        (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to commit transaction: {}", e))
+        crate::error::AppError::Message(format!("Failed to commit transaction: {}", e))
     })?;
 
     Ok((
@@ -369,7 +391,7 @@ pub async fn import_document(
 pub async fn get_derived_concepts(
     State(pool): State<PgPool>,
     Path(id): Path<Uuid>,
-) -> Result<Json<Vec<KnowledgeNode>>, (StatusCode, String)> {
+) -> Result<Json<Vec<KnowledgeNode>>, crate::error::AppError> {
     let concepts = sqlx::query_as::<_, KnowledgeNode>(
         r#"
         SELECT id, topic, title, COALESCE(description, '') as description, tags, content, metadata, created_at, updated_at
@@ -381,7 +403,7 @@ pub async fn get_derived_concepts(
     .bind(id.to_string())
     .fetch_all(&pool)
     .await
-    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("DB Error: {}", e)))?;
+    .map_err(|e| crate::error::AppError::Message( format!("DB Error: {}", e)))?;
 
     Ok(Json(concepts))
 }
@@ -389,15 +411,22 @@ pub async fn get_derived_concepts(
 pub async fn ingest_knowledge(
     State(pool): State<PgPool>,
     Json(payload): Json<KnowledgeNode>,
-) -> Result<(StatusCode, Json<KnowledgeNode>), (StatusCode, String)> {
+) -> Result<(StatusCode, Json<KnowledgeNode>), crate::error::AppError> {
     if payload.topic.trim().is_empty() || payload.content.trim().is_empty() {
-        return Err((StatusCode::BAD_REQUEST, "Topic and content are required".to_string()));
+        return Err(crate::error::AppError::BadRequest(
+            "Topic and content are required".to_string(),
+        ));
     }
 
     let node_id = payload.id.unwrap_or_else(Uuid::new_v4);
     metrics::counter!("knowledge_ingestion_total").increment(1);
 
-    tracing::info!("Ingesting/Saving knowledge node '{:?}' (topic: '{}', ID: {})", payload.title, payload.topic, node_id);
+    tracing::info!(
+        "Ingesting/Saving knowledge node '{:?}' (topic: '{}', ID: {})",
+        payload.title,
+        payload.topic,
+        node_id
+    );
     let metadata = if payload.metadata.is_null() {
         serde_json::json!({})
     } else {
@@ -423,7 +452,7 @@ pub async fn ingest_knowledge(
     .bind(metadata)
     .fetch_one(&pool)
     .await
-    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("DB Error: {}", e)))?;
+    .map_err(|e| crate::error::AppError::Message( format!("DB Error: {}", e)))?;
 
     // 2. Chunk text and store mock vector embeddings
     let chunks = chunk_text(&payload.content, 200);
@@ -442,7 +471,7 @@ pub async fn ingest_knowledge(
         .bind(chunk)
         .execute(&pool)
         .await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Chunk Insert Error: {}", e)))?;
+        .map_err(|e| crate::error::AppError::Message(format!("Chunk Insert Error: {}", e)))?;
     }
 
     // 3. Insert Tuples if provided
@@ -463,7 +492,7 @@ pub async fn ingest_knowledge(
         .bind(confidence)
         .execute(&pool)
         .await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Tuple Insert Error: {}", e)))?;
+        .map_err(|e| crate::error::AppError::Message( format!("Tuple Insert Error: {}", e)))?;
     }
 
     Ok((StatusCode::CREATED, Json(created_node)))
@@ -471,7 +500,7 @@ pub async fn ingest_knowledge(
 
 pub async fn list_knowledge(
     State(pool): State<PgPool>,
-) -> Result<Json<Vec<KnowledgeNode>>, (StatusCode, String)> {
+) -> Result<Json<Vec<KnowledgeNode>>, crate::error::AppError> {
     let nodes = sqlx::query_as::<_, KnowledgeNode>(
         r#"
         SELECT id, topic, title, COALESCE(description, '') as description, tags, content, metadata, created_at, updated_at
@@ -481,7 +510,7 @@ pub async fn list_knowledge(
     )
     .fetch_all(&pool)
     .await
-    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("DB Error: {}", e)))?;
+    .map_err(|e| crate::error::AppError::Message( format!("DB Error: {}", e)))?;
 
     Ok(Json(nodes))
 }
@@ -489,7 +518,7 @@ pub async fn list_knowledge(
 pub async fn get_knowledge(
     State(pool): State<PgPool>,
     Path(id): Path<Uuid>,
-) -> Result<Json<KnowledgeNode>, (StatusCode, String)> {
+) -> Result<Json<KnowledgeNode>, crate::error::AppError> {
     let node = sqlx::query_as::<_, KnowledgeNode>(
         r#"
         SELECT id, topic, title, COALESCE(description, '') as description, tags, content, metadata, created_at, updated_at
@@ -500,26 +529,27 @@ pub async fn get_knowledge(
     .bind(id)
     .fetch_optional(&pool)
     .await
-    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("DB Error: {}", e)))?;
+    .map_err(|e| crate::error::AppError::Message( format!("DB Error: {}", e)))?;
 
     match node {
         Some(n) => Ok(Json(n)),
-        None => Err((StatusCode::NOT_FOUND, "Knowledge node not found".to_string())),
+        None => Err(crate::error::AppError::NotFound(
+            "Knowledge node not found".to_string(),
+        )),
     }
 }
-
 
 pub async fn get_knowledge_tuples(
     State(pool): State<PgPool>,
     Path(id): Path<Uuid>,
-) -> Result<Json<Vec<KnowledgeTuple>>, (StatusCode, String)> {
+) -> Result<Json<Vec<KnowledgeTuple>>, crate::error::AppError> {
     let tuples = sqlx::query_as::<_, KnowledgeTuple>(
-        "SELECT * FROM knowledge_tuples WHERE source_node_id = $1"
+        "SELECT * FROM knowledge_tuples WHERE source_node_id = $1",
     )
     .bind(id)
     .fetch_all(&pool)
     .await
-    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("DB Error: {}", e)))?;
+    .map_err(|e| crate::error::AppError::Message(format!("DB Error: {}", e)))?;
 
     Ok(Json(tuples))
 }
@@ -528,7 +558,7 @@ pub async fn update_knowledge(
     State(pool): State<PgPool>,
     Path(id): Path<Uuid>,
     Json(payload): Json<KnowledgeNode>,
-) -> Result<Json<KnowledgeNode>, (StatusCode, String)> {
+) -> Result<Json<KnowledgeNode>, crate::error::AppError> {
     let current_node = sqlx::query_as::<_, KnowledgeNode>(
         r#"
         SELECT id, topic, title, COALESCE(description, '') as description, tags, content, metadata, created_at, updated_at
@@ -539,25 +569,52 @@ pub async fn update_knowledge(
     .bind(id)
     .fetch_optional(&pool)
     .await
-    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("DB Error: {}", e)))?;
+    .map_err(|e| crate::error::AppError::Message( format!("DB Error: {}", e)))?;
 
     let current_node = match current_node {
         Some(n) => n,
-        None => return Err((StatusCode::NOT_FOUND, "Knowledge node not found".to_string())),
+        None => {
+            return Err(crate::error::AppError::NotFound(
+                "Knowledge node not found".to_string(),
+            ));
+        }
     };
 
-    let new_topic = if payload.topic.is_empty() { current_node.topic } else { payload.topic };
-    let new_title = if payload.title.trim().is_empty() { current_node.title } else { payload.title };
-    let new_description = if payload.description.trim().is_empty() { current_node.description } else { payload.description };
-    let new_tags = if payload.tags.is_empty() { current_node.tags } else { payload.tags };
-    let new_content = if payload.content.is_empty() { current_node.content.clone() } else { payload.content };
+    let new_topic = if payload.topic.is_empty() {
+        current_node.topic
+    } else {
+        payload.topic
+    };
+    let new_title = if payload.title.trim().is_empty() {
+        current_node.title
+    } else {
+        payload.title
+    };
+    let new_description = if payload.description.trim().is_empty() {
+        current_node.description
+    } else {
+        payload.description
+    };
+    let new_tags = if payload.tags.is_empty() {
+        current_node.tags
+    } else {
+        payload.tags
+    };
+    let new_content = if payload.content.is_empty() {
+        current_node.content.clone()
+    } else {
+        payload.content
+    };
     let new_metadata = if payload.metadata.is_null() || payload.metadata == serde_json::json!({}) {
         current_node.metadata
     } else {
         payload.metadata
     };
 
-    let mut tx = pool.begin().await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Tx Error: {}", e)))?;
+    let mut tx = pool
+        .begin()
+        .await
+        .map_err(|e| crate::error::AppError::Message(format!("Tx Error: {}", e)))?;
 
     let updated_node = sqlx::query_as::<_, KnowledgeNode>(
         r#"
@@ -576,7 +633,7 @@ pub async fn update_knowledge(
     .bind(id)
     .fetch_one(&mut *tx)
     .await
-    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Update Error: {}", e)))?;
+    .map_err(|e| crate::error::AppError::Message( format!("Update Error: {}", e)))?;
 
     // If content changed, we should ideally re-chunk and update embeddings.
     // Here we'll just delete old and insert new chunks as a simple strategy.
@@ -586,13 +643,13 @@ pub async fn update_knowledge(
             .bind(id)
             .execute(&mut *tx)
             .await
-            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Delete tuples error: {}", e)))?;
+            .map_err(|e| crate::error::AppError::Message(format!("Delete tuples error: {}", e)))?;
 
         sqlx::query("DELETE FROM knowledge_embeddings WHERE node_id = $1")
             .bind(id)
             .execute(&mut *tx)
             .await
-            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Delete chunks error: {}", e)))?;
+            .map_err(|e| crate::error::AppError::Message(format!("Delete chunks error: {}", e)))?;
 
         let chunks = chunk_text(&new_content, 200);
         for (idx, chunk) in chunks.iter().enumerate() {
@@ -609,7 +666,7 @@ pub async fn update_knowledge(
             .bind(chunk)
             .execute(&mut *tx)
             .await
-            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Chunk Insert Error: {}", e)))?;
+            .map_err(|e| crate::error::AppError::Message(format!("Chunk Insert Error: {}", e)))?;
         }
     }
 
@@ -618,7 +675,7 @@ pub async fn update_knowledge(
             .bind(id)
             .execute(&mut *tx)
             .await
-            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Delete tuples error: {}", e)))?;
+            .map_err(|e| crate::error::AppError::Message(format!("Delete tuples error: {}", e)))?;
 
         for tuple in payload.tuples {
             let tuple_id = Uuid::new_v4();
@@ -637,19 +694,20 @@ pub async fn update_knowledge(
             .bind(confidence)
             .execute(&mut *tx)
             .await
-            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Tuple Insert Error: {}", e)))?;
+            .map_err(|e| crate::error::AppError::Message( format!("Tuple Insert Error: {}", e)))?;
         }
     }
-    tx.commit().await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Commit Error: {}", e)))?;
+    tx.commit()
+        .await
+        .map_err(|e| crate::error::AppError::Message(format!("Commit Error: {}", e)))?;
 
     Ok(Json(updated_node))
 }
 
-
 pub async fn search_knowledge(
     State(pool): State<PgPool>,
     Json(payload): Json<KnowledgeSearchRequest>,
-) -> Result<Json<Vec<KnowledgeSearchResult>>, (StatusCode, String)> {
+) -> Result<Json<Vec<KnowledgeSearchResult>>, crate::error::AppError> {
     let limit = payload.limit.unwrap_or(5) as i64;
     let pattern = format!("%{}%", payload.query.trim());
 
@@ -680,7 +738,7 @@ pub async fn search_knowledge(
     .bind(limit)
     .fetch_all(&pool)
     .await
-    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Search Error: {}", e)))?;
+    .map_err(|e| crate::error::AppError::Message(format!("Search Error: {}", e)))?;
 
     let results = rows
         .into_iter()
@@ -689,7 +747,9 @@ pub async fn search_knowledge(
             chunk_index: r.get("chunk_index"),
             chunk_text: r.get("chunk_text"),
             score: r.try_get("similarity_score").unwrap_or(0.5),
-            search_type: r.try_get("search_type").unwrap_or_else(|_| "semantic".to_string()),
+            search_type: r
+                .try_get("search_type")
+                .unwrap_or_else(|_| "semantic".to_string()),
         })
         .collect();
 
@@ -699,7 +759,7 @@ pub async fn search_knowledge(
 pub async fn traverse_graph(
     State(pool): State<PgPool>,
     Json(payload): Json<GraphTraverseRequest>,
-) -> Result<Json<Vec<GraphTraverseResult>>, (StatusCode, String)> {
+) -> Result<Json<Vec<GraphTraverseResult>>, crate::error::AppError> {
     let max_depth = payload.max_depth.unwrap_or(2);
 
     let rows = sqlx::query(
@@ -713,7 +773,7 @@ pub async fn traverse_graph(
     .bind(&payload.subject)
     .fetch_all(&pool)
     .await
-    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Traverse Error: {}", e)))?;
+    .map_err(|e| crate::error::AppError::Message(format!("Traverse Error: {}", e)))?;
 
     let results = rows
         .into_iter()
@@ -731,11 +791,10 @@ pub async fn traverse_graph(
     Ok(Json(results))
 }
 
-
 pub async fn delete_knowledge(
     State(pool): State<PgPool>,
     Path(id): Path<Uuid>,
-) -> Result<Json<KnowledgeNode>, (StatusCode, String)> {
+) -> Result<Json<KnowledgeNode>, crate::error::AppError> {
     tracing::info!("Deleting knowledge node: {}", id);
 
     let deleted_node = sqlx::query_as::<_, KnowledgeNode>(
@@ -748,11 +807,13 @@ pub async fn delete_knowledge(
     .bind(id)
     .fetch_optional(&pool)
     .await
-    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("DB Error: {}", e)))?;
+    .map_err(|e| crate::error::AppError::Message( format!("DB Error: {}", e)))?;
 
     match deleted_node {
         Some(node) => Ok(Json(node)),
-        None => Err((StatusCode::NOT_FOUND, "Knowledge node not found".to_string())),
+        None => Err(crate::error::AppError::NotFound(
+            "Knowledge node not found".to_string(),
+        )),
     }
 }
 
@@ -778,8 +839,14 @@ pub mod tests {
         let doc = extract_markdown_metadata(md, Some("engineering"));
         assert_eq!(doc.title, "System Architecture");
         assert_eq!(doc.topic, "engineering");
-        assert_eq!(doc.description, "This is an executive summary of the system architecture.");
-        assert_eq!(doc.tags, vec!["document".to_string(), "imported".to_string()]);
+        assert_eq!(
+            doc.description,
+            "This is an executive summary of the system architecture."
+        );
+        assert_eq!(
+            doc.tags,
+            vec!["document".to_string(), "imported".to_string()]
+        );
         assert_eq!(doc.content, md);
     }
 
@@ -812,7 +879,8 @@ pub mod tests {
             ]
         }"#;
 
-        let res = parse_llm_markdown_analysis(raw_json, "# Platform Blueprint\nBody", None).expect("Should parse");
+        let res = parse_llm_markdown_analysis(raw_json, "# Platform Blueprint\nBody", None)
+            .expect("Should parse");
         assert!(res.document.is_some());
         let doc = res.document.unwrap();
         assert_eq!(doc.title, "Platform Blueprint");
@@ -834,7 +902,9 @@ pub mod tests {
             }
         ]"#;
 
-        let res = parse_llm_markdown_analysis(raw_json, "# Inferred Blueprint\nBody text.", Some("tech")).expect("Should parse");
+        let res =
+            parse_llm_markdown_analysis(raw_json, "# Inferred Blueprint\nBody text.", Some("tech"))
+                .expect("Should parse");
         assert!(res.document.is_some());
         let doc = res.document.unwrap();
         assert_eq!(doc.title, "Inferred Blueprint");
