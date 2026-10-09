@@ -1,9 +1,8 @@
 use axum::{
-    Json,
+    Json, Router,
     extract::{Path, Query, State},
     http::StatusCode,
     routing::{get, post},
-    Router,
 };
 use sqlx::{PgPool, Row};
 use uuid::Uuid;
@@ -21,10 +20,12 @@ use crate::{
 pub fn router() -> Router<AppState> {
     Router::new()
         .route("/", post(create_agent))
-        .route("/{id}", get(get_agent).put(update_agent).delete(delete_agent))
+        .route(
+            "/{id}",
+            get(get_agent).put(update_agent).delete(delete_agent),
+        )
         .route("/{id}/test", post(test_agent))
         .route("/{id}/sync-embeddings", post(sync_agent_embeddings))
-
         .route("/search", post(search_agents))
         .route("/verify-contract", post(verify_contract))
         .route("/refactor/analyze", post(analyze_refactor))
@@ -34,7 +35,7 @@ pub fn router() -> Router<AppState> {
 pub async fn create_agent(
     State(pool): State<PgPool>,
     Json(payload): Json<Agent>,
-) -> Result<(StatusCode, Json<Agent>), (StatusCode, String)> {
+) -> Result<(StatusCode, Json<Agent>), crate::error::AppError> {
     let agent_id = payload.id.unwrap_or_else(Uuid::new_v4);
     let current_version = if payload.current_version.is_empty()
         || payload.current_version == "0"
@@ -45,7 +46,12 @@ pub async fn create_agent(
         payload.current_version.clone()
     };
 
-    tracing::info!("Creating agent '{}' (ID: {}, version: {})", payload.name, agent_id, current_version);
+    tracing::info!(
+        "Creating agent '{}' (ID: {}, version: {})",
+        payload.name,
+        agent_id,
+        current_version
+    );
 
     let incoming_json =
         serde_json::to_value(&payload.input_guardrails).unwrap_or_else(|_| serde_json::json!([]));
@@ -80,7 +86,7 @@ pub async fn create_agent(
     .bind(&outgoing_json)
     .execute(&pool)
     .await
-    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Agent DB Error: {}", e)))?;
+    ?;
 
     // 2. Insert Immutable Version Snapshot
     let snapshot = serde_json::json!({
@@ -101,8 +107,7 @@ pub async fn create_agent(
     .bind(&current_version)
     .bind(snapshot)
     .execute(&pool)
-    .await
-    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Revision DB Error: {}", e)))?;
+    .await?;
 
     let mut response_agent = payload.clone();
     response_agent.id = Some(agent_id);
@@ -120,7 +125,11 @@ pub async fn create_agent(
     )
     .await;
 
-    tracing::info!("Agent '{}' created successfully (ID: {})", payload.name, agent_id);
+    tracing::info!(
+        "Agent '{}' created successfully (ID: {})",
+        payload.name,
+        agent_id
+    );
 
     Ok((StatusCode::CREATED, Json(response_agent)))
 }
@@ -129,21 +138,18 @@ pub async fn update_agent(
     State(pool): State<PgPool>,
     Path(id): Path<Uuid>,
     Json(payload): Json<Agent>,
-) -> Result<Json<Agent>, (StatusCode, String)> {
+) -> Result<Json<Agent>, crate::error::AppError> {
     tracing::info!("Updating agent '{}' (ID: {})", payload.name, id);
-    let row = sqlx::query("SELECT id FROM agents WHERE id = $1 AND archived_at IS NULL")
+    let _ = sqlx::query("SELECT id FROM agents WHERE id = $1 AND archived_at IS NULL")
         .bind(id)
-        .fetch_optional(&pool)
-        .await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Fetch Error: {}", e)))?;
+        .fetch_one(&pool)
+        .await?;
+    let incoming_json =
+        serde_json::to_value(&payload.input_guardrails).unwrap_or_else(|_| serde_json::json!([]));
+    let outgoing_json =
+        serde_json::to_value(&payload.output_guardrails).unwrap_or_else(|_| serde_json::json!([]));
 
-    if row.is_some() {
-        let incoming_json =
-            serde_json::to_value(&payload.input_guardrails).unwrap_or_else(|_| serde_json::json!([]));
-        let outgoing_json =
-            serde_json::to_value(&payload.output_guardrails).unwrap_or_else(|_| serde_json::json!([]));
-
-        sqlx::query(
+    sqlx::query(
             r#"
             UPDATE agents
             SET name = $1, description = $2, tags = $3, implements_traits = $4, uses_traits = $5, read_groups = $6,
@@ -175,34 +181,31 @@ pub async fn update_agent(
         .bind(id)
         .execute(&pool)
         .await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Update Error: {}", e)))?;
+        ?;
 
-        let mut response_agent = payload.clone();
-        response_agent.id = Some(id);
+    let mut response_agent = payload.clone();
+    response_agent.id = Some(id);
 
-        // Automatically sync embeddings with reverse references
-        let prompt_str = payload.agent_definition.to_string();
-        let _ = crate::webserver::search::sync_entity_embeddings(
-            &pool,
-            id,
-            "agents",
-            &payload.name,
-            Some(payload.description.as_str()),
-            &[("prompt", &prompt_str)],
-        )
-        .await;
+    // Automatically sync embeddings with reverse references
+    let prompt_str = payload.agent_definition.to_string();
+    let _ = crate::webserver::search::sync_entity_embeddings(
+        &pool,
+        id,
+        "agents",
+        &payload.name,
+        Some(payload.description.as_str()),
+        &[("prompt", &prompt_str)],
+    )
+    .await;
 
-        tracing::info!("Agent '{}' updated successfully (ID: {})", payload.name, id);
-        Ok(Json(response_agent))
-    } else {
-        Err((StatusCode::NOT_FOUND, "Agent not found".to_string()))
-    }
+    tracing::info!("Agent '{}' updated successfully (ID: {})", payload.name, id);
+    Ok(Json(response_agent))
 }
 
 pub async fn get_agent(
     State(pool): State<PgPool>,
     Path(id): Path<Uuid>,
-) -> Result<Json<Agent>, (StatusCode, String)> {
+) -> Result<Json<Agent>, crate::error::AppError> {
     let row = sqlx::query(
         r#"
         SELECT id, name, description, tags, implements_traits, uses_traits, current_version, owner_id, read_groups, write_groups, execute_groups, agent_definition, model, judge_threshold, attached_skills, attached_tools, attached_agents, incoming_guardrails, outgoing_guardrails, guardrail_config, archived_at
@@ -211,63 +214,59 @@ pub async fn get_agent(
         "#
     )
     .bind(id)
-    .fetch_optional(&pool)
-    .await
-    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Fetch Error: {}", e)))?;
+    .fetch_one(&pool)
+    .await?;
 
-    if let Some(r) = row {
-        let tags: Vec<String> = r.get("tags");
-        let implements_traits: Vec<String> = r.get("implements_traits");
-        let uses_traits: Vec<String> = r.try_get("uses_traits").unwrap_or_default();
-        let read_groups: Vec<String> = r.get("read_groups");
-        let write_groups: Vec<String> = r.get("write_groups");
-        let execute_groups: Vec<String> = r.get("execute_groups");
-        let agent_definition: serde_json::Value = r.get("agent_definition");
-        let model: serde_json::Value = r.get("model");
-        let owner_id: Uuid = r.get("owner_id");
-        let current_version: String = r.get("current_version");
-        let judge_threshold: f64 = r.get("judge_threshold");
-        let guardrail_config: Option<serde_json::Value> = r.get("guardrail_config");
-        let archived_at: Option<chrono::DateTime<chrono::Utc>> = r.get("archived_at");
+    let r = row;
+    let tags: Vec<String> = r.get("tags");
+    let implements_traits: Vec<String> = r.get("implements_traits");
+    let uses_traits: Vec<String> = r.try_get("uses_traits").unwrap_or_default();
+    let read_groups: Vec<String> = r.get("read_groups");
+    let write_groups: Vec<String> = r.get("write_groups");
+    let execute_groups: Vec<String> = r.get("execute_groups");
+    let agent_definition: serde_json::Value = r.get("agent_definition");
+    let model: serde_json::Value = r.get("model");
+    let owner_id: Uuid = r.get("owner_id");
+    let current_version: String = r.get("current_version");
+    let judge_threshold: f64 = r.get("judge_threshold");
+    let guardrail_config: Option<serde_json::Value> = r.get("guardrail_config");
+    let archived_at: Option<chrono::DateTime<chrono::Utc>> = r.get("archived_at");
 
-        let attached_skills: Vec<Uuid> = r.get("attached_skills");
-        let attached_tools: Vec<Uuid> = r.get("attached_tools");
-        let attached_agents: Vec<Uuid> = r.get("attached_agents");
+    let attached_skills: Vec<Uuid> = r.get("attached_skills");
+    let attached_tools: Vec<Uuid> = r.get("attached_tools");
+    let attached_agents: Vec<Uuid> = r.get("attached_agents");
 
-        let incoming_val: serde_json::Value = r.get("incoming_guardrails");
-        let outgoing_val: serde_json::Value = r.get("outgoing_guardrails");
+    let incoming_val: serde_json::Value = r.get("incoming_guardrails");
+    let outgoing_val: serde_json::Value = r.get("outgoing_guardrails");
 
-        let input_guardrails: Vec<InputGuardrailType> =
-            serde_json::from_value(incoming_val).unwrap_or_default();
-        let output_guardrails: Vec<OutputGuardrailType> =
-            serde_json::from_value(outgoing_val).unwrap_or_default();
+    let input_guardrails: Vec<InputGuardrailType> =
+        serde_json::from_value(incoming_val).unwrap_or_default();
+    let output_guardrails: Vec<OutputGuardrailType> =
+        serde_json::from_value(outgoing_val).unwrap_or_default();
 
-        Ok(Json(Agent {
-            id: Some(id),
-            name: r.get("name"),
-            description: r.get("description"),
-            tags,
-            implements_traits,
-            uses_traits,
-            attached_tools,
-            attached_agents,
-            attached_skills,
-            current_version,
-            owner_id,
-            judge_threshold,
-            input_guardrails,
-            output_guardrails,
-            guardrail_config,
-            read_groups,
-            write_groups,
-            execute_groups,
-            agent_definition,
-            model,
-            archived_at,
-        }))
-    } else {
-        Err((StatusCode::NOT_FOUND, "Agent not found".to_string()))
-    }
+    Ok(Json(Agent {
+        id: Some(id),
+        name: r.get("name"),
+        description: r.get("description"),
+        tags,
+        implements_traits,
+        uses_traits,
+        attached_tools,
+        attached_agents,
+        attached_skills,
+        current_version,
+        owner_id,
+        judge_threshold,
+        input_guardrails,
+        output_guardrails,
+        guardrail_config,
+        read_groups,
+        write_groups,
+        execute_groups,
+        agent_definition,
+        model,
+        archived_at,
+    }))
 }
 
 #[derive(serde::Deserialize)]
@@ -279,8 +278,12 @@ pub async fn delete_agent(
     State(pool): State<PgPool>,
     Path(id): Path<Uuid>,
     Query(params): Query<DeleteAgentParams>,
-) -> Result<Json<Agent>, (StatusCode, String)> {
-    tracing::info!("Deleting agent (ID: {}, hard: {})", id, params.hard.unwrap_or(false));
+) -> Result<Json<Agent>, crate::error::AppError> {
+    tracing::info!(
+        "Deleting agent (ID: {}, hard: {})",
+        id,
+        params.hard.unwrap_or(false)
+    );
     let mut agent_res = get_agent(State(pool.clone()), Path(id)).await?;
 
     if params.hard.unwrap_or(false) {
@@ -291,8 +294,7 @@ pub async fn delete_agent(
                 .await
                 .unwrap_or(0);
         if exec_count > 0 {
-            return Err((
-                StatusCode::CONFLICT,
+            return Err(crate::error::AppError::BadRequest(
                 "Cannot hard delete agent with existing executions".to_string(),
             ));
         }
@@ -300,14 +302,12 @@ pub async fn delete_agent(
         sqlx::query("DELETE FROM agents WHERE id = $1")
             .bind(id)
             .execute(&pool)
-            .await
-            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Delete Error: {}", e)))?;
+            .await?;
     } else {
         sqlx::query("UPDATE agents SET archived_at = NOW(), updated_at = NOW() WHERE id = $1")
             .bind(id)
             .execute(&pool)
-            .await
-            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Soft Delete Error: {}", e)))?;
+            .await?;
         agent_res.0.archived_at = Some(chrono::Utc::now());
     }
 
@@ -321,129 +321,113 @@ pub async fn test_agent(
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
     Json(payload): Json<TestAgentRequest>,
-) -> Result<Json<TestAgentResponse>, (StatusCode, String)> {
+) -> Result<Json<TestAgentResponse>, crate::error::AppError> {
     let row = sqlx::query(
         "SELECT current_version, judge_threshold, name, agent_definition FROM agents WHERE id = $1",
     )
     .bind(id)
-    .fetch_optional(&state.pool)
-    .await
-    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Fetch Error: {}", e)))?;
+    .fetch_one(&state.pool)
+    .await?;
 
-    if let Some(r) = row {
-        let current_version: String = r.get("current_version");
-        let judge_threshold: f64 = r.get("judge_threshold");
-        let name: String = r.get("name");
-        let agent_definition: serde_json::Value = r.get("agent_definition");
+    let r = row;
+    let current_version: String = r.get("current_version");
+    let judge_threshold: f64 = r.get("judge_threshold");
+    let name: String = r.get("name");
+    let agent_definition: serde_json::Value = r.get("agent_definition");
 
-        let mut total_score = 0.0;
-        let mut num_evaluated = 0;
+    let mut total_score = 0.0;
+    let mut num_evaluated = 0;
 
-        let builder = rig_core::providers::ollama::Client::builder()
-            .base_url(&state.config.llm.ollama_url)
-            .api_key(rig_core::client::Nothing);
+    let builder = rig_core::providers::ollama::Client::builder()
+        .base_url(&state.config.llm.ollama_url)
+        .api_key(rig_core::client::Nothing);
 
-        let ollama_client = builder.build().map_err(|e| {
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                format!("Failed to initialize Ollama client: {}", e),
-            )
-        })?;
+    let ollama_client = builder
+        .build()
+        .map_err(|e| crate::error::AppError::Message(format!("Ollama Error: {}", e)))?;
 
-        use rig_core::client::CompletionClient;
-        use rig_core::completion::CompletionModel;
-        let model = ollama_client.completion_model(&state.config.llm.model);
+    use rig_core::client::CompletionClient;
+    use rig_core::completion::CompletionModel;
+    let model = ollama_client.completion_model(&state.config.llm.model);
 
-        let timeout_duration = std::time::Duration::from_secs(state.config.llm.timeout_secs);
-        for test_case in &payload.test_cases {
-            let prompt = format!(
-                "You are an AI judge evaluating a test case. \nInput:\n{}\n\nRubric:\n{}\n\nRate the response from 0.0 to 1.0 based on how well it meets the rubric. Output ONLY the float number.",
-                serde_json::to_string_pretty(&test_case.input).unwrap_or_default(),
-                test_case.rubric
-            );
+    let timeout_duration = std::time::Duration::from_secs(state.config.llm.timeout_secs);
+    for test_case in &payload.test_cases {
+        let prompt = format!(
+            "You are an AI judge evaluating a test case. \nInput:\n{}\n\nRubric:\n{}\n\nRate the response from 0.0 to 1.0 based on how well it meets the rubric. Output ONLY the float number.",
+            serde_json::to_string_pretty(&test_case.input).unwrap_or_default(),
+            test_case.rubric
+        );
 
-            let req = model.completion_request(&prompt).build();
-            let score = match tokio::time::timeout(timeout_duration, model.completion(req)).await {
-                Ok(Ok(response)) => {
-                    if let rig_core::completion::message::AssistantContent::Text(text) =
-                        &response.choice[0]
-                    {
-                        let cleaned = text.text.trim();
-                        cleaned.parse::<f64>().unwrap_or(0.9)
-                    } else {
-                        0.9
-                    }
+        let req = model.completion_request(&prompt).build();
+        let score = match tokio::time::timeout(timeout_duration, model.completion(req)).await {
+            Ok(Ok(response)) => {
+                if let rig_core::completion::message::AssistantContent::Text(text) =
+                    &response.choice[0]
+                {
+                    let cleaned = text.text.trim();
+                    cleaned.parse::<f64>().unwrap_or(0.9)
+                } else {
+                    0.9
                 }
-                _ => 0.9,
-            };
-            total_score += score;
-            num_evaluated += 1;
-        }
-
-        let mock_score = if num_evaluated > 0 {
-            total_score / (num_evaluated as f64)
-        } else {
-            0.9
+            }
+            _ => 0.9,
         };
+        total_score += score;
+        num_evaluated += 1;
+    }
 
-        let status;
-        let mut version_bumped = false;
-        let mut new_version = current_version.clone();
+    let mock_score = if num_evaluated > 0 {
+        total_score / (num_evaluated as f64)
+    } else {
+        0.9
+    };
 
-        if mock_score >= judge_threshold {
-            status = "passed";
-            version_bumped = true;
-            new_version = crate::models::bump_minor_version(&current_version);
+    let status;
+    let mut version_bumped = false;
+    let mut new_version = current_version.clone();
 
-            sqlx::query("UPDATE agents SET current_version = $1, updated_at = NOW() WHERE id = $2")
-                .bind(&new_version)
-                .bind(id)
-                .execute(&state.pool)
-                .await
-                .map_err(|e| {
-                    (
-                        StatusCode::INTERNAL_SERVER_ERROR,
-                        format!("Update Version Error: {}", e),
-                    )
-                })?;
+    if mock_score >= judge_threshold {
+        status = "passed";
+        version_bumped = true;
+        new_version = crate::models::bump_minor_version(&current_version);
 
-            let snapshot = serde_json::json!({
-                "id": id,
-                "name": name,
-                "agent_definition": agent_definition,
-                "version": new_version
-            });
-
-            sqlx::query(
-                r#"
-                INSERT INTO agent_revisions (id, agent_id, version, snapshot)
-                VALUES ($1, $2, $3, $4)
-                "#,
-            )
-            .bind(Uuid::new_v4())
-            .bind(id)
+        sqlx::query("UPDATE agents SET current_version = $1, updated_at = NOW() WHERE id = $2")
             .bind(&new_version)
-            .bind(snapshot)
+            .bind(id)
             .execute(&state.pool)
-            .await
-            .map_err(|e| {
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    format!("Revision DB Error: {}", e),
-                )
-            })?;
-        } else {
-            status = "regression_blocked";
-        }
+            .await?;
 
-        let test_run_id = Uuid::new_v4();
-        let judge_eval = serde_json::json!({
-            "average_score": mock_score,
-            "threshold": judge_threshold,
-            "test_cases_evaluated": payload.test_cases.len()
+        let snapshot = serde_json::json!({
+            "id": id,
+            "name": name,
+            "agent_definition": agent_definition,
+            "version": new_version
         });
 
         sqlx::query(
+            r#"
+                INSERT INTO agent_revisions (id, agent_id, version, snapshot)
+                VALUES ($1, $2, $3, $4)
+                "#,
+        )
+        .bind(Uuid::new_v4())
+        .bind(id)
+        .bind(&new_version)
+        .bind(snapshot)
+        .execute(&state.pool)
+        .await?;
+    } else {
+        status = "regression_blocked";
+    }
+
+    let test_run_id = Uuid::new_v4();
+    let judge_eval = serde_json::json!({
+        "average_score": mock_score,
+        "threshold": judge_threshold,
+        "test_cases_evaluated": payload.test_cases.len()
+    });
+
+    sqlx::query(
             r#"
             INSERT INTO agent_test_runs (id, agent_id, agent_version, suite_id, status, judge_evaluation)
             VALUES ($1, $2, $3, $4, $5, $6)
@@ -457,25 +441,22 @@ pub async fn test_agent(
         .bind(&judge_eval)
         .execute(&state.pool)
         .await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Test Run Log Error: {}", e)))?;
+        ?;
 
-        Ok(Json(TestAgentResponse {
-            test_run_id,
-            agent_id: id,
-            status: status.to_string(),
-            average_score: mock_score,
-            version_bumped,
-            new_version,
-        }))
-    } else {
-        Err((StatusCode::NOT_FOUND, "Agent not found".to_string()))
-    }
+    Ok(Json(TestAgentResponse {
+        test_run_id,
+        agent_id: id,
+        status: status.to_string(),
+        average_score: mock_score,
+        version_bumped,
+        new_version,
+    }))
 }
 
 pub async fn search_agents(
     State(pool): State<PgPool>,
     Json(payload): Json<AgentSearchRequest>,
-) -> Result<Json<Vec<AgentSearchResult>>, (StatusCode, String)> {
+) -> Result<Json<Vec<AgentSearchResult>>, crate::error::AppError> {
     let limit = payload.limit.unwrap_or(5) as i64;
     let pattern = format!("%{}%", payload.query);
 
@@ -490,8 +471,7 @@ pub async fn search_agents(
     .bind(pattern)
     .bind(limit)
     .fetch_all(&pool)
-    .await
-    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Agent Search Error: {}", e)))?;
+    .await?;
 
     let results = rows
         .into_iter()
@@ -513,43 +493,38 @@ pub async fn search_agents(
 pub async fn verify_contract(
     State(pool): State<PgPool>,
     Json(payload): Json<VerifyContractRequest>,
-) -> Result<Json<VerifyContractResponse>, (StatusCode, String)> {
+) -> Result<Json<VerifyContractResponse>, crate::error::AppError> {
     let row = sqlx::query("SELECT implements_traits FROM agents WHERE id = $1")
         .bind(payload.target_agent_id)
-        .fetch_optional(&pool)
-        .await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Fetch Error: {}", e)))?;
+        .fetch_one(&pool)
+        .await?;
 
-    if let Some(r) = row {
-        let traits: Vec<String> = r.get("implements_traits");
-        let contract_valid = traits
-            .iter()
-            .any(|t| t.eq_ignore_ascii_case(&payload.trait_name));
-        let status = if contract_valid {
-            "verified"
-        } else {
-            "trait_mismatch"
-        };
-        let score = if contract_valid { 0.96 } else { 0.20 };
-
-        Ok(Json(VerifyContractResponse {
-            status: status.to_string(),
-            semantic_fit_score: score,
-            contract_valid,
-        }))
+    let r = row;
+    let traits: Vec<String> = r.get("implements_traits");
+    let contract_valid = traits
+        .iter()
+        .any(|t| t.eq_ignore_ascii_case(&payload.trait_name));
+    let status = if contract_valid {
+        "verified"
     } else {
-        Err((StatusCode::NOT_FOUND, "Target agent not found".to_string()))
-    }
+        "trait_mismatch"
+    };
+    let score = if contract_valid { 0.96 } else { 0.20 };
+
+    Ok(Json(VerifyContractResponse {
+        status: status.to_string(),
+        semantic_fit_score: score,
+        contract_valid,
+    }))
 }
 
 pub async fn analyze_refactor(
     State(pool): State<PgPool>,
     Json(_payload): Json<RefactorAnalyzeRequest>,
-) -> Result<Json<RefactorAnalyzeResponse>, (StatusCode, String)> {
+) -> Result<Json<RefactorAnalyzeResponse>, crate::error::AppError> {
     let rows = sqlx::query("SELECT id FROM agents WHERE archived_at IS NULL LIMIT 10")
         .fetch_all(&pool)
-        .await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Fetch Error: {}", e)))?;
+        .await?;
 
     let agent_ids: Vec<Uuid> = rows.into_iter().map(|r| r.get("id")).collect();
     let cluster_id = Uuid::new_v4();
@@ -568,12 +543,11 @@ pub async fn analyze_refactor(
 pub async fn compile_agent(
     State(pool): State<PgPool>,
     Json(payload): Json<CompileAgentRequest>,
-) -> Result<Json<CompileAgentResponse>, (StatusCode, String)> {
+) -> Result<Json<CompileAgentResponse>, crate::error::AppError> {
     let agent_row = sqlx::query("SELECT name FROM agents WHERE id = $1")
         .bind(payload.root_agent_id)
         .fetch_optional(&pool)
-        .await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("DB Error: {}", e)))?;
+        .await?;
 
     if agent_row.is_none() {
         return Ok(Json(CompileAgentResponse {
@@ -597,26 +571,23 @@ pub async fn compile_agent(
         }],
     }))
 }
-use crate::models::{SyncEmbeddingsResponse};
+use crate::models::SyncEmbeddingsResponse;
 
 pub async fn sync_agent_embeddings(
     State(pool): State<PgPool>,
     Path(id): Path<Uuid>,
-) -> Result<Json<SyncEmbeddingsResponse>, (StatusCode, String)> {
-    let agent_row = sqlx::query("SELECT name, description, agent_definition FROM agents WHERE id = $1")
-        .bind(id)
-        .fetch_optional(&pool)
-        .await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Fetch Error: {}", e)))?;
-
-    let agent_row = match agent_row {
-        Some(row) => row,
-        None => return Err((StatusCode::NOT_FOUND, "Agent not found".to_string())),
-    };
+) -> Result<Json<SyncEmbeddingsResponse>, crate::error::AppError> {
+    let agent_row =
+        sqlx::query("SELECT name, description, agent_definition FROM agents WHERE id = $1")
+            .bind(id)
+            .fetch_one(&pool)
+            .await?;
 
     let name: String = agent_row.get("name");
     let description: Option<String> = agent_row.try_get("description").ok();
-    let agent_definition: serde_json::Value = agent_row.try_get("agent_definition").unwrap_or(serde_json::json!({}));
+    let agent_definition: serde_json::Value = agent_row
+        .try_get("agent_definition")
+        .unwrap_or(serde_json::json!({}));
     let prompt_str = agent_definition.to_string();
 
     let count = crate::webserver::search::sync_entity_embeddings(
@@ -627,8 +598,7 @@ pub async fn sync_agent_embeddings(
         description.as_deref(),
         &[("prompt", &prompt_str)],
     )
-    .await
-    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Sync Error: {}", e)))?;
+    .await?;
 
     Ok(Json(SyncEmbeddingsResponse {
         status: "success".to_string(),
@@ -636,5 +606,3 @@ pub async fn sync_agent_embeddings(
         embeddings_created: count,
     }))
 }
-
-

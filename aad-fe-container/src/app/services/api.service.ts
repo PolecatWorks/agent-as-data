@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
 import { map } from 'rxjs/operators';
 
@@ -430,14 +430,15 @@ export class ApiService {
 
   // Workbench Threads APIs
   getThreads(ownerId?: string): Observable<Thread[]> {
-    return this.http.post<Thread[]>(`${this.baseUrl}/threads`, {
-      owner_id: ownerId || this.ANONYMOUS_OWNER_ID,
-      pagination: { page: 0, size: 50 }
-    });
+    let params = new HttpParams()
+      .set('owner_id', ownerId || this.ANONYMOUS_OWNER_ID)
+      .set('page', '0')
+      .set('size', '50');
+    return this.http.get<Thread[]>(`${this.baseUrl}/threads`, { params });
   }
 
   createThread(title: string, ownerId?: string, description?: string, tags?: string[], benchId?: string): Observable<Thread> {
-    return this.http.post<Thread>(`${this.baseUrl}/threads/create`, {
+    return this.http.post<Thread>(`${this.baseUrl}/threads`, {
       title,
       owner_id: ownerId || this.ANONYMOUS_OWNER_ID,
       bench_id: benchId,
