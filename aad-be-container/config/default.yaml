@@ -11,7 +11,7 @@ webservice:
 
 llm:
   # ollama_url: "http://localhost:11434"
-  ollama_url: "http://ollama.k8s:80"
+  ollama_url: "http://localhost:11434"
   # model: "llama3"
   model: "qwen2.5-coder:14b"
   timeout_secs: 180

@@ -397,32 +397,9 @@ async fn process_thread_message(
                 return None;
             }
         }
-        let lower = user_content.to_lowercase();
-        let fallback_text = if (lower.contains("memory") || lower.contains("constraint") || lower.contains("tech stack") || lower.contains("decision")) && !bench_memory.trim().is_empty() {
-            format!("According to the bench memory:\n{}", bench_memory.trim())
-        } else if lower.contains("file") && (lower.contains("what") || lower.contains("list") || lower.contains("show") || lower.contains("which") || lower.contains("are")) {
-            if files.is_empty() {
-                "There are currently no files in the workspace directory.".to_string()
-            } else {
-                format!("The files in the workspace are:\n{}", files.iter().map(|f| format!("- {}", f)).collect::<Vec<_>>().join("\n"))
-            }
-        } else if lower.contains("create") && lower.contains("file") {
-            let parts: Vec<&str> = user_content.split_whitespace().collect();
-            let mut filename = "untitled.txt";
-            for (i, part) in parts.iter().enumerate() {
-                if (*part == "called" || *part == "named" || *part == "file") && i + 1 < parts.len() {
-                    filename = parts[i + 1].trim_matches('\'').trim_matches('"');
-                }
-            }
-            let safe_filename = filename.trim_matches('.').trim_matches('/');
-            let safe_name = if safe_filename.is_empty() { "untitled.txt" } else { safe_filename };
-            let filepath = format!("{}/{}", workspace_root.display(), safe_name);
-            let _ = std::fs::write(&filepath, format!("File {} created for thread {}", safe_name, thread_id));
-            format!("Created file `{}` in the workspace.", safe_name)
-        } else {
-            format!("Processed request: \"{}\". {}", user_content, files_summary)
-        };
-        Some(fallback_text)
+        // If the LLM failed, we should NOT return a dummy hardcoded response.
+        // Returning None allows the caller to mark the run as failed so the user knows.
+        None
     }
 }
 
