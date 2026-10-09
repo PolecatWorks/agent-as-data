@@ -198,14 +198,12 @@ async fn process_thread_message(
     history: &[Message],
 ) -> Result<String, crate::error::AppError> {
     let workspace_root = crate::webserver::fs::get_workspace_root(bench_id);
-    let mut files = Vec::new();
-    if let Ok(entries) = std::fs::read_dir(&workspace_root) {
-        for entry in entries.flatten() {
-            if let Ok(name) = entry.file_name().into_string() {
-                files.push(name);
-            }
-        }
-    }
+    let mut files: Vec<String> = std::fs::read_dir(&workspace_root)
+        .into_iter()
+        .flatten()
+        .flatten()
+        .filter_map(|entry| entry.file_name().into_string().ok())
+        .collect();
     files.sort();
 
     let files_summary = if files.is_empty() {
@@ -239,14 +237,7 @@ async fn process_thread_message(
         bench_id, thread_id, files_summary, memory_summary
     );
 
-    let mut rig_history = Vec::new();
-    for msg in history {
-        if msg.role == "user" {
-            rig_history.push(rig::completion::Message::user(&msg.content));
-        } else {
-            rig_history.push(rig::completion::Message::assistant(&msg.content));
-        }
-    }
+    let rig_history: Vec<rig::completion::Message> = history.iter().map(Into::into).collect();
 
     tracing::info!(
         "LLM Prompt dispatched [Bench: {} | Thread: {} | Model: {} | Endpoint: {} | Prior turns: {}]:\n--- PREAMBLE ---\n{}\n--- CURRENT PROMPT ---\n{}",

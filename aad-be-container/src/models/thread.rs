@@ -1,10 +1,11 @@
+use super::common::PageOptions;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-use super::common::PageOptions;
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct ListThreadsRequest {
     pub owner_id: Uuid,
+    #[serde(flatten)]
     pub pagination: Option<PageOptions>,
 }
 
@@ -49,4 +50,16 @@ pub struct Message {
 pub struct CreateMessageRequest {
     pub role: String,
     pub content: String,
+}
+
+impl From<&Message> for rig_core::completion::Message {
+    fn from(msg: &Message) -> Self {
+        if msg.role == "user" {
+            rig_core::completion::Message::user(&msg.content)
+        } else if msg.role == "system" {
+            rig_core::completion::Message::system(&msg.content)
+        } else {
+            rig_core::completion::Message::assistant(&msg.content)
+        }
+    }
 }
