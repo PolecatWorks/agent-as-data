@@ -109,7 +109,8 @@ pub trait Tool {
 ### 2. Autonomous Agent Execution Loop (`threads.rs` & `execution.rs`)
 
 When handling thread messages or agent execution requests:
-1. **Builder Construction**:
+1. **Builder Construction & System Prompting**:
+   - Construct the system prompt carefully to enforce strict file state verification: the agent must be explicitly instructed that files can be modified externally and it MUST ALWAYS use `read_file` rather than relying on conversation history.
    ```rust
    let agent = client
        .agent(&state.config.llm.model)

@@ -153,6 +153,9 @@ flowchart TD
    - Before executing *any* mutating workspace tool (`write_file`, `replace_in_file`, `delete_file`, `rename_file`) and before committing the assistant's final response, check `SELECT status FROM thread_runs WHERE id = $run_id`.
    - If `status == 'cancelled'`, immediately abort execution without modifying the filesystem or memory, append a standardized system message `[Action cancelled by user]` to `messages`, set `thread_runs.current_phase = 'cancelled'`, and terminate the loop cleanly.
    - This database-coordinated cancellation model enables horizontally scaled pods to stop in-flight actions reliably without pod-affinity or cross-pod signal handling.
+8. **Strict File State Verification**:
+   - The system prompt MUST instruct the model that files can be modified outside the chat by the user or other processes.
+   - The model MUST ALWAYS use the `read_file` tool when asked about file contents, rather than relying on its conversation history or memory, to ensure the user receives the current state of the file.
 
 ### 4. Advanced Tool Capabilities (Roadmap)
 - **Tool-RAG (`ToolEmbedding`)**: For agents with large tool catalogs (e.g. tools, skills, database queries), implement `ToolEmbedding` to retrieve only the top `N` relevant tools via vector similarity (`.dynamic_tools(n, index, toolset)`).
