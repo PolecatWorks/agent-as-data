@@ -1,9 +1,8 @@
 use axum::{
-    Json,
+    Json, Router,
     extract::{Path, Query, State},
     http::StatusCode,
     routing::{get, post},
-    Router,
 };
 use sqlx::{PgPool, Row};
 use uuid::Uuid;
@@ -16,7 +15,10 @@ use crate::{
 pub fn router() -> Router<AppState> {
     Router::new()
         .route("/", get(list_traits).post(create_trait))
-        .route("/{id}", get(get_trait).put(update_trait).delete(delete_trait))
+        .route(
+            "/{id}",
+            get(get_trait).put(update_trait).delete(delete_trait),
+        )
         .route("/{id}/sync-embeddings", post(sync_trait_embeddings))
 }
 
@@ -26,12 +28,18 @@ pub async fn list_traits(
 ) -> Result<Json<ListPages>, (StatusCode, String)> {
     let options = PageOptions::defaulting(options);
 
-    let rows = sqlx::query("SELECT id FROM trait_contracts ORDER BY created_at DESC LIMIT $1 OFFSET $2")
-        .bind(options.size)
-        .bind(options.page.unwrap_or(0) * options.size.unwrap_or(10))
-        .fetch_all(&pool)
-        .await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Fetch Error: {}", e)))?;
+    let rows =
+        sqlx::query("SELECT id FROM trait_contracts ORDER BY created_at DESC LIMIT $1 OFFSET $2")
+            .bind(options.size)
+            .bind(options.page.unwrap_or(0) * options.size.unwrap_or(10))
+            .fetch_all(&pool)
+            .await
+            .map_err(|e| {
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    format!("Fetch Error: {}", e),
+                )
+            })?;
 
     let ids: Vec<Uuid> = rows.iter().map(|r| r.get("id")).collect();
 
@@ -55,7 +63,10 @@ pub async fn get_trait(
 
     match trait_opt {
         Some(t) => Ok(Json(t)),
-        None => Err((StatusCode::NOT_FOUND, "Trait contract not found".to_string())),
+        None => Err((
+            StatusCode::NOT_FOUND,
+            "Trait contract not found".to_string(),
+        )),
     }
 }
 
@@ -64,13 +75,19 @@ pub async fn create_trait(
     Json(payload): Json<TraitContract>,
 ) -> Result<(StatusCode, Json<TraitContract>), (StatusCode, String)> {
     let id = payload.id.unwrap_or_else(Uuid::new_v4);
-    let version = if payload.version.is_empty() || payload.version == "0" || payload.version == "1" {
+    let version = if payload.version.is_empty() || payload.version == "0" || payload.version == "1"
+    {
         "1.0.0".to_string()
     } else {
         payload.version
     };
 
-    tracing::info!("Creating/Saving trait contract '{}' (ID: {}, version: {})", payload.name, id, version);
+    tracing::info!(
+        "Creating/Saving trait contract '{}' (ID: {}, version: {})",
+        payload.name,
+        id,
+        version
+    );
 
     let new_trait = sqlx::query_as::<_, TraitContract>(
         r#"
@@ -99,7 +116,11 @@ pub async fn create_trait(
     .await
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Insert Trait Error: {}", e)))?;
 
-    tracing::info!("Trait contract '{}' saved successfully (ID: {})", payload.name, id);
+    tracing::info!(
+        "Trait contract '{}' saved successfully (ID: {})",
+        payload.name,
+        id
+    );
 
     // Automatically sync embeddings with reverse references
     let inv_str = new_trait.behavioral_invariants.join("; ");
@@ -153,7 +174,11 @@ pub async fn update_trait(
     .await
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Update Trait Error: {}", e)))?;
 
-    tracing::info!("Trait contract '{}' updated successfully (ID: {})", payload.name, id);
+    tracing::info!(
+        "Trait contract '{}' updated successfully (ID: {})",
+        payload.name,
+        id
+    );
 
     // Automatically sync embeddings with reverse references
     let inv_str = updated_trait.behavioral_invariants.join("; ");
@@ -224,7 +249,12 @@ pub async fn sync_trait_embeddings(
         ],
     )
     .await
-    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Sync Error: {}", e)))?;
+    .map_err(|e| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("Sync Error: {}", e),
+        )
+    })?;
 
     Ok(Json(crate::models::SyncEmbeddingsResponse {
         status: "success".to_string(),

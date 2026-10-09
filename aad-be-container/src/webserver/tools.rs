@@ -1,9 +1,8 @@
 use axum::{
-    Json,
+    Json, Router,
     extract::{Path, State},
     http::StatusCode,
     routing::{delete, get, post},
-    Router,
 };
 use chrono::Utc;
 use sqlx::{PgPool, Row};
@@ -57,7 +56,10 @@ pub async fn fetch_mcp_capabilities(url: &str) -> Result<serde_json::Value, Stri
         .map_err(|e| format!("MCP initialize connection failed: {}", e))?;
 
     if !init_res.status().is_success() {
-        return Err(format!("MCP initialize returned HTTP {}", init_res.status()));
+        return Err(format!(
+            "MCP initialize returned HTTP {}",
+            init_res.status()
+        ));
     }
 
     let init_json: serde_json::Value = init_res
@@ -98,7 +100,10 @@ pub async fn fetch_mcp_capabilities(url: &str) -> Result<serde_json::Value, Stri
         .map_err(|e| format!("MCP tools/list connection failed: {}", e))?;
 
     if !list_res.status().is_success() {
-        return Err(format!("MCP tools/list returned HTTP {}", list_res.status()));
+        return Err(format!(
+            "MCP tools/list returned HTTP {}",
+            list_res.status()
+        ));
     }
 
     let list_json: serde_json::Value = list_res
@@ -152,7 +157,10 @@ pub async fn execute_remote_mcp_tool(
         .map_err(|e| format!("MCP tools/call connection failed: {}", e))?;
 
     if !res.status().is_success() {
-        return Err(format!("MCP tools/call returned HTTP status {}", res.status()));
+        return Err(format!(
+            "MCP tools/call returned HTTP status {}",
+            res.status()
+        ));
     }
 
     let json: serde_json::Value = res
@@ -168,7 +176,11 @@ pub async fn execute_remote_mcp_tool(
         .get("result")
         .ok_or_else(|| "MCP response missing 'result' field".to_string())?;
 
-    if result.get("isError").and_then(|v| v.as_bool()).unwrap_or(false) {
+    if result
+        .get("isError")
+        .and_then(|v| v.as_bool())
+        .unwrap_or(false)
+    {
         let err_text = result
             .get("content")
             .and_then(|c| c.as_array())
@@ -199,13 +211,22 @@ pub async fn register_tool(
     Json(payload): Json<RegisterToolRequest>,
 ) -> Result<(StatusCode, Json<RegisterToolResponse>), (StatusCode, String)> {
     let server_id = payload.id.unwrap_or_else(Uuid::new_v4);
-    tracing::info!("Registering tool server '{}' (ID: {})", payload.server_name, server_id);
+    tracing::info!(
+        "Registering tool server '{}' (ID: {})",
+        payload.server_name,
+        server_id
+    );
 
     let url = payload
         .endpoint_config
         .get("url")
         .and_then(|v| v.as_str())
-        .ok_or_else(|| (StatusCode::BAD_REQUEST, "Missing endpoint_config.url".to_string()))?;
+        .ok_or_else(|| {
+            (
+                StatusCode::BAD_REQUEST,
+                "Missing endpoint_config.url".to_string(),
+            )
+        })?;
 
     let cached_capabilities = if payload.transport_type.eq_ignore_ascii_case("http") {
         match fetch_mcp_capabilities(url).await {
@@ -274,7 +295,8 @@ pub async fn register_tool(
     );
 
     // Automatically sync tool embeddings with reverse references
-    sync_tool_capabilities_embeddings(&pool, final_id, &payload.server_name, &cached_capabilities).await;
+    sync_tool_capabilities_embeddings(&pool, final_id, &payload.server_name, &cached_capabilities)
+        .await;
 
     Ok((
         StatusCode::CREATED,
@@ -312,7 +334,12 @@ pub async fn sync_tool(
         .endpoint_config
         .get("url")
         .and_then(|v| v.as_str())
-        .ok_or_else(|| (StatusCode::BAD_REQUEST, "Missing endpoint_config.url".to_string()))?;
+        .ok_or_else(|| {
+            (
+                StatusCode::BAD_REQUEST,
+                "Missing endpoint_config.url".to_string(),
+            )
+        })?;
 
     let now = Utc::now();
 
@@ -332,14 +359,19 @@ pub async fn sync_tool(
                     last_synced_at = $2,
                     last_sync_error = NULL
                 WHERE id = $3
-                "#
+                "#,
             )
             .bind(&new_caps)
             .bind(now)
             .bind(id)
             .execute(&pool)
             .await
-            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to update tool: {}", e)))?;
+            .map_err(|e| {
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    format!("Failed to update tool: {}", e),
+                )
+            })?;
 
             // Automatically sync tool embeddings with reverse references
             sync_tool_capabilities_embeddings(&pool, id, &tool.server_name, &new_caps).await;
@@ -357,7 +389,12 @@ pub async fn sync_tool(
             ))
         }
         Err(err) => {
-            tracing::warn!("Sync failed for tool server '{}' ({}): {}", tool.server_name, id, err);
+            tracing::warn!(
+                "Sync failed for tool server '{}' ({}): {}",
+                tool.server_name,
+                id,
+                err
+            );
 
             // Resilient degradation: preserve previous schema, mark degraded
             let existing_count = tool
@@ -374,14 +411,19 @@ pub async fn sync_tool(
                     last_synced_at = $1,
                     last_sync_error = $2
                 WHERE id = $3
-                "#
+                "#,
             )
             .bind(now)
             .bind(&err)
             .bind(id)
             .execute(&pool)
             .await
-            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to update tool: {}", e)))?;
+            .map_err(|e| {
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    format!("Failed to update tool: {}", e),
+                )
+            })?;
 
             Ok((
                 StatusCode::OK,
@@ -445,7 +487,12 @@ pub async fn test_tool_execution(
         .endpoint_config
         .get("url")
         .and_then(|v| v.as_str())
-        .ok_or_else(|| (StatusCode::BAD_REQUEST, "Missing endpoint_config.url".to_string()))?;
+        .ok_or_else(|| {
+            (
+                StatusCode::BAD_REQUEST,
+                "Missing endpoint_config.url".to_string(),
+            )
+        })?;
 
     let start = std::time::Instant::now();
 
@@ -491,15 +538,12 @@ pub async fn test_tool_execution(
         ));
     }
 
-    let json: serde_json::Value = res
-        .json()
-        .await
-        .map_err(|e| {
-            (
-                StatusCode::BAD_GATEWAY,
-                format!("Invalid JSON response from MCP server: {}", e),
-            )
-        })?;
+    let json: serde_json::Value = res.json().await.map_err(|e| {
+        (
+            StatusCode::BAD_GATEWAY,
+            format!("Invalid JSON response from MCP server: {}", e),
+        )
+    })?;
 
     if let Some(err) = json.get("error") {
         return Ok((
@@ -588,7 +632,12 @@ pub async fn delete_tool(
         .bind(id)
         .execute(&pool)
         .await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to delete MCP server: {}", e)))?;
+        .map_err(|e| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Failed to delete MCP server: {}", e),
+            )
+        })?;
 
     // Purge embeddings for the deleted tool
     let _ = crate::webserver::search::purge_entity_embeddings(&pool, id).await;
@@ -644,13 +693,15 @@ pub async fn sync_tool_embeddings(
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Fetch Error: {}", e)))?
     .ok_or_else(|| (StatusCode::NOT_FOUND, "Tool not found".to_string()))?;
 
-    sync_tool_capabilities_embeddings(&pool, id, &tool.server_name, &tool.cached_capabilities).await;
+    sync_tool_capabilities_embeddings(&pool, id, &tool.server_name, &tool.cached_capabilities)
+        .await;
 
-    let count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM entity_embeddings WHERE entity_id = $1")
-        .bind(id)
-        .fetch_one(&pool)
-        .await
-        .unwrap_or(0);
+    let count: i64 =
+        sqlx::query_scalar("SELECT COUNT(*) FROM entity_embeddings WHERE entity_id = $1")
+            .bind(id)
+            .fetch_one(&pool)
+            .await
+            .unwrap_or(0);
 
     Ok(Json(crate::models::SyncEmbeddingsResponse {
         status: "success".to_string(),
@@ -780,7 +831,11 @@ mod tests {
         let res = fetch_mcp_capabilities("http://127.0.0.1:54321/mcp").await;
         assert!(res.is_err());
         let err = res.unwrap_err();
-        assert!(err.contains("MCP initialize connection failed"), "Got: {}", err);
+        assert!(
+            err.contains("MCP initialize connection failed"),
+            "Got: {}",
+            err
+        );
     }
 
     #[tokio::test]
@@ -807,7 +862,8 @@ mod tests {
             let tools = caps.get("tools").and_then(|t| t.as_array()).unwrap();
             assert!(tools.iter().any(|t| t["name"] == "hello"));
 
-            let exec_res = execute_remote_mcp_tool(sample_url, "hello", json!({"name": "Antigravity"})).await;
+            let exec_res =
+                execute_remote_mcp_tool(sample_url, "hello", json!({"name": "Antigravity"})).await;
             assert!(exec_res.is_ok());
             assert_eq!(exec_res.unwrap(), json!("Hello, Antigravity!"));
         } else {
@@ -818,8 +874,9 @@ mod tests {
 
     #[tokio::test]
     async fn test_tool_verification_handler() {
-        let db_url = std::env::var("DATABASE_URL")
-            .unwrap_or_else(|_| "postgres://postgres:mysecretpassword@localhost:5432/aaddb".to_string());
+        let db_url = std::env::var("DATABASE_URL").unwrap_or_else(|_| {
+            "postgres://postgres:mysecretpassword@localhost:5432/aaddb".to_string()
+        });
         if let Ok(pool) = sqlx::postgres::PgPoolOptions::new().connect(&db_url).await {
             let (mock_url, _shutdown) = start_mock_mcp_server().await;
             let server_name = format!("test-mcp-verify-{}", Uuid::new_v4());
@@ -840,7 +897,9 @@ mod tests {
             .await;
 
             if insert_res.is_err() {
-                println!("Note: Database not migrated or tools schema missing, skipping test_tool_verification_handler");
+                println!(
+                    "Note: Database not migrated or tools schema missing, skipping test_tool_verification_handler"
+                );
                 return;
             }
 
@@ -849,7 +908,12 @@ mod tests {
                 tool_name: "mock_greeting".to_string(),
                 arguments: json!({"name": "Agent"}),
             };
-            let res = test_tool_execution(axum::extract::State(pool.clone()), axum::extract::Path(server_id), axum::Json(req.clone())).await;
+            let res = test_tool_execution(
+                axum::extract::State(pool.clone()),
+                axum::extract::Path(server_id),
+                axum::Json(req.clone()),
+            )
+            .await;
             assert!(res.is_ok());
             let (status, axum::Json(test_res)) = res.unwrap();
             assert_eq!(status, StatusCode::OK);
@@ -861,7 +925,12 @@ mod tests {
                 tool_name: "non_existent".to_string(),
                 arguments: json!({}),
             };
-            let unk_res = test_tool_execution(axum::extract::State(pool.clone()), axum::extract::Path(server_id), axum::Json(unknown_req)).await;
+            let unk_res = test_tool_execution(
+                axum::extract::State(pool.clone()),
+                axum::extract::Path(server_id),
+                axum::Json(unknown_req),
+            )
+            .await;
             assert!(unk_res.is_err());
             let (unk_status, unk_msg) = unk_res.unwrap_err();
             assert_eq!(unk_status, StatusCode::UNPROCESSABLE_ENTITY);
@@ -869,15 +938,21 @@ mod tests {
 
             // 3. Unknown server fails with 404
             let missing_server_id = Uuid::new_v4();
-            let missing_res = test_tool_execution(axum::extract::State(pool.clone()), axum::extract::Path(missing_server_id), axum::Json(req)).await;
+            let missing_res = test_tool_execution(
+                axum::extract::State(pool.clone()),
+                axum::extract::Path(missing_server_id),
+                axum::Json(req),
+            )
+            .await;
             assert!(missing_res.is_err());
             let (missing_status, _) = missing_res.unwrap_err();
             assert_eq!(missing_status, StatusCode::NOT_FOUND);
 
             // Cleanup
-            let _ = sqlx::query("DELETE FROM tools WHERE id = $1").bind(server_id).execute(&pool).await;
+            let _ = sqlx::query("DELETE FROM tools WHERE id = $1")
+                .bind(server_id)
+                .execute(&pool)
+                .await;
         }
     }
 }
-
-

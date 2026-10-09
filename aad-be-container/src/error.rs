@@ -45,6 +45,19 @@ pub enum AppError {
     /// PostgreSQL database query or connection pool error.
     #[error("Database error `{0}`")]
     DatabaseError(#[from] sqlx::Error),
+
+    /// Timeout error for async operations.
+    #[error("Timeout error `{0}`")]
+    Timeout(#[from] tokio::time::error::Elapsed),
+
+    /// LLM Completion Engine Error
+    #[error("LLM error `{0}`")]
+    CompletionError(#[from] rig_core::completion::CompletionError),
+
+    /// HTTP Client build error
+    #[error("LLM Client Build error `{0}`")]
+    LlmClientError(#[from] rig_core::http_client::Error),
+
 }
 
 impl axum::response::IntoResponse for AppError {
@@ -89,6 +102,19 @@ impl axum::response::IntoResponse for AppError {
                     )
                 }
             },
+
+            AppError::Timeout(error) => (
+                axum::http::StatusCode::GATEWAY_TIMEOUT,
+                format!("Request Timed Out: {}", error),
+            ),
+            AppError::CompletionError(error) => (
+                axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+                format!("LLM Engine Error: {}", error),
+            ),
+            AppError::LlmClientError(error) => (
+                axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+                format!("LLM Client Error: {}", error),
+            ),
         };
 
         (status, axum::Json(ErrorResponse { message })).into_response()

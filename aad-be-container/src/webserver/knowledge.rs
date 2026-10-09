@@ -215,9 +215,10 @@ pub async fn analyze_markdown(
                 Err(e) => {
                     tracing::error!("Failed to parse LLM response as JSON: {}", e);
                     tracing::error!("Raw LLM response: {}", content);
-                    return Err(crate::error::AppError::Message(
-                        format!("Failed to parse LLM output: {}", e),
-                    ));
+                    return Err(crate::error::AppError::Message(format!(
+                        "Failed to parse LLM output: {}",
+                        e
+                    )));
                 }
             }
         }
