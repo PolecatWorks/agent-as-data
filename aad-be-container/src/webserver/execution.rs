@@ -61,11 +61,11 @@ pub async fn execute_agent(
         if payload.model.is_none() {
             let model_val: serde_json::Value =
                 r.try_get("model").unwrap_or(serde_json::Value::Null);
-            if let Some(m) = model_val.as_str() {
-                if !m.trim().is_empty() {
-                    target_model = m.to_string();
-                }
-            } else if let Some(m) = model_val.get("name").and_then(|n| n.as_str()) {
+                
+            let m_str = model_val.as_str()
+                .or_else(|| model_val.get("name").and_then(|n| n.as_str()));
+                
+            if let Some(m) = m_str {
                 if !m.trim().is_empty() {
                     target_model = m.to_string();
                 }
@@ -81,18 +81,18 @@ pub async fn execute_agent(
                 .await
                 .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Fetch Error: {}", e)))?;
 
-        if let Some(sr) = skill_row {
-            agent_version = sr.get("current_version");
-            let def: String = sr.get("definition");
-            if !def.trim().is_empty() {
-                system_prompt = def;
-            } else {
-                let name: String = sr.get("name");
-                let desc: String = sr.get("description");
-                system_prompt = format!("You are an AI skill named {}. {}", name, desc);
-            }
-        } else {
+        let Some(sr) = skill_row else {
             return Err((StatusCode::NOT_FOUND, "Agent or Skill not found".to_string()));
+        };
+
+        agent_version = sr.get("current_version");
+        let def: String = sr.get("definition");
+        if !def.trim().is_empty() {
+            system_prompt = def;
+        } else {
+            let name: String = sr.get("name");
+            let desc: String = sr.get("description");
+            system_prompt = format!("You are an AI skill named {}. {}", name, desc);
         }
     }
 
@@ -128,22 +128,20 @@ pub async fn execute_agent(
 
     // Inject filesystem tools if bench_id or thread_id is available in context
     if let Some(ctx) = &payload.context {
-        let bench_id_opt = if let Some(bid_val) = ctx.get("bench_id").and_then(|v| v.as_str()) {
-            uuid::Uuid::parse_str(bid_val).ok()
-        } else if let Some(tid_val) = ctx.get("thread_id").and_then(|v| v.as_str()) {
-            if let Ok(tid) = uuid::Uuid::parse_str(tid_val) {
-                sqlx::query_scalar::<_, Uuid>("SELECT bench_id FROM threads WHERE id = $1")
+        let mut bench_id_opt = ctx.get("bench_id")
+            .and_then(|v| v.as_str())
+            .and_then(|v| uuid::Uuid::parse_str(v).ok());
+
+        if bench_id_opt.is_none() {
+            if let Some(tid) = ctx.get("thread_id").and_then(|v| v.as_str()).and_then(|v| uuid::Uuid::parse_str(v).ok()) {
+                bench_id_opt = sqlx::query_scalar::<_, Uuid>("SELECT bench_id FROM threads WHERE id = $1")
                     .bind(tid)
                     .fetch_optional(&state.pool)
                     .await
                     .unwrap_or(None)
-                    .or(Some(tid))
-            } else {
-                None
+                    .or(Some(tid));
             }
-        } else {
-            None
-        };
+        }
 
         if let Some(bench_id) = bench_id_opt {
             use rig_core::tool::portable_tool_definition;
