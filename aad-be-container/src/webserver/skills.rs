@@ -1,3 +1,4 @@
+use crate::error::AppError;
 use axum::{
     Json,
     extract::{Path, State},
@@ -25,35 +26,35 @@ pub fn router() -> Router<AppState> {
 
 pub async fn list_skills(
     State(pool): State<PgPool>,
-) -> Result<Json<Vec<Skill>>, (StatusCode, String)> {
+) -> Result<Json<Vec<Skill>>, AppError> {
     let skills = sqlx::query_as::<_, Skill>(
         "SELECT id, name, description, definition, tags, current_version, owner_id, attached_skills, attached_tools, input_schema, output_schema, implementation, implements_traits, uses_traits FROM skills ORDER BY created_at DESC"
     )
     .fetch_all(&pool)
     .await
-    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Fetch Skills Error: {}", e)))?;
+    ?;
     Ok(Json(skills))
 }
 
 pub async fn get_skill(
     State(pool): State<PgPool>,
     Path(id): Path<Uuid>,
-) -> Result<Json<Skill>, (StatusCode, String)> {
+) -> Result<Json<Skill>, AppError> {
     let skill = sqlx::query_as::<_, Skill>(
         "SELECT id, name, description, definition, tags, current_version, owner_id, attached_skills, attached_tools, input_schema, output_schema, implementation, implements_traits, uses_traits FROM skills WHERE id = $1"
     )
     .bind(id)
     .fetch_optional(&pool)
     .await
-    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Fetch Skill Error: {}", e)))?
-    .ok_or((StatusCode::NOT_FOUND, "Skill not found".to_string()))?;
+    ?
+    .ok_or(AppError::NotFound("Skill not found".to_string()))?;
     Ok(Json(skill))
 }
 
 pub async fn create_skill(
     State(pool): State<PgPool>,
     Json(payload): Json<Skill>,
-) -> Result<(StatusCode, Json<Skill>), (StatusCode, String)> {
+) -> Result<(StatusCode, Json<Skill>), AppError> {
     let skill_id = payload.id.unwrap_or_else(Uuid::new_v4);
     let input_schema = payload.input_schema.clone().unwrap_or_else(|| serde_json::json!({}));
     let output_schema = payload.output_schema.clone().unwrap_or_else(|| serde_json::json!({}));
@@ -106,7 +107,7 @@ pub async fn create_skill(
     .bind(&payload.uses_traits)
     .fetch_one(&pool)
     .await
-    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Skill DB Error: {}", e)))?;
+    ?;
 
     let final_id: Uuid = row.get("id");
     let mut response_skill = payload.clone();
@@ -134,7 +135,7 @@ pub async fn update_skill(
     State(pool): State<PgPool>,
     Path(id): Path<Uuid>,
     Json(payload): Json<Skill>,
-) -> Result<Json<Skill>, (StatusCode, String)> {
+) -> Result<Json<Skill>, AppError> {
     tracing::info!("Updating skill '{}' (ID: {})", payload.name, id);
     let input_schema = payload.input_schema.clone().unwrap_or_else(|| serde_json::json!({}));
     let output_schema = payload.output_schema.clone().unwrap_or_else(|| serde_json::json!({}));
@@ -163,7 +164,7 @@ pub async fn update_skill(
     .bind(id)
     .execute(&pool)
     .await
-    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Update Skill Error: {}", e)))?;
+    ?;
 
     let mut response_skill = payload.clone();
     response_skill.current_version = current_version;
@@ -187,13 +188,13 @@ pub async fn update_skill(
 pub async fn delete_skill(
     State(pool): State<PgPool>,
     Path(id): Path<Uuid>,
-) -> Result<StatusCode, (StatusCode, String)> {
+) -> Result<StatusCode, AppError> {
     tracing::info!("Deleting skill (ID: {})", id);
     sqlx::query("DELETE FROM skills WHERE id = $1")
         .bind(id)
         .execute(&pool)
         .await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Delete Skill Error: {}", e)))?;
+        ?;
 
     // Purge embeddings for the deleted skill
     let _ = crate::webserver::search::purge_entity_embeddings(&pool, id).await;
@@ -204,15 +205,15 @@ pub async fn delete_skill(
 pub async fn promote_skill(
     State(pool): State<PgPool>,
     Path(id): Path<Uuid>,
-) -> Result<(StatusCode, Json<Agent>), (StatusCode, String)> {
+) -> Result<(StatusCode, Json<Agent>), AppError> {
     let skill_row = sqlx::query(
         "SELECT name, description, owner_id, implements_traits FROM skills WHERE id = $1",
     )
     .bind(id)
     .fetch_optional(&pool)
     .await
-    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Skill Fetch Error: {}", e)))?
-    .ok_or((StatusCode::NOT_FOUND, "Skill not found".to_string()))?;
+    ?
+    .ok_or(AppError::NotFound("Skill not found".to_string()))?;
 
     let name: String = skill_row.get("name");
     let description: String = skill_row.get("description");
@@ -241,7 +242,7 @@ pub async fn promote_skill(
     .bind(&uses_traits)
     .execute(&pool)
     .await
-    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Promote Error: {}", e)))?;
+    ?;
 
     // Purge skill embeddings and sync under agents
     let _ = crate::webserver::search::purge_entity_embeddings(&pool, id).await;
@@ -286,13 +287,13 @@ pub async fn promote_skill(
 pub async fn demote_skill(
     State(pool): State<PgPool>,
     Path(id): Path<Uuid>,
-) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
+) -> Result<Json<serde_json::Value>, AppError> {
     let skill_row = sqlx::query("SELECT name, description, owner_id FROM skills WHERE id = $1")
         .bind(id)
         .fetch_optional(&pool)
         .await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Fetch Error: {}", e)))?
-        .ok_or((StatusCode::NOT_FOUND, "Skill not found".to_string()))?;
+        ?
+        .ok_or(AppError::NotFound("Skill not found".to_string()))?;
 
     let name: String = skill_row.get("name");
     let description: String = skill_row.get("description");
@@ -311,7 +312,7 @@ pub async fn demote_skill(
     .bind(owner_id)
     .execute(&pool)
     .await
-    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Agent DB Error: {}", e)))?;
+    ?;
 
     Ok(Json(serde_json::json!({
         "skill_id": id,
@@ -323,16 +324,16 @@ pub async fn demote_skill(
 pub async fn sync_skill_embeddings(
     State(pool): State<PgPool>,
     Path(id): Path<Uuid>,
-) -> Result<Json<crate::models::SyncEmbeddingsResponse>, (StatusCode, String)> {
+) -> Result<Json<crate::models::SyncEmbeddingsResponse>, AppError> {
     let skill_row = sqlx::query("SELECT name, description, definition FROM skills WHERE id = $1")
         .bind(id)
         .fetch_optional(&pool)
         .await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Fetch Error: {}", e)))?;
+        ?;
 
     let skill_row = match skill_row {
         Some(row) => row,
-        None => return Err((StatusCode::NOT_FOUND, "Skill not found".to_string())),
+        None => return Err(AppError::NotFound("Skill not found".to_string())),
     };
 
     let name: String = skill_row.get("name");
@@ -349,7 +350,7 @@ pub async fn sync_skill_embeddings(
         &[("definition", &prompt_str)],
     )
     .await
-    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Sync Error: {}", e)))?;
+    ?;
 
     Ok(Json(crate::models::SyncEmbeddingsResponse {
         status: "success".to_string(),
@@ -362,7 +363,7 @@ pub async fn ai_review_skill(
     State(state): State<AppState>,
     Path(skill_id): Path<Uuid>,
     Json(payload): Json<crate::models::ReviewSkillRequest>,
-) -> Result<Json<crate::models::ReviewSkillResponse>, (StatusCode, String)> {
+) -> Result<Json<crate::models::ReviewSkillResponse>, AppError> {
 
     // 1. Gather similarities from pgvector
     let raw_search_results = sqlx::query(
@@ -381,7 +382,7 @@ pub async fn ai_review_skill(
     .bind(skill_id)
     .fetch_all(&state.pool)
     .await
-    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Similarity Search Error: {}", e)))?;
+    ?;
 
     let mut similar_skills_context = String::new();
     let mut similarities: Vec<crate::models::SimilarSkillInfo> = Vec::new();
@@ -413,7 +414,7 @@ pub async fn ai_review_skill(
             .bind(reviewer_id)
             .fetch_optional(&state.pool)
             .await
-            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Reviewer Fetch Error: {}", e)))?;
+            ?;
 
         if let Some(r) = reviewer_row {
             let def: String = r.get("definition");
@@ -432,12 +433,7 @@ pub async fn ai_review_skill(
         .base_url(&state.config.llm.ollama_url)
         .api_key(rig_core::client::Nothing);
 
-    let ollama_client = builder.build().map_err(|e| {
-        (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            format!("Failed to initialize Ollama client: {}", e),
-        )
-    })?;
+    let ollama_client = builder.build()?;
 
 
     let prompt = format!(
