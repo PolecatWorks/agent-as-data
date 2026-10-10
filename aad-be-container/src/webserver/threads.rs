@@ -189,11 +189,20 @@ pub async fn list_messages(
     Ok(Json(messages))
 }
 
+/// Core execution loop for processing a user's message within a thread.
+///
+/// This function is responsible for:
+/// 1. Gathering context: Compiles the current workspace file tree and shared bench memory to build the system prompt.
+/// 2. Agent invocation: Invokes the LLM using the `rig` library, injecting tools for filesystem and memory manipulation.
+/// 3. Cancellation checking: Periodically checks the run state to gracefully abort execution if cancelled by the user.
+///
+/// Returns the final synthesized markdown response from the LLM, returning an Error if the framework
+/// failed to intercept a hallucinated raw text tool call.
 async fn process_thread_message(
     state: &AppState,
     thread_id: Uuid,
     bench_id: Uuid,
-    run_id: Option<Uuid>,
+
     user_content: &str,
     history: &[Message],
 ) -> Result<String, crate::error::AppError> {
@@ -286,111 +295,44 @@ async fn process_thread_message(
 
     let response = tokio::time::timeout(state.config.llm.timeout, prompt_future).await??;
 
-    // Check if the response contains a raw tool call emitted as text (common with open-weight models like Qwen)
+    if let Some(call_obj) = parse_raw_tool_call(&response) {
+        if let Some(tool_name) = call_obj.get("name").and_then(|v| v.as_str()) {
+            return Err(crate::error::AppError::ToolHallucination(format!(
+                "Agent hallucinated a raw tool call for '{}' that the framework failed to execute.",
+                tool_name
+            )));
+        }
+    }
+
+    Ok(response)
+}
+
+fn parse_raw_tool_call(response: &str) -> Option<serde_json::Value> {
     let trimmed = response.trim();
-    let tool_call_json: Option<serde_json::Value> =
-        if trimmed.starts_with('{') && trimmed.ends_with('}') {
-            serde_json::from_str(trimmed).ok()
-        } else if let Some(start) = trimmed.find("```json") {
-            let after = &trimmed[start + 7..];
-            if let Some(end) = after.find("```") {
-                serde_json::from_str(after[..end].trim()).ok()
-            } else {
-                None
-            }
-        } else if let Some(start) = trimmed.find('{') {
-            if let Some(end) = trimmed.rfind('}') {
-                serde_json::from_str(&trimmed[start..=end]).ok()
-            } else {
-                None
-            }
-        } else if let Some(start) = trimmed.find("<tool_call>") {
-            if let Some(end) = trimmed.find("</tool_call>") {
-                let json_slice = &trimmed[start + 11..end].trim();
-                serde_json::from_str(json_slice).ok()
-            } else {
-                None
-            }
+    if trimmed.starts_with('{') && trimmed.ends_with('}') {
+        serde_json::from_str(trimmed).ok()
+    } else if let Some(start) = trimmed.find("```json") {
+        let after = &trimmed[start + 7..];
+        if let Some(end) = after.find("```") {
+            serde_json::from_str(after[..end].trim()).ok()
         } else {
             None
-        };
-
-    if let Some(call_obj) = tool_call_json {
-        if let Some(tool_name) = call_obj.get("name").and_then(|v| v.as_str()) {
-            let default_args = serde_json::json!({});
-            let args = call_obj.get("arguments").unwrap_or(&default_args);
-
-            if let Some(rid) = run_id {
-                if is_run_cancelled(&state.pool, rid).await {
-                    tracing::info!(
-                        "Run {} was cancelled before executing tool '{}'",
-                        rid,
-                        tool_name
-                    );
-                    record_cancellation_message(&state.pool, thread_id, rid).await;
-                    return Err(crate::error::AppError::Cancelled("Cancelled".to_string()));
-                }
-                set_run_phase(&state.pool, rid, "executing_tool", Some(tool_name)).await;
-            }
-
-            tracing::info!(
-                "Detected raw tool call for '{}' in agent output, executing against bench workspace {}",
-                tool_name,
-                bench_id
-            );
-            let tool_result = crate::llm_tools::execute_workspace_tool(
-                bench_id,
-                tool_name,
-                args,
-                Some(&state.pool),
-            )
-            .await;
-
-            if let Some(rid) = run_id {
-                set_run_phase(&state.pool, rid, "thinking", None).await;
-            }
-
-            match tool_result {
-                Ok(output) => {
-                    tracing::info!("Tool '{}' executed successfully: {}", tool_name, output);
-                    // Append assistant tool call and tool result to conversation turns, then prompt agent for final answer
-                    let mut followup_history = rig_history;
-                    followup_history.push(rig::completion::Message::user(user_content));
-                    followup_history.push(rig::completion::Message::assistant(&response));
-                    followup_history.push(rig::completion::Message::user(&format!(
-                        "Tool '{}' executed successfully with output: {}. Please provide a helpful response to the user based on this result.",
-                        tool_name, output
-                    )));
-
-                    let second_prompt_future = agent
-                        .prompt("Summarize the result for the user.")
-                        .history(followup_history);
-                    match tokio::time::timeout(state.config.llm.timeout, second_prompt_future).await
-                    {
-                        Ok(Ok(final_answer)) => Ok(final_answer),
-                        Ok(Err(e)) => {
-                            tracing::warn!("Agent follow-up after tool execution failed: {}", e);
-                            Ok(format_tool_execution_result(tool_name, &output))
-                        }
-                        Err(_) => {
-                            tracing::warn!("Agent follow-up after tool execution timed out");
-                            Ok(format_tool_execution_result(tool_name, &output))
-                        }
-                    }
-                }
-                Err(err_msg) => {
-                    tracing::warn!("Tool '{}' execution failed: {}", tool_name, err_msg);
-                    Ok(format!(
-                        "Attempted to execute tool `{}` but encountered an error: {}",
-                        tool_name, err_msg
-                    ))
-                }
-            }
+        }
+    } else if let Some(start) = trimmed.find('{') {
+        if let Some(end) = trimmed.rfind('}') {
+            serde_json::from_str(&trimmed[start..=end]).ok()
         } else {
-            Ok(response)
+            None
+        }
+    } else if let Some(start) = trimmed.find("<tool_call>") {
+        if let Some(end) = trimmed.find("</tool_call>") {
+            let json_slice = &trimmed[start + 11..end].trim();
+            serde_json::from_str(json_slice).ok()
+        } else {
+            None
         }
     } else {
-        Ok(response)
+        None
     }
 }
 
@@ -423,104 +365,101 @@ pub async fn create_message(
     .fetch_one(&state.pool)
     .await?;
 
-    if payload.role == "user" {
-        let thread_record = sqlx::query_as::<_, Thread>("SELECT * FROM threads WHERE id = $1")
-            .bind(thread_id)
-            .fetch_optional(&state.pool)
-            .await
-            .unwrap_or(None);
-
-        let bench_id = thread_record.map(|t| t.bench_id).unwrap_or(thread_id);
-
-        let run = sqlx::query_as::<_, ThreadRun>(
-            "INSERT INTO thread_runs (thread_id, bench_id, status, current_phase) VALUES ($1, $2, 'running', 'thinking') RETURNING *"
-        )
-        .bind(thread_id)
-        .bind(bench_id)
-        .fetch_one(&state.pool)
-        .await
-        ?;
-
-        let run_id = run.id;
-        let state_clone = state.clone();
-        let content_clone = payload.content.clone();
-
-        tokio::spawn(async move {
-            let assistant_reply_result = process_thread_message(
-                &state_clone,
-                thread_id,
-                bench_id,
-                Some(run_id),
-                &content_clone,
-                &prior_messages,
-            )
-            .await;
-
-            let parsed_result = match assistant_reply_result {
-                Ok(reply) => Ok(reply),
-                Err(e) => {
-                    let err_str = match e {
-                        crate::error::AppError::Message(msg) => msg,
-                        other => other.to_string(),
-                    };
-                    Err(err_str)
-                }
-            };
-
-            match parsed_result {
-                Ok(reply) => {
-                    if is_run_cancelled(&state_clone.pool, run_id).await {
-                        record_cancellation_message(&state_clone.pool, thread_id, run_id).await;
-                        return;
-                    }
-
-                    let _ = sqlx::query(
-                        "INSERT INTO messages (thread_id, role, content) VALUES ($1, 'assistant', $2)"
-                    )
-                    .bind(thread_id)
-                    .bind(&reply)
-                    .execute(&state_clone.pool)
-                    .await;
-
-                    let _ = sqlx::query(
-                        "UPDATE thread_runs SET status = 'completed', current_phase = 'completed', updated_at = NOW() WHERE id = $1"
-                    )
-                    .bind(run_id)
-                    .execute(&state_clone.pool)
-                    .await;
-                }
-                Err(err_str) => {
-                    if is_run_cancelled(&state_clone.pool, run_id).await {
-                        record_cancellation_message(&state_clone.pool, thread_id, run_id).await;
-                    } else {
-                        let _ = sqlx::query(
-                            "UPDATE thread_runs SET status = 'failed', current_phase = 'failed', error = $1, updated_at = NOW() WHERE id = $2"
-                        )
-                        .bind(err_str)
-                        .bind(run_id)
-                        .execute(&state_clone.pool)
-                        .await;
-                    }
-                }
-            }
-        });
-
-        Ok((
-            StatusCode::ACCEPTED,
-            Json(CreateMessageResponse {
-                message,
-                run_id: Some(run_id),
-            }),
-        ))
-    } else {
-        Ok((
+    if payload.role != crate::models::thread::MessageRole::User {
+        return Ok((
             StatusCode::CREATED,
             Json(CreateMessageResponse {
                 message,
                 run_id: None,
             }),
-        ))
+        ));
     }
+
+    let thread_record = sqlx::query_as::<_, Thread>("SELECT * FROM threads WHERE id = $1")
+        .bind(thread_id)
+        .fetch_optional(&state.pool)
+        .await
+        .unwrap_or(None);
+
+    let bench_id = thread_record.map(|t| t.bench_id).unwrap_or(thread_id);
+
+    let run = sqlx::query_as::<_, ThreadRun>(
+        "INSERT INTO thread_runs (thread_id, bench_id, status, current_phase) VALUES ($1, $2, 'running', 'thinking') RETURNING *"
+    )
+    .bind(thread_id)
+    .bind(bench_id)
+    .fetch_one(&state.pool)
+    .await?;
+
+    let run_id = run.id;
+    let state_clone = state.clone();
+    let content_clone = payload.content.clone();
+
+    tokio::spawn(async move {
+        let result = async {
+            let reply = process_thread_message(
+                &state_clone,
+                thread_id,
+                bench_id,
+                &content_clone,
+                &prior_messages,
+            )
+            .await?;
+
+            if is_run_cancelled(&state_clone.pool, run_id).await {
+                record_cancellation_message(&state_clone.pool, thread_id, run_id).await?;
+                return Ok::<(), crate::error::AppError>(());
+            }
+
+            sqlx::query(
+                "INSERT INTO messages (thread_id, role, content) VALUES ($1, 'assistant', $2)"
+            )
+            .bind(thread_id)
+            .bind(&reply)
+            .execute(&state_clone.pool)
+            .await?;
+
+            sqlx::query(
+                "UPDATE thread_runs SET status = 'completed', current_phase = 'completed', updated_at = NOW() WHERE id = $1"
+            )
+            .bind(run_id)
+            .execute(&state_clone.pool)
+            .await?;
+
+            Ok::<(), crate::error::AppError>(())
+        }
+        .await;
+
+        if let Err(e) = result {
+            if is_run_cancelled(&state_clone.pool, run_id).await {
+                if let Err(sql_err) = record_cancellation_message(&state_clone.pool, thread_id, run_id).await {
+                    tracing::error!("Failed to record cancellation message: {}", sql_err);
+                }
+            } else {
+                let err_str = match e {
+                    crate::error::AppError::Message(msg) | crate::error::AppError::ToolHallucination(msg) => msg,
+                    other => other.to_string(),
+                };
+                if let Err(sql_err) = sqlx::query(
+                    "UPDATE thread_runs SET status = 'failed', current_phase = 'failed', error = $1, updated_at = NOW() WHERE id = $2"
+                )
+                .bind(err_str)
+                .bind(run_id)
+                .execute(&state_clone.pool)
+                .await {
+                    tracing::error!("Failed to update thread_run to failed status: {}", sql_err);
+                }
+            }
+        }
+    });
+
+    Ok((
+        StatusCode::ACCEPTED,
+        Json(CreateMessageResponse {
+            message,
+            run_id: Some(run_id),
+        }),
+    ))
 }
 
 pub async fn get_active_run(
@@ -556,7 +495,7 @@ pub async fn cancel_active_run(
 
     if !active_runs.is_empty() {
         for run in active_runs {
-            record_cancellation_message(&state.pool, thread_id, run.id).await;
+            record_cancellation_message(&state.pool, thread_id, run.id).await?;
         }
 
         Ok(Json(CancelRunResponse {
@@ -596,18 +535,7 @@ async fn is_run_cancelled(pool: &sqlx::PgPool, run_id: Uuid) -> bool {
         .unwrap_or(false)
 }
 
-async fn set_run_phase(pool: &sqlx::PgPool, run_id: Uuid, phase: &str, tool_name: Option<&str>) {
-    let _ = sqlx::query(
-        "UPDATE thread_runs SET current_phase = $1, active_tool_name = $2, updated_at = NOW() WHERE id = $3"
-    )
-    .bind(phase)
-    .bind(tool_name)
-    .bind(run_id)
-    .execute(pool)
-    .await;
-}
-
-async fn record_cancellation_message(pool: &sqlx::PgPool, thread_id: Uuid, run_id: Uuid) {
+async fn record_cancellation_message(pool: &sqlx::PgPool, thread_id: Uuid, run_id: Uuid) -> Result<(), sqlx::Error> {
     let has_cancel_msg = sqlx::query_scalar::<_, bool>(
         "SELECT EXISTS(SELECT 1 FROM messages WHERE thread_id = $1 AND role = 'system' AND content = '[Action cancelled by user]' AND created_at >= NOW() - INTERVAL '1 minute')"
     )
@@ -617,59 +545,20 @@ async fn record_cancellation_message(pool: &sqlx::PgPool, thread_id: Uuid, run_i
     .unwrap_or(false);
 
     if !has_cancel_msg {
-        let _ = sqlx::query(
+        sqlx::query(
             "INSERT INTO messages (thread_id, role, content) VALUES ($1, 'system', '[Action cancelled by user]')"
         )
         .bind(thread_id)
         .execute(pool)
-        .await;
+        .await?;
     }
 
-    let _ = sqlx::query(
+    sqlx::query(
         "UPDATE thread_runs SET status = 'cancelled', current_phase = 'cancelled', updated_at = NOW() WHERE id = $1"
     )
     .bind(run_id)
     .execute(pool)
-    .await;
-}
+    .await?;
 
-pub fn format_tool_execution_result(tool_name: &str, output: &str) -> String {
-    if let Ok(val) = serde_json::from_str::<serde_json::Value>(output) {
-        if let (Some(success), Some(message)) = (
-            val.get("success").and_then(|v| v.as_bool()),
-            val.get("message").and_then(|v| v.as_str()),
-        ) {
-            let status = if success { "success" } else { "failed" };
-            return format!("Executed `{}` ({}): {}", tool_name, status, message);
-        }
-    }
-    format!("Executed `{}`: {}", tool_name, output)
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_format_tool_execution_result_success() {
-        let json = r#"{"success":true,"message":"Successfully wrote to ben.md"}"#;
-        let formatted = format_tool_execution_result("write_file", json);
-        assert_eq!(
-            formatted,
-            "Executed `write_file` (success): Successfully wrote to ben.md"
-        );
-    }
-
-    #[test]
-    fn test_format_tool_execution_result_failure() {
-        let json = r#"{"success":false,"message":"File not found"}"#;
-        let formatted = format_tool_execution_result("delete_file", json);
-        assert_eq!(formatted, "Executed `delete_file` (failed): File not found");
-    }
-
-    #[test]
-    fn test_format_tool_execution_result_unstructured() {
-        let formatted = format_tool_execution_result("custom_tool", "plain text output");
-        assert_eq!(formatted, "Executed `custom_tool`: plain text output");
-    }
+    Ok(())
 }

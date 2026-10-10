@@ -65,6 +65,10 @@ pub enum AppError {
     /// Prompt error
     #[error("Prompt error `{0}`")]
     PromptError(#[from] rig::completion::PromptError),
+
+    /// Model leaked a tool call as raw text
+    #[error("Tool hallucination `{0}`")]
+    ToolHallucination(String),
 }
 
 impl axum::response::IntoResponse for AppError {
@@ -125,6 +129,10 @@ impl axum::response::IntoResponse for AppError {
             AppError::PromptError(error) => (
                 axum::http::StatusCode::INTERNAL_SERVER_ERROR,
                 format!("Prompt Error: {}", error),
+            ),
+            AppError::ToolHallucination(msg) => (
+                axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+                msg,
             ),
             AppError::Cancelled(msg) => (
                 axum::http::StatusCode::CONFLICT,
