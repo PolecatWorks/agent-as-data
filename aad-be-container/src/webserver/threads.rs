@@ -354,17 +354,13 @@ async fn process_thread_message(
                 Ok(output) => {
                     tracing::info!("Tool '{}' executed successfully: {}", tool_name, output);
                     // Append assistant tool call and tool result to conversation turns, then prompt agent for final answer
-                    let followup_history: Vec<_> = rig_history
-                        .into_iter()
-                        .chain([
-                            rig::completion::Message::user(user_content),
-                            rig::completion::Message::assistant(&response),
-                            rig::completion::Message::user(&format!(
-                                "Tool '{}' executed successfully with output: {}. Please provide a helpful response to the user based on this result.",
-                                tool_name, output
-                            )),
-                        ])
-                        .collect();
+                    let mut followup_history = rig_history;
+                    followup_history.push(rig::completion::Message::user(user_content));
+                    followup_history.push(rig::completion::Message::assistant(&response));
+                    followup_history.push(rig::completion::Message::user(&format!(
+                        "Tool '{}' executed successfully with output: {}. Please provide a helpful response to the user based on this result.",
+                        tool_name, output
+                    )));
 
                     let second_prompt_future = agent
                         .prompt("Summarize the result for the user.")
