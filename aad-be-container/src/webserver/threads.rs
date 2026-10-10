@@ -304,31 +304,40 @@ async fn process_thread_message(
 
 fn parse_raw_tool_call(response: &str) -> Option<serde_json::Value> {
     let trimmed = response.trim();
+    
     if trimmed.starts_with('{') && trimmed.ends_with('}') {
-        serde_json::from_str(trimmed).ok()
-    } else if let Some(start) = trimmed.find("```json") {
+        if let Ok(v) = serde_json::from_str(trimmed) {
+            return Some(v);
+        }
+    }
+    
+    if let Some(start) = trimmed.find("```json") {
         let after = &trimmed[start + 7..];
         if let Some(end) = after.find("```") {
-            serde_json::from_str(after[..end].trim()).ok()
-        } else {
-            None
+            if let Ok(v) = serde_json::from_str(after[..end].trim()) {
+                return Some(v);
+            }
         }
-    } else if let Some(start) = trimmed.find('{') {
-        if let Some(end) = trimmed.rfind('}') {
-            serde_json::from_str(&trimmed[start..=end]).ok()
-        } else {
-            None
-        }
-    } else if let Some(start) = trimmed.find("<tool_call>") {
+    }
+    
+    if let Some(start) = trimmed.find("<tool_call>") {
         if let Some(end) = trimmed.find("</tool_call>") {
             let json_slice = &trimmed[start + 11..end].trim();
-            serde_json::from_str(json_slice).ok()
-        } else {
-            None
+            if let Ok(v) = serde_json::from_str(json_slice) {
+                return Some(v);
+            }
         }
-    } else {
-        None
     }
+    
+    if let Some(start) = trimmed.find('{') {
+        if let Some(end) = trimmed.rfind('}') {
+            if let Ok(v) = serde_json::from_str(&trimmed[start..=end]) {
+                return Some(v);
+            }
+        }
+    }
+    
+    None
 }
 
 pub async fn create_message(

@@ -226,17 +226,16 @@ pub async fn list_files(
     })?;
 
     for entry in entries {
-        if let Ok(entry) = entry {
-            if let Ok(file_name) = entry.file_name().into_string() {
-                let mut suffix = "";
-                if let Ok(ft) = entry.file_type() {
-                    if ft.is_dir() {
-                        suffix = "/";
-                    }
-                }
-                files.push(format!("{}{}", file_name, suffix));
+        let Ok(entry) = entry else { continue };
+        let Ok(file_name) = entry.file_name().into_string() else { continue };
+        
+        let mut suffix = "";
+        if let Ok(ft) = entry.file_type() {
+            if ft.is_dir() {
+                suffix = "/";
             }
         }
+        files.push(format!("{}{}", file_name, suffix));
     }
 
     files.sort();
