@@ -668,7 +668,7 @@ pub async fn sync_tool_capabilities_embeddings(
     let _ = crate::webserver::search::sync_entity_embeddings(
         pool,
         tool_id,
-        "tools",
+        crate::models::search::EntityType::Tools,
         server_name,
         None,
         &ref_fields,

@@ -129,7 +129,7 @@ pub async fn create_trait(
     let _ = crate::webserver::search::sync_entity_embeddings(
         &pool,
         id,
-        "traits",
+        crate::models::search::EntityType::Traits,
         &new_trait.name,
         Some(new_trait.description.as_str()),
         &[
@@ -187,7 +187,7 @@ pub async fn update_trait(
     let _ = crate::webserver::search::sync_entity_embeddings(
         &pool,
         id,
-        "traits",
+        crate::models::search::EntityType::Traits,
         &updated_trait.name,
         Some(updated_trait.description.as_str()),
         &[
@@ -239,7 +239,7 @@ pub async fn sync_trait_embeddings(
     let count = crate::webserver::search::sync_entity_embeddings(
         &pool,
         id,
-        "traits",
+        crate::models::search::EntityType::Traits,
         &t.name,
         Some(t.description.as_str()),
         &[

@@ -119,7 +119,7 @@ pub async fn create_skill(
     let _ = crate::webserver::search::sync_entity_embeddings(
         &pool,
         final_id,
-        "skills",
+        crate::models::search::EntityType::Skills,
         &payload.name,
         Some(payload.description.as_str()),
         &[("definition", prompt_str.as_str())],
@@ -174,7 +174,7 @@ pub async fn update_skill(
     let _ = crate::webserver::search::sync_entity_embeddings(
         &pool,
         id,
-        "skills",
+        crate::models::search::EntityType::Skills,
         &payload.name,
         Some(payload.description.as_str()),
         &[("definition", prompt_str.as_str())],
@@ -249,7 +249,7 @@ pub async fn promote_skill(
     let _ = crate::webserver::search::sync_entity_embeddings(
         &pool,
         agent_id,
-        "agents",
+        crate::models::search::EntityType::Agents,
         &name,
         Some(&description),
         &[("prompt", &description)],
@@ -344,7 +344,7 @@ pub async fn sync_skill_embeddings(
     let count = crate::webserver::search::sync_entity_embeddings(
         &pool,
         id,
-        "skills",
+        crate::models::search::EntityType::Skills,
         &name,
         description.as_deref(),
         &[("definition", &prompt_str)],

@@ -111,7 +111,7 @@ pub async fn semantic_search(
                 content: r.get("content"),
                 score: r.get("score"),
                 match_reason,
-                search_type: "hybrid".to_string(),
+                search_type: crate::models::search::SearchType::Hybrid,
                 origin_id: r.try_get("origin_id").ok(),
                 origin_type: r.try_get("origin_type").ok(),
                 origin_uri: r.try_get("origin_uri").ok(),
@@ -126,7 +126,7 @@ pub async fn semantic_search(
 pub async fn sync_entity_embeddings(
     pool: &PgPool,
     entity_id: Uuid,
-    entity_type: &str,
+    entity_type: crate::models::search::EntityType,
     entity_name: &str,
     description: Option<&str>,
     additional_fields: &[(&str, &str)],
@@ -233,7 +233,7 @@ mod tests {
             let count = sync_entity_embeddings(
                 &pool,
                 entity_id,
-                "agents",
+                crate::models::search::EntityType::Agents,
                 &entity_name,
                 Some(description),
                 &[("prompt", prompt)],
