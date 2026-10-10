@@ -197,14 +197,6 @@ async fn process_thread_message(
     user_content: &str,
     history: &[Message],
 ) -> Result<String, crate::error::AppError> {
-    if let Some(rid) = run_id {
-        if is_run_cancelled(&state.pool, rid).await {
-            tracing::info!("Run {} was cancelled before starting processing", rid);
-            record_cancellation_message(&state.pool, thread_id, rid).await;
-            return Err(crate::error::AppError::Cancelled("Cancelled".to_string()));
-        }
-    }
-
     let workspace_root = crate::webserver::fs::get_workspace_root(bench_id);
     let mut files: Vec<String> = std::fs::read_dir(&workspace_root)
         .into_iter()
