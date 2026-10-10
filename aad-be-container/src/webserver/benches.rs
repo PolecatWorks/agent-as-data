@@ -84,15 +84,10 @@ pub async fn create_bench(
 
     // Create the isolated workspace directory for this bench
     let workspace_path = get_workspace_root(bench.id);
-    if let Err(e) = std::fs::create_dir_all(&workspace_path) {
-        return Err(crate::error::AppError::Message(format!(
-            "Failed to create bench workspace directory: {}",
-            e
-        )));
-    }
+    std::fs::create_dir_all(&workspace_path)?;
 
     // Automatically scaffold an initial "General" thread for the bench
-    let _ = sqlx::query_as::<_, Thread>(
+    sqlx::query_as::<_, Thread>(
         "INSERT INTO threads (owner_id, bench_id, title, description, tags) VALUES ($1, $2, $3, $4, $5) RETURNING *"
     )
     .bind(payload.owner_id)
@@ -101,7 +96,7 @@ pub async fn create_bench(
     .bind("Initial default thread")
     .bind(sqlx::types::Json(vec!["general".to_string()]))
     .fetch_one(&state.pool)
-    .await;
+    .await?;
 
     tracing::info!(
         "Bench '{}' created successfully (ID: {})",

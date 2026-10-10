@@ -103,12 +103,7 @@ pub async fn create_thread(
 
     // Ensure the bench workspace directory exists
     let workspace_path = crate::webserver::fs::get_workspace_root(bench_id);
-    if let Err(e) = std::fs::create_dir_all(&workspace_path) {
-        return Err(crate::error::AppError::Message(format!(
-            "Failed to create bench workspace directory: {}",
-            e
-        )));
-    }
+    std::fs::create_dir_all(&workspace_path)?;
 
     tracing::info!(
         "Thread '{}' created successfully (ID: {}, Bench: {})",

@@ -69,6 +69,10 @@ pub enum AppError {
     /// Model leaked a tool call as raw text
     #[error("Tool hallucination `{0}`")]
     ToolHallucination(String),
+
+    /// LLM output could not be parsed into expected schema
+    #[error("LLM Extraction failed `{0}`")]
+    LlmExtractionError(String),
 }
 
 impl axum::response::IntoResponse for AppError {
@@ -131,6 +135,10 @@ impl axum::response::IntoResponse for AppError {
                 format!("Prompt Error: {}", error),
             ),
             AppError::ToolHallucination(msg) => (
+                axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+                msg,
+            ),
+            AppError::LlmExtractionError(msg) => (
                 axum::http::StatusCode::INTERNAL_SERVER_ERROR,
                 msg,
             ),
