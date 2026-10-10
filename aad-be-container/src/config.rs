@@ -340,7 +340,7 @@ mod tests {
         writeln!(file, "llm:").unwrap();
         writeln!(file, "  ollama_url: 'http://ollama.k8s:80'").unwrap();
         writeln!(file, "  model: 'qwen2.5-coder:14b'").unwrap();
-        writeln!(file, "  timeout_secs: 120s").unwrap();
+        writeln!(file, "  timeout: 120s").unwrap();
         writeln!(file, "  default_max_turns: 5").unwrap();
         writeln!(file, "hams:").unwrap();
         writeln!(file, "  name: 'aad-be'").unwrap();
