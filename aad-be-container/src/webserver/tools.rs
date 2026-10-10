@@ -228,7 +228,7 @@ pub async fn register_tool(
             )
         })?;
 
-    let cached_capabilities = if payload.transport_type.eq_ignore_ascii_case("http") {
+    let cached_capabilities = if payload.transport_type == crate::models::tool::TransportType::Http {
         match fetch_mcp_capabilities(url).await {
             Ok(caps) => caps,
             Err(err) => {
@@ -281,7 +281,7 @@ pub async fn register_tool(
     .bind(&cached_capabilities)
     .bind(payload.owner_id)
     .bind(&payload.sync_policy)
-    .bind("synced")
+    .bind(crate::models::tool::SyncStatus::Synced)
     .fetch_one(&pool)
     .await
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("MCP Register Error: {}", e)))?;
@@ -305,7 +305,7 @@ pub async fn register_tool(
             server_name: payload.server_name,
             transport_type: payload.transport_type,
             cached_tools_count,
-            sync_status: "synced".to_string(),
+            sync_status: crate::models::tool::SyncStatus::Synced,
             sync_policy: payload.sync_policy,
         }),
     ))
@@ -382,7 +382,7 @@ pub async fn sync_tool(
                     id,
                     server_name: tool.server_name,
                     cached_tools_count: count,
-                    sync_status: "synced".to_string(),
+                    sync_status: crate::models::tool::SyncStatus::Synced,
                     last_synced_at: now,
                     last_sync_error: None,
                 }),
@@ -431,7 +431,7 @@ pub async fn sync_tool(
                     id,
                     server_name: tool.server_name,
                     cached_tools_count: existing_count,
-                    sync_status: "degraded".to_string(),
+                    sync_status: crate::models::tool::SyncStatus::Degraded,
                     last_synced_at: now,
                     last_sync_error: Some(err),
                 }),
@@ -949,10 +949,11 @@ mod tests {
             assert_eq!(missing_status, StatusCode::NOT_FOUND);
 
             // Cleanup
-            let _ = sqlx::query("DELETE FROM tools WHERE id = $1")
+            sqlx::query("DELETE FROM tools WHERE id = $1")
                 .bind(server_id)
                 .execute(&pool)
-                .await;
+                .await
+                .expect("Failed to cleanup test tool");
         }
     }
 }

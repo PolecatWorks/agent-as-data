@@ -1,13 +1,37 @@
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+#[derive(Deserialize, Serialize, Debug, Clone, PartialEq, Eq, sqlx::Type)]
+#[sqlx(type_name = "VARCHAR", rename_all = "snake_case")]
+#[serde(rename_all = "snake_case")]
+pub enum RunStatus {
+    Pending,
+    Running,
+    Completed,
+    Failed,
+    Cancelled,
+    Idle,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone, PartialEq, Eq, sqlx::Type)]
+#[sqlx(type_name = "VARCHAR", rename_all = "snake_case")]
+#[serde(rename_all = "snake_case")]
+pub enum RunPhase {
+    Thinking,
+    ExecutingTool,
+    Completed,
+    Failed,
+    Cancelled,
+    Idle,
+}
+
 #[derive(Deserialize, Serialize, Debug, Clone, sqlx::FromRow)]
 pub struct ThreadRun {
     pub id: Uuid,
     pub thread_id: Uuid,
     pub bench_id: Uuid,
-    pub status: String,
-    pub current_phase: String,
+    pub status: RunStatus,
+    pub current_phase: RunPhase,
     pub active_tool_name: Option<String>,
     pub error: Option<String>,
     pub created_at: Option<chrono::DateTime<chrono::Utc>>,
@@ -38,8 +62,8 @@ mod tests {
             id: Uuid::new_v4(),
             thread_id: Uuid::new_v4(),
             bench_id: Uuid::new_v4(),
-            status: "running".to_string(),
-            current_phase: "thinking".to_string(),
+            status: RunStatus::Running,
+            current_phase: RunPhase::Thinking,
             active_tool_name: Some("read_file".to_string()),
             error: None,
             created_at: Some(chrono::Utc::now()),
@@ -59,7 +83,7 @@ mod tests {
         let msg = Message {
             id: Uuid::new_v4(),
             thread_id: Uuid::new_v4(),
-            role: "user".to_string(),
+            role: crate::models::thread::MessageRole::User,
             content: "Test prompt".to_string(),
             created_at: Some(chrono::Utc::now()),
         };

@@ -1115,9 +1115,10 @@ mod tests {
         assert_eq!(view_res_not_found.error.unwrap(), "Skill not found");
 
         // Cleanup
-        let _ = sqlx::query("DELETE FROM skills WHERE id = $1")
+        sqlx::query("DELETE FROM skills WHERE id = $1")
             .bind(skill_id)
             .execute(&pool)
-            .await;
+            .await
+            .expect("Failed to cleanup test skill");
     }
 }

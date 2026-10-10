@@ -266,7 +266,7 @@ pub async fn execute_agent(
         Json(ExecuteAgentResponse {
             execution_id,
             agent_id,
-            status: "completed".to_string(),
+            status: crate::models::execution::ExecutionStatus::Completed,
             output: output_text,
             execution_version: 1,
         }),

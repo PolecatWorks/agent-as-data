@@ -344,7 +344,7 @@ pub async fn test_agent(
 
     let ollama_client = builder
         .build()
-        .map_err(|e| crate::error::AppError::Message(format!("Ollama Error: {}", e)))?;
+        ?;
 
     use rig_core::client::CompletionClient;
     use rig_core::completion::CompletionModel;

@@ -154,9 +154,7 @@ pub async fn analyze_markdown(
         .base_url(&state.config.llm.ollama_url)
         .api_key(rig_core::client::Nothing);
 
-    let ollama_client = builder.build().map_err(|e| {
-        crate::error::AppError::Message(format!("Failed to initialize Ollama client: {}", e))
-    })?;
+    let ollama_client = builder.build()?;
 
     let model = ollama_client.completion_model(&state.config.llm.model);
 
@@ -184,9 +182,7 @@ pub async fn analyze_markdown(
         state.config.llm.timeout,
         request.send(),
     )
-    .await
-    .map_err(|e| crate::error::AppError::Message(format!("LLM request timed out: {}", e)))?
-    .map_err(|e| crate::error::AppError::Message(format!("LLM error: {}", e)))?;
+    .await??;
 
     if let Some(choice) = response.choice.first() {
         if let rig_core::completion::message::AssistantContent::Text(text) = choice {
@@ -215,18 +211,13 @@ pub async fn analyze_markdown(
                 Err(e) => {
                     tracing::error!("Failed to parse LLM response as JSON: {}", e);
                     tracing::error!("Raw LLM response: {}", content);
-                    return Err(crate::error::AppError::Message(format!(
-                        "Failed to parse LLM output: {}",
-                        e
-                    )));
+                    return Err(crate::error::AppError::LlmExtractionError(format!("Failed to parse LLM output: {}", e)));
                 }
             }
         }
     }
 
-    Err(crate::error::AppError::Message(
-        "Failed to extract knowledge from LLM response".to_string(),
-    ))
+    Err(crate::error::AppError::LlmExtractionError("Failed to extract knowledge from LLM response".to_string()))
 }
 
 pub async fn import_document(
@@ -239,9 +230,7 @@ pub async fn import_document(
         ));
     }
 
-    let mut tx = pool.begin().await.map_err(|e| {
-        crate::error::AppError::Message(format!("Failed to start transaction: {}", e))
-    })?;
+    let mut tx = pool.begin().await?;
 
     let doc_id = Uuid::new_v4();
     let concept_ids: Vec<Uuid> = (0..payload.concepts.len())
@@ -271,7 +260,7 @@ pub async fn import_document(
     .bind(doc_meta)
     .fetch_one(&mut *tx)
     .await
-    .map_err(|e| crate::error::AppError::Message( format!("Failed to insert document: {}", e)))?;
+    ?;
 
     // Embeddings for parent document
     let doc_chunks = chunk_text(&payload.document.content, 200);
@@ -289,9 +278,7 @@ pub async fn import_document(
         .bind(chunk)
         .execute(&mut *tx)
         .await
-        .map_err(|e| {
-            crate::error::AppError::Message(format!("Chunk Insert Error for Document: {}", e))
-        })?;
+        ?;
     }
 
     let mut created_concepts = Vec::new();
@@ -321,7 +308,7 @@ pub async fn import_document(
         .bind(child_meta)
         .fetch_one(&mut *tx)
         .await
-        .map_err(|e| crate::error::AppError::Message( format!("Failed to insert concept node: {}", e)))?;
+        ?;
 
         // Concept embeddings
         let concept_chunks = chunk_text(&concept.content, 200);
@@ -339,9 +326,7 @@ pub async fn import_document(
             .bind(chunk)
             .execute(&mut *tx)
             .await
-            .map_err(|e| {
-                crate::error::AppError::Message(format!("Chunk Insert Error for Concept: {}", e))
-            })?;
+            ?;
         }
 
         if payload.create_tuples {
@@ -367,7 +352,7 @@ pub async fn import_document(
             .bind(tuple_meta)
             .execute(&mut *tx)
             .await
-            .map_err(|e| crate::error::AppError::Message( format!("Tuple Insert Error: {}", e)))?;
+            ?;
 
             tuples_created += 1;
         }
@@ -375,9 +360,7 @@ pub async fn import_document(
         created_concepts.push(created_concept);
     }
 
-    tx.commit().await.map_err(|e| {
-        crate::error::AppError::Message(format!("Failed to commit transaction: {}", e))
-    })?;
+    tx.commit().await?;
 
     Ok((
         StatusCode::CREATED,
@@ -404,7 +387,7 @@ pub async fn get_derived_concepts(
     .bind(id.to_string())
     .fetch_all(&pool)
     .await
-    .map_err(|e| crate::error::AppError::Message( format!("DB Error: {}", e)))?;
+    ?;
 
     Ok(Json(concepts))
 }
@@ -453,7 +436,7 @@ pub async fn ingest_knowledge(
     .bind(metadata)
     .fetch_one(&pool)
     .await
-    .map_err(|e| crate::error::AppError::Message( format!("DB Error: {}", e)))?;
+    ?;
 
     // 2. Chunk text and store mock vector embeddings
     let chunks = chunk_text(&payload.content, 200);
@@ -472,7 +455,7 @@ pub async fn ingest_knowledge(
         .bind(chunk)
         .execute(&pool)
         .await
-        .map_err(|e| crate::error::AppError::Message(format!("Chunk Insert Error: {}", e)))?;
+        ?;
     }
 
     // 3. Insert Tuples if provided
@@ -493,7 +476,7 @@ pub async fn ingest_knowledge(
         .bind(confidence)
         .execute(&pool)
         .await
-        .map_err(|e| crate::error::AppError::Message( format!("Tuple Insert Error: {}", e)))?;
+        ?;
     }
 
     Ok((StatusCode::CREATED, Json(created_node)))
@@ -511,7 +494,7 @@ pub async fn list_knowledge(
     )
     .fetch_all(&pool)
     .await
-    .map_err(|e| crate::error::AppError::Message( format!("DB Error: {}", e)))?;
+    ?;
 
     Ok(Json(nodes))
 }
@@ -530,7 +513,7 @@ pub async fn get_knowledge(
     .bind(id)
     .fetch_optional(&pool)
     .await
-    .map_err(|e| crate::error::AppError::Message( format!("DB Error: {}", e)))?;
+    ?;
 
     match node {
         Some(n) => Ok(Json(n)),
@@ -550,7 +533,7 @@ pub async fn get_knowledge_tuples(
     .bind(id)
     .fetch_all(&pool)
     .await
-    .map_err(|e| crate::error::AppError::Message(format!("DB Error: {}", e)))?;
+    ?;
 
     Ok(Json(tuples))
 }
@@ -570,7 +553,7 @@ pub async fn update_knowledge(
     .bind(id)
     .fetch_optional(&pool)
     .await
-    .map_err(|e| crate::error::AppError::Message( format!("DB Error: {}", e)))?;
+    ?;
 
     let current_node = match current_node {
         Some(n) => n,
@@ -615,7 +598,7 @@ pub async fn update_knowledge(
     let mut tx = pool
         .begin()
         .await
-        .map_err(|e| crate::error::AppError::Message(format!("Tx Error: {}", e)))?;
+        ?;
 
     let updated_node = sqlx::query_as::<_, KnowledgeNode>(
         r#"
@@ -634,7 +617,7 @@ pub async fn update_knowledge(
     .bind(id)
     .fetch_one(&mut *tx)
     .await
-    .map_err(|e| crate::error::AppError::Message( format!("Update Error: {}", e)))?;
+    ?;
 
     // If content changed, we should ideally re-chunk and update embeddings.
     // Here we'll just delete old and insert new chunks as a simple strategy.
@@ -644,13 +627,13 @@ pub async fn update_knowledge(
             .bind(id)
             .execute(&mut *tx)
             .await
-            .map_err(|e| crate::error::AppError::Message(format!("Delete tuples error: {}", e)))?;
+            ?;
 
         sqlx::query("DELETE FROM knowledge_embeddings WHERE node_id = $1")
             .bind(id)
             .execute(&mut *tx)
             .await
-            .map_err(|e| crate::error::AppError::Message(format!("Delete chunks error: {}", e)))?;
+            ?;
 
         let chunks = chunk_text(&new_content, 200);
         for (idx, chunk) in chunks.iter().enumerate() {
@@ -667,7 +650,7 @@ pub async fn update_knowledge(
             .bind(chunk)
             .execute(&mut *tx)
             .await
-            .map_err(|e| crate::error::AppError::Message(format!("Chunk Insert Error: {}", e)))?;
+            ?;
         }
     }
 
@@ -676,7 +659,7 @@ pub async fn update_knowledge(
             .bind(id)
             .execute(&mut *tx)
             .await
-            .map_err(|e| crate::error::AppError::Message(format!("Delete tuples error: {}", e)))?;
+            ?;
 
         for tuple in payload.tuples {
             let tuple_id = Uuid::new_v4();
@@ -695,12 +678,12 @@ pub async fn update_knowledge(
             .bind(confidence)
             .execute(&mut *tx)
             .await
-            .map_err(|e| crate::error::AppError::Message( format!("Tuple Insert Error: {}", e)))?;
+            ?;
         }
     }
     tx.commit()
         .await
-        .map_err(|e| crate::error::AppError::Message(format!("Commit Error: {}", e)))?;
+        ?;
 
     Ok(Json(updated_node))
 }
@@ -739,7 +722,7 @@ pub async fn search_knowledge(
     .bind(limit)
     .fetch_all(&pool)
     .await
-    .map_err(|e| crate::error::AppError::Message(format!("Search Error: {}", e)))?;
+    ?;
 
     let results = rows
         .into_iter()
@@ -774,7 +757,7 @@ pub async fn traverse_graph(
     .bind(&payload.subject)
     .fetch_all(&pool)
     .await
-    .map_err(|e| crate::error::AppError::Message(format!("Traverse Error: {}", e)))?;
+    ?;
 
     let results = rows
         .into_iter()
@@ -808,7 +791,7 @@ pub async fn delete_knowledge(
     .bind(id)
     .fetch_optional(&pool)
     .await
-    .map_err(|e| crate::error::AppError::Message( format!("DB Error: {}", e)))?;
+    ?;
 
     match deleted_node {
         Some(node) => Ok(Json(node)),
