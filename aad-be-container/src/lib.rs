@@ -3,17 +3,17 @@
 //! Provides application lifecycle orchestration, configuration loading,
 //! database connection pooling, HaMS health sidecar integration, and Axum REST webservice.
 
+pub mod cli;
 pub mod config;
 pub mod db;
 pub mod error;
 pub mod hams_tools;
-pub mod llm_tools;
 pub mod kb_tools;
+pub mod llm_tools;
 pub mod metrics;
 pub mod models;
 pub mod state;
 pub mod tokio_tools;
-pub mod cli;
 pub mod webserver;
 
 pub use state::AppState;
@@ -21,11 +21,11 @@ pub use state::AppState;
 pub const NAME: &str = env!("CARGO_PKG_NAME");
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
+use ::hams::hams::Hams;
+use axum_prometheus::metrics_exporter_prometheus::PrometheusBuilder;
 use std::path::Path;
 use std::sync::Arc;
 use tracing::info;
-use ::hams::hams::Hams;
-use axum_prometheus::metrics_exporter_prometheus::PrometheusBuilder;
 
 use crate::config::AppConfig;
 use crate::db::{init_db_pool, verify_pgvector_extension};
@@ -45,16 +45,15 @@ pub async fn service_main(
     config_path: &Path,
     secrets_dir: &Path,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    let config = AppConfig::load(config_path, secrets_dir).map_err(|e| {
-        format!("Fail-Fast Error: Failed to load config: {}", e)
-    })?;
+    let config = AppConfig::load(config_path, secrets_dir)
+        .map_err(|e| format!("Fail-Fast Error: Failed to load config: {}", e))?;
 
     info!("Starting {} v{}", NAME, VERSION);
 
     // 1. Fail-Fast Config Validation
-    config.validate().map_err(|e| {
-        format!("Fail-Fast Configuration Error: {}", e)
-    })?;
+    config
+        .validate()
+        .map_err(|e| format!("Fail-Fast Configuration Error: {}", e))?;
 
     // Setup Prometheus Metrics Recorder
     let metric_handle = PrometheusBuilder::new()
@@ -79,16 +78,19 @@ pub async fn service_main(
     hams_config.version = VERSION.to_owned();
 
     let hams = Hams::new(hams_config);
-    let mut hams_harness = HamsHarness::init(hams, ct.clone()).await
+    let mut hams_harness = HamsHarness::init(hams, ct.clone())
+        .await
         .map_err(|e| format!("HaMS init error: {}", e))?;
     info!("HaMS health sidecar started on port 8079 with readiness probe and shutdown hook.");
 
     // 3. Connect DB Pool & Verify pgvector (Fail-Fast)
     let db_url: url::Url = config.database.url.clone().into();
-    let pool = init_db_pool(db_url.as_str(), config.database.max_connections).await
+    let pool = init_db_pool(db_url.as_str(), config.database.max_connections)
+        .await
         .map_err(|e| format!("Fail-Fast Error: Database connection failed: {}", e))?;
 
-    verify_pgvector_extension(&pool).await
+    verify_pgvector_extension(&pool)
+        .await
         .map_err(|e| format!("Fail-Fast pgvector check failed: {}", e))?;
 
     // 4. Run Automatic Schema Migrations
@@ -108,9 +110,10 @@ pub async fn service_main(
 
     // HaMS Prometheus Registration
     let handle_clone = Arc::clone(&app_state.prometheus_handle);
-    hams_harness.hams.register_prometheus_closure(move || {
-        handle_clone.render()
-    }).map_err(|e| format!("Failed to register Prometheus closure with HaMS: {e}"))?;
+    hams_harness
+        .hams
+        .register_prometheus_closure(move || handle_clone.render())
+        .map_err(|e| format!("Failed to register Prometheus closure with HaMS: {e}"))?;
 
     // 5. Start Axum Main REST Webservice
     let res = start_webserver(app_state, &config.webservice, ct).await;
@@ -133,12 +136,12 @@ pub async fn run_migrations(
     config_path: &Path,
     secrets_dir: &Path,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    let config = AppConfig::load(config_path, secrets_dir).map_err(|e| {
-        format!("Fail-Fast Error: Failed to load config: {}", e)
-    })?;
+    let config = AppConfig::load(config_path, secrets_dir)
+        .map_err(|e| format!("Fail-Fast Error: Failed to load config: {}", e))?;
 
     let db_url: url::Url = config.database.url.into();
-    let pool = init_db_pool(db_url.as_str(), config.database.max_connections).await
+    let pool = init_db_pool(db_url.as_str(), config.database.max_connections)
+        .await
         .map_err(|e| format!("DB connection error: {}", e))?;
 
     sqlx::migrate!("./migrations")

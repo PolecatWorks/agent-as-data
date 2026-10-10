@@ -46,8 +46,12 @@ pub async fn run_ctl(
 
     match cmd {
         CtlCommands::Apply { file } => apply_resources(file, &client, base_url).await?,
-        CtlCommands::Get { resource_type, id } => get_resource(resource_type, id, &client, base_url).await?,
-        CtlCommands::Delete { resource_type, id } => delete_resource(resource_type, id, &client, base_url).await?,
+        CtlCommands::Get { resource_type, id } => {
+            get_resource(resource_type, id, &client, base_url).await?
+        }
+        CtlCommands::Delete { resource_type, id } => {
+            delete_resource(resource_type, id, &client, base_url).await?
+        }
     }
     Ok(())
 }
@@ -64,8 +68,12 @@ async fn apply_resources(
         // First deserialize to a Value to inject strict validation early or check type
         let value = Value::deserialize(doc).map_err(|e| format!("YAML parsing error: {}", e))?;
 
-        let manifest: ResourceManifest = serde_json::from_value(value.clone())
-            .map_err(|e| format!("Schema validation error for document: {}\nJSON: {}", e, value))?;
+        let manifest: ResourceManifest = serde_json::from_value(value.clone()).map_err(|e| {
+            format!(
+                "Schema validation error for document: {}\nJSON: {}",
+                e, value
+            )
+        })?;
 
         match manifest {
             ResourceManifest::Agent(agent) => {

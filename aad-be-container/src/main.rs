@@ -1,11 +1,11 @@
 //! Agent-As-Data Backend (`aad-be-container`) binary CLI entrypoint.
 
-use std::path::PathBuf;
 use clap::{Parser, Subcommand};
+use std::path::PathBuf;
 
 use aad_be_container::config::AppConfig;
 use aad_be_container::tokio_tools::run_in_tokio;
-use aad_be_container::{run_migrations, service_main, VERSION};
+use aad_be_container::{VERSION, run_migrations, service_main};
 
 #[derive(Parser, Debug)]
 #[command(name = "aad-be", about = "Agent-As-Data Backend Microservice", version)]
@@ -20,7 +20,7 @@ pub struct Cli {
     pub command: Commands,
 }
 
-use aad_be_container::cli::ctl::{run_ctl, CtlCommands};
+use aad_be_container::cli::ctl::{CtlCommands, run_ctl};
 
 #[derive(Subcommand, Debug)]
 pub enum Commands {

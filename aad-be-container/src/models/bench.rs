@@ -1,6 +1,6 @@
+use super::common::PageOptions;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-use super::common::PageOptions;
 
 #[derive(Deserialize, Serialize, Debug, Clone, sqlx::FromRow)]
 pub struct Bench {

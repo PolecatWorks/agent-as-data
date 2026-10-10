@@ -181,7 +181,7 @@ pub async fn analyze_markdown(
         .max_tokens(4096);
 
     let response = tokio::time::timeout(
-        std::time::Duration::from_secs(state.config.llm.timeout_secs),
+        state.config.llm.timeout,
         request.send(),
     )
     .await

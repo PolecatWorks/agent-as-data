@@ -1,10 +1,4 @@
-use axum::{
-    Json,
-    extract::State,
-    http::StatusCode,
-    routing::post,
-    Router,
-};
+use axum::{Json, Router, extract::State, http::StatusCode, routing::post};
 use sqlx::{PgPool, Row};
 use uuid::Uuid;
 
@@ -86,7 +80,12 @@ pub async fn semantic_search(
         .bind(limit)
         .fetch_all(&pool)
         .await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Semantic Search Error: {}", e)))?;
+        .map_err(|e| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Semantic Search Error: {}", e),
+            )
+        })?;
 
     let results = rows
         .into_iter()
@@ -206,10 +205,7 @@ pub async fn sync_entity_embeddings(
     Ok(count)
 }
 
-pub async fn purge_entity_embeddings(
-    pool: &PgPool,
-    entity_id: Uuid,
-) -> Result<u64, sqlx::Error> {
+pub async fn purge_entity_embeddings(pool: &PgPool, entity_id: Uuid) -> Result<u64, sqlx::Error> {
     let res = sqlx::query("DELETE FROM entity_embeddings WHERE entity_id = $1")
         .bind(entity_id)
         .execute(pool)
@@ -224,8 +220,9 @@ mod tests {
 
     #[tokio::test]
     async fn test_sync_and_purge_embeddings_with_reverse_references() {
-        let db_url = std::env::var("DATABASE_URL")
-            .unwrap_or_else(|_| "postgres://postgres:mysecretpassword@localhost:5432/aaddb".to_string());
+        let db_url = std::env::var("DATABASE_URL").unwrap_or_else(|_| {
+            "postgres://postgres:mysecretpassword@localhost:5432/aaddb".to_string()
+        });
         if let Ok(pool) = sqlx::postgres::PgPoolOptions::new().connect(&db_url).await {
             let entity_id = Uuid::new_v4();
             let entity_name = format!("TestEntity-{}", entity_id);
@@ -276,11 +273,12 @@ mod tests {
             let purged = purge_entity_embeddings(&pool, entity_id).await.unwrap();
             assert_eq!(purged, 3);
 
-            let remaining: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM entity_embeddings WHERE entity_id = $1")
-                .bind(entity_id)
-                .fetch_one(&pool)
-                .await
-                .unwrap();
+            let remaining: i64 =
+                sqlx::query_scalar("SELECT COUNT(*) FROM entity_embeddings WHERE entity_id = $1")
+                    .bind(entity_id)
+                    .fetch_one(&pool)
+                    .await
+                    .unwrap();
             assert_eq!(remaining, 0);
         }
     }

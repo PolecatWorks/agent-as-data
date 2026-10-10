@@ -13,8 +13,11 @@ pub struct HamsHarness {
 impl HamsHarness {
     pub async fn init(mut hams: Hams, ct: CancellationToken) -> Result<Self, String> {
         let ready_signal = ProbeManual::new("db-connected", true);
-        
-        hams.ready_insert_async(Box::new(FFIProbe::from(ready_signal.clone())) as Box<dyn AsyncHealthProbe>).await;
+
+        hams.ready_insert_async(
+            Box::new(FFIProbe::from(ready_signal.clone())) as Box<dyn AsyncHealthProbe>
+        )
+        .await;
 
         let ct_clone = ct.clone();
         hams.register_shutdown_closure(move || {
@@ -22,9 +25,10 @@ impl HamsHarness {
             ct_clone.cancel();
         })
         .map_err(|e| format!("Failed to register HaMS shutdown closure: {}", e))?;
-        
-        hams.start().map_err(|e| format!("Failed to start HaMS: {}", e))?;
-        
+
+        hams.start()
+            .map_err(|e| format!("Failed to start HaMS: {}", e))?;
+
         Ok(Self { hams, ready_signal })
     }
 }

@@ -112,7 +112,7 @@ pub async fn execute_agent(
     use rig_core::completion::CompletionModel;
     let model = ollama_client.completion_model(&target_model);
 
-    let timeout_duration = std::time::Duration::from_secs(state.config.llm.timeout_secs);
+    let timeout_duration = state.config.llm.timeout;
     let full_prompt = if system_prompt.is_empty() {
         payload.prompt.clone()
     } else {
@@ -179,7 +179,7 @@ pub async fn execute_agent(
             Err(_) => {
                 tracing::warn!(
                     "Ollama request timed out after {}s, falling back to mock output",
-                    state.config.llm.timeout_secs
+                    state.config.llm.timeout.as_secs()
                 );
                 format!(
                     "Execution output for agent {}: processed prompt '{}'",

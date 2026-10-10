@@ -47,7 +47,8 @@ mod tests {
         };
 
         let json = serde_json::to_string(&run).expect("Failed to serialize ThreadRun");
-        let deserialized: ThreadRun = serde_json::from_str(&json).expect("Failed to deserialize ThreadRun");
+        let deserialized: ThreadRun =
+            serde_json::from_str(&json).expect("Failed to deserialize ThreadRun");
         assert_eq!(run.id, deserialized.id);
         assert_eq!(run.status, deserialized.status);
         assert_eq!(run.active_tool_name, deserialized.active_tool_name);
@@ -73,7 +74,8 @@ mod tests {
         assert!(json.contains("Test prompt"));
         assert!(json.contains(&run_id.to_string()));
 
-        let deserialized_as_msg: Message = serde_json::from_str(&json).expect("Should deserialize as Message directly");
+        let deserialized_as_msg: Message =
+            serde_json::from_str(&json).expect("Should deserialize as Message directly");
         assert_eq!(deserialized_as_msg.id, msg.id);
         assert_eq!(deserialized_as_msg.content, "Test prompt");
     }

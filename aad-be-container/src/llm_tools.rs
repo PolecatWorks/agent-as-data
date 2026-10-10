@@ -58,18 +58,27 @@ impl PortableTool for ReadFileTool {
         let workspace_root = get_workspace_root(self.bench_id);
 
         if !workspace_root.exists() {
-            return Err(std::io::Error::new(std::io::ErrorKind::NotFound, "Workspace not found"));
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::NotFound,
+                "Workspace not found",
+            ));
         }
 
         let safe_path = resolve_safe_path(&workspace_root, &args.filepath)
             .map_err(|e| std::io::Error::new(std::io::ErrorKind::PermissionDenied, e))?;
 
         if !safe_path.exists() {
-            return Err(std::io::Error::new(std::io::ErrorKind::NotFound, format!("File not found: {}", args.filepath)));
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::NotFound,
+                format!("File not found: {}", args.filepath),
+            ));
         }
 
         if safe_path.is_dir() {
-            return Err(std::io::Error::new(std::io::ErrorKind::InvalidInput, format!("Path is a directory: {}", args.filepath)));
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::InvalidInput,
+                format!("Path is a directory: {}", args.filepath),
+            ));
         }
 
         let content = std::fs::read_to_string(&safe_path)?;
@@ -113,7 +122,7 @@ impl PortableTool for WriteFileTool {
         let workspace_root = get_workspace_root(self.bench_id);
 
         if !workspace_root.exists() {
-             std::fs::create_dir_all(&workspace_root)?;
+            std::fs::create_dir_all(&workspace_root)?;
         }
 
         let safe_path = resolve_safe_path(&workspace_root, &args.filepath)
@@ -186,24 +195,33 @@ impl PortableTool for ReplaceInFileTool {
         let workspace_root = get_workspace_root(self.bench_id);
 
         if !workspace_root.exists() {
-            return Err(std::io::Error::new(std::io::ErrorKind::NotFound, "Workspace not found"));
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::NotFound,
+                "Workspace not found",
+            ));
         }
 
         let safe_path = resolve_safe_path(&workspace_root, &args.filepath)
             .map_err(|e| std::io::Error::new(std::io::ErrorKind::PermissionDenied, e))?;
 
         if !safe_path.exists() {
-            return Err(std::io::Error::new(std::io::ErrorKind::NotFound, format!("File not found: {}", args.filepath)));
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::NotFound,
+                format!("File not found: {}", args.filepath),
+            ));
         }
 
         if safe_path.is_dir() {
-            return Err(std::io::Error::new(std::io::ErrorKind::InvalidInput, format!("Path is a directory: {}", args.filepath)));
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::InvalidInput,
+                format!("Path is a directory: {}", args.filepath),
+            ));
         }
 
         let mut content = std::fs::read_to_string(&safe_path)?;
 
         if !content.contains(&args.search_string) {
-             return Ok(ReplaceInFileOutput {
+            return Ok(ReplaceInFileOutput {
                 success: false,
                 message: format!("Search string not found in {}", args.filepath),
             });
@@ -260,7 +278,10 @@ impl PortableTool for ListFilesTool {
         let workspace_root = get_workspace_root(self.bench_id);
 
         if !workspace_root.exists() {
-            return Err(std::io::Error::new(std::io::ErrorKind::NotFound, "Workspace not found"));
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::NotFound,
+                "Workspace not found",
+            ));
         }
 
         let target_dir = match args.dir_path {
@@ -272,11 +293,17 @@ impl PortableTool for ListFilesTool {
             .map_err(|e| std::io::Error::new(std::io::ErrorKind::PermissionDenied, e))?;
 
         if !safe_path.exists() {
-            return Err(std::io::Error::new(std::io::ErrorKind::NotFound, format!("Directory not found: {}", target_dir)));
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::NotFound,
+                format!("Directory not found: {}", target_dir),
+            ));
         }
 
         if !safe_path.is_dir() {
-            return Err(std::io::Error::new(std::io::ErrorKind::InvalidInput, format!("Path is not a directory: {}", target_dir)));
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::InvalidInput,
+                format!("Path is not a directory: {}", target_dir),
+            ));
         }
 
         let mut files = Vec::new();
@@ -344,14 +371,20 @@ impl PortableTool for DeleteFileTool {
         let workspace_root = get_workspace_root(self.bench_id);
 
         if !workspace_root.exists() {
-            return Err(std::io::Error::new(std::io::ErrorKind::NotFound, "Workspace not found"));
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::NotFound,
+                "Workspace not found",
+            ));
         }
 
         let safe_path = resolve_safe_path(&workspace_root, &args.filepath)
             .map_err(|e| std::io::Error::new(std::io::ErrorKind::PermissionDenied, e))?;
 
         if !safe_path.exists() {
-            return Err(std::io::Error::new(std::io::ErrorKind::NotFound, format!("File or directory not found: {}", args.filepath)));
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::NotFound,
+                format!("File or directory not found: {}", args.filepath),
+            ));
         }
 
         if safe_path.is_dir() {
@@ -414,21 +447,42 @@ impl PortableTool for RenameFileTool {
         let workspace_root = get_workspace_root(self.bench_id);
 
         if !workspace_root.exists() {
-            return Err(std::io::Error::new(std::io::ErrorKind::NotFound, "Workspace not found"));
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::NotFound,
+                "Workspace not found",
+            ));
         }
 
-        let old_safe_path = resolve_safe_path(&workspace_root, &args.filepath)
-            .map_err(|e| std::io::Error::new(std::io::ErrorKind::PermissionDenied, format!("Invalid original path: {}", e)))?;
+        let old_safe_path = resolve_safe_path(&workspace_root, &args.filepath).map_err(|e| {
+            std::io::Error::new(
+                std::io::ErrorKind::PermissionDenied,
+                format!("Invalid original path: {}", e),
+            )
+        })?;
 
-        let new_safe_path = resolve_safe_path(&workspace_root, &args.new_filepath)
-            .map_err(|e| std::io::Error::new(std::io::ErrorKind::PermissionDenied, format!("Invalid new path: {}", e)))?;
+        let new_safe_path =
+            resolve_safe_path(&workspace_root, &args.new_filepath).map_err(|e| {
+                std::io::Error::new(
+                    std::io::ErrorKind::PermissionDenied,
+                    format!("Invalid new path: {}", e),
+                )
+            })?;
 
         if !old_safe_path.exists() {
-            return Err(std::io::Error::new(std::io::ErrorKind::NotFound, format!("Original file or directory not found: {}", args.filepath)));
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::NotFound,
+                format!("Original file or directory not found: {}", args.filepath),
+            ));
         }
 
         if new_safe_path.exists() {
-             return Err(std::io::Error::new(std::io::ErrorKind::AlreadyExists, format!("Target file or directory already exists: {}", args.new_filepath)));
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::AlreadyExists,
+                format!(
+                    "Target file or directory already exists: {}",
+                    args.new_filepath
+                ),
+            ));
         }
 
         if let Some(parent) = new_safe_path.parent() {
@@ -441,7 +495,10 @@ impl PortableTool for RenameFileTool {
 
         Ok(RenameFileOutput {
             success: true,
-            message: format!("Successfully renamed {} to {}", args.filepath, args.new_filepath),
+            message: format!(
+                "Successfully renamed {} to {}",
+                args.filepath, args.new_filepath
+            ),
         })
     }
 }
@@ -544,17 +601,17 @@ impl PortableTool for ListSkillsTool {
     }
 
     async fn call(&self, _args: Self::Args) -> Result<Self::Output, Self::Error> {
-        let rows: Vec<(String, String)> = sqlx::query_as(
-            "SELECT name, description FROM skills"
-        )
-        .fetch_all(&self.pool)
-        .await
-        .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, format!("Database error: {}", e)))?;
+        let rows: Vec<(String, String)> = sqlx::query_as("SELECT name, description FROM skills")
+            .fetch_all(&self.pool)
+            .await
+            .map_err(|e| {
+                std::io::Error::new(std::io::ErrorKind::Other, format!("Database error: {}", e))
+            })?;
 
-        let skills = rows.into_iter().map(|(name, description)| SkillMetadata {
-            name,
-            description,
-        }).collect();
+        let skills = rows
+            .into_iter()
+            .map(|(name, description)| SkillMetadata { name, description })
+            .collect();
 
         Ok(ListSkillsOutput { skills })
     }
@@ -600,17 +657,25 @@ impl PortableTool for ViewSkillTool {
 
     async fn call(&self, args: Self::Args) -> Result<Self::Output, Self::Error> {
         let skill_res = sqlx::query_as::<_, crate::models::skill::Skill>(
-            "SELECT * FROM skills WHERE name = $1"
+            "SELECT * FROM skills WHERE name = $1",
         )
         .bind(&args.skill_name)
         .fetch_optional(&self.pool)
         .await
-        .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, format!("Database error: {}", e)))?;
+        .map_err(|e| {
+            std::io::Error::new(std::io::ErrorKind::Other, format!("Database error: {}", e))
+        })?;
 
         if let Some(skill) = skill_res {
-            Ok(ViewSkillOutput { skill: Some(skill), error: None })
+            Ok(ViewSkillOutput {
+                skill: Some(skill),
+                error: None,
+            })
         } else {
-            Ok(ViewSkillOutput { skill: None, error: Some("Skill not found".to_string()) })
+            Ok(ViewSkillOutput {
+                skill: None,
+                error: Some("Skill not found".to_string()),
+            })
         }
     }
 }
@@ -622,7 +687,8 @@ impl PortableTool for UpdateBenchMemoryTool {
     type Output = UpdateBenchMemoryOutput;
 
     fn description(&self) -> String {
-        "Updates or appends content to the shared working memory document for the current bench.".to_string()
+        "Updates or appends content to the shared working memory document for the current bench."
+            .to_string()
     }
 
     fn parameters(&self) -> serde_json::Value {
@@ -655,13 +721,18 @@ impl PortableTool for UpdateBenchMemoryTool {
                          WHEN bench_memory.content = '' THEN EXCLUDED.content
                          ELSE bench_memory.content || E'\\n\\n' || EXCLUDED.content
                      END,
-                     updated_at = NOW()"
+                     updated_at = NOW()",
             )
             .bind(self.bench_id)
             .bind(&args.content)
             .execute(&self.pool)
             .await
-            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, format!("Database error appending bench memory: {}", e)))?;
+            .map_err(|e| {
+                std::io::Error::new(
+                    std::io::ErrorKind::Other,
+                    format!("Database error appending bench memory: {}", e),
+                )
+            })?;
         } else {
             sqlx::query(
                 "INSERT INTO bench_memory (bench_id, memory_type, title, content)
@@ -669,13 +740,18 @@ impl PortableTool for UpdateBenchMemoryTool {
                  ON CONFLICT (bench_id) WHERE memory_type = 'working'
                  DO UPDATE SET
                      content = EXCLUDED.content,
-                     updated_at = NOW()"
+                     updated_at = NOW()",
             )
             .bind(self.bench_id)
             .bind(&args.content)
             .execute(&self.pool)
             .await
-            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, format!("Database error updating bench memory: {}", e)))?;
+            .map_err(|e| {
+                std::io::Error::new(
+                    std::io::ErrorKind::Other,
+                    format!("Database error updating bench memory: {}", e),
+                )
+            })?;
         }
 
         Ok(UpdateBenchMemoryOutput {
@@ -735,9 +811,10 @@ pub async fn execute_workspace_tool(
             serde_json::to_string(&res).map_err(|e| e.to_string())
         }
         ReadBenchMemoryTool::NAME => {
-            let pool = pool.ok_or_else(|| "Database pool required for read_bench_memory".to_string())?;
-            let args: ReadBenchMemoryArgs = serde_json::from_value(args_json.clone())
-                .unwrap_or(ReadBenchMemoryArgs {});
+            let pool =
+                pool.ok_or_else(|| "Database pool required for read_bench_memory".to_string())?;
+            let args: ReadBenchMemoryArgs =
+                serde_json::from_value(args_json.clone()).unwrap_or(ReadBenchMemoryArgs {});
             let tool = ReadBenchMemoryTool {
                 bench_id,
                 pool: pool.clone(),
@@ -746,7 +823,8 @@ pub async fn execute_workspace_tool(
             serde_json::to_string(&res).map_err(|e| e.to_string())
         }
         UpdateBenchMemoryTool::NAME => {
-            let pool = pool.ok_or_else(|| "Database pool required for update_bench_memory".to_string())?;
+            let pool =
+                pool.ok_or_else(|| "Database pool required for update_bench_memory".to_string())?;
             let args: UpdateBenchMemoryArgs = serde_json::from_value(args_json.clone())
                 .map_err(|e| format!("Invalid arguments for {}: {}", tool_name, e))?;
             let tool = UpdateBenchMemoryTool {
@@ -758,11 +836,9 @@ pub async fn execute_workspace_tool(
         }
         ListSkillsTool::NAME => {
             let pool = pool.ok_or_else(|| "Database pool required for list_skills".to_string())?;
-            let args: ListSkillsArgs = serde_json::from_value(args_json.clone())
-                .unwrap_or(ListSkillsArgs {});
-            let tool = ListSkillsTool {
-                pool: pool.clone(),
-            };
+            let args: ListSkillsArgs =
+                serde_json::from_value(args_json.clone()).unwrap_or(ListSkillsArgs {});
+            let tool = ListSkillsTool { pool: pool.clone() };
             let res = tool.call(args).await.map_err(|e| e.to_string())?;
             serde_json::to_string(&res).map_err(|e| e.to_string())
         }
@@ -770,9 +846,7 @@ pub async fn execute_workspace_tool(
             let pool = pool.ok_or_else(|| "Database pool required for view_skill".to_string())?;
             let args: ViewSkillArgs = serde_json::from_value(args_json.clone())
                 .map_err(|e| format!("Invalid arguments for {}: {}", tool_name, e))?;
-            let tool = ViewSkillTool {
-                pool: pool.clone(),
-            };
+            let tool = ViewSkillTool { pool: pool.clone() };
             let res = tool.call(args).await.map_err(|e| e.to_string())?;
             serde_json::to_string(&res).map_err(|e| e.to_string())
         }
@@ -791,9 +865,15 @@ pub async fn execute_workspace_tool(
                 .await;
 
                 if let Ok(Some(row)) = row {
-                    let endpoint_config: serde_json::Value = sqlx::Row::get(&row, "endpoint_config");
+                    let endpoint_config: serde_json::Value =
+                        sqlx::Row::get(&row, "endpoint_config");
                     if let Some(url) = endpoint_config.get("url").and_then(|u| u.as_str()) {
-                        let res = crate::webserver::tools::execute_remote_mcp_tool(url, tool_name, args_json.clone()).await?;
+                        let res = crate::webserver::tools::execute_remote_mcp_tool(
+                            url,
+                            tool_name,
+                            args_json.clone(),
+                        )
+                        .await?;
                         return serde_json::to_string(&res).map_err(|e| e.to_string());
                     }
                 }
@@ -948,7 +1028,8 @@ mod tests {
         assert!(read_out.unwrap().contains("Hello via dispatcher!"));
 
         // 4. Dispatch unknown tool
-        let unknown_out = execute_workspace_tool(bench_id, "nonexistent_tool", &json!({}), None).await;
+        let unknown_out =
+            execute_workspace_tool(bench_id, "nonexistent_tool", &json!({}), None).await;
         assert!(unknown_out.is_err());
 
         let _ = std::fs::remove_dir_all(&workspace_root);
@@ -956,13 +1037,16 @@ mod tests {
 
     #[tokio::test]
     async fn test_list_skills_and_view_skill_tools() {
-        let db_url = std::env::var("DATABASE_URL")
-            .unwrap_or_else(|_| "postgres://postgres:mysecretpassword@localhost:5432/aaddb".to_string());
+        let db_url = std::env::var("DATABASE_URL").unwrap_or_else(|_| {
+            "postgres://postgres:mysecretpassword@localhost:5432/aaddb".to_string()
+        });
 
         let pool = match sqlx::postgres::PgPoolOptions::new().connect(&db_url).await {
             Ok(p) => p,
             Err(_) => {
-                println!("Note: Database not available, skipping test_list_skills_and_view_skill_tools");
+                println!(
+                    "Note: Database not available, skipping test_list_skills_and_view_skill_tools"
+                );
                 return;
             }
         };
@@ -976,7 +1060,7 @@ mod tests {
             r#"
             INSERT INTO skills (id, name, description, definition, tags, owner_id)
             VALUES ($1, $2, $3, $4, $5, $6)
-            "#
+            "#,
         )
         .bind(skill_id)
         .bind(&skill_name)
@@ -994,14 +1078,25 @@ mod tests {
 
         // Test ListSkillsTool
         let list_tool = ListSkillsTool { pool: pool.clone() };
-        let list_res = list_tool.call(ListSkillsArgs {}).await.expect("ListSkillsTool failed");
+        let list_res = list_tool
+            .call(ListSkillsArgs {})
+            .await
+            .expect("ListSkillsTool failed");
 
-        let found = list_res.skills.iter().any(|s| s.name == skill_name && s.description == "A test skill");
+        let found = list_res
+            .skills
+            .iter()
+            .any(|s| s.name == skill_name && s.description == "A test skill");
         assert!(found, "ListSkillsTool did not return the inserted skill");
 
         // Test ViewSkillTool - Found
         let view_tool = ViewSkillTool { pool: pool.clone() };
-        let view_res = view_tool.call(ViewSkillArgs { skill_name: skill_name.clone() }).await.expect("ViewSkillTool failed");
+        let view_res = view_tool
+            .call(ViewSkillArgs {
+                skill_name: skill_name.clone(),
+            })
+            .await
+            .expect("ViewSkillTool failed");
 
         assert!(view_res.error.is_none());
         assert!(view_res.skill.is_some());
@@ -1010,11 +1105,19 @@ mod tests {
         assert_eq!(skill.description, "A test skill");
 
         // Test ViewSkillTool - Not Found
-        let view_res_not_found = view_tool.call(ViewSkillArgs { skill_name: "nonexistent_skill_123".to_string() }).await.expect("ViewSkillTool failed");
+        let view_res_not_found = view_tool
+            .call(ViewSkillArgs {
+                skill_name: "nonexistent_skill_123".to_string(),
+            })
+            .await
+            .expect("ViewSkillTool failed");
         assert!(view_res_not_found.skill.is_none());
         assert_eq!(view_res_not_found.error.unwrap(), "Skill not found");
 
         // Cleanup
-        let _ = sqlx::query("DELETE FROM skills WHERE id = $1").bind(skill_id).execute(&pool).await;
+        let _ = sqlx::query("DELETE FROM skills WHERE id = $1")
+            .bind(skill_id)
+            .execute(&pool)
+            .await;
     }
 }
