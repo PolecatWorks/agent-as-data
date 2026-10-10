@@ -197,6 +197,14 @@ async fn process_thread_message(
     user_content: &str,
     history: &[Message],
 ) -> Result<String, crate::error::AppError> {
+    if let Some(rid) = run_id {
+        if is_run_cancelled(&state.pool, rid).await {
+            tracing::info!("Run {} was cancelled before starting processing", rid);
+            record_cancellation_message(&state.pool, thread_id, rid).await;
+            return Err(crate::error::AppError::Cancelled("Cancelled".to_string()));
+        }
+    }
+
     let workspace_root = crate::webserver::fs::get_workspace_root(bench_id);
     let mut files: Vec<String> = std::fs::read_dir(&workspace_root)
         .into_iter()
@@ -254,9 +262,7 @@ async fn process_thread_message(
         .base_url(&state.config.llm.ollama_url)
         .api_key(rig_core::client::Nothing);
 
-    let client = client_builder
-        .build()
-        .map_err(|_| crate::error::AppError::Message("Failed to build Rig client".to_string()))?;
+    let client = client_builder.build()?;
 
     let agent = client
         .agent(&state.config.llm.model)
@@ -330,7 +336,7 @@ async fn process_thread_message(
                         tool_name
                     );
                     record_cancellation_message(&state.pool, thread_id, rid).await;
-                    return Err(crate::error::AppError::Message("Cancelled".to_string()));
+                    return Err(crate::error::AppError::Cancelled("Cancelled".to_string()));
                 }
                 set_run_phase(&state.pool, rid, "executing_tool", Some(tool_name)).await;
             }
