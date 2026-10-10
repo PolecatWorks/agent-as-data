@@ -156,7 +156,7 @@ impl AppConfig {
             return Err("LLM Model cannot be empty".to_string());
         }
         if self.llm.timeout.is_zero() {
-            return Err("LLM timeout_secs must be greater than 0".to_string());
+            return Err("LLM timeout must be greater than 0".to_string());
         }
         Url::parse(&self.llm.ollama_url)
             .map_err(|e| format!("Invalid LLM Ollama URL format: {}", e))?;
