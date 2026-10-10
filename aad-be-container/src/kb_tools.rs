@@ -1,8 +1,8 @@
-use std::fmt;
+use reqwest::Client;
 use rig_core::tool::PortableTool;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use reqwest::Client;
+use std::fmt;
 use std::future::Future;
 use std::pin::Pin;
 
@@ -73,13 +73,15 @@ impl PortableTool for KbNodeBrowseTool {
                     "query": query,
                     "limit": args.limit.unwrap_or(10)
                 });
-                let res = client.post(format!("{}/api/v1/knowledge/search", backend_url))
+                let res = client
+                    .post(format!("{}/api/v1/knowledge/search", backend_url))
                     .json(&payload)
                     .send()
                     .await
                     .map_err(|e| ToolError(e.to_string()))?;
 
-                let results: serde_json::Value = res.json().await.map_err(|e| ToolError(e.to_string()))?;
+                let results: serde_json::Value =
+                    res.json().await.map_err(|e| ToolError(e.to_string()))?;
                 Ok(KbNodeBrowseOutput { results })
             } else {
                 // List
@@ -87,12 +89,14 @@ impl PortableTool for KbNodeBrowseTool {
                 if let Some(limit) = args.limit {
                     url.push_str(&format!("?limit={}", limit));
                 }
-                let res = client.get(url)
+                let res = client
+                    .get(url)
                     .send()
                     .await
                     .map_err(|e| ToolError(e.to_string()))?;
 
-                let results: serde_json::Value = res.json().await.map_err(|e| ToolError(e.to_string()))?;
+                let results: serde_json::Value =
+                    res.json().await.map_err(|e| ToolError(e.to_string()))?;
                 Ok(KbNodeBrowseOutput { results })
             }
         })
@@ -146,7 +150,8 @@ impl PortableTool for KbNodeReadTool {
         let backend_url = self.backend_url.clone();
         Box::pin(async move {
             let client = Client::new();
-            let res = client.get(format!("{}/api/v1/knowledge/{}", backend_url, args.id))
+            let res = client
+                .get(format!("{}/api/v1/knowledge/{}", backend_url, args.id))
                 .send()
                 .await
                 .map_err(|e| ToolError(e.to_string()))?;
@@ -191,7 +196,8 @@ impl PortableTool for KbNodeAddTool {
     type Output = KbNodeAddOutput;
 
     fn description(&self) -> String {
-        "Create a new knowledge node. Used to add new information to the knowledge base.".to_string()
+        "Create a new knowledge node. Used to add new information to the knowledge base."
+            .to_string()
     }
 
     fn parameters(&self) -> serde_json::Value {
@@ -223,7 +229,8 @@ impl PortableTool for KbNodeAddTool {
                 "content": args.content,
                 "tags": args.tags
             });
-            let res = client.post(format!("{}/api/v1/knowledge", backend_url))
+            let res = client
+                .post(format!("{}/api/v1/knowledge", backend_url))
                 .json(&payload)
                 .send()
                 .await
@@ -233,7 +240,8 @@ impl PortableTool for KbNodeAddTool {
                 return Err(ToolError(format!("Failed to add node: {}", res.status())));
             }
 
-            let result: serde_json::Value = res.json().await.map_err(|e| ToolError(e.to_string()))?;
+            let result: serde_json::Value =
+                res.json().await.map_err(|e| ToolError(e.to_string()))?;
             Ok(KbNodeAddOutput { result })
         })
     }
@@ -301,7 +309,8 @@ impl PortableTool for KbNodeEditTool {
                 "content": args.content,
                 "tags": args.tags
             });
-            let res = client.put(format!("{}/api/v1/knowledge/{}", backend_url, args.id))
+            let res = client
+                .put(format!("{}/api/v1/knowledge/{}", backend_url, args.id))
                 .json(&payload)
                 .send()
                 .await
@@ -311,7 +320,9 @@ impl PortableTool for KbNodeEditTool {
                 return Err(ToolError(format!("Failed to edit node: {}", res.status())));
             }
 
-            Ok(KbNodeEditOutput { result: "Success".to_string() })
+            Ok(KbNodeEditOutput {
+                result: "Success".to_string(),
+            })
         })
     }
 }
@@ -360,16 +371,22 @@ impl PortableTool for KbNodeDeleteTool {
         let backend_url = self.backend_url.clone();
         Box::pin(async move {
             let client = Client::new();
-            let res = client.delete(format!("{}/api/v1/knowledge/{}", backend_url, args.id))
+            let res = client
+                .delete(format!("{}/api/v1/knowledge/{}", backend_url, args.id))
                 .send()
                 .await
                 .map_err(|e| ToolError(e.to_string()))?;
 
             if !res.status().is_success() {
-                return Err(ToolError(format!("Failed to delete node: {}", res.status())));
+                return Err(ToolError(format!(
+                    "Failed to delete node: {}",
+                    res.status()
+                )));
             }
 
-            Ok(KbNodeDeleteOutput { result: "Success".to_string() })
+            Ok(KbNodeDeleteOutput {
+                result: "Success".to_string(),
+            })
         })
     }
 }
@@ -380,26 +397,36 @@ mod tests {
 
     #[test]
     fn test_kb_tools_metadata_and_parameters() {
-        let browse_tool = KbNodeBrowseTool { backend_url: "http://localhost:8080".to_string() };
+        let browse_tool = KbNodeBrowseTool {
+            backend_url: "http://localhost:8080".to_string(),
+        };
         assert_eq!(KbNodeBrowseTool::NAME, "kb_node_browse");
         assert!(!browse_tool.description().is_empty());
         assert!(browse_tool.parameters().is_object());
 
-        let read_tool = KbNodeReadTool { backend_url: "http://localhost:8080".to_string() };
+        let read_tool = KbNodeReadTool {
+            backend_url: "http://localhost:8080".to_string(),
+        };
         assert_eq!(KbNodeReadTool::NAME, "kb_node_read");
         assert!(!read_tool.description().is_empty());
         assert_eq!(read_tool.parameters()["required"][0], "id");
 
-        let add_tool = KbNodeAddTool { backend_url: "http://localhost:8080".to_string() };
+        let add_tool = KbNodeAddTool {
+            backend_url: "http://localhost:8080".to_string(),
+        };
         assert_eq!(KbNodeAddTool::NAME, "kb_node_add");
         assert_eq!(add_tool.parameters()["required"][0], "topic");
         assert_eq!(add_tool.parameters()["required"][1], "content");
 
-        let edit_tool = KbNodeEditTool { backend_url: "http://localhost:8080".to_string() };
+        let edit_tool = KbNodeEditTool {
+            backend_url: "http://localhost:8080".to_string(),
+        };
         assert_eq!(KbNodeEditTool::NAME, "kb_node_edit");
         assert_eq!(edit_tool.parameters()["required"][0], "id");
 
-        let delete_tool = KbNodeDeleteTool { backend_url: "http://localhost:8080".to_string() };
+        let delete_tool = KbNodeDeleteTool {
+            backend_url: "http://localhost:8080".to_string(),
+        };
         assert_eq!(KbNodeDeleteTool::NAME, "kb_node_delete");
         assert_eq!(delete_tool.parameters()["required"][0], "id");
     }
@@ -412,7 +439,8 @@ mod tests {
             "title": "Title",
             "tags": ["tag1", "tag2"]
         });
-        let add_args: KbNodeAddArgs = serde_json::from_value(add_json).expect("deserialize add args");
+        let add_args: KbNodeAddArgs =
+            serde_json::from_value(add_json).expect("deserialize add args");
         assert_eq!(add_args.topic, "test-topic");
         assert_eq!(add_args.content, "test-content");
         assert_eq!(add_args.title, "Title");
@@ -423,7 +451,8 @@ mod tests {
             "query": "search term",
             "limit": 5
         });
-        let browse_args: KbNodeBrowseArgs = serde_json::from_value(browse_json).expect("deserialize browse args");
+        let browse_args: KbNodeBrowseArgs =
+            serde_json::from_value(browse_json).expect("deserialize browse args");
         assert_eq!(browse_args.query.as_deref(), Some("search term"));
         assert_eq!(browse_args.limit, Some(5));
     }

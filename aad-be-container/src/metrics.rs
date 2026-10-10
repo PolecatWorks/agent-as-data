@@ -3,7 +3,7 @@
 //! Provides memory-safe raw pointer handlers for bridging Tokio/Axum Prometheus metrics
 //! with external C-FFI monitoring systems (e.g. HaMS).
 
-use std::ffi::{c_char, c_void, CString};
+use std::ffi::{CString, c_char, c_void};
 
 use crate::state::AppState;
 
@@ -49,21 +49,10 @@ pub extern "C" fn prometheus_response_free(ptr: *mut c_char) {
 /// Guarantees that `/hams/metrics` immediately yields valid, non-empty Prometheus
 /// exposition output upon container startup before any inbound API traffic is received.
 pub fn init_startup_metrics(name: &str, version: &str) {
+    metrics::describe_counter!("skill_execution_total", "Total number of skill executions");
+    metrics::describe_counter!("llm_tokens_total", "Total number of LLM tokens consumed");
 
-
-    metrics::describe_counter!(
-        "skill_execution_total",
-        "Total number of skill executions"
-    );
-    metrics::describe_counter!(
-        "llm_tokens_total",
-        "Total number of LLM tokens consumed"
-    );
-
-    metrics::describe_counter!(
-        "agent_execution_total",
-        "Total number of agent executions"
-    );
+    metrics::describe_counter!("agent_execution_total", "Total number of agent executions");
     metrics::describe_counter!(
         "knowledge_ingestion_total",
         "Total number of knowledge ingestions"
@@ -85,11 +74,11 @@ pub fn init_startup_metrics(name: &str, version: &str) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::config::AppConfig;
+    use axum_prometheus::metrics_exporter_prometheus::{PrometheusBuilder, PrometheusHandle};
+    use sqlx::postgres::PgPoolOptions;
     use std::ffi::CStr;
     use std::sync::{Arc, OnceLock};
-    use axum_prometheus::metrics_exporter_prometheus::{PrometheusBuilder, PrometheusHandle};
-    use crate::config::AppConfig;
-    use sqlx::postgres::PgPoolOptions;
 
     static TEST_RECORDER_HANDLE: OnceLock<PrometheusHandle> = OnceLock::new();
 
@@ -98,9 +87,7 @@ mod tests {
             .get_or_init(|| {
                 PrometheusBuilder::new()
                     .install_recorder()
-                    .unwrap_or_else(|_| {
-                        PrometheusBuilder::new().build_recorder().handle()
-                    })
+                    .unwrap_or_else(|_| PrometheusBuilder::new().build_recorder().handle())
             })
             .clone()
     }
@@ -122,7 +109,7 @@ mod tests {
             llm: crate::config::LlmConfig {
                 ollama_url: "http://localhost:11434".into(),
                 model: "llama3".into(),
-                timeout_secs: 30,
+                timeout: std::time::Duration::from_secs(30),
             },
             runtime: crate::tokio_tools::ThreadRuntime::default(),
             database: crate::config::DatabaseConfig {
@@ -137,7 +124,9 @@ mod tests {
         };
 
         // Create a dummy pool (does not connect)
-        let pool = PgPoolOptions::new().connect_lazy("postgres://user:pass@localhost:5432/test").unwrap();
+        let pool = PgPoolOptions::new()
+            .connect_lazy("postgres://user:pass@localhost:5432/test")
+            .unwrap();
 
         let state = AppState {
             pool,
@@ -165,10 +154,22 @@ mod tests {
         init_startup_metrics("aad-be", "0.1.0");
 
         let rendered = handle.render();
-        assert!(!rendered.is_empty(), "Rendered metrics should not be empty after startup initialization");
-        assert!(rendered.contains("app_info"), "Rendered metrics should include app_info");
-        assert!(rendered.contains("aad-be"), "Rendered metrics should include application name");
-        assert!(rendered.contains("0.1.0"), "Rendered metrics should include version");
+        assert!(
+            !rendered.is_empty(),
+            "Rendered metrics should not be empty after startup initialization"
+        );
+        assert!(
+            rendered.contains("app_info"),
+            "Rendered metrics should include app_info"
+        );
+        assert!(
+            rendered.contains("aad-be"),
+            "Rendered metrics should include application name"
+        );
+        assert!(
+            rendered.contains("0.1.0"),
+            "Rendered metrics should include version"
+        );
     }
 
     #[tokio::test]

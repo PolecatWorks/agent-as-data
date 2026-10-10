@@ -1,23 +1,23 @@
 //! HTTP webserver and API router definitions.
 
 pub mod agents;
+pub mod analytics;
+pub mod benches;
 pub mod execution;
 pub mod fs;
 pub mod knowledge;
 pub mod knowledge_mcp;
 pub mod knowledge_mcp_handler;
+pub mod memory;
 pub mod skills;
 pub mod threads;
 pub mod tools;
 pub mod traits;
-pub mod benches;
-pub mod memory;
-pub mod analytics;
 
-use axum::{routing::get, Router};
+use axum::{Router, routing::get};
 use axum_prometheus::PrometheusMetricLayer;
 use tower_http::trace::{DefaultMakeSpan, DefaultOnRequest, DefaultOnResponse, TraceLayer};
-use tracing::{info, Level};
+use tracing::{Level, info};
 
 use crate::config::WebServiceConfig;
 use crate::state::AppState;
@@ -26,7 +26,6 @@ pub mod search;
 pub fn app_router(state: AppState) -> Router {
     let metric_layer = PrometheusMetricLayer::new();
     let api_routes = Router::new()
-
         .nest("/v1/agents", agents::router())
         .nest("/v1/agent-context/search", search::router())
         .nest("/v1/skills", skills::router())
@@ -82,15 +81,17 @@ pub async fn start_webserver(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::sync::Arc;
+    use crate::config::AppConfig;
     use axum_prometheus::metrics_exporter_prometheus::PrometheusBuilder;
     use sqlx::postgres::PgPoolOptions;
-    use crate::config::AppConfig;
+    use std::sync::Arc;
 
     #[tokio::test]
     async fn test_app_router_construction() {
         let handle = PrometheusBuilder::new().build_recorder().handle();
-        let pool = PgPoolOptions::new().connect_lazy("postgres://user:pass@localhost:5432/test").unwrap();
+        let pool = PgPoolOptions::new()
+            .connect_lazy("postgres://user:pass@localhost:5432/test")
+            .unwrap();
         let config = AppConfig {
             debugging: crate::config::DebuggingConfig {
                 environment: "test".into(),
@@ -104,7 +105,7 @@ mod tests {
             llm: crate::config::LlmConfig {
                 ollama_url: "http://localhost:11434".into(),
                 model: "llama3".into(),
-                timeout_secs: 30,
+                timeout: std::time::Duration::from_secs(30),
             },
             runtime: crate::tokio_tools::ThreadRuntime::default(),
             database: crate::config::DatabaseConfig {

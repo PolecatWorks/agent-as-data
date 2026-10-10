@@ -1,7 +1,7 @@
-use std::sync::Arc;
-use axum_prometheus::metrics_exporter_prometheus::PrometheusHandle;
 use crate::config::AppConfig;
+use axum_prometheus::metrics_exporter_prometheus::PrometheusHandle;
 use sqlx::PgPool;
+use std::sync::Arc;
 use tokio::runtime::Handle;
 
 #[derive(Clone, Debug)]

@@ -1,7 +1,4 @@
-use rmcp::{
-    handler::server::wrapper::Parameters,
-    tool, tool_router,
-};
+use rmcp::{handler::server::wrapper::Parameters, tool, tool_router};
 use sqlx::PgPool;
 use std::sync::OnceLock;
 use uuid::Uuid;
@@ -26,7 +23,10 @@ impl KnowledgeMcpServer {
 #[tool_router]
 impl KnowledgeMcpServer {
     #[tool(description = "Searches the knowledge graph using a text query")]
-    pub async fn search_knowledge(&self, Parameters(req): Parameters<KnowledgeSearchRequest>) -> Result<String, String> {
+    pub async fn search_knowledge(
+        &self,
+        Parameters(req): Parameters<KnowledgeSearchRequest>,
+    ) -> Result<String, String> {
         let pool = DB_POOL.get().ok_or("Database pool not initialized")?;
         let limit = req.limit.unwrap_or(5) as i64;
         let pattern = format!("%{}%", req.query);
@@ -37,7 +37,7 @@ impl KnowledgeMcpServer {
             FROM knowledge_embeddings
             WHERE chunk_text ILIKE $1
             LIMIT $2
-            "#
+            "#,
         )
         .bind(pattern)
         .bind(limit)
@@ -63,7 +63,10 @@ impl KnowledgeMcpServer {
     }
 
     #[tool(description = "Reads a specific knowledge node by its ID")]
-    pub async fn read_knowledge(&self, Parameters(req): Parameters<KnowledgeIdRequest>) -> Result<String, String> {
+    pub async fn read_knowledge(
+        &self,
+        Parameters(req): Parameters<KnowledgeIdRequest>,
+    ) -> Result<String, String> {
         let pool = DB_POOL.get().ok_or("Database pool not initialized")?;
 
         let node = sqlx::query_as::<_, KnowledgeNode>(
@@ -85,7 +88,10 @@ impl KnowledgeMcpServer {
     }
 
     #[tool(description = "Ingests a new knowledge node and returns the created node")]
-    pub async fn ingest_knowledge(&self, Parameters(payload): Parameters<KnowledgeNode>) -> Result<String, String> {
+    pub async fn ingest_knowledge(
+        &self,
+        Parameters(payload): Parameters<KnowledgeNode>,
+    ) -> Result<String, String> {
         let pool = DB_POOL.get().ok_or("Database pool not initialized")?;
         if payload.topic.trim().is_empty() || payload.content.trim().is_empty() {
             return Err("Topic and content are required".to_string());
@@ -158,9 +164,14 @@ impl KnowledgeMcpServer {
     }
 
     #[tool(description = "Updates an existing knowledge node and returns the updated node")]
-    pub async fn update_knowledge(&self, Parameters(payload): Parameters<KnowledgeNode>) -> Result<String, String> {
+    pub async fn update_knowledge(
+        &self,
+        Parameters(payload): Parameters<KnowledgeNode>,
+    ) -> Result<String, String> {
         let pool = DB_POOL.get().ok_or("Database pool not initialized")?;
-        let id = payload.id.ok_or("Knowledge node id is required for update")?;
+        let id = payload
+            .id
+            .ok_or("Knowledge node id is required for update")?;
 
         let current_node = sqlx::query_as::<_, KnowledgeNode>(
             r#"
@@ -179,16 +190,37 @@ impl KnowledgeMcpServer {
             None => return Err("Knowledge node not found".to_string()),
         };
 
-        let new_topic = if payload.topic.is_empty() { current_node.topic } else { payload.topic };
-        let new_title = if payload.title.trim().is_empty() { current_node.title } else { payload.title };
-        let new_description = if payload.description.trim().is_empty() { current_node.description } else { payload.description };
-        let new_tags = if payload.tags.is_empty() { current_node.tags } else { payload.tags };
-        let new_content = if payload.content.is_empty() { current_node.content.clone() } else { payload.content };
-        let new_metadata = if payload.metadata.is_null() || payload.metadata == serde_json::json!({}) {
-            current_node.metadata
+        let new_topic = if payload.topic.is_empty() {
+            current_node.topic
         } else {
-            payload.metadata
+            payload.topic
         };
+        let new_title = if payload.title.trim().is_empty() {
+            current_node.title
+        } else {
+            payload.title
+        };
+        let new_description = if payload.description.trim().is_empty() {
+            current_node.description
+        } else {
+            payload.description
+        };
+        let new_tags = if payload.tags.is_empty() {
+            current_node.tags
+        } else {
+            payload.tags
+        };
+        let new_content = if payload.content.is_empty() {
+            current_node.content.clone()
+        } else {
+            payload.content
+        };
+        let new_metadata =
+            if payload.metadata.is_null() || payload.metadata == serde_json::json!({}) {
+                current_node.metadata
+            } else {
+                payload.metadata
+            };
 
         let mut tx = pool.begin().await.map_err(|e| format!("Tx Error: {}", e))?;
 
@@ -237,13 +269,18 @@ impl KnowledgeMcpServer {
             }
         }
 
-        tx.commit().await.map_err(|e| format!("Commit Error: {}", e))?;
+        tx.commit()
+            .await
+            .map_err(|e| format!("Commit Error: {}", e))?;
 
         serde_json::to_string(&updated_node).map_err(|e| e.to_string())
     }
 
     #[tool(description = "Deletes a knowledge node by its ID and returns the deleted node")]
-    pub async fn delete_knowledge(&self, Parameters(req): Parameters<KnowledgeIdRequest>) -> Result<String, String> {
+    pub async fn delete_knowledge(
+        &self,
+        Parameters(req): Parameters<KnowledgeIdRequest>,
+    ) -> Result<String, String> {
         let pool = DB_POOL.get().ok_or("Database pool not initialized")?;
 
         let deleted_node = sqlx::query_as::<_, KnowledgeNode>(
@@ -265,7 +302,10 @@ impl KnowledgeMcpServer {
     }
 
     #[tool(description = "Traverses the knowledge graph starting from a subject")]
-    pub async fn traverse_knowledge_graph(&self, Parameters(req): Parameters<GraphTraverseRequest>) -> Result<String, String> {
+    pub async fn traverse_knowledge_graph(
+        &self,
+        Parameters(req): Parameters<GraphTraverseRequest>,
+    ) -> Result<String, String> {
         let pool = DB_POOL.get().ok_or("Database pool not initialized")?;
         let max_depth = req.max_depth.unwrap_or(2);
 

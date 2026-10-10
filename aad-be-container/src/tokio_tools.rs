@@ -55,7 +55,10 @@ pub fn run_in_tokio<F, T>(runtime: &ThreadRuntime, my_function: F) -> Result<T, 
 where
     F: std::future::Future<Output = Result<T, String>>,
 {
-    info!("Starting Tokio runtime instance: '{}' with {} worker threads", runtime.name, runtime.threads);
+    info!(
+        "Starting Tokio runtime instance: '{}' with {} worker threads",
+        runtime.name, runtime.threads
+    );
     let rt = create_tokio_runtime(runtime)?;
     rt.block_on(my_function)
 }

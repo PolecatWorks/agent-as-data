@@ -1,6 +1,6 @@
+use super::common::default_version;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-use super::common::default_version;
 
 #[derive(Deserialize, Serialize, Debug, Clone, sqlx::FromRow)]
 pub struct Skill {

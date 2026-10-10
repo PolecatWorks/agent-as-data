@@ -350,7 +350,7 @@ pub async fn test_agent(
     use rig_core::completion::CompletionModel;
     let model = ollama_client.completion_model(&state.config.llm.model);
 
-    let timeout_duration = std::time::Duration::from_secs(state.config.llm.timeout_secs);
+    let timeout_duration = state.config.llm.timeout;
     for test_case in &payload.test_cases {
         let prompt = format!(
             "You are an AI judge evaluating a test case. \nInput:\n{}\n\nRubric:\n{}\n\nRate the response from 0.0 to 1.0 based on how well it meets the rubric. Output ONLY the float number.",

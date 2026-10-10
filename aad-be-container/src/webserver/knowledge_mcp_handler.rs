@@ -1,15 +1,12 @@
-use axum::{http::StatusCode, response::IntoResponse, routing::post, Json, Router};
-use serde_json::{json, Value};
 use super::knowledge_mcp::KnowledgeMcpServer;
+use axum::{Json, Router, http::StatusCode, response::IntoResponse, routing::post};
+use serde_json::{Value, json};
 
 pub fn router<S: Clone + Send + Sync + 'static>() -> Router<S> {
-    Router::new()
-        .route("/", post(handle_http_rpc))
+    Router::new().route("/", post(handle_http_rpc))
 }
 
-async fn handle_http_rpc(
-    Json(payload): Json<Value>,
-) -> impl IntoResponse {
+async fn handle_http_rpc(Json(payload): Json<Value>) -> impl IntoResponse {
     let server = KnowledgeMcpServer::new();
     let response = handle_json_rpc(&server, payload).await;
     match response {
@@ -89,37 +86,68 @@ pub async fn handle_json_rpc(server: &KnowledgeMcpServer, raw_request: Value) ->
                 }
             };
 
-            let arguments = params.get("arguments").cloned().unwrap_or_else(|| json!({}));
+            let arguments = params
+                .get("arguments")
+                .cloned()
+                .unwrap_or_else(|| json!({}));
 
             let result_str = if tool_name == "search_knowledge" {
                 match serde_json::from_value(arguments) {
-                    Ok(args) => server.search_knowledge(rmcp::handler::server::wrapper::Parameters(args)).await,
+                    Ok(args) => {
+                        server
+                            .search_knowledge(rmcp::handler::server::wrapper::Parameters(args))
+                            .await
+                    }
                     Err(e) => Err(format!("Invalid arguments for search_knowledge: {e}")),
                 }
             } else if tool_name == "read_knowledge" {
                 match serde_json::from_value(arguments) {
-                    Ok(args) => server.read_knowledge(rmcp::handler::server::wrapper::Parameters(args)).await,
+                    Ok(args) => {
+                        server
+                            .read_knowledge(rmcp::handler::server::wrapper::Parameters(args))
+                            .await
+                    }
                     Err(e) => Err(format!("Invalid arguments for read_knowledge: {e}")),
                 }
             } else if tool_name == "ingest_knowledge" {
                 match serde_json::from_value(arguments) {
-                    Ok(args) => server.ingest_knowledge(rmcp::handler::server::wrapper::Parameters(args)).await,
+                    Ok(args) => {
+                        server
+                            .ingest_knowledge(rmcp::handler::server::wrapper::Parameters(args))
+                            .await
+                    }
                     Err(e) => Err(format!("Invalid arguments for ingest_knowledge: {e}")),
                 }
             } else if tool_name == "update_knowledge" {
                 match serde_json::from_value(arguments) {
-                    Ok(args) => server.update_knowledge(rmcp::handler::server::wrapper::Parameters(args)).await,
+                    Ok(args) => {
+                        server
+                            .update_knowledge(rmcp::handler::server::wrapper::Parameters(args))
+                            .await
+                    }
                     Err(e) => Err(format!("Invalid arguments for update_knowledge: {e}")),
                 }
             } else if tool_name == "delete_knowledge" {
                 match serde_json::from_value(arguments) {
-                    Ok(args) => server.delete_knowledge(rmcp::handler::server::wrapper::Parameters(args)).await,
+                    Ok(args) => {
+                        server
+                            .delete_knowledge(rmcp::handler::server::wrapper::Parameters(args))
+                            .await
+                    }
                     Err(e) => Err(format!("Invalid arguments for delete_knowledge: {e}")),
                 }
             } else if tool_name == "traverse_knowledge_graph" {
                 match serde_json::from_value(arguments) {
-                    Ok(args) => server.traverse_knowledge_graph(rmcp::handler::server::wrapper::Parameters(args)).await,
-                    Err(e) => Err(format!("Invalid arguments for traverse_knowledge_graph: {e}")),
+                    Ok(args) => {
+                        server
+                            .traverse_knowledge_graph(rmcp::handler::server::wrapper::Parameters(
+                                args,
+                            ))
+                            .await
+                    }
+                    Err(e) => Err(format!(
+                        "Invalid arguments for traverse_knowledge_graph: {e}"
+                    )),
                 }
             } else {
                 Err(format!("Method {} not supported", tool_name))

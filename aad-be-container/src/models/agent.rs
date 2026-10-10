@@ -1,6 +1,6 @@
+use super::common::default_version;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-use super::common::default_version;
 
 #[derive(Deserialize, Serialize, Debug, Clone, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
