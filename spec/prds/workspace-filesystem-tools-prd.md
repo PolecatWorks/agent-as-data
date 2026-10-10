@@ -137,7 +137,7 @@ flowchart TD
    - **Model Output Normalization**: When open-weight models (e.g. Qwen2.5-Coder via Ollama) emit tool invocations formatted as JSON or XML tags (e.g. `{"name": "list_files", "arguments": {...}}`) in the assistant message content rather than through native provider tool call envelopes, the execution pipeline must normalize and detect this payload, execute the corresponding tool against the workspace, append the tool result to the conversation context, and prompt the model for the final human-readable response.
 4. **Turn Budgeting & Adaptive Timeout**:
    - Configure `.max_turns(5)` (or higher) to give the model headroom to call multiple tools sequentially.
-   - Configure execution timeouts respecting `config.llm.timeout_secs` without artificial clamps that prematurely abort live model inference.
+   - Configure execution timeouts respecting `config.llm.timeout` without artificial clamps that prematurely abort live model inference.
 5. **Instructive Error Feedback & Dynamic Fallback**:
    - When a tool fails (e.g. file does not exist), return clear contextual guidance (e.g. `File 'notes.txt' not found. Available workspace files are: ['todo.md', 'draft.txt']`) so the model can adjust arguments on the next turn.
    - If the LLM service is temporarily offline, fallback processing must dynamically interpret the specific user question and workspace state rather than echoing static strings.

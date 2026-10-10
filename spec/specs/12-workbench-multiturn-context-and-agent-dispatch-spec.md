@@ -102,7 +102,7 @@ sequenceDiagram
 - **Model Output Normalization**: When open-weight models (such as Qwen2.5-Coder via Ollama) emit tool invocations formatted as JSON text directly inside the assistant text content instead of a structured tool call envelope, the pipeline detects the tool call, executes the tool via `PortableTool::call`, appends the tool execution result to the conversation context, and re-prompts the model to provide the natural, human-readable answer.
 
 ### 3. Adaptive Timeout & Dynamic Fallback
-- Respect `state.config.llm.timeout_secs` without artificial clamps.
+- Respect `state.config.llm.timeout` without artificial clamps.
 - Fallback processing must only engage on unrecoverable transport timeouts or connection errors, providing a helpful explanation rather than repeating canned file listings.
 
 ### 4. Frontend Chat Usability & Auto-Scroll (`workbench.component.ts`)
