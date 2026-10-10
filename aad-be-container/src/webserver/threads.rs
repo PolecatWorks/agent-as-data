@@ -281,24 +281,12 @@ async fn process_thread_message(
         .tool(crate::llm_tools::ViewSkillTool {
             pool: state.pool.clone(),
         })
-        .default_max_turns(5)
+        .default_max_turns(state.config.llm.default_max_turns)
         .build();
 
-    let timeout_secs = state.config.llm.timeout_secs;
-    let timeout_duration = std::time::Duration::from_secs(timeout_secs);
     let prompt_future = agent.prompt(user_content).history(rig_history.clone());
 
-    let response = tokio::time::timeout(timeout_duration, prompt_future)
-        .await
-        .map_err(|_| {
-            crate::error::AppError::Message(format!(
-                "Rig Agent execution timed out after {}s",
-                timeout_secs
-            ))
-        })?
-        .map_err(|e| {
-            crate::error::AppError::Message(format!("Rig Agent execution failed: {}", e))
-        })?;
+    let response = tokio::time::timeout(state.config.llm.timeout, prompt_future).await??;
 
     // Check if the response contains a raw tool call emitted as text (common with open-weight models like Qwen)
     let trimmed = response.trim();
@@ -379,7 +367,8 @@ async fn process_thread_message(
                     let second_prompt_future = agent
                         .prompt("Summarize the result for the user.")
                         .history(followup_history);
-                    match tokio::time::timeout(timeout_duration, second_prompt_future).await {
+                    match tokio::time::timeout(state.config.llm.timeout, second_prompt_future).await
+                    {
                         Ok(Ok(final_answer)) => Ok(final_answer),
                         Ok(Err(e)) => {
                             tracing::warn!("Agent follow-up after tool execution failed: {}", e);
