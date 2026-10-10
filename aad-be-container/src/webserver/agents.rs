@@ -118,7 +118,7 @@ pub async fn create_agent(
     let _ = crate::webserver::search::sync_entity_embeddings(
         &pool,
         agent_id,
-        "agents",
+        crate::models::search::EntityType::Agents,
         &payload.name,
         Some(payload.description.as_str()),
         &[("prompt", &prompt_str)],
@@ -191,7 +191,7 @@ pub async fn update_agent(
     let _ = crate::webserver::search::sync_entity_embeddings(
         &pool,
         id,
-        "agents",
+        crate::models::search::EntityType::Agents,
         &payload.name,
         Some(payload.description.as_str()),
         &[("prompt", &prompt_str)],
@@ -593,7 +593,7 @@ pub async fn sync_agent_embeddings(
     let count = crate::webserver::search::sync_entity_embeddings(
         &pool,
         id,
-        "agents",
+        crate::models::search::EntityType::Agents,
         &name,
         description.as_deref(),
         &[("prompt", &prompt_str)],

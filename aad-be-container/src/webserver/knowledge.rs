@@ -733,7 +733,7 @@ pub async fn search_knowledge(
             score: r.try_get("similarity_score").unwrap_or(0.5),
             search_type: r
                 .try_get("search_type")
-                .unwrap_or_else(|_| "semantic".to_string()),
+                .unwrap_or_else(|_| crate::models::search::SearchType::Semantic),
         })
         .collect();
 

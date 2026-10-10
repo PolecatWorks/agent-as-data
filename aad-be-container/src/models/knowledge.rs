@@ -105,7 +105,7 @@ pub struct KnowledgeSearchResult {
     pub chunk_text: String,
     pub score: f64,
     #[serde(default)]
-    pub search_type: String,
+    pub search_type: crate::models::search::SearchType,
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone, schemars::JsonSchema)]

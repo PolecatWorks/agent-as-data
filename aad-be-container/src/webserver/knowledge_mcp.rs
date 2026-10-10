@@ -54,7 +54,7 @@ impl KnowledgeMcpServer {
                     chunk_index: r.get("chunk_index"),
                     chunk_text: r.get("chunk_text"),
                     score: 0.95,
-                    search_type: "semantic".to_string(),
+                    search_type: crate::models::search::SearchType::Semantic,
                 }
             })
             .collect();
