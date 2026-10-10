@@ -106,6 +106,7 @@ mod tests {
                 ollama_url: "http://localhost:11434".into(),
                 model: "llama3".into(),
                 timeout: std::time::Duration::from_secs(30),
+                default_max_turns: 5,
             },
             runtime: crate::tokio_tools::ThreadRuntime::default(),
             database: crate::config::DatabaseConfig {
