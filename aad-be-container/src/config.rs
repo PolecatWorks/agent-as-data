@@ -4,6 +4,7 @@ use figment::{
 };
 use figment_file_provider_adapter::FileAdapter;
 use serde::{Deserialize, Serialize};
+use std::time::Duration;
 use url::Url;
 
 use ::hams::hams::config::HamsConfig;
@@ -39,8 +40,20 @@ impl<'de> Deserialize<'de> for UrlWithUsernamePassword {
     {
         let helper = UrlHelper::deserialize(deserializer)?;
         match helper {
-            UrlHelper::Full { url, username, password } => Ok(Self { url, username, password }),
-            UrlHelper::Simple(url) => Ok(Self { url, username: None, password: None }),
+            UrlHelper::Full {
+                url,
+                username,
+                password,
+            } => Ok(Self {
+                url,
+                username,
+                password,
+            }),
+            UrlHelper::Simple(url) => Ok(Self {
+                url,
+                username: None,
+                password: None,
+            }),
         }
     }
 }
@@ -81,10 +94,13 @@ where
 pub struct LlmConfig {
     pub ollama_url: String,
     pub model: String,
-    pub timeout_secs: u64,
+    #[serde(with = "humantime_serde")]
+    pub timeout: Duration,
+    #[serde(default = "default_max_turns_value")]
+    pub default_max_turns: usize,
 }
 
-use std::time::Duration;
+fn default_max_turns_value() -> usize { 5 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct DebuggingConfig {
@@ -139,10 +155,11 @@ impl AppConfig {
         if self.llm.model.trim().is_empty() {
             return Err("LLM Model cannot be empty".to_string());
         }
-        if self.llm.timeout_secs == 0 {
+        if self.llm.timeout.is_zero() {
             return Err("LLM timeout_secs must be greater than 0".to_string());
         }
-        Url::parse(&self.llm.ollama_url).map_err(|e| format!("Invalid LLM Ollama URL format: {}", e))?;
+        Url::parse(&self.llm.ollama_url)
+            .map_err(|e| format!("Invalid LLM Ollama URL format: {}", e))?;
         if self.runtime.metrics_interval.is_zero() {
             return Err("Runtime metrics_interval must be greater than 0".to_string());
         }
@@ -172,7 +189,8 @@ mod tests {
             llm: LlmConfig {
                 ollama_url: "http://localhost:11434".to_string(),
                 model: "llama3".to_string(),
-                timeout_secs: 15,
+                timeout: Duration::from_secs(15),
+                default_max_turns: 5,
             },
             hams: ::hams::hams::config::HamsConfig::default(),
             runtime: ThreadRuntime::default(),
@@ -185,7 +203,10 @@ mod tests {
 
         assert!(config.validate().is_ok());
         let db_url: Url = config.database.url.into();
-        assert_eq!(db_url.as_str(), "postgres://postgres:mysecretpassword@localhost:5432/aaddb");
+        assert_eq!(
+            db_url.as_str(),
+            "postgres://postgres:mysecretpassword@localhost:5432/aaddb"
+        );
     }
 
     #[test]
@@ -206,7 +227,8 @@ mod tests {
             llm: LlmConfig {
                 ollama_url: "".to_string(),
                 model: "llama3".to_string(),
-                timeout_secs: 15,
+                timeout: Duration::from_secs(15),
+                default_max_turns: 5,
             },
             hams: ::hams::hams::config::HamsConfig::default(),
             runtime: ThreadRuntime::default(),
@@ -238,7 +260,8 @@ mod tests {
             llm: LlmConfig {
                 ollama_url: "http://localhost:11434".to_string(),
                 model: "llama3".to_string(),
-                timeout_secs: 0,
+                timeout: Duration::from_secs(0),
+                default_max_turns: 5,
             },
             hams: ::hams::hams::config::HamsConfig::default(),
             runtime: ThreadRuntime::default(),
@@ -270,7 +293,8 @@ mod tests {
             llm: LlmConfig {
                 ollama_url: "http://localhost:11434".to_string(),
                 model: "llama3".to_string(),
-                timeout_secs: 15,
+                timeout: Duration::from_secs(15),
+                default_max_turns: 5,
             },
             hams: ::hams::hams::config::HamsConfig::default(),
             runtime: ThreadRuntime::default(),
@@ -316,7 +340,8 @@ mod tests {
         writeln!(file, "llm:").unwrap();
         writeln!(file, "  ollama_url: 'http://ollama.k8s:80'").unwrap();
         writeln!(file, "  model: 'qwen2.5-coder:14b'").unwrap();
-        writeln!(file, "  timeout_secs: 120").unwrap();
+        writeln!(file, "  timeout_secs: 120s").unwrap();
+        writeln!(file, "  default_max_turns: 5").unwrap();
         writeln!(file, "hams:").unwrap();
         writeln!(file, "  name: 'aad-be'").unwrap();
         writeln!(file, "  version: '0.1.0'").unwrap();
@@ -335,7 +360,10 @@ mod tests {
         assert_eq!(config.database.url.password.as_deref(), Some("secretpass"));
 
         let db_url: Url = config.database.url.into();
-        assert_eq!(db_url.as_str(), "postgres://secretuser:secretpass@localhost:5432/aaddb");
+        assert_eq!(
+            db_url.as_str(),
+            "postgres://secretuser:secretpass@localhost:5432/aaddb"
+        );
 
         let _ = fs::remove_dir_all(test_dir);
     }
@@ -348,13 +376,19 @@ mod tests {
             url: UrlWithUsernamePassword,
         }
         let parsed_str: Wrapper = serde_yaml::from_str(yaml_str).unwrap();
-        assert_eq!(parsed_str.url.url.as_str(), "postgres://localhost:5432/testdb");
+        assert_eq!(
+            parsed_str.url.url.as_str(),
+            "postgres://localhost:5432/testdb"
+        );
         assert!(parsed_str.url.username.is_none());
 
-        let yaml_obj = "url:\n  url: 'postgres://localhost:5432/testdb'\n  username: 'user'\n  password: 'pw'";
+        let yaml_obj =
+            "url:\n  url: 'postgres://localhost:5432/testdb'\n  username: 'user'\n  password: 'pw'";
         let parsed_obj: Wrapper = serde_yaml::from_str(yaml_obj).unwrap();
-        assert_eq!(parsed_obj.url.url.as_str(), "postgres://localhost:5432/testdb");
+        assert_eq!(
+            parsed_obj.url.url.as_str(),
+            "postgres://localhost:5432/testdb"
+        );
         assert_eq!(parsed_obj.url.username.as_deref(), Some("user"));
     }
 }
-
