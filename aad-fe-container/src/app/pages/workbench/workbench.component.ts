@@ -711,7 +711,7 @@ export class WorkbenchComponent implements OnInit, OnDestroy {
       )
       .subscribe({
         next: () => {
-          console.log(`Saved ${this.selectedFile}`);
+          // File saved
         },
         error: (err) => console.error('Failed to save file', err),
       });

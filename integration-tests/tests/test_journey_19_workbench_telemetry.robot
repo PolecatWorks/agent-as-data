@@ -13,11 +13,11 @@ ${MESSAGE_ID}   ${EMPTY}
 Create Bench And Thread For Telemetry Testing
     [Documentation]    Setup a bench and a thread to test the run telemetry.
     ${bench_name}=    Generate Random String    8    [LOWER]
-    ${payload}=    Create Dictionary    name=${bench_name}
+    ${payload}=    Create Dictionary    name=${bench_name}    owner_id=00000000-0000-0000-0000-000000000000
     ${bench}=    Create Bench    ${payload}
     Set Suite Variable    ${BENCH_ID}    ${bench["id"]}
 
-    ${payload}=    Create Dictionary    title=Telemetry Test Thread
+    ${payload}=    Create Dictionary    title=Telemetry Test Thread    owner_id=00000000-0000-0000-0000-000000000000
     ${thread}=    Create Bench Thread    ${BENCH_ID}    ${payload}
     Set Suite Variable    ${THREAD_ID}    ${thread["id"]}
 
@@ -25,7 +25,7 @@ Test Create Message Populates Originating Message ID and Model Telemetry
     [Documentation]    Sending a message creates a thread_run with originating_message_id and model.
     ${payload}=    Create Dictionary    role=user    content=Say hello
     ${response}=    Create Thread Message    ${THREAD_ID}    ${payload}
-    Set Suite Variable    ${MESSAGE_ID}    ${response["message"]["id"]}
+    Set Suite Variable    ${MESSAGE_ID}    ${response["id"]}
     ${run_id}=    Set Variable    ${response["run_id"]}
 
     Wait For Assistant Message    ${THREAD_ID}    timeout=30
