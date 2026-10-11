@@ -388,16 +388,19 @@ pub async fn create_message(
     let bench_id = thread_record.map(|t| t.bench_id).unwrap_or(thread_id);
 
     let run = sqlx::query_as::<_, ThreadRun>(
-        "INSERT INTO thread_runs (thread_id, bench_id, status, current_phase) VALUES ($1, $2, 'running', 'thinking') RETURNING *"
+        "INSERT INTO thread_runs (thread_id, bench_id, originating_message_id, status, current_phase, model) VALUES ($1, $2, $3, 'running', 'thinking', $4) RETURNING *"
     )
     .bind(thread_id)
     .bind(bench_id)
+    .bind(message.id)
+    .bind(&state.config.llm.model)
     .fetch_one(&state.pool)
     .await?;
 
     let run_id = run.id;
     let state_clone = state.clone();
     let content_clone = payload.content.clone();
+    let start_time = std::time::Instant::now();
 
     tokio::spawn(async move {
         let result = async {
@@ -423,9 +426,12 @@ pub async fn create_message(
             .execute(&state_clone.pool)
             .await?;
 
+            let duration_ms = start_time.elapsed().as_millis() as i64;
+            // TODO: Extract tokens and tools from process_thread_message output if possible in future
             sqlx::query(
-                "UPDATE thread_runs SET status = 'completed', current_phase = 'completed', updated_at = NOW() WHERE id = $1"
+                "UPDATE thread_runs SET status = 'completed', current_phase = 'completed', duration_ms = $1, updated_at = NOW() WHERE id = $2"
             )
+            .bind(duration_ms)
             .bind(run_id)
             .execute(&state_clone.pool)
             .await?;
@@ -440,18 +446,30 @@ pub async fn create_message(
                     tracing::error!("Failed to record cancellation message: {}", sql_err);
                 }
             } else {
-                let err_str = match e {
-                    crate::error::AppError::Message(msg) | crate::error::AppError::ToolHallucination(msg) => msg,
+                let duration_ms = start_time.elapsed().as_millis() as i64;
+                let err_str = match &e {
+                    crate::error::AppError::Message(msg) | crate::error::AppError::ToolHallucination(msg) => msg.clone(),
                     other => other.to_string(),
                 };
                 if let Err(sql_err) = sqlx::query(
-                    "UPDATE thread_runs SET status = 'failed', current_phase = 'failed', error = $1, updated_at = NOW() WHERE id = $2"
+                    "UPDATE thread_runs SET status = 'failed', current_phase = 'failed', error = $1, duration_ms = $2, updated_at = NOW() WHERE id = $3"
                 )
-                .bind(err_str)
+                .bind(&err_str)
+                .bind(duration_ms)
                 .bind(run_id)
                 .execute(&state_clone.pool)
                 .await {
                     tracing::error!("Failed to update thread_run to failed status: {}", sql_err);
+                }
+
+                if let Err(sql_err) = sqlx::query(
+                    "INSERT INTO messages (thread_id, role, content) VALUES ($1, 'system', $2)"
+                )
+                .bind(thread_id)
+                .bind(format!("[Execution failed: {}]", err_str))
+                .execute(&state_clone.pool)
+                .await {
+                    tracing::error!("Failed to insert error system message: {}", sql_err);
                 }
             }
         }

@@ -95,6 +95,8 @@ export class WorkbenchComponent implements OnInit, OnDestroy {
   searchQuery: string = '';
   isProcessing: boolean = false;
   activeRun: ThreadRun | null = null;
+  threadRuns: ThreadRun[] = [];
+  expandedRunIds: Set<string> = new Set<string>();
   private pollIntervalId: any = null;
 
   isConfirmingDeleteThreadId: string | null = null;
@@ -370,6 +372,8 @@ export class WorkbenchComponent implements OnInit, OnDestroy {
     this.stopRunPolling();
     this.activeThread = thread;
     this.activeThreadMessages = [];
+    this.threadRuns = [];
+    this.expandedRunIds.clear();
     this.apiService.getMessages(thread.id).subscribe({
       next: (messages) => {
         this.activeThreadMessages = messages;
@@ -377,6 +381,12 @@ export class WorkbenchComponent implements OnInit, OnDestroy {
         this.focusMessageInput();
       },
       error: (err) => console.error('Failed to load messages', err),
+    });
+    this.apiService.getThreadRuns(thread.id).subscribe({
+      next: (runs) => {
+        this.threadRuns = runs;
+      },
+      error: (err) => console.error('Failed to load thread runs', err)
     });
     this.loadBenchFiles();
     this.checkActiveRun(thread.id);
@@ -439,6 +449,13 @@ export class WorkbenchComponent implements OnInit, OnDestroy {
                   err,
                 ),
             });
+            this.apiService.getThreadRuns(threadId).subscribe({
+              next: (runs) => {
+                this.threadRuns = runs;
+              },
+              error: (err) =>
+                console.error('Failed to reload thread runs after run', err),
+            });
           } else {
             this.activeRun = run;
             this.isProcessing = true;
@@ -461,6 +478,32 @@ export class WorkbenchComponent implements OnInit, OnDestroy {
     }
   }
 
+  getRunForMessage(messageId: string): ThreadRun | undefined {
+    return this.threadRuns.find(run => run.originating_message_id === messageId);
+  }
+
+  toggleRunDetails(runId: string): void {
+    if (this.expandedRunIds.has(runId)) {
+      this.expandedRunIds.delete(runId);
+    } else {
+      this.expandedRunIds.add(runId);
+    }
+  }
+
+  isRunExpanded(runId: string): boolean {
+    return this.expandedRunIds.has(runId);
+  }
+
+  formatDuration(ms?: number): string {
+    if (ms === undefined || ms === null) return '0.0s';
+    return (ms / 1000).toFixed(1) + 's';
+  }
+
+  retryMessage(content: string): void {
+    this.newMessageContent = content;
+    this.focusMessageInput();
+  }
+
   cancelCurrentAction(): void {
     if (!this.activeThread) return;
     const threadId = this.activeThread.id;
@@ -479,6 +522,13 @@ export class WorkbenchComponent implements OnInit, OnDestroy {
           },
           error: (err) =>
             console.error('Failed to refresh messages after cancellation', err),
+        });
+        this.apiService.getThreadRuns(threadId).subscribe({
+          next: (runs) => {
+            this.threadRuns = runs;
+          },
+          error: (err) =>
+            console.error('Failed to reload thread runs after run', err),
         });
       },
       error: (err) => {

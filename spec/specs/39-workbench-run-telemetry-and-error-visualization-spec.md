@@ -1,6 +1,6 @@
 # 39. Workbench Run Telemetry & Error Visualization Specification
 
-## Status: `draft`
+## Status: `complete`
 
 ## Primary PRD Reference
 - [Workbench Benches, Threads & Workspace Memory PRD](../prds/workbench-bench-thread-prd.md)

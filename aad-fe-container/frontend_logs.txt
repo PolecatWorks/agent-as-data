@@ -1,0 +1,62 @@
+❯ Building...
+✔ Building...
+Initial chunk files | Names                         |  Raw size
+styles.css          | styles                        | 175.23 kB |
+polyfills.js        | polyfills                     |  90.20 kB |
+main.js             | main                          |   6.71 kB |
+chunk-Y5RQAIA6.js   | -                             |   1.50 kB |
+chunk-JICF62KH.js   | -                             |   1.07 kB |
+
+                    | Initial total                 | 274.71 kB
+
+Lazy chunk files    | Names                         |  Raw size
+chunk-DSTV2XVB.js   | workbench-component           | 114.75 kB |
+chunk-NVVH6TRZ.js   | knowledge-inspector-component |  87.24 kB |
+chunk-XL2ZBIW5.js   | -                             |  74.04 kB |
+chunk-PWVK2KHU.js   | agent-detail-component        |  54.49 kB |
+chunk-L3LJRGIG.js   | skill-detail-component        |  54.43 kB |
+chunk-VLEQPQDB.js   | tool-detail-component         |  51.91 kB |
+chunk-CR7W2DXV.js   | knowledge-explorer-component  |  50.63 kB |
+chunk-RR5QKETA.js   | network-visualizer-component  |  46.14 kB |
+chunk-URG2NKWZ.js   | trait-detail-component        |  42.27 kB |
+chunk-BG5RCJ6Y.js   | interactive-testing-component |  39.39 kB |
+chunk-FEKCXTZA.js   | detail-component              |  39.35 kB |
+chunk-YTF6EES7.js   | agent-context-component       |  16.96 kB |
+chunk-S4IXH6L3.js   | -                             |  15.79 kB |
+chunk-6OXK27ON.js   | refactoring-lab-component     |  15.26 kB |
+chunk-DMN74CLC.js   | home-component                |  14.44 kB |
+...and 15 more lazy chunks files. Use "--verbose" to show all the files.
+
+Application bundle generation complete. [9.514 seconds]
+
+Watch mode enabled. Watching for file changes...
+NOTE: Raw file sizes do not reflect development server per-request transformations.
+  ➜  Local:   http://localhost:4200/
+9:01:16 AM [vite] http proxy error: /api/v1/benches
+AggregateError [ECONNREFUSED]:
+    at internalConnectMultiple (node:net:1134:18)
+    at afterConnectMultiple (node:net:1715:7)
+9:02:22 AM [vite] http proxy error: /api/v1/benches
+AggregateError [ECONNREFUSED]:
+    at internalConnectMultiple (node:net:1134:18)
+    at afterConnectMultiple (node:net:1715:7)
+9:04:08 AM [vite] http proxy error: /api/v1/benches
+AggregateError [ECONNREFUSED]:
+    at internalConnectMultiple (node:net:1134:18)
+    at afterConnectMultiple (node:net:1715:7)
+9:05:44 AM [vite] http proxy error: /api/v1/benches
+AggregateError [ECONNREFUSED]:
+    at internalConnectMultiple (node:net:1134:18)
+    at afterConnectMultiple (node:net:1715:7)
+9:05:48 AM [vite] http proxy error: /api/v1/benches/create
+AggregateError [ECONNREFUSED]:
+    at internalConnectMultiple (node:net:1134:18)
+    at afterConnectMultiple (node:net:1715:7)
+9:07:30 AM [vite] http proxy error: /api/v1/benches
+AggregateError [ECONNREFUSED]:
+    at internalConnectMultiple (node:net:1134:18)
+    at afterConnectMultiple (node:net:1715:7)
+9:07:34 AM [vite] http proxy error: /api/v1/benches/create
+AggregateError [ECONNREFUSED]:
+    at internalConnectMultiple (node:net:1134:18)
+    at afterConnectMultiple (node:net:1715:7)
