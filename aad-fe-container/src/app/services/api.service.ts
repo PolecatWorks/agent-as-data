@@ -125,9 +125,16 @@ export interface ThreadRun {
   id: string;
   thread_id: string;
   bench_id: string;
+  originating_message_id?: string;
   status: 'pending' | 'running' | 'cancelling' | 'cancelled' | 'completed' | 'failed';
   current_phase: 'thinking' | 'executing_tool' | 'completed' | 'cancelled' | 'failed';
   active_tool_name?: string | null;
+  model?: string;
+  prompt_tokens?: number;
+  completion_tokens?: number;
+  total_tokens?: number;
+  tools_invoked?: string[];
+  duration_ms?: number;
   error?: string | null;
   created_at?: string;
   updated_at?: string;

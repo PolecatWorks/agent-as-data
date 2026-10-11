@@ -237,7 +237,7 @@ async fn process_thread_message(
     };
 
     let system_prompt = format!(
-        "You are an AI assistant collaborating with a developer in an isolated workspace (bench {}, thread {}).\n{}\n{}\nYou have filesystem tools (list_files, read_file, write_file, replace_in_file, rename_file, delete_file) and shared memory tools (read_bench_memory, update_bench_memory).\nPlease interpret questions and instructions in the context of the ongoing conversation, and respond helpfully.\n\nIMPORTANT: Files can be modified outside this chat by the user or other processes. ALWAYS use the `read_file` tool to read file contents when asked, rather than relying on your conversation history or memory, to ensure you see the current state of the file.",
+        "You are an AI assistant collaborating with a developer in an isolated workspace (bench {}, thread {}).\n{}\n{}\nPlease interpret questions and instructions in the context of the ongoing conversation, and respond helpfully.",
         bench_id, thread_id, files_summary, memory_summary
     );
 
@@ -304,6 +304,18 @@ async fn process_thread_message(
 
 fn parse_raw_tool_call(response: &str) -> Option<serde_json::Value> {
     let trimmed = response.trim();
+
+    // Check each line in case the model outputted newline-delimited JSON objects
+    for line in trimmed.lines() {
+        let line_trimmed = line.trim();
+        if line_trimmed.starts_with('{') && line_trimmed.ends_with('}') {
+            if let Ok(v) = serde_json::from_str::<serde_json::Value>(line_trimmed) {
+                if v.get("name").is_some() {
+                    return Some(v);
+                }
+            }
+        }
+    }
     
     if trimmed.starts_with('{') && trimmed.ends_with('}') {
         if let Ok(v) = serde_json::from_str(trimmed) {
@@ -388,16 +400,19 @@ pub async fn create_message(
     let bench_id = thread_record.map(|t| t.bench_id).unwrap_or(thread_id);
 
     let run = sqlx::query_as::<_, ThreadRun>(
-        "INSERT INTO thread_runs (thread_id, bench_id, status, current_phase) VALUES ($1, $2, 'running', 'thinking') RETURNING *"
+        "INSERT INTO thread_runs (thread_id, bench_id, originating_message_id, status, current_phase, model) VALUES ($1, $2, $3, 'running', 'thinking', $4) RETURNING *"
     )
     .bind(thread_id)
     .bind(bench_id)
+    .bind(message.id)
+    .bind(&state.config.llm.model)
     .fetch_one(&state.pool)
     .await?;
 
     let run_id = run.id;
     let state_clone = state.clone();
     let content_clone = payload.content.clone();
+    let start_time = std::time::Instant::now();
 
     tokio::spawn(async move {
         let result = async {
@@ -423,9 +438,12 @@ pub async fn create_message(
             .execute(&state_clone.pool)
             .await?;
 
+            let duration_ms = start_time.elapsed().as_millis() as i64;
+            // TODO: Extract tokens and tools from process_thread_message output if possible in future
             sqlx::query(
-                "UPDATE thread_runs SET status = 'completed', current_phase = 'completed', updated_at = NOW() WHERE id = $1"
+                "UPDATE thread_runs SET status = 'completed', current_phase = 'completed', duration_ms = $1, updated_at = NOW() WHERE id = $2"
             )
+            .bind(duration_ms)
             .bind(run_id)
             .execute(&state_clone.pool)
             .await?;
@@ -440,18 +458,30 @@ pub async fn create_message(
                     tracing::error!("Failed to record cancellation message: {}", sql_err);
                 }
             } else {
-                let err_str = match e {
-                    crate::error::AppError::Message(msg) | crate::error::AppError::ToolHallucination(msg) => msg,
+                let duration_ms = start_time.elapsed().as_millis() as i64;
+                let err_str = match &e {
+                    crate::error::AppError::Message(msg) | crate::error::AppError::ToolHallucination(msg) => msg.clone(),
                     other => other.to_string(),
                 };
                 if let Err(sql_err) = sqlx::query(
-                    "UPDATE thread_runs SET status = 'failed', current_phase = 'failed', error = $1, updated_at = NOW() WHERE id = $2"
+                    "UPDATE thread_runs SET status = 'failed', current_phase = 'failed', error = $1, duration_ms = $2, updated_at = NOW() WHERE id = $3"
                 )
-                .bind(err_str)
+                .bind(&err_str)
+                .bind(duration_ms)
                 .bind(run_id)
                 .execute(&state_clone.pool)
                 .await {
                     tracing::error!("Failed to update thread_run to failed status: {}", sql_err);
+                }
+
+                if let Err(sql_err) = sqlx::query(
+                    "INSERT INTO messages (thread_id, role, content) VALUES ($1, 'system', $2)"
+                )
+                .bind(thread_id)
+                .bind(format!("[Execution failed: {}]", err_str))
+                .execute(&state_clone.pool)
+                .await {
+                    tracing::error!("Failed to insert error system message: {}", sql_err);
                 }
             }
         }

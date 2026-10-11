@@ -49,7 +49,7 @@ spec:
         api_prefix: "/api"
       llm:
         ollama_url: "http://ollama.ollama:11434"
-        model: "qwen2.5-coder:14b"
+        model: "llama3.1:8b"
         timeout: "180s"
       debugging:
         environment: "development"
