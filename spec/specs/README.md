@@ -144,6 +144,10 @@ flowchart TD
         Spec34["34-automated-entity-embeddings-and-reverse-references-spec.md<br/>(Automated Entity Embeddings & Reverse References)"]:::complete
     end
 
+    subgraph Phase22 ["Phase 22: Workbench Run Telemetry & Error Visualization"]
+        Spec39["39-workbench-run-telemetry-and-error-visualization-spec.md<br/>(Run Telemetry & Error UI)"]:::complete
+    end
+
     Spec20 --> Spec21
     Spec21 --> Spec22
     Spec09 --> Spec23
@@ -156,6 +160,7 @@ flowchart TD
     Spec02 --> Spec29
     Spec08 --> Spec29
     Spec17 --> Spec30
+    Spec30 --> Spec39
     Spec29 --> Spec32
     Spec03 --> Spec34
     Spec08 --> Spec34
@@ -205,6 +210,7 @@ flowchart TD
 | **Phase 19** | [36-knowledge-inspector-router-selection-spec.md](./36-knowledge-inspector-router-selection-spec.md) | `complete` | Knowledge Inspector Router State Synchronization & Deep Linking | [Knowledge PRD](../prds/knowledge-data-system-prd.md), [Agent UI PRD](../prds/agent-ui-testing-kit-prd.md) | Phase 19 Spec (Depends on Spec 29 & Spec 35) |
 | **Phase 20** | [37-common-reusable-components-library-spec.md](./37-common-reusable-components-library-spec.md) | `draft` | Common Reusable Components Library | [Agent UI PRD](../prds/agent-ui-testing-kit-prd.md) | Phase 20 Spec (Depends on UI standards) |
 | **Phase 21** | [38-ui-nested-routing-refactor-spec.md](./38-ui-nested-routing-refactor-spec.md) | `draft` | UI Nested Routing Refactor (Layouts, Outlets, Master-Detail decoupling) | [Nested Routing PRD](../prds/ui-nested-routing-refactor-prd.md) | Phase 21 Spec |
+| **Phase 22** | [39-workbench-run-telemetry-and-error-visualization-spec.md](./39-workbench-run-telemetry-and-error-visualization-spec.md) | `complete` | Workbench Run Telemetry, Token Metrics & Error Logging Visualization | [Workbench Bench & Thread PRD](../prds/workbench-bench-thread-prd.md) | Phase 22 Spec (Depends on Spec 16 & Spec 30) |
 
 - [CLI Manifest Tool Spec](./cli-manifest-tool-spec.md)
 

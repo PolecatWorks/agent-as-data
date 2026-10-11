@@ -368,6 +368,60 @@ sequenceDiagram
 
 ---
 
+## Run Telemetry, Token Metrics & Error Logging Visualization
+
+To ensure developers have complete transparency over LLM execution latency, token economics, tool usage, and failure states, each action in a Workbench thread captures structured execution telemetry and surfaces visual indicators directly in the conversational UI.
+
+```mermaid
+flowchart TD
+    UserMsg["User Message Dispatched"] --> CreateRun["Insert thread_runs (originating_message_id, status: 'running')"]
+    CreateRun --> LLMExec["LLM Inference Loop (Rig + Tools)"]
+    
+    LLMExec -->|Execution Success| Succeeded["Record Success Telemetry"]
+    Succeeded --> UpdateSuccess["Update thread_runs (status: 'completed', duration_ms, prompt_tokens, completion_tokens, tools_invoked)"]
+    UpdateSuccess --> RenderSuccessUI["UI: Interactive Telemetry Chip on User Message (Tokens, Tools, Duration Expansion)"]
+    
+    LLMExec -->|Timeout or Error| Failed["Record Failure State"]
+    Failed --> UpdateFailure["Update thread_runs (status: 'failed', error: 'Timeout error `deadline has elapsed`', duration_ms)"]
+    UpdateFailure --> InsertSystemMsg["Insert messages: [Execution failed: &lt;error&gt;]"]
+    InsertSystemMsg --> RenderFailureUI["UI: Visual Error Alert on User Message with Expandable Drawer & Timeline System Pill"]
+```
+
+### 1. Telemetry Data Model & Persistence
+- **Originating Message Link**: `thread_runs` persists `originating_message_id: Option<Uuid>`, establishing a direct 1:1 correlation between the user message and its execution lifecycle.
+- **Token Metrics & Resource Auditing**:
+  - `prompt_tokens: Option<i32>`: Total prompt tokens evaluated by the model.
+  - `completion_tokens: Option<i32>`: Total generation tokens emitted.
+  - `total_tokens: Option<i32>`: Combined token usage.
+  - `model: Option<String>`: The exact model invoked (e.g. `qwen2.5-coder:7b`).
+  - `duration_ms: Option<i64>`: Total elapsed wall-clock time in milliseconds.
+  - `tools_invoked: Option<Vec<String>>`: Ordered list of tools called during the multi-turn run.
+  - `error: Option<String>`: Exact error message when `status == 'failed'`.
+- **System Timeline Notification on Failure**:
+  - When an LLM invocation fails (timeout, connection failure, or unhandled tool error), the backend writes an explicit `role: 'system'` record into `messages`:
+    `[Execution failed: <error_message>]`
+  - This ensures that failed runs remain visible in the historical message log across reloads and exports.
+
+### 2. Frontend User Message Expansion & Visual Indicators
+- **User Message Expansion Card**:
+  - Under each user message in the thread conversation pane, an interactive metadata container is displayed based on the associated `thread_run`:
+  - **Success Case (Positive Telemetry)**:
+    - Displays a subtle badge/toggle (e.g. `⚡ 1.4s · 497 tokens · 2 tools ▾`).
+    - Clicking expands a collapsible card showing:
+      - **Model**: `qwen2.5-coder:7b`
+      - **Token Breakdown**: `Prompt: 412` | `Completion: 85` | `Total: 497`
+      - **Latency**: `1,420 ms`
+      - **Tools Used**: Visual chips for each tool invoked (e.g. `read_file`, `update_bench_memory`).
+  - **Failure Case (Visual Error Logging)**:
+    - Renders a high-contrast rose/red error badge directly beneath the prompt (e.g. `⚠ Execution Failed: Timeout (180s)`).
+    - Clicking expands a detailed error diagnostic drawer:
+      - **Error Type / Reason**: Full error string (e.g. `Timeout error: deadline has elapsed after 180s`).
+      - **Model Attempted**: `qwen2.5-coder:14b`
+      - **Elapsed Time**: `180,000 ms`
+      - **Action**: A `[Retry Message]` button that automatically repopulates the input prompt box.
+
+---
+
 ## Security & Path Traversal Safeguards
 
 1. **Bench Directory Containment**: All filesystem operations executed by users or agents must be strictly validated via `resolve_safe_path` against `/tmp/workspace/benches/<bench_id>`.
