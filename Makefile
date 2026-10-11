@@ -97,7 +97,7 @@ aad-be-watch:
 	AAD_BE__HAMS__PORT="$(aad-be_HEALTH_PORT)" \
 	AAD_BE__DEBUGGING__LOG_LEVEL="debug" \
 	RUST_LOG="debug" \
-	cargo watch -x 'run -- serve'
+	cargo watch -w src -w config -x 'run -- serve'
 
 
 aad-be-migrate:
