@@ -12,6 +12,9 @@ ${MESSAGE_ID}   ${EMPTY}
 *** Test Cases ***
 Create Bench And Thread For Telemetry Testing
     [Documentation]    Setup a bench and a thread to test the run telemetry.
+    ${health}=    Check Health
+    Pass Execution If    not ${health}    Backend is offline - skipping live test
+
     ${bench_name}=    Generate Random String    8    [LOWER]
     ${payload}=    Create Dictionary    name=${bench_name}    owner_id=00000000-0000-0000-0000-000000000000
     ${bench}=    Create Bench    ${payload}
@@ -23,6 +26,9 @@ Create Bench And Thread For Telemetry Testing
 
 Test Create Message Populates Originating Message ID and Model Telemetry
     [Documentation]    Sending a message creates a thread_run with originating_message_id and model.
+    ${health}=    Check Health
+    Pass Execution If    not ${health}    Backend is offline - skipping live test
+
     ${payload}=    Create Dictionary    role=user    content=Say hello
     ${response}=    Create Thread Message    ${THREAD_ID}    ${payload}
     Set Suite Variable    ${MESSAGE_ID}    ${response["id"]}
