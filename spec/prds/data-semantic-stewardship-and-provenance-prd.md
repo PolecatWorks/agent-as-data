@@ -86,8 +86,28 @@ To allow seamless navigation inside [`Mfe-shell`](https://github.com/PolecatWork
 
 ---
 
+### 6. Epistemic Ablation & Ground-Truth Benchmark Evaluation Matrix
+To prove the measurable value of **Autonomous Semantic Discovery + Human-in-the-Loop (HITL) Stewardship** over raw LLM text-to-SQL, AAD's evaluation bench runs a **3-Mode Epistemic Ablation Matrix** against the validation datasets defined in `data-engine` (`BIRD-SQL`, `Valentine`, `Brazilian E-Commerce by Olist`, and the deterministic `de-be seed-validation-suite` Chaos Seeder):
+
+```mermaid
+flowchart LR
+    Suite["Validation Dataset Suite\n(BIRD-SQL / Olist / Chaos Traps TRAP-01..05)"] --> ModeA["Mode A: Raw LLM Baseline\n(Physical DDL Only)"]
+    Suite --> ModeB["Mode B: Autonomous Semantic Layer\n(Pre-HITL: Profiler + Join Probes + GraphRAG)"]
+    Suite --> ModeC["Mode C: Autonomous + HITL Verified\n(Post-Steward Review on RHS Shared Canvas)"]
+    ModeA & ModeB & ModeC --> Metrics["Evaluation Scorecard\n- Execution Accuracy (EX %)\n- Fan-Out Trap Avoidance %\n- Forbidden Join Rejection %\n- Provenance Completeness %"]
+```
+
+| Evaluation Mode | Semantic Context Provided to Agent | Expected Behavior on `TRAP-01..05` & `BIRD-SQL` | Target Benchmark Outcome |
+| :--- | :--- | :--- | :--- |
+| **Mode A: Baseline Raw LLM** | Raw table DDL (`CREATE TABLE` / Arrow schema) only; no `data-engine` profiling or `Graphrag` ontology. | Falls into `TRAP-01` (homonym `account_id` join), misses `TRAP-02` (`cust_ref_key`), inflates revenue $2.45\times$ on `TRAP-03`, and over-reports Wave-3 revenue on `TRAP-04`. | Baseline reference (`0%` trap avoidance on Chaos Suite; standard raw LLM accuracy on BIRD-SQL). |
+| **Mode B: Autonomous Semantic Layer (Pre-HITL)** | `SemanticSteward` agent profiles tables, runs `join_probe` value-overlap tests, detects 1:N/M:N cardinalities, and flags Wave-3 distribution shift (`epistemic_status = "drifted"`). | Automatically discovers `TRAP-02` (`0.97` Jaccard overlap), pre-aggregates `TRAP-03` M:N joins, and halts at the **Epistemic Guardrail Gate** (`requires_steward_review: true`) when encountering ambiguous `TRAP-01` or drifted `TRAP-04`. | `100%` prevention of silent wrong answers; surfaces low-confidence rules onto the RHS Shared Canvas for human review. |
+| **Mode C: Autonomous + HITL Verified** | Human steward (or automated `BIRD-SQL` `evidence` oracle) reviews only the flagged low-confidence/drifted hypotheses on the RHS Shared Canvas (`verified` / `FORBIDDEN_JOIN`). | Blocks `TRAP-01` via `FORBIDDEN_JOIN`, applies the verified Wave-3 unit conversion (`amount_cents / 100.0`) on `TRAP-04`, executes the sandboxed Python model on `TRAP-05`, and emits a `100%` human-verified provenance chain. | **`100%` Execution Accuracy (`EX`)** on the Chaos Suite and significant (`+15%` to `+25%`) Execution Accuracy lift on `BIRD-SQL` with minimal steward clicks. |
+
+---
+
 ## Related PRDs
 - [Agent-As-Data Master PRD](./agent-as-data-prd.md)
 - [Knowledge & Data System PRD](./knowledge-data-system-prd.md)
 - [Agent Registry & Execution Engine PRD](./agent-registry-execution-prd.md)
 - [Skills Registry & Tools PRD](./skills-registry-tools-prd.md)
+
