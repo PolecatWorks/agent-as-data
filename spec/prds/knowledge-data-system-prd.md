@@ -137,5 +137,5 @@ flowchart TD
 - [Agent-As-Data Core PRD](./agent-as-data-prd.md)
 - [Agent Registry & Execution Engine PRD](./agent-registry-execution-prd.md)
 - [Agent UI & Testing Kit PRD](./agent-ui-testing-kit-prd.md)
+- [Data Semantic Stewardship, Algorithm Synthesis & Provenance PRD](./data-semantic-stewardship-and-provenance-prd.md)
 - [Detailed Schema Specification](../specs/agent-schema-spec.md)
-
