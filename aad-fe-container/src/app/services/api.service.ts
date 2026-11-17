@@ -228,9 +228,29 @@ export interface KnowledgeNode {
   providedIn: 'root'
 })
 export class ApiService {
-  private baseUrl = '/api/v1';
+  private baseUrl = '/api/aad/v1';
 
   constructor(private http: HttpClient) {}
+
+  getBaseUrl(): string {
+    return this.baseUrl;
+  }
+
+  setBaseUrl(url: string): void {
+    if (!url) return;
+    this.baseUrl = url.replace(/\/+$/, '');
+  }
+
+  async loadAppConfig(configUrl: string = 'assets/contents/app-config.json'): Promise<void> {
+    try {
+      const config = await this.http.get<{ apiPath?: string }>(configUrl).toPromise();
+      if (config && config.apiPath) {
+        this.setBaseUrl(config.apiPath);
+      }
+    } catch (e) {
+      // Fallback to default baseUrl
+    }
+  }
 
   // Agent Registry APIs
   getAgents(): Observable<Agent[]> {

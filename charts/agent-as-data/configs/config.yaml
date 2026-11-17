@@ -5,7 +5,7 @@ database:
 
 webservice:
   address: "0.0.0.0:8080"
-  api_prefix: "/api"
+  api_prefix: "/api/aad/v1"
 
 llm:
   ollama_url: "http://ollama.k8s:80"

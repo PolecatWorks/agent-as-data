@@ -26,10 +26,21 @@ pub fn create_app(state: AppState, _ct: CancellationToken) -> Router {
         .allow_headers(Any);
 
     let prefix = state.config.webservice.api_prefix.trim_end_matches('/');
-    let mcp_prefixed = format!("{}/v1/mcp", prefix);
+    let mcp_prefixed = format!("{}/mcp", prefix);
+    let mcp_v1_prefixed = format!("{}/v1/mcp", prefix);
 
-    Router::new()
-        .route(&mcp_prefixed, post(handle_http_rpc))
+    let mut router = Router::new()
+        .route(&mcp_prefixed, post(handle_http_rpc));
+
+    if !prefix.ends_with("/v1") {
+        router = router.route(&mcp_v1_prefixed, post(handle_http_rpc));
+    }
+
+    if mcp_prefixed != "/api/v1/mcp" && mcp_v1_prefixed != "/api/v1/mcp" {
+        router = router.route("/api/v1/mcp", post(handle_http_rpc));
+    }
+
+    router
         .route("/mcp", post(handle_http_rpc))
         .route("/", post(handle_http_rpc))
         .route("/healthz", get(|| async { "ok" }))

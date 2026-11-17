@@ -41,7 +41,7 @@ spec:
         memory: 256Mi
     env:
       - name: SERVE_ROOT
-        value: /
+        value: /mfe/aad
     config:
       configs:
         default.conf.template: |
@@ -77,7 +77,7 @@ spec:
       contents:
         app-config.json: |
           {
-            "apiPath": "/api",
+            "apiPath": "/api/aad/v1",
             "logLevel": "INFO",
             "otel": {
               "collectorUrl": "/otel",

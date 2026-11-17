@@ -12,6 +12,7 @@ import { RouterModule, Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { catchError, finalize } from 'rxjs/operators';
 import { of } from 'rxjs';
+import { ApiService } from '../../services/api.service';
 
 export interface SemanticSearchResult {
   entity_id: string;
@@ -50,6 +51,7 @@ export class SemanticSearchComponent {
   hasSearched = false;
 
   private http = inject(HttpClient);
+  private apiService = inject(ApiService);
   private router = inject(Router);
 
   onSearch(): void {
@@ -58,7 +60,7 @@ export class SemanticSearchComponent {
     this.isSearching = true;
     this.hasSearched = true;
 
-    this.http.post<SemanticSearchResult[]>('/api/v1/agent-context/search', { query: this.query, limit: 10 })
+    this.http.post<SemanticSearchResult[]>(`${this.apiService.getBaseUrl()}/agent-context/search`, { query: this.query, limit: 10 })
       .pipe(
         catchError(err => {
           console.error('Search error:', err);
