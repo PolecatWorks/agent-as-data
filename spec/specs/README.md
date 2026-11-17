@@ -148,6 +148,10 @@ flowchart TD
         Spec39["39-workbench-run-telemetry-and-error-visualization-spec.md<br/>(Run Telemetry & Error UI)"]:::complete
     end
 
+    subgraph Phase23 ["Phase 23: Configurable Service Prefixes & VirtualService Composition"]
+        Spec40["40-configurable-service-prefixes-and-virtualservice-spec.md<br/>(Configurable Service Prefixes & VirtualService)"]:::complete
+    end
+
     Spec20 --> Spec21
     Spec21 --> Spec22
     Spec09 --> Spec23
@@ -164,12 +168,14 @@ flowchart TD
     Spec29 --> Spec32
     Spec03 --> Spec34
     Spec08 --> Spec34
+    Spec09 --> Spec40
+    Spec23 --> Spec40
 ```
 
 ## Index of Task Specifications
 
 | Phase / Scope | Specification Document | Status | Category / Scope | Primary PRD Reference | Dependencies & Role |
-| :---: | :--- | :--- | :--- | :--- | :--- |
+| :---: | :--- | :---: | :--- | :--- | :--- |
 | **Reference** | [agent-schema-spec.md](./agent-schema-spec.md) | `draft` | Consolidated Schema DDL Reference, Indices, & REST/MCP Payload Specifications | [Master PRD](../prds/agent-as-data-prd.md) | **Cross-Cutting Spec**: Source of truth for database DDL tables and JSON payloads across Phases 1-4 |
 | **Reference** | [user-journeys-spec.md](./user-journeys-spec.md) | `draft` | Sequence Diagrams & End-to-End User Journeys (Knowledge, RAG, MCP, Compiler) | [Master PRD](../prds/agent-as-data-prd.md) | **Cross-Cutting Spec**: E2E integration test criteria and sequence flows validating Phases 2-4 |
 | **Phase 1** | [01-core-storage-spec.md](./01-core-storage-spec.md) | `complete` | Database DDL Tables, Extension Init (`pgvector`), `sqlx` Migrations, & Seed Engine | [Master PRD](../prds/agent-as-data-prd.md) | Root Phase 1 Spec (Informed by `agent-schema-spec.md`) |
@@ -211,6 +217,7 @@ flowchart TD
 | **Phase 20** | [37-common-reusable-components-library-spec.md](./37-common-reusable-components-library-spec.md) | `draft` | Common Reusable Components Library | [Agent UI PRD](../prds/agent-ui-testing-kit-prd.md) | Phase 20 Spec (Depends on UI standards) |
 | **Phase 21** | [38-ui-nested-routing-refactor-spec.md](./38-ui-nested-routing-refactor-spec.md) | `draft` | UI Nested Routing Refactor (Layouts, Outlets, Master-Detail decoupling) | [Nested Routing PRD](../prds/ui-nested-routing-refactor-prd.md) | Phase 21 Spec |
 | **Phase 22** | [39-workbench-run-telemetry-and-error-visualization-spec.md](./39-workbench-run-telemetry-and-error-visualization-spec.md) | `complete` | Workbench Run Telemetry, Token Metrics & Error Logging Visualization | [Workbench Bench & Thread PRD](../prds/workbench-bench-thread-prd.md) | Phase 22 Spec (Depends on Spec 16 & Spec 30) |
+| **Phase 23** | [40-configurable-service-prefixes-and-virtualservice-spec.md](./40-configurable-service-prefixes-and-virtualservice-spec.md) | `complete` | Configurable Service Prefixes (`/api/aad/v1`, `/api/aad-mcp/v1`, `/mfe/aad`) & Istio VirtualService Composition | [Master PRD](../prds/agent-as-data-prd.md), [MCP PRD](../prds/mcp-server-container-prd.md), [Agent UI PRD](../prds/agent-ui-testing-kit-prd.md) | Phase 23 Spec (Depends on Spec 09 & Spec 23) |
 
 - [CLI Manifest Tool Spec](./cli-manifest-tool-spec.md)
 

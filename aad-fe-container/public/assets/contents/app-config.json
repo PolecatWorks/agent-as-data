@@ -1,0 +1,4 @@
+{
+  "apiPath": "/api/aad/v1",
+  "logLevel": "INFO"
+}

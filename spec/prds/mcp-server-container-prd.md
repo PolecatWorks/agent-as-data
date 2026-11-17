@@ -32,8 +32,9 @@ As a baseline milestone, the container build packages an operational MCP server 
    - Implement the JSON-RPC 2.0 based Model Context Protocol specification.
    - Support protocol lifecycle handshakes (`initialize`, `initialized`, `ping`).
    - Expose discoverable tool listings (`tools/list`) with strict JSON Schema definitions.
-5. **Direct HTTP JSON-RPC 2.0 Transport**:
-   - Standard HTTP POST JSON-RPC 2.0 endpoints (`/`, `/mcp`, `/api/v1/mcp`) processing standard `application/json` payloads and returning JSON-RPC responses directly without SSE streaming or complex session management overhead.
+5. **Direct HTTP JSON-RPC 2.0 Transport & Configurable Service Prefix**:
+   - Standard HTTP POST JSON-RPC 2.0 endpoints (`{api_prefix}/mcp`, `{api_prefix}/v1/mcp`, `/mcp`, `/`) processing standard `application/json` payloads and returning JSON-RPC responses directly without SSE streaming or complex session management overhead.
+   - Configured with `webservice.api_prefix: "/api/aad-mcp/v1"` so Istio `VirtualService` routes `/api/aad-mcp/v1` (and `/mcp`) directly to `agent-as-data-mcp:8080` without URI path rewrites.
    - Comprehensive protocol lifecycle support (`initialize`, `notifications/initialized`, `ping`, `tools/list`, `tools/call`).
 6. **Baseline Tool Verification (`hello`)**:
    - Provide a basic, robust `hello` tool accepting a user's name and returning a greeting.
@@ -267,7 +268,7 @@ To ensure structural consistency across the ecosystem, `aad-mcp-container` re-us
 ```yaml
 webservice:
   address: "0.0.0.0:8080"
-  api_prefix: "/api"
+  api_prefix: "/api/aad-mcp/v1"
 
 hams:
   name: "aad-mcp"
@@ -346,7 +347,7 @@ podAnnotations: {}
 config:
   webservice:
     address: "0.0.0.0:8080"
-    api_prefix: "/api"
+    api_prefix: "/api/aad-mcp/v1"
   hams:
     name: "aad-mcp"
     version: "0.1.0"
@@ -394,9 +395,9 @@ The root `Makefile` provides port variables with `?=` default assignments allowi
 ### FluxCD GitOps Integration (`fluxcd-dev/`)
 1. **OCIRepository & HelmRelease (`fluxcd-dev/agent-as-data-mcp.yaml`)**:
    - `OCIRepository`: Points to `oci://ghcr.io/polecatworks/agent-as-data/helm/agent-as-data-mcp`.
-   - `HelmRelease`: Deploys `agent-as-data-mcp` into `agent-as-data-dev` with image `ghcr.io/polecatworks/agent-as-data-mcp:main`.
+   - `HelmRelease`: Deploys `agent-as-data-mcp` into `agent-as-data-dev` with image `ghcr.io/polecatworks/agent-as-data-mcp:main` and `webservice.api_prefix: "/api/aad-mcp/v1"`.
 2. **Istio VirtualService Routing (`fluxcd-dev/virtualservice.yaml`)**:
-   - Routes ingress traffic prefixed with `/mcp` directly to `agent-as-data-mcp:8080`.
+   - Routes ingress traffic prefixed with `/api/aad-mcp/v1` and `/mcp` directly to `agent-as-data-mcp:8080` without URI path rewrites.
 
 ### CI/CD Automation (`.github/workflows/`)
 1. **PR Build & Test (`ci.yml`)**:

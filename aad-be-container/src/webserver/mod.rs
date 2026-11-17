@@ -23,28 +23,50 @@ use crate::config::WebServiceConfig;
 use crate::state::AppState;
 
 pub mod search;
+
+fn v1_routes(state: AppState) -> Router {
+    Router::new()
+        .nest("/agents", agents::router())
+        .nest("/agent-context/search", search::router())
+        .nest("/skills", skills::router())
+        .nest("/traits", traits::router())
+        .nest("/agents/tools", tools::router())
+        .nest("/knowledge", knowledge::router())
+        .nest("/knowledge/mcp", knowledge_mcp_handler::router())
+        .merge(execution::router())
+        .nest("/benches", benches::router())
+        .nest("/benches", fs::router())
+        .nest("/benches", memory::router())
+        .nest("/threads", threads::router())
+        .nest("/threads", fs::router())
+        .nest("/analytics", analytics::router())
+        .route("/health", get(|| async { "OK" }))
+        .with_state(state)
+}
+
 pub fn app_router(state: AppState) -> Router {
     let metric_layer = PrometheusMetricLayer::new();
-    let api_routes = Router::new()
-        .nest("/v1/agents", agents::router())
-        .nest("/v1/agent-context/search", search::router())
-        .nest("/v1/skills", skills::router())
-        .nest("/v1/traits", traits::router())
-        .nest("/v1/agents/tools", tools::router())
-        .nest("/v1/knowledge", knowledge::router())
-        .nest("/v1/knowledge/mcp", knowledge_mcp_handler::router())
-        .nest("/v1", execution::router())
-        .nest("/v1/benches", benches::router())
-        .nest("/v1/benches", fs::router())
-        .nest("/v1/benches", memory::router())
-        .nest("/v1/threads", threads::router())
-        .nest("/v1/threads", fs::router())
-        .nest("/v1/analytics", analytics::router())
-        .with_state(state.clone());
+    let prefix = state.config.webservice.api_prefix.trim_end_matches('/');
+    let normalized_prefix = if prefix.is_empty() {
+        "/api/aad/v1"
+    } else {
+        prefix
+    };
 
-    Router::new()
+    let mut router = Router::new()
         .route("/health", get(|| async { "OK" }))
-        .nest(&state.config.webservice.api_prefix, api_routes)
+        .nest(normalized_prefix, v1_routes(state.clone()));
+
+    let prefixed_v1 = format!("{}/v1", normalized_prefix);
+    if !normalized_prefix.ends_with("/v1") {
+        router = router.nest(&prefixed_v1, v1_routes(state.clone()));
+    }
+
+    if normalized_prefix != "/api/v1" && prefixed_v1 != "/api/v1" {
+        router = router.nest("/api/v1", v1_routes(state.clone()));
+    }
+
+    router
         .layer(metric_layer)
         .layer(
             TraceLayer::new_for_http()
@@ -82,12 +104,14 @@ pub async fn start_webserver(
 mod tests {
     use super::*;
     use crate::config::AppConfig;
+    use axum::body::Body;
+    use axum::http::{Request, StatusCode};
     use axum_prometheus::metrics_exporter_prometheus::PrometheusBuilder;
     use sqlx::postgres::PgPoolOptions;
     use std::sync::Arc;
+    use tower::ServiceExt;
 
-    #[tokio::test]
-    async fn test_app_router_construction() {
+    fn build_test_state(api_prefix: &str) -> AppState {
         let handle = PrometheusBuilder::new().build_recorder().handle();
         let pool = PgPoolOptions::new()
             .connect_lazy("postgres://user:pass@localhost:5432/test")
@@ -100,7 +124,7 @@ mod tests {
             },
             webservice: crate::config::WebServiceConfig {
                 address: "127.0.0.1:8080".into(),
-                api_prefix: "/api".into(),
+                api_prefix: api_prefix.into(),
             },
             llm: crate::config::LlmConfig {
                 ollama_url: "http://localhost:11434".into(),
@@ -120,14 +144,136 @@ mod tests {
             hams: ::hams::hams::config::HamsConfig::default(),
         };
 
-        let state = AppState {
+        AppState {
             pool,
             config,
             prometheus_handle: Arc::new(handle),
             tokio_handle: tokio::runtime::Handle::current(),
-        };
+        }
+    }
 
-        // This verifies all nested routes and syntax (e.g. {id} vs :id) parse cleanly without panic
+    #[tokio::test]
+    async fn test_app_router_construction() {
+        let state = build_test_state("/api");
+        // This verifies all nested routes and syntax parse cleanly without panic
         let _router = app_router(state);
+    }
+
+    #[tokio::test]
+    async fn test_configurable_api_prefix_and_backward_compatibility() {
+        let state = build_test_state("/api/aad/v1");
+        let app = app_router(state);
+
+        // 1. Root /health
+        let res = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .uri("/health")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(res.status(), StatusCode::OK);
+
+        // 2. Prefixed /api/aad/v1/health
+        let res = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .uri("/api/aad/v1/health")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(res.status(), StatusCode::OK);
+
+        // 3. Backward-compatible alias /api/v1/health
+        let res = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .uri("/api/v1/health")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(res.status(), StatusCode::OK);
+
+        // 4. Verify /api/aad/v1/agents does not 404 (method not allowed / 405 for GET without query or body)
+        let res = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .method("GET")
+                    .uri("/api/aad/v1/agents")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_ne!(res.status(), StatusCode::NOT_FOUND);
+
+        // 5. Verify backward compatible /api/v1/agents does not 404
+        let res = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .method("GET")
+                    .uri("/api/v1/agents")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_ne!(res.status(), StatusCode::NOT_FOUND);
+    }
+
+    #[tokio::test]
+    async fn test_custom_api_prefix_without_v1() {
+        let state = build_test_state("/custom");
+        let app = app_router(state);
+
+        // Should route to /custom/health
+        let res = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .uri("/custom/health")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(res.status(), StatusCode::OK);
+
+        // Should also route to /custom/v1/health
+        let res = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .uri("/custom/v1/health")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(res.status(), StatusCode::OK);
+
+        // And backward-compatible /api/v1/health
+        let res = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .uri("/api/v1/health")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(res.status(), StatusCode::OK);
     }
 }

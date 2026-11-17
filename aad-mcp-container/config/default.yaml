@@ -1,6 +1,6 @@
 webservice:
   address: "0.0.0.0:8080"
-  api_prefix: "/api"
+  api_prefix: "/api/aad-mcp/v1"
 
 hams:
   name: "aad-mcp"
