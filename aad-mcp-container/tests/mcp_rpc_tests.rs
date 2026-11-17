@@ -30,7 +30,7 @@ async fn test_http_json_rpc_end_to_end() -> anyhow::Result<()> {
         PrometheusBuilder::new().build_recorder().handle()
     });
 
-    let state = AppState::new(config, AadMcpServer::new(), Arc::new(recorder), tokio::runtime::Handle::current());
+    let state = AppState::new(config, AadMcpServer::new(), Arc::new(recorder.clone()), tokio::runtime::Handle::current());
     let app = create_app(state, ct.clone());
 
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await?;
@@ -188,8 +188,50 @@ async fn test_http_json_rpc_end_to_end() -> anyhow::Result<()> {
     let mcp_alias_resp = client.post(&mcp_alias_url).json(&ping_payload).send().await?;
     assert_eq!(mcp_alias_resp.status(), reqwest::StatusCode::OK);
 
+    // 11. Custom api_prefix /api/aad-mcp/v1/mcp test
+    let config_custom = AppConfig {
+        webservice: WebServiceConfig {
+            address: "127.0.0.1:0".to_string(),
+            api_prefix: "/api/aad-mcp/v1".to_string(),
+        },
+        hams: ::hams::hams::config::HamsConfig::default(),
+        runtime: Default::default(),
+        debugging: DebuggingConfig {
+            environment: "test".to_string(),
+            log_level: "info".to_string(),
+            fail_debug_delay: std::time::Duration::from_secs(0),
+        },
+    };
+    let state_custom = AppState::new(
+        config_custom,
+        AadMcpServer::new(),
+        Arc::new(recorder),
+        tokio::runtime::Handle::current(),
+    );
+    let app_custom = create_app(state_custom, ct.clone());
+    let listener_custom = tokio::net::TcpListener::bind("127.0.0.1:0").await?;
+    let addr_custom = listener_custom.local_addr()?;
+    let server_custom_handle = tokio::spawn({
+        let ct = ct.clone();
+        async move {
+            let _ = axum::serve(listener_custom, app_custom)
+                .with_graceful_shutdown(async move { ct.cancelled_owned().await })
+                .await;
+        }
+    });
+
+    let custom_url = format!("http://{addr_custom}/api/aad-mcp/v1/mcp");
+    let custom_resp = client.post(&custom_url).json(&ping_payload).send().await?;
+    assert_eq!(custom_resp.status(), reqwest::StatusCode::OK);
+
+    // Verify backward compatible /api/v1/mcp still works with /api/aad-mcp/v1
+    let compat_url = format!("http://{addr_custom}/api/v1/mcp");
+    let compat_resp = client.post(&compat_url).json(&ping_payload).send().await?;
+    assert_eq!(compat_resp.status(), reqwest::StatusCode::OK);
+
     ct.cancel();
     let _ = server_handle.await;
+    let _ = server_custom_handle.await;
 
     Ok(())
 }

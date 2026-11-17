@@ -46,7 +46,7 @@ spec:
         max_connections: 5
       webservice:
         address: "0.0.0.0:8080"
-        api_prefix: "/api"
+        api_prefix: "/api/aad/v1"
       llm:
         ollama_url: "http://ollama.ollama:11434"
         model: "llama3.1:8b"

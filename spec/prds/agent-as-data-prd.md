@@ -467,6 +467,23 @@ flowchart TD
     B -->|No Config File / Missing Env Vars| C[Fail-Fast Crash on Boot]
     B -->|Explicit Config via Helm / Env| D[AppConfig::load & validate]
     D -->|Invalid URLs or Missing Keys| C
+```
+
+### Configurable Service Prefixes & Istio VirtualService Composition (Zero Path Rewrites)
+
+All Agent-As-Data microservices run in a shared Kubernetes namespace and expose their REST APIs, MCP endpoints, and Micro-Frontend (MFE) assets through an Istio `VirtualService` **without URI path rewrites**:
+- **MFE Frontend (`aad-fe-container` / `aad-fe-nginx-view`)**: Hosted under `/mfe/aad` (`SERVE_ROOT=/mfe/aad`) and configured via runtime `assets/contents/app-config.json` (`"apiPath": "/api/aad/v1"`).
+- **Backend REST API (`aad-be-container`)**: Uses configurable `webservice.api_prefix: "/api/aad/v1"` so domain routes (`/agents`, `/skills`, `/traits`, `/agents/tools`, `/knowledge`, `/benches`, `/threads`, `/analytics`) are mounted directly under `{api_prefix}` (`/api/aad/v1/...`), while preserving `/api/v1/...` and `{api_prefix}/v1/...` aliases for backward compatibility with existing CLI tools and integration test harnesses.
+- **MCP Server (`aad-mcp-container`)**: Uses configurable `webservice.api_prefix: "/api/aad-mcp/v1"` so the stateless HTTP JSON-RPC 2.0 endpoint is exposed directly at `{api_prefix}/mcp` (`/api/aad-mcp/v1/mcp`) alongside `{api_prefix}/v1/mcp`, `/mcp`, and `/`.
+
+```mermaid
+flowchart LR
+    Client["Browser / MFE Shell / AI Client"] --> Gateway["Istio Ingress Gateway & VirtualService<br/>(Zero URI Path Rewrites)"]
+    Gateway -->|"/mfe/aad & /"| FE["aad-fe-nginx-view (:8080)<br/>SERVE_ROOT=/mfe/aad"]
+    Gateway -->|"/api/aad/v1 & /api"| BE["agent-as-data-be (:8080)<br/>api_prefix: /api/aad/v1"]
+    Gateway -->|"/api/aad-mcp/v1 & /mcp"| MCP["agent-as-data-mcp (:8080)<br/>api_prefix: /api/aad-mcp/v1"]
+```
+
 ---
 
 ## Application & Platform Consistency Standard

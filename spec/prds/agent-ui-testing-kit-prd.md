@@ -455,6 +455,9 @@ To ensure deep-linking works perfectly, isolate component states, and prevent ma
 - **Styling**: TailwindCSS (`tailwindcss`, `@tailwindcss/forms`, `@tailwindcss/container-queries`), Fontsource Inter (`@fontsource/inter`).
 - **Visualization**: `mermaid.js` for interactive diagram rendering.
 - **Container Build**: Multi-stage `Dockerfile` (`node:22-alpine` build + `nginx:alpine` runtime).
+- **MFE Hosting & Runtime API Prefix Resolution**:
+  - Hosted under `/mfe/aad` (`SERVE_ROOT=/mfe/aad`) via `mfe-shell/helm/nginx-view` and Istio `VirtualService` without URI path rewrites.
+  - `ApiService` defaults `baseUrl` to `'/api/aad/v1'` and supports runtime configuration via `assets/contents/app-config.json` (`{ "apiPath": "/api/aad/v1", "logLevel": "INFO" }`, resolved relative to the bundle or document base) as well as programmatic overrides via `setBaseUrl(url: string)` / `getBaseUrl()`.
 - **SPA Ingress Routing**: Custom `nginx.conf` handling static asset caching (`1y`), CORS map headers, health checks (`/alive`, `/ready`), and fallback SPA routing (`try_files $uri /index.html`).
 - **Garden & Kubernetes Orchestration**: Deployment definition in `garden.yml` (`kind: Deploy`, `type: helm`, `oci://ghcr.io/polecatworks/mfe-shell/helm/nginx-view`).
 - **Multi-Arch CI/CD Pipeline**: GitHub Actions workflow (`.github/workflows/aad-fe-docker-publish.yml`) featuring `dorny/paths-filter`, GHCR manifest inspection by Git content SHA, parallel `linux/amd64` and `linux/arm64` Buildx compilation, multi-arch manifest merging, and automated dev rollout via `kubectl rollout restart`.
