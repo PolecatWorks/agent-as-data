@@ -333,3 +333,10 @@ class AADRequests:
         resp.raise_for_status()
         return resp.json()
 
+    def get_path(self, path, expected_status=200):
+        url = f"{self.base_url}/{path.lstrip('/')}"
+        resp = requests.get(url, timeout=10)
+        if resp.status_code != int(expected_status):
+            raise AssertionError(f"GET {url} expected status {expected_status}, got {resp.status_code}")
+        return resp.text
+
