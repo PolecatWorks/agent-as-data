@@ -54,4 +54,34 @@ describe('ApiService Configurable Prefixes', () => {
     const agentsReq = httpMock.expectOne('/api/remote-runtime/v1/agents/search');
     agentsReq.flush([]);
   });
+
+  it('NEGATIVE: rejects null, undefined, or empty prefix updates by preserving existing baseUrl', () => {
+    service.setBaseUrl('/api/aad/v1');
+    service.setBaseUrl('');
+    expect(service.getBaseUrl()).toBe('/api/aad/v1');
+
+    service.setBaseUrl(null as any);
+    expect(service.getBaseUrl()).toBe('/api/aad/v1');
+
+    service.setBaseUrl(undefined as any);
+    expect(service.getBaseUrl()).toBe('/api/aad/v1');
+  });
+
+  it('NEGATIVE: loadAppConfig handles missing or empty apiPath gracefully by preserving default baseUrl', async () => {
+    const loadPromise = service.loadAppConfig('assets/contents/empty-config.json');
+    const req = httpMock.expectOne('assets/contents/empty-config.json');
+    req.flush({});
+
+    await loadPromise;
+    expect(service.getBaseUrl()).toBe('/api/aad/v1');
+  });
+
+  it('NEGATIVE: loadAppConfig handles 404 or network errors gracefully by preserving default baseUrl', async () => {
+    const loadPromise = service.loadAppConfig('assets/contents/not-found.json');
+    const req = httpMock.expectOne('assets/contents/not-found.json');
+    req.error(new ProgressEvent('error'), { status: 404, statusText: 'Not Found' });
+
+    await loadPromise;
+    expect(service.getBaseUrl()).toBe('/api/aad/v1');
+  });
 });
