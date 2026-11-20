@@ -1,0 +1,40 @@
+apiVersion: v1.edp.epam.com/v1
+kind: KeycloakClient
+metadata:
+  name: agent-as-data-api
+  namespace: dev
+spec:
+  clientId: agent-as-data-api
+  name: Agent as Data Backend API
+  description: Bearer-only API client for Agent as Data
+  realmRef:
+    kind: KeycloakRealm
+    name: dev
+  public: false
+  bearerOnly: true
+  clientRolesV2:
+    - name: "agent:read"
+      description: "View published agents, prompt templates, and skills"
+    - name: "agent:author"
+      description: "Draft and test new agent and skill definitions"
+    - name: "agent:publish"
+      description: "Promote agents to production or enterprise registry"
+    - name: "governance:admin"
+      description: "Set compliance rules, manage access policies, audit agent telemetry"
+---
+apiVersion: v1.edp.epam.com/v1
+kind: KeycloakClient
+metadata:
+  name: agent-as-data-sa
+  namespace: dev
+spec:
+  clientId: agent-as-data-sa
+  name: Agent as Data Service Account
+  description: Confidential M2M client for Agent as Data automated workflows
+  realmRef:
+    kind: KeycloakRealm
+    name: dev
+  public: false
+  clientAuthenticatorType: client-secret
+  serviceAccount:
+    enabled: true
