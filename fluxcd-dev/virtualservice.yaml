@@ -34,8 +34,6 @@ spec:
       match:
         - uri:
             prefix: /mfe/aad
-        - uri:
-            prefix: /
       route:
         - destination:
             host: aad-fe-nginx-view
