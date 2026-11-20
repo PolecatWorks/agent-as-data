@@ -164,7 +164,7 @@ flowchart TD
 - **Diagnostic Compilation Report**: Emits structured diagnostic messages (`status: "clean"` or `status: "compilation_errors"`) with line-level warning codes (e.g. `ERR_CIRCULAR_DELEGATION`, `WARN_LOW_SEMANTIC_FIT`, `ERR_SCHEMA_MISMATCH`).
 
 ### 17. Local Developer Mock LLM Engine & Offline Testing Provider
-- **Offline / Mock Provider (`model: { "provider": "mock" }`)**: Internal deterministic execution engine returning pre-recorded token streams and mock tool call events for local development, CI pipelines, and offline testing without live LLM API keys.
+- **Offline / Mock Provider (`model: { "provider": "mock" }`)**: Internal deterministic execution engine returning pre-recorded token streams and mock tool call events for local unit testing, CI pipelines, and offline testing without live LLM API keys. *Note: The mock provider strictly mocks LLM inferences only; all REST, MCP, and WebSocket endpoints continue to enforce strict fail-closed Keycloak JWKS Bearer token verification per the zero-fake-auth architecture.*
 
 ### 18. Execution Webhook Subscriptions & Push Notifications
 - **Completion Webhooks (`POST /{{api_prefix}}/v1/executions`)**: Optional `webhook_url` parameter on async execution requests. AAD dispatches a signed HTTP POST event payload upon job completion or guardrail failure.

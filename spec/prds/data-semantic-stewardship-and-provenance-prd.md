@@ -22,8 +22,8 @@ flowchart TB
     end
 
     subgraph Engines["MCP Data & Ontology Engines"]
-        GraphRAG["GraphRAG-RS (/api/v1/mcp)\nBusiness Ontology & Join-Path Planner"]
-        DataEngine["Data-Engine (/api/v1/mcp)\nConnectors, Profiler, DataFusion, Python Sandbox & Provenance"]
+        GraphRAG["GraphRAG-RS (/api/graphrag/v1/mcp)\nBusiness Ontology & Join-Path Planner"]
+        DataEngine["Data-Engine (/api/data-engine/v1/mcp)\nConnectors, Profiler, DataFusion, Python Sandbox & Provenance"]
     end
 
     Studio & Chat <--> AAD
