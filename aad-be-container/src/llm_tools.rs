@@ -849,6 +849,51 @@ pub async fn execute_workspace_tool(
             let res = tool.call(args).await.map_err(|e| e.to_string())?;
             serde_json::to_string(&res).map_err(|e| e.to_string())
         }
+        crate::kb_tools::KbNodeBrowseTool::NAME => {
+            let args: crate::kb_tools::KbNodeBrowseArgs = serde_json::from_value(args_json.clone())
+                .map_err(|e| format!("Invalid arguments for {}: {}", tool_name, e))?;
+            let tool = crate::kb_tools::KbNodeBrowseTool {
+                backend_url: "http://127.0.0.1:8080".to_string(),
+            };
+            let res = tool.call(args).await.map_err(|e| e.to_string())?;
+            serde_json::to_string(&res).map_err(|e| e.to_string())
+        }
+        crate::kb_tools::KbNodeReadTool::NAME => {
+            let args: crate::kb_tools::KbNodeReadArgs = serde_json::from_value(args_json.clone())
+                .map_err(|e| format!("Invalid arguments for {}: {}", tool_name, e))?;
+            let tool = crate::kb_tools::KbNodeReadTool {
+                backend_url: "http://127.0.0.1:8080".to_string(),
+            };
+            let res = tool.call(args).await.map_err(|e| e.to_string())?;
+            serde_json::to_string(&res).map_err(|e| e.to_string())
+        }
+        crate::kb_tools::KbNodeAddTool::NAME => {
+            let args: crate::kb_tools::KbNodeAddArgs = serde_json::from_value(args_json.clone())
+                .map_err(|e| format!("Invalid arguments for {}: {}", tool_name, e))?;
+            let tool = crate::kb_tools::KbNodeAddTool {
+                backend_url: "http://127.0.0.1:8080".to_string(),
+            };
+            let res = tool.call(args).await.map_err(|e| e.to_string())?;
+            serde_json::to_string(&res).map_err(|e| e.to_string())
+        }
+        crate::kb_tools::KbNodeEditTool::NAME => {
+            let args: crate::kb_tools::KbNodeEditArgs = serde_json::from_value(args_json.clone())
+                .map_err(|e| format!("Invalid arguments for {}: {}", tool_name, e))?;
+            let tool = crate::kb_tools::KbNodeEditTool {
+                backend_url: "http://127.0.0.1:8080".to_string(),
+            };
+            let res = tool.call(args).await.map_err(|e| e.to_string())?;
+            serde_json::to_string(&res).map_err(|e| e.to_string())
+        }
+        crate::kb_tools::KbNodeDeleteTool::NAME => {
+            let args: crate::kb_tools::KbNodeDeleteArgs = serde_json::from_value(args_json.clone())
+                .map_err(|e| format!("Invalid arguments for {}: {}", tool_name, e))?;
+            let tool = crate::kb_tools::KbNodeDeleteTool {
+                backend_url: "http://127.0.0.1:8080".to_string(),
+            };
+            let res = tool.call(args).await.map_err(|e| e.to_string())?;
+            serde_json::to_string(&res).map_err(|e| e.to_string())
+        }
         _ => {
             if let Some(pool) = pool {
                 let row = sqlx::query(
