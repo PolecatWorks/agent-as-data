@@ -1,0 +1,8 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - agent-as-data-be.yaml
+  - agent-as-data-fe.yaml
+  - agent-as-data-mcp.yaml
+  - virtualservice.yaml
+  - keycloak-crs.yaml
