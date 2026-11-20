@@ -283,6 +283,21 @@ async fn process_thread_message(
         .tool(crate::llm_tools::ViewSkillTool {
             pool: state.pool.clone(),
         })
+        .tool(crate::kb_tools::KbNodeBrowseTool {
+            backend_url: "http://127.0.0.1:8080".to_string(),
+        })
+        .tool(crate::kb_tools::KbNodeReadTool {
+            backend_url: "http://127.0.0.1:8080".to_string(),
+        })
+        .tool(crate::kb_tools::KbNodeAddTool {
+            backend_url: "http://127.0.0.1:8080".to_string(),
+        })
+        .tool(crate::kb_tools::KbNodeEditTool {
+            backend_url: "http://127.0.0.1:8080".to_string(),
+        })
+        .tool(crate::kb_tools::KbNodeDeleteTool {
+            backend_url: "http://127.0.0.1:8080".to_string(),
+        })
         .default_max_turns(state.config.llm.default_max_turns)
         .build();
 

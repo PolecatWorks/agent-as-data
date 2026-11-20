@@ -1,5 +1,8 @@
 # Specification: Knowledge Base MCP Journey
 
+- **Status**: `complete`
+- **Reference PRD**: [Knowledge Base MCP Journey PRD](../prds/knowledge-mcp-journey-prd.md)
+
 ## 1. Overview
 This document specifies the technical implementation details for exposing Knowledge Base operations via the Model Context Protocol (MCP) in the backend. It derived from `knowledge-mcp-journey-prd.md`.
 
