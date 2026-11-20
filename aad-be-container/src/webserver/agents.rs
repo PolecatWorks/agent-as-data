@@ -544,7 +544,7 @@ pub async fn compile_agent(
     State(pool): State<PgPool>,
     Json(payload): Json<CompileAgentRequest>,
 ) -> Result<Json<CompileAgentResponse>, crate::error::AppError> {
-    let agent_row = sqlx::query("SELECT name FROM agents WHERE id = $1")
+    let agent_row = sqlx::query("SELECT id, name, attached_agents FROM agents WHERE id = $1")
         .bind(payload.root_agent_id)
         .fetch_optional(&pool)
         .await?;
@@ -560,16 +560,90 @@ pub async fn compile_agent(
         }));
     }
 
-    Ok(Json(CompileAgentResponse {
-        status: "clean".to_string(),
-        diagnostics: vec![DiagnosticMessage {
-            code: "INFO_DAG_CLEAN".to_string(),
-            message:
-                "DAG topology verified, no circular dependencies or contract mismatches found."
-                    .to_string(),
-            severity: "info".to_string(),
-        }],
-    }))
+    // Perform DFS topological cycle detection across attached_agents
+    let mut visited = std::collections::HashSet::new();
+    let mut rec_stack = std::collections::HashSet::new();
+    let mut path = Vec::new();
+
+    fn check_cycles<'a>(
+        pool: &'a PgPool,
+        current_id: Uuid,
+        visited: &'a mut std::collections::HashSet<Uuid>,
+        rec_stack: &'a mut std::collections::HashSet<Uuid>,
+        path: &'a mut Vec<Uuid>,
+        diagnostics: &'a mut Vec<DiagnosticMessage>,
+    ) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<bool, sqlx::Error>> + Send + 'a>> {
+        Box::pin(async move {
+            visited.insert(current_id);
+            rec_stack.insert(current_id);
+            path.push(current_id);
+
+            let row = sqlx::query("SELECT name, attached_agents FROM agents WHERE id = $1")
+                .bind(current_id)
+                .fetch_optional(pool)
+                .await?;
+
+            if let Some(r) = row {
+                let name: String = r.get("name");
+                let attached: Vec<Uuid> = r.try_get("attached_agents").unwrap_or_default();
+
+                for child_id in attached {
+                    if rec_stack.contains(&child_id) {
+                        let cycle_path: Vec<String> = path.iter().map(|id| id.to_string()).collect();
+                        diagnostics.push(DiagnosticMessage {
+                            code: "ERR_CIRCULAR_DELEGATION".to_string(),
+                            message: format!(
+                                "Circular delegation cycle detected involving agent '{}' (ID: {}). Path: {} -> {}",
+                                name,
+                                child_id,
+                                cycle_path.join(" -> "),
+                                child_id
+                            ),
+                            severity: "error".to_string(),
+                        });
+                        return Ok(true);
+                    } else if !visited.contains(&child_id) {
+                        if check_cycles(pool, child_id, visited, rec_stack, path, diagnostics).await? {
+                            return Ok(true);
+                        }
+                    }
+                }
+            }
+
+            rec_stack.remove(&current_id);
+            path.pop();
+            Ok(false)
+        })
+    }
+
+    let mut diagnostics = Vec::new();
+    let has_cycle = check_cycles(
+        &pool,
+        payload.root_agent_id,
+        &mut visited,
+        &mut rec_stack,
+        &mut path,
+        &mut diagnostics,
+    )
+    .await?;
+
+    if has_cycle {
+        Ok(Json(CompileAgentResponse {
+            status: "compilation_errors".to_string(),
+            diagnostics,
+        }))
+    } else {
+        Ok(Json(CompileAgentResponse {
+            status: "clean".to_string(),
+            diagnostics: vec![DiagnosticMessage {
+                code: "INFO_DAG_CLEAN".to_string(),
+                message:
+                    "DAG topology verified, no circular dependencies or contract mismatches found."
+                        .to_string(),
+                severity: "info".to_string(),
+            }],
+        }))
+    }
 }
 use crate::models::SyncEmbeddingsResponse;
 
