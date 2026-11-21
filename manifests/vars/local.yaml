@@ -1,0 +1,5 @@
+# Local development environment MCP endpoints
+DATA_ENGINE_MCP_URL: "http://localhost:8083/api/data-engine/v1/mcp"
+GRAPHRAG_MCP_URL: "http://localhost:8081/api/graphrag/v1/mcp"
+AAD_KNOWLEDGE_MCP_URL: "http://localhost:8080/api/aad/v1/knowledge/mcp"
+AAD_MCP_URL: "http://localhost:8082/api/aad-mcp/v1/mcp"

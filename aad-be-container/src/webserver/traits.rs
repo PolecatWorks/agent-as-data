@@ -95,6 +95,10 @@ pub async fn create_trait(
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
         ON CONFLICT (name) DO UPDATE
             SET description = EXCLUDED.description,
+                version = EXCLUDED.version,
+                capability_requirements = EXCLUDED.capability_requirements,
+                behavioral_invariants = EXCLUDED.behavioral_invariants,
+                evaluation_criteria = EXCLUDED.evaluation_criteria,
                 tags = EXCLUDED.tags,
                 guardrails = EXCLUDED.guardrails,
                 owner_id = EXCLUDED.owner_id,
@@ -116,19 +120,21 @@ pub async fn create_trait(
     .await
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Insert Trait Error: {}", e)))?;
 
+    let final_id = new_trait.id.unwrap_or(id);
+
     tracing::info!(
         "Trait contract '{}' saved successfully (ID: {})",
         payload.name,
-        id
+        final_id
     );
 
-    // Automatically sync embeddings with reverse references
+    // Automatically sync embeddings with reverse references using the persisted row ID
     let inv_str = new_trait.behavioral_invariants.join("; ");
     let crit_str = new_trait.evaluation_criteria.join("; ");
     let cap_str = new_trait.capability_requirements.join("; ");
     let _ = crate::webserver::search::sync_entity_embeddings(
         &pool,
-        id,
+        final_id,
         crate::models::search::EntityType::Traits,
         &new_trait.name,
         Some(new_trait.description.as_str()),

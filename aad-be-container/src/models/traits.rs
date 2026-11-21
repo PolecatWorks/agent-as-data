@@ -9,10 +9,15 @@ pub struct TraitContract {
     pub description: String,
     #[serde(default = "default_version")]
     pub version: String,
+    #[serde(default)]
     pub capability_requirements: Vec<String>,
+    #[serde(default)]
     pub behavioral_invariants: Vec<String>,
+    #[serde(default)]
     pub evaluation_criteria: Vec<String>,
+    #[serde(default)]
     pub tags: Vec<String>,
+    #[serde(default)]
     pub guardrails: serde_json::Value,
     pub owner_id: Uuid,
     #[sqlx(default)]

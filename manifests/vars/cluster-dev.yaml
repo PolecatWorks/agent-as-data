@@ -1,0 +1,5 @@
+# Kubernetes in-cluster dev namespace MCP endpoints (FluxCD / Garden)
+DATA_ENGINE_MCP_URL: "http://data-engine-be.data-engine-dev.svc.cluster.local/api/data-engine/v1/mcp"
+GRAPHRAG_MCP_URL: "http://graphrag.graphrag-dev.svc.cluster.local/api/graphrag/v1/mcp"
+AAD_KNOWLEDGE_MCP_URL: "http://agent-as-data-be.agent-as-data-dev.svc.cluster.local/api/aad/v1/knowledge/mcp"
+AAD_MCP_URL: "http://agent-as-data-mcp.agent-as-data-dev.svc.cluster.local/api/aad-mcp/v1/mcp"

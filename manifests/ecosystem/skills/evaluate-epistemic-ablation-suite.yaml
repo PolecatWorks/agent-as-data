@@ -1,0 +1,55 @@
+type: Skill
+name: evaluate_epistemic_ablation_suite
+description: Orchestrates the 3-mode epistemic ablation evaluation matrix (Mode A Raw LLM, Mode B Autonomous Pre-HITL, Mode C Autonomous + HITL Verified) against Chaos Traps (TRAP-01..05) and BIRD-SQL benchmarks.
+current_version: "1.0.0"
+tags:
+  - governance
+  - benchmarking
+  - ablation
+  - bird-sql
+  - chaos-suite
+implements_traits:
+  - RegistryGovernanceArchitect
+uses_traits:
+  - SemanticSteward
+  - ProvenanceDataAnalyst
+attached_tools:
+  - data-engine-mcp
+  - graphrag-mcp
+attached_skills:
+  - onboard_and_profile_dataset
+  - validate_and_execute_federated_sql
+definition: |
+  # Evaluate Epistemic Ablation Suite
+  1. Enumerate target benchmark datasets (`chaos_suite` TRAP-01..05, `valentine`, `olist`, or `bird_sql`) via `dataset_browse` on `data-engine-mcp`.
+  2. Execute evaluation queries across three controlled modes:
+     - **Mode A (Raw LLM Baseline)**: Physical DDL only, no profiling or GraphRAG ontology.
+     - **Mode B (Autonomous Semantic Layer Pre-HITL)**: Full `onboard_and_profile_dataset` + `join_probe` + `Graphrag` ontology; verify ambiguous traps halt at `requires_steward_review: true`.
+     - **Mode C (Autonomous + HITL Verified)**: Post-steward certification (`verified` / `FORBIDDEN_JOIN`); verify 100% trap avoidance and execution accuracy.
+  3. Compute and emit the quantitative scorecard: Execution Accuracy (EX %), Fan-Out Trap Avoidance %, Forbidden Join Rejection %, and Provenance Completeness %.
+input_schema:
+  type: object
+  properties:
+    benchmark_suite:
+      type: string
+      enum: ["chaos_suite", "valentine", "olist", "bird_sql"]
+    modes:
+      type: array
+      items:
+        type: string
+        enum: ["mode_a", "mode_b", "mode_c"]
+  required: ["benchmark_suite"]
+output_schema:
+  type: object
+  properties:
+    benchmark_suite:
+      type: string
+    execution_accuracy_pct:
+      type: number
+    fan_out_trap_avoidance_pct:
+      type: number
+    forbidden_join_rejection_pct:
+      type: number
+    provenance_completeness_pct:
+      type: number
+  required: ["benchmark_suite", "execution_accuracy_pct"]

@@ -1,0 +1,43 @@
+type: Skill
+name: extract_and_validate_expense_receipt
+description: Runs OCR on raw expense receipt images, normalizes foreign currencies to USD, and validates line-item arithmetic integrity using aad-mcp-server.
+current_version: "1.0.0"
+tags:
+  - expense
+  - ocr
+  - currency
+  - back-office
+  - aad-mcp
+implements_traits:
+  - ExpenseComplianceAuditor
+attached_tools:
+  - aad-mcp-server
+definition: |
+  # Extract & Validate Expense Receipt
+  1. Invoke `run_ocr` on `aad-mcp-server` with the receipt image path/reference to extract merchant, date, currency, line items, and total.
+  2. If the receipt currency is not USD, call `convert_currency` on `aad-mcp-server` to compute the normalized USD amount.
+  3. Verify that individual line items sum to the reported total (within a $0.02 rounding tolerance) and flag missing receipts, blurry totals, or arithmetic discrepancies.
+input_schema:
+  type: object
+  properties:
+    receipt_image_url:
+      type: string
+    submitted_currency:
+      type: string
+    submitted_amount:
+      type: number
+  required: ["receipt_image_url"]
+output_schema:
+  type: object
+  properties:
+    merchant:
+      type: string
+    amount_usd:
+      type: number
+    integrity_valid:
+      type: boolean
+    discrepancies:
+      type: array
+      items:
+        type: string
+  required: ["merchant", "amount_usd", "integrity_valid"]
