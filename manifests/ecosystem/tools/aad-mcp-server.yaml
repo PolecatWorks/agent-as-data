@@ -1,0 +1,12 @@
+type: Tool
+server_name: aad-mcp-server
+transport_type: http
+sync_policy: manual
+endpoint_config:
+  url: "${AAD_MCP_URL:-http://localhost:8082/api/aad-mcp/v1/mcp}"
+  description: "Standalone Agent-As-Data MCP server exposing greeting health checks and back-office workflow tools (run_ocr, convert_currency, lookup_hr_org_chart, lookup_cost_center, send_slack_message)."
+  tags:
+    - agent-as-data
+    - mcp
+    - back-office
+    - expense

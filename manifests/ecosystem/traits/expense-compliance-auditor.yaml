@@ -1,0 +1,27 @@
+type: Trait
+name: ExpenseComplianceAuditor
+description: Governs corporate expense intake, OCR receipt extraction, multi-currency normalization, spending-cap policy auditing, cost-center verification, and HR org-chart approval routing via aad-mcp-server.
+version: "1.0.0"
+tags:
+  - expense
+  - compliance
+  - back-office
+  - aad-mcp
+capability_requirements:
+  - "Access to aad-mcp-server tools (run_ocr, convert_currency, lookup_hr_org_chart, lookup_cost_center, send_slack_message)"
+behavioral_invariants:
+  - "MUST validate receipt line-item totals and convert foreign currencies to USD before evaluating spending caps."
+  - "MUST flag prohibited personal charges, missing receipts, or daily meal/travel cap breaches explicitly."
+  - "MUST resolve the reporting manager via lookup_hr_org_chart and verify budget ownership via lookup_cost_center before routing approval notifications."
+evaluation_criteria:
+  - "Zero missed policy violations, accurate USD normalization, and deterministic escalation to the correct cost-center approver."
+guardrails:
+  daily_meal_cap_usd: 75.0
+  auto_approve_threshold_usd: 500.0
+  input_guardrails:
+    active_guardrails:
+      - pii_regex
+  output_guardrails:
+    active_guardrails:
+      - secret_redaction
+      - pii_ner_redaction

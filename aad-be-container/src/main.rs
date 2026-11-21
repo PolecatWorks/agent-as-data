@@ -20,7 +20,8 @@ pub struct Cli {
     pub command: Commands,
 }
 
-use aad_be_container::cli::ctl::{CtlCommands, run_ctl};
+use aad_be_container::cli::client::{base_url_from_webservice_config, normalize_base_url};
+use aad_be_container::cli::ctl::{CtlArgs, CtlCommands, run_ctl, run_validate_offline};
 
 #[derive(Subcommand, Debug)]
 pub enum Commands {
@@ -30,11 +31,8 @@ pub enum Commands {
     Migrate,
     /// Display application version
     Version,
-    /// Manage resources declaratively via API
-    Ctl {
-        #[command(subcommand)]
-        command: CtlCommands,
-    },
+    /// Hydrate, validate, inspect, export, and manage AAD resources via REST API
+    Ctl(CtlArgs),
 }
 
 fn init_logging(log_level: &str) {
@@ -122,25 +120,49 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         Commands::Version => {
             println!("aad-be {}", VERSION);
         }
-        Commands::Ctl { command } => {
+        Commands::Ctl(ctl_args) => {
+            if let CtlCommands::Validate {
+                ref file,
+                recursive,
+                self_contained,
+            } = ctl_args.command
+            {
+                if let Err(e) = run_validate_offline(
+                    file,
+                    recursive,
+                    self_contained,
+                    ctl_args.vars_file.as_deref(),
+                    &ctl_args.vars,
+                ) {
+                    eprintln!("Error: {}", e);
+                    std::process::exit(1);
+                }
+                return Ok(());
+            }
+
             let result = (|| -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-                let config = AppConfig::load(&cli.config_path, &cli.secrets_dir)?;
+                let (base_url, runtime_cfg) = if let Some(ref raw_url) = ctl_args.url {
+                    (
+                        normalize_base_url(raw_url)?,
+                        aad_be_container::tokio_tools::ThreadRuntime::default(),
+                    )
+                } else {
+                    let config = AppConfig::load(&cli.config_path, &cli.secrets_dir)?;
+                    let url = base_url_from_webservice_config(&config.webservice)?;
+                    (url, config.runtime)
+                };
 
-                // Construct the base URL for the API
-                let address = config.webservice.address.replace("0.0.0.0", "127.0.0.1");
-                let base_url = format!("http://{}/{}", address, config.webservice.api_prefix);
-
-                run_in_tokio(&config.runtime, async {
-                    run_ctl(command, &base_url)
+                run_in_tokio(&runtime_cfg, async {
+                    run_ctl(ctl_args, &base_url)
                         .await
-                        .map_err(|e| format!("CTL Error: {}", e))
+                        .map_err(|e| format!("{}", e))
                 })?;
 
                 Ok(())
             })();
 
             if let Err(e) = result {
-                tracing::error!("ctl command failed: {}", e);
+                eprintln!("Error: {}", e);
                 std::process::exit(1);
             }
         }

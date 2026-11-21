@@ -1,6 +1,6 @@
 # Spec 42: Canonical PolecatWorks Ecosystem Hydration Manifest Pack
 
-- **Status**: `draft`
+- **Status**: `complete`
 - **Phase**: Phase 24 (CLI Hydration Tools & Ecosystem Manifest Pack)
 - **Primary PRD References**:
   - [CLI Manifest & Hydration Tool PRD](../prds/cli-manifest-tool-prd.md)

@@ -1,0 +1,49 @@
+type: Skill
+name: curate_knowledge_graph
+description: Searches, reads, ingests, updates, and traverses institutional knowledge nodes and SPO relational tuples across AAD Knowledge Base and GraphRAG-RS without creating duplicates.
+current_version: "1.0.0"
+tags:
+  - knowledge
+  - graphrag
+  - rag
+  - spo-tuples
+  - curation
+implements_traits:
+  - KnowledgeCurator
+attached_tools:
+  - aad-knowledge-mcp
+  - graphrag-mcp
+definition: |
+  # Curate Knowledge Graph
+  1. Search both `aad-knowledge-mcp` (`search_knowledge`, `traverse_knowledge_graph`) and `graphrag-mcp` (`graphrag_query`, `node_browse`) before adding any new fact or document.
+  2. Read candidate nodes (`read_knowledge` / `node_read`) to avoid duplicating existing institutional memory.
+  3. When adding narrative documentation or domain rules, ingest via `ingest_knowledge` (AAD KB) and/or `graphrag_ingest` / `node_add` + `edge_add` (GraphRAG-RS) with clear tags and canonical entity names.
+  4. When refining existing definitions, update in place via `update_knowledge` or `node_edit` / `edge_edit`.
+  5. Always return canonical node IDs, SPO tuples traversed, and source citations in responses.
+input_schema:
+  type: object
+  properties:
+    operation:
+      type: string
+      enum: ["search", "ingest", "update", "traverse"]
+    query_or_topic:
+      type: string
+    content:
+      type: string
+    tags:
+      type: array
+      items:
+        type: string
+  required: ["operation", "query_or_topic"]
+output_schema:
+  type: object
+  properties:
+    matched_node_ids:
+      type: array
+      items:
+        type: string
+    tuples_affected:
+      type: integer
+    summary:
+      type: string
+  required: ["summary"]

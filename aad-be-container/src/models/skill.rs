@@ -9,6 +9,7 @@ pub struct Skill {
     pub description: String,
     #[serde(default)]
     pub definition: String,
+    #[serde(default)]
     pub tags: Vec<String>,
     pub owner_id: Uuid,
     #[serde(default = "default_version")]

@@ -1,0 +1,50 @@
+type: Skill
+name: plan_semantic_join_path
+description: Resolves business concepts and metrics into physical datasets and fields via GraphRAG-RS Steiner multi-hop join planning while excluding FORBIDDEN_JOIN edges and flagging fan-out traps.
+current_version: "1.0.0"
+tags:
+  - graphrag
+  - join-path
+  - ontology
+  - fan-out-safety
+implements_traits:
+  - ProvenanceDataAnalyst
+attached_tools:
+  - graphrag-mcp
+definition: |
+  # Plan Semantic Join Path
+  1. Invoke `graphrag_find_join_path` on `graphrag-mcp` with the user's analytical `question` and extracted `seed_concepts_or_fields`.
+  2. Inspect the returned lowered Layer 1 `Dataset` and Layer 0 `Field` nodes, `BusinessMetric` formulas, and connecting `JOINABLE_WITH` edges.
+  3. Confirm zero `FORBIDDEN_JOIN` edges are traversed.
+  4. Inspect `fan_out_warnings`: if any `1:N * 1:N` or `N:M` chasm trap is reported, formulate pre-aggregation CTE instructions before passing the plan downstream.
+  5. Evaluate the epistemic trust rollup (`all_rules_human_verified`, `min_confidence`, and any `pending_review` / `drifted` edges) and flag `requires_steward_review: true` if below threshold (`0.85`).
+input_schema:
+  type: object
+  properties:
+    question:
+      type: string
+    seed_concepts_or_fields:
+      type: array
+      items:
+        type: string
+    min_confidence:
+      type: number
+  required: ["question", "seed_concepts_or_fields"]
+output_schema:
+  type: object
+  properties:
+    join_edges:
+      type: array
+      items:
+        type: object
+    fan_out_warnings:
+      type: array
+      items:
+        type: string
+    all_rules_human_verified:
+      type: boolean
+    min_confidence:
+      type: number
+    requires_steward_review:
+      type: boolean
+  required: ["all_rules_human_verified", "requires_steward_review"]

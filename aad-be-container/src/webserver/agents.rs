@@ -19,7 +19,7 @@ use crate::{
 
 pub fn router() -> Router<AppState> {
     Router::new()
-        .route("/", post(create_agent))
+        .route("/", get(list_agents).post(create_agent))
         .route(
             "/{id}",
             get(get_agent).put(update_agent).delete(delete_agent),
@@ -202,6 +202,78 @@ pub async fn update_agent(
     Ok(Json(response_agent))
 }
 
+fn row_to_agent(r: &sqlx::postgres::PgRow) -> Agent {
+    let incoming_val: serde_json::Value = r.get("incoming_guardrails");
+    let outgoing_val: serde_json::Value = r.get("outgoing_guardrails");
+
+    let input_guardrails: Vec<InputGuardrailType> =
+        serde_json::from_value(incoming_val).unwrap_or_default();
+    let output_guardrails: Vec<OutputGuardrailType> =
+        serde_json::from_value(outgoing_val).unwrap_or_default();
+
+    Agent {
+        id: Some(r.get("id")),
+        name: r.get("name"),
+        description: r.try_get("description").unwrap_or_default(),
+        tags: r.get("tags"),
+        implements_traits: r.get("implements_traits"),
+        uses_traits: r.try_get("uses_traits").unwrap_or_default(),
+        attached_tools: r.get("attached_tools"),
+        attached_agents: r.get("attached_agents"),
+        attached_skills: r.get("attached_skills"),
+        current_version: r.get("current_version"),
+        owner_id: r.get("owner_id"),
+        judge_threshold: r.get("judge_threshold"),
+        input_guardrails,
+        output_guardrails,
+        guardrail_config: r.get("guardrail_config"),
+        read_groups: r.get("read_groups"),
+        write_groups: r.get("write_groups"),
+        execute_groups: r.get("execute_groups"),
+        agent_definition: r.get("agent_definition"),
+        model: r.get("model"),
+        archived_at: r.get("archived_at"),
+    }
+}
+
+#[derive(serde::Deserialize, Default)]
+pub struct ListAgentsParams {
+    pub name: Option<String>,
+}
+
+pub async fn list_agents(
+    State(pool): State<PgPool>,
+    Query(params): Query<ListAgentsParams>,
+) -> Result<Json<Vec<Agent>>, crate::error::AppError> {
+    let rows = if let Some(name) = params.name {
+        sqlx::query(
+            r#"
+            SELECT id, name, description, tags, implements_traits, uses_traits, current_version, owner_id, read_groups, write_groups, execute_groups, agent_definition, model, judge_threshold, attached_skills, attached_tools, attached_agents, incoming_guardrails, outgoing_guardrails, guardrail_config, archived_at
+            FROM agents
+            WHERE archived_at IS NULL AND name = $1
+            ORDER BY created_at DESC
+            "#,
+        )
+        .bind(name)
+        .fetch_all(&pool)
+        .await?
+    } else {
+        sqlx::query(
+            r#"
+            SELECT id, name, description, tags, implements_traits, uses_traits, current_version, owner_id, read_groups, write_groups, execute_groups, agent_definition, model, judge_threshold, attached_skills, attached_tools, attached_agents, incoming_guardrails, outgoing_guardrails, guardrail_config, archived_at
+            FROM agents
+            WHERE archived_at IS NULL
+            ORDER BY created_at DESC
+            "#,
+        )
+        .fetch_all(&pool)
+        .await?
+    };
+
+    let agents = rows.iter().map(row_to_agent).collect();
+    Ok(Json(agents))
+}
+
 pub async fn get_agent(
     State(pool): State<PgPool>,
     Path(id): Path<Uuid>,
@@ -211,62 +283,13 @@ pub async fn get_agent(
         SELECT id, name, description, tags, implements_traits, uses_traits, current_version, owner_id, read_groups, write_groups, execute_groups, agent_definition, model, judge_threshold, attached_skills, attached_tools, attached_agents, incoming_guardrails, outgoing_guardrails, guardrail_config, archived_at
         FROM agents
         WHERE id = $1
-        "#
+        "#,
     )
     .bind(id)
     .fetch_one(&pool)
     .await?;
 
-    let r = row;
-    let tags: Vec<String> = r.get("tags");
-    let implements_traits: Vec<String> = r.get("implements_traits");
-    let uses_traits: Vec<String> = r.try_get("uses_traits").unwrap_or_default();
-    let read_groups: Vec<String> = r.get("read_groups");
-    let write_groups: Vec<String> = r.get("write_groups");
-    let execute_groups: Vec<String> = r.get("execute_groups");
-    let agent_definition: serde_json::Value = r.get("agent_definition");
-    let model: serde_json::Value = r.get("model");
-    let owner_id: Uuid = r.get("owner_id");
-    let current_version: String = r.get("current_version");
-    let judge_threshold: f64 = r.get("judge_threshold");
-    let guardrail_config: Option<serde_json::Value> = r.get("guardrail_config");
-    let archived_at: Option<chrono::DateTime<chrono::Utc>> = r.get("archived_at");
-
-    let attached_skills: Vec<Uuid> = r.get("attached_skills");
-    let attached_tools: Vec<Uuid> = r.get("attached_tools");
-    let attached_agents: Vec<Uuid> = r.get("attached_agents");
-
-    let incoming_val: serde_json::Value = r.get("incoming_guardrails");
-    let outgoing_val: serde_json::Value = r.get("outgoing_guardrails");
-
-    let input_guardrails: Vec<InputGuardrailType> =
-        serde_json::from_value(incoming_val).unwrap_or_default();
-    let output_guardrails: Vec<OutputGuardrailType> =
-        serde_json::from_value(outgoing_val).unwrap_or_default();
-
-    Ok(Json(Agent {
-        id: Some(id),
-        name: r.get("name"),
-        description: r.get("description"),
-        tags,
-        implements_traits,
-        uses_traits,
-        attached_tools,
-        attached_agents,
-        attached_skills,
-        current_version,
-        owner_id,
-        judge_threshold,
-        input_guardrails,
-        output_guardrails,
-        guardrail_config,
-        read_groups,
-        write_groups,
-        execute_groups,
-        agent_definition,
-        model,
-        archived_at,
-    }))
+    Ok(Json(row_to_agent(&row)))
 }
 
 #[derive(serde::Deserialize)]
