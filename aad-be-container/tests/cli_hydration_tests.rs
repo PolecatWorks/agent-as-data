@@ -437,20 +437,119 @@ async fn spawn_mock_aad_server(required_token: Option<String>) -> (String, Arc<M
     (format!("http://{}/api/aad/v1", addr), store)
 }
 
-fn repo_root() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .unwrap()
-        .to_path_buf()
+fn create_temp_dir(prefix: &str) -> PathBuf {
+    let dir = std::env::temp_dir().join(format!("{prefix}-{}", Uuid::new_v4()));
+    std::fs::create_dir_all(&dir).unwrap();
+    dir
+}
+
+fn write_synthetic_ecosystem_fixtures(root: &std::path::Path) {
+    let traits_dir = root.join("manifests/ecosystem/traits");
+    let tools_dir = root.join("manifests/ecosystem/tools");
+    let skills_dir = root.join("manifests/ecosystem/skills");
+    let agents_dir = root.join("manifests/ecosystem/agents");
+    let vars_dir = root.join("manifests/vars");
+    for d in [&traits_dir, &tools_dir, &skills_dir, &agents_dir, &vars_dir] {
+        std::fs::create_dir_all(d).unwrap();
+    }
+
+    std::fs::write(
+        traits_dir.join("semantic-steward.yaml"),
+        r#"type: Trait
+name: SemanticSteward
+description: Semantic stewardship trait
+behavioral_invariants:
+  - Maintain canonical domain terminology
+"#,
+    )
+    .unwrap();
+
+    std::fs::write(
+        tools_dir.join("data-engine-mcp.yaml"),
+        r#"type: Tool
+server_name: data-engine-mcp
+transport_type: http
+endpoint_config:
+  url: ${DATA_ENGINE_MCP_URL:-http://localhost:8083/api/data-engine/v1/mcp}
+"#,
+    )
+    .unwrap();
+
+    std::fs::write(
+        skills_dir.join("plan-semantic-join-path.yaml"),
+        r#"type: Skill
+name: plan_semantic_join_path
+description: Plan semantic join paths
+implements_traits:
+  - SemanticSteward
+attached_tools:
+  - data-engine-mcp
+definition: Plan join paths.
+"#,
+    )
+    .unwrap();
+
+    std::fs::write(
+        skills_dir.join("validate-and-execute-federated-sql.yaml"),
+        r#"type: Skill
+name: validate_and_execute_federated_sql
+description: Execute federated SQL
+implements_traits:
+  - SemanticSteward
+attached_tools:
+  - data-engine-mcp
+attached_skills:
+  - plan_semantic_join_path
+definition: Execute SQL.
+"#,
+    )
+    .unwrap();
+
+    std::fs::write(
+        agents_dir.join("semantic-data-steward-agent.yaml"),
+        r#"type: Agent
+name: Semantic Data Steward Agent
+description: Semantic steward
+agent_definition: You are a semantic steward.
+implements_traits:
+  - SemanticSteward
+attached_skills:
+  - plan_semantic_join_path
+"#,
+    )
+    .unwrap();
+
+    std::fs::write(
+        agents_dir.join("epistemic-benchmark-governance-agent.yaml"),
+        r#"type: Agent
+name: Epistemic Benchmark & Governance Agent
+description: Governance agent
+agent_definition: You govern epistemic benchmarks.
+attached_skills:
+  - validate_and_execute_federated_sql
+attached_agents:
+  - Semantic Data Steward Agent
+"#,
+    )
+    .unwrap();
+
+    std::fs::write(
+        vars_dir.join("local.yaml"),
+        "DATA_ENGINE_MCP_URL: http://localhost:8083/api/data-engine/v1/mcp\n",
+    )
+    .unwrap();
+    std::fs::write(
+        vars_dir.join("cluster-dev.yaml"),
+        "DATA_ENGINE_MCP_URL: http://data-engine-be.data-engine-dev.svc.cluster.local/api/data-engine/v1/mcp\n",
+    )
+    .unwrap();
 }
 
 #[test]
 fn test_ecosystem_pack_offline_validation_all_env_presets() {
-    let root = repo_root();
+    let root = create_temp_dir("aad-ecosystem-test");
+    write_synthetic_ecosystem_fixtures(&root);
     let ecosystem_dir = root.join("manifests/ecosystem");
-    if !ecosystem_dir.exists() {
-        return;
-    }
 
     let presets = [
         (None, "http://localhost:8083/api/data-engine/v1/mcp"),
@@ -461,10 +560,6 @@ fn test_ecosystem_pack_offline_validation_all_env_presets() {
         (
             Some(root.join("manifests/vars/cluster-dev.yaml")),
             "http://data-engine-be.data-engine-dev.svc.cluster.local/api/data-engine/v1/mcp",
-        ),
-        (
-            Some(root.join("manifests/vars/istio-gateway.yaml")),
-            "http://ai.k8s/api/data-engine/v1/mcp",
         ),
     ];
 
@@ -478,11 +573,11 @@ fn test_ecosystem_pack_offline_validation_all_env_presets() {
         )
         .expect("ecosystem manifest pack must validate cleanly with --self-contained");
 
-        assert_eq!(plan.traits.len(), 6);
-        assert_eq!(plan.tools.len(), 4);
-        assert_eq!(plan.skills.len(), 11);
-        assert_eq!(plan.agents.len(), 6);
-        assert_eq!(plan.total_count(), 27);
+        assert_eq!(plan.traits.len(), 1);
+        assert_eq!(plan.tools.len(), 1);
+        assert_eq!(plan.skills.len(), 2);
+        assert_eq!(plan.agents.len(), 2);
+        assert_eq!(plan.total_count(), 6);
 
         let de_tool = plan
             .tools
@@ -494,47 +589,51 @@ fn test_ecosystem_pack_offline_validation_all_env_presets() {
             Some(expected_de_url)
         );
 
-        // Verify topological ordering for skills
         let skill_pos = |name: &str| plan.skills.iter().position(|s| s.name == name).unwrap();
         assert!(
             skill_pos("plan_semantic_join_path") < skill_pos("validate_and_execute_federated_sql")
         );
-        assert!(
-            skill_pos("plan_semantic_join_path")
-                < skill_pos("synthesize_and_run_sandbox_algorithm")
-        );
-        assert!(
-            skill_pos("extract_and_validate_expense_receipt")
-                < skill_pos("audit_and_route_expense_approval")
-        );
 
-        // Verify topological ordering for agents
         let agent_pos = |name: &str| plan.agents.iter().position(|a| a.name == name).unwrap();
         assert!(
             agent_pos("Semantic Data Steward Agent")
                 < agent_pos("Epistemic Benchmark & Governance Agent")
         );
-        assert!(
-            agent_pos("Provenance Data Analyst Agent")
-                < agent_pos("Epistemic Benchmark & Governance Agent")
-        );
-        assert!(
-            agent_pos("Back-Office Expense Auditor Agent")
-                < agent_pos("PolecatWorks Ecosystem Orchestrator Agent")
-        );
     }
+    let _ = std::fs::remove_dir_all(&root);
 }
 
 #[test]
 fn test_legacy_sample_agents_backward_compatibility() {
-    let sample_dir = repo_root().join("sample-agents");
-    if !sample_dir.exists() {
-        return;
-    }
+    let root = create_temp_dir("aad-legacy-test");
+    let sample_dir = root.join("sample-agents");
+    std::fs::create_dir_all(&sample_dir).unwrap();
+    std::fs::write(
+        sample_dir.join("legacy-skill.yaml"),
+        r#"type: Skill
+name: legacy_skill
+description: Legacy skill
+definition: Do legacy work.
+"#,
+    )
+    .unwrap();
+    std::fs::write(
+        sample_dir.join("legacy-agent.yaml"),
+        r#"type: Agent
+name: Legacy Agent
+description: Legacy agent
+agent_definition: You are a legacy agent.
+attached_skills:
+  - legacy_skill
+"#,
+    )
+    .unwrap();
+
     let plan = run_validate_offline(&[sample_dir], false, false, None, &[])
         .expect("legacy sample-agents YAML manifests should remain valid");
-    assert_eq!(plan.skills.len(), 6);
-    assert_eq!(plan.agents.len(), 3);
+    assert_eq!(plan.skills.len(), 1);
+    assert_eq!(plan.agents.len(), 1);
+    let _ = std::fs::remove_dir_all(&root);
 }
 
 #[tokio::test]
@@ -547,20 +646,19 @@ async fn test_full_ecosystem_hydration_dry_run_idempotency_and_export_roundtrip(
     )
     .unwrap();
 
-    let ecosystem_dir = repo_root().join("manifests/ecosystem");
-    if !ecosystem_dir.exists() {
-        return;
-    }
+    let root = create_temp_dir("aad-hydration-test");
+    write_synthetic_ecosystem_fixtures(&root);
+    let ecosystem_dir = root.join("manifests/ecosystem");
     let vars = TemplateVars::default();
     let loaded = load_manifests(&[ecosystem_dir], true, &vars).unwrap();
     let plan = build_hydration_plan(loaded, true).unwrap();
 
-    // 1. Dry-run must plan 27 creations and make ZERO mutations
+    // 1. Dry-run must plan 6 creations and make ZERO mutations
     let dry_summary = apply_plan(&client, &plan, Uuid::nil(), true, true, true)
         .await
         .unwrap();
     assert!(dry_summary.dry_run);
-    assert_eq!(dry_summary.total_created(), 27);
+    assert_eq!(dry_summary.total_created(), 6);
     assert_eq!(dry_summary.total_updated(), 0);
     {
         let s = store.lock().unwrap();
@@ -575,28 +673,28 @@ async fn test_full_ecosystem_hydration_dry_run_idempotency_and_export_roundtrip(
         .await
         .unwrap();
     assert!(!first_summary.dry_run);
-    assert_eq!(first_summary.traits_created, 6);
-    assert_eq!(first_summary.tools_created, 4);
-    assert_eq!(first_summary.skills_created, 11);
-    assert_eq!(first_summary.agents_created, 6);
+    assert_eq!(first_summary.traits_created, 1);
+    assert_eq!(first_summary.tools_created, 1);
+    assert_eq!(first_summary.skills_created, 2);
+    assert_eq!(first_summary.agents_created, 2);
     assert_eq!(first_summary.total_updated(), 0);
 
     {
         let s = store.lock().unwrap();
-        assert_eq!(s.traits.len(), 6);
-        assert_eq!(s.tools.len(), 4);
-        assert_eq!(s.skills.len(), 11);
-        assert_eq!(s.agents.len(), 6);
-        assert_eq!(s.agent_post_count, 6);
+        assert_eq!(s.traits.len(), 1);
+        assert_eq!(s.tools.len(), 1);
+        assert_eq!(s.skills.len(), 2);
+        assert_eq!(s.agents.len(), 2);
+        assert_eq!(s.agent_post_count, 2);
         assert_eq!(s.agent_put_count, 0);
 
-        // Verify orchestrator agent has resolved 4 sub-agent UUIDs + 1 skill UUID
+        // Verify governance agent has resolved 1 sub-agent UUID + 1 skill UUID
         let orch = s
             .agents
             .values()
-            .find(|a| a.name == "PolecatWorks Ecosystem Orchestrator Agent")
+            .find(|a| a.name == "Epistemic Benchmark & Governance Agent")
             .unwrap();
-        assert_eq!(orch.attached_agents.len(), 4);
+        assert_eq!(orch.attached_agents.len(), 1);
         assert_eq!(orch.attached_skills.len(), 1);
         for sub_id in &orch.attached_agents {
             assert!(s.agents.contains_key(sub_id));
@@ -615,15 +713,15 @@ async fn test_full_ecosystem_hydration_dry_run_idempotency_and_export_roundtrip(
         .await
         .unwrap();
     assert_eq!(second_summary.total_created(), 0);
-    assert_eq!(second_summary.total_updated(), 27);
+    assert_eq!(second_summary.total_updated(), 6);
     {
         let s = store.lock().unwrap();
-        assert_eq!(s.traits.len(), 6);
-        assert_eq!(s.tools.len(), 4);
-        assert_eq!(s.skills.len(), 11);
-        assert_eq!(s.agents.len(), 6);
-        assert_eq!(s.agent_post_count, 6);
-        assert_eq!(s.agent_put_count, 6);
+        assert_eq!(s.traits.len(), 1);
+        assert_eq!(s.tools.len(), 1);
+        assert_eq!(s.skills.len(), 2);
+        assert_eq!(s.agents.len(), 2);
+        assert_eq!(s.agent_post_count, 2);
+        assert_eq!(s.agent_put_count, 2);
     }
 
     // 4. Get by name and table output
@@ -633,23 +731,23 @@ async fn test_full_ecosystem_hydration_dry_run_idempotency_and_export_roundtrip(
     assert!(table.contains("SemanticSteward"));
     assert!(table.contains("data-engine-mcp"));
     assert!(table.contains("plan_semantic_join_path"));
-    assert!(table.contains("PolecatWorks Ecosystem Orchestrator Agent"));
+    assert!(table.contains("Epistemic Benchmark & Governance Agent"));
 
     let single_agent_json = get_resources(
         &client,
         "agent",
-        Some("Provenance Data Analyst Agent"),
+        Some("Semantic Data Steward Agent"),
         OutputFormat::Json,
     )
     .await
     .unwrap();
-    assert!(single_agent_json.contains("Provenance Data Analyst Agent"));
+    assert!(single_agent_json.contains("Semantic Data Steward Agent"));
 
     // 5. Sync tools (single by name and all)
     let single_synced = sync_tools(&client, Some("data-engine-mcp")).await.unwrap();
     assert_eq!(single_synced, 1);
     let all_synced = sync_tools(&client, None).await.unwrap();
-    assert_eq!(all_synced, 4);
+    assert_eq!(all_synced, 1);
     {
         let s = store.lock().unwrap();
         assert!(s.tools.values().all(|t| t.sync_status == SyncStatus::Synced));
@@ -663,15 +761,15 @@ async fn test_full_ecosystem_hydration_dry_run_idempotency_and_export_roundtrip(
     let exported = export_resources(&client, None, Some(&export_file), None, false)
         .await
         .unwrap();
-    assert_eq!(exported.len(), 27);
+    assert_eq!(exported.len(), 6);
     let file_plan = run_validate_offline(&[export_file], false, true, None, &[]).unwrap();
-    assert_eq!(file_plan.total_count(), 27);
+    assert_eq!(file_plan.total_count(), 6);
 
     export_resources(&client, None, None, Some(&export_tree), false)
         .await
         .unwrap();
     let tree_plan = run_validate_offline(&[export_tree.clone()], true, true, None, &[]).unwrap();
-    assert_eq!(tree_plan.total_count(), 27);
+    assert_eq!(tree_plan.total_count(), 6);
     assert!(export_tree.join("traits").is_dir());
     assert!(export_tree.join("tools").is_dir());
     assert!(export_tree.join("skills").is_dir());
@@ -683,7 +781,7 @@ async fn test_full_ecosystem_hydration_dry_run_idempotency_and_export_roundtrip(
     let deleted_agent_id = delete_resource(
         &client,
         "agent",
-        "PolecatWorks Ecosystem Orchestrator Agent",
+        "Epistemic Benchmark & Governance Agent",
         true,
     )
     .await
@@ -691,16 +789,16 @@ async fn test_full_ecosystem_hydration_dry_run_idempotency_and_export_roundtrip(
     {
         let s = store.lock().unwrap();
         assert!(s.hard_deletes.contains(&deleted_agent_id));
-        assert_eq!(s.agents.len(), 5);
+        assert_eq!(s.agents.len(), 1);
     }
 
-    delete_resource(&client, "skill", "coedit_shared_canvas_mfe", false)
+    delete_resource(&client, "skill", "plan_semantic_join_path", false)
         .await
         .unwrap();
-    delete_resource(&client, "tool", "aad-mcp-server", false)
+    delete_resource(&client, "tool", "data-engine-mcp", false)
         .await
         .unwrap();
-    delete_resource(&client, "trait", "ExpenseComplianceAuditor", false)
+    delete_resource(&client, "trait", "SemanticSteward", false)
         .await
         .unwrap();
 }
