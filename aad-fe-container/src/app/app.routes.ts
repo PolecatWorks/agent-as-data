@@ -55,3 +55,5 @@ export const routes: Routes = [
   { path: 'agent-context', loadComponent: () => import('./pages/agent-context/agent-context.component').then(m => m.AgentContextComponent) },
 ];
 
+
+export const remoteRoutes: Routes = routes;
