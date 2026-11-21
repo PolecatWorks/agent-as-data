@@ -110,4 +110,5 @@ flowchart LR
 - [Knowledge & Data System PRD](./knowledge-data-system-prd.md)
 - [Agent Registry & Execution Engine PRD](./agent-registry-execution-prd.md)
 - [Skills Registry & Tools PRD](./skills-registry-tools-prd.md)
+- [Analytics Thinking Skills, AppliedStatistician Trait & Statistical Guardrails PRD](./analytics-thinking-skills-and-guardrails-prd.md)
 

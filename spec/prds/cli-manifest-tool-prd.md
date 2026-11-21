@@ -385,6 +385,7 @@ flowchart TB
         T4["InteractiveCanvasCoEditor"]
         T5["ExpenseComplianceAuditor"]
         T6["RegistryGovernanceArchitect"]
+        T7["AppliedStatistician"]
     end
 
     subgraph Tools["2. MCP Tools (manifests/ecosystem/tools/)"]
@@ -399,6 +400,7 @@ flowchart TB
         S2["Provenance Analytics:\nplan_semantic_join_path\nvalidate_and_execute_federated_sql\nsynthesize_and_run_sandbox_algorithm\naudit_provenance_lineage"]
         S3["Knowledge & Canvas:\ncurate_knowledge_graph\ncoedit_shared_canvas_mfe"]
         S4["Expense & Governance:\nextract_and_validate_expense_receipt\naudit_and_route_expense_approval\nevaluate_epistemic_ablation_suite"]
+        S5["Statistical Analytics:\neda_and_assumption_protocol\nhypothesis_testing_and_experimental_design\nregression_and_driver_diagnostics\ntimeseries_decomposition_and_forecasting\ncustom_algorithm_synthesis_and_promotion"]
     end
 
     subgraph Agents["4. Specialist & Orchestrator Agents (manifests/ecosystem/agents/)"]
@@ -408,27 +410,28 @@ flowchart TB
         A4["Back-Office Expense Auditor Agent"]
         A5["Epistemic Benchmark & Governance Agent"]
         A6["PolecatWorks Ecosystem Orchestrator Agent"]
+        A7["Applied Statistician Agent"]
     end
 
     Vars -.->|"--vars-file"| Tools
     Traits --> Skills & Agents
     Tools --> Skills & Agents
     Skills --> Agents
-    A1 & A2 --> A5
-    A1 & A2 & A3 & A4 --> A6
+    A1 & A2 & A7 --> A5
+    A1 & A2 & A3 & A4 & A7 --> A6
 ```
 
 ### Ecosystem Manifest Catalog
 
 | Layer | Manifest Directory | Included Definitions & Target Apps Enabled |
 | :--- | :--- | :--- |
-| **Traits (6)** | `manifests/ecosystem/traits/` | `SemanticSteward` (`data-engine` + `Graphrag`), `ProvenanceDataAnalyst` (`data-engine` + `Graphrag`), `KnowledgeCurator` (`agent-as-data` KB + `Graphrag`), `InteractiveCanvasCoEditor` (`Angry-agent` + `Mfe-shell` Shared Canvas), `ExpenseComplianceAuditor` (`aad-mcp-container`), `RegistryGovernanceArchitect` (`agent-as-data` governance & ablation evaluation). |
+| **Traits (7)** | `manifests/ecosystem/traits/` | `SemanticSteward` (`data-engine` + `Graphrag`), `ProvenanceDataAnalyst` (`data-engine` + `Graphrag`), `AppliedStatistician` (`data-engine` `stat_*` + `Graphrag` statistical traits — see [Analytics Thinking Skills & Guardrails PRD](./analytics-thinking-skills-and-guardrails-prd.md)), `KnowledgeCurator` (`agent-as-data` KB + `Graphrag`), `InteractiveCanvasCoEditor` (`Angry-agent` + `Mfe-shell` Shared Canvas), `ExpenseComplianceAuditor` (`aad-mcp-container`), `RegistryGovernanceArchitect` (`agent-as-data` governance & ablation evaluation). |
 | **Tools (4)** | `manifests/ecosystem/tools/` | `data-engine-mcp` (`/api/data-engine/v1/mcp`), `graphrag-mcp` (`/api/graphrag/v1/mcp`), `aad-knowledge-mcp` (`/api/aad/v1/knowledge/mcp`), `aad-mcp-server` (`/api/aad-mcp/v1/mcp`) — all parameterized with `${VAR:-default}` URLs. |
-| **Skills (11)** | `manifests/ecosystem/skills/` | `onboard_and_profile_dataset`, `probe_and_verify_join_hypothesis`, `plan_semantic_join_path`, `validate_and_execute_federated_sql`, `synthesize_and_run_sandbox_algorithm`, `audit_provenance_lineage`, `curate_knowledge_graph`, `coedit_shared_canvas_mfe`, `extract_and_validate_expense_receipt`, `audit_and_route_expense_approval`, `evaluate_epistemic_ablation_suite`. |
-| **Agents (6)** | `manifests/ecosystem/agents/` | `Semantic Data Steward Agent`, `Provenance Data Analyst Agent`, `Knowledge & Ontology Curator Agent`, `Back-Office Expense Auditor Agent`, `Epistemic Benchmark & Governance Agent` (composes Steward + Analyst), and `PolecatWorks Ecosystem Orchestrator Agent` (top-level multi-agent router for `Angry-agent` & `Mfe-shell`). |
+| **Skills (16)** | `manifests/ecosystem/skills/` | `onboard_and_profile_dataset`, `probe_and_verify_join_hypothesis`, `plan_semantic_join_path`, `validate_and_execute_federated_sql`, `synthesize_and_run_sandbox_algorithm`, `audit_provenance_lineage`, `curate_knowledge_graph`, `coedit_shared_canvas_mfe`, `extract_and_validate_expense_receipt`, `audit_and_route_expense_approval`, `evaluate_epistemic_ablation_suite`, plus the 5 statistical methodology skills: `eda_and_assumption_protocol`, `hypothesis_testing_and_experimental_design`, `regression_and_driver_diagnostics`, `timeseries_decomposition_and_forecasting`, `custom_algorithm_synthesis_and_promotion`. |
+| **Agents (7)** | `manifests/ecosystem/agents/` | `Semantic Data Steward Agent`, `Provenance Data Analyst Agent`, `Applied Statistician Agent` (configured with `guardrail_config.statistical_rigor`), `Knowledge & Ontology Curator Agent`, `Back-Office Expense Auditor Agent`, `Epistemic Benchmark & Governance Agent` (composes Steward + Analyst + Statistician), and `PolecatWorks Ecosystem Orchestrator Agent` (top-level multi-agent router for `Angry-agent` & `Mfe-shell`). |
 | **Env Presets (3)** | `manifests/vars/` | `local.yaml` (localhost ports), `cluster-dev.yaml` (Kubernetes in-cluster service DNS), `istio-gateway.yaml` (`http://ai.k8s/api/...` unified Istio ingress). |
 
-All manifests in `manifests/ecosystem/` MUST pass `aad-be ctl validate -f manifests/ecosystem -R --self-contained` offline (zero dangling references, zero dependency cycles, zero duplicate names) and hydrate idempotently into AAD via `aad-be ctl apply -f manifests/ecosystem -R --allow-degraded-tools`.
+All manifests in `manifests/ecosystem/` MUST pass `aad-be ctl validate -f manifests/ecosystem -R --self-contained` offline (zero dangling references, zero dependency cycles, zero duplicate names) and hydrate idempotently into AAD via `aad-be ctl apply -f manifests/ecosystem -R --allow-degraded-tools` (followed by `aad-be ctl sync-tools data-engine-mcp` once `data-engine` is running to ingest all `stat_*` MCP schemas).
 
 ---
 
