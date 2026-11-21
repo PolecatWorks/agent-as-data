@@ -157,6 +157,11 @@ flowchart TD
         Spec42["42-ecosystem-hydration-manifests-pack-spec.md<br/>(Canonical PolecatWorks Ecosystem Manifest Pack)"]:::draft
     end
 
+    subgraph Phase25 ["Phase 25: Statistical Analytics Manifests & Rigor Guardrails"]
+        Spec43["43-statistical-analytics-manifests-pack-spec.md<br/>(Statistical Analytics Manifests Extension)"]:::draft
+        Spec44["44-statistical-rigor-guardrails-and-ablation-spec.md<br/>(Statistical Rigor Guardrails & STAT-TRAP Evaluation)"]:::draft
+    end
+
     Spec20 --> Spec21
     Spec21 --> Spec22
     Spec09 --> Spec23
@@ -179,6 +184,10 @@ flowchart TD
     Spec34 --> Spec41
     Spec40 --> Spec41
     Spec41 --> Spec42
+    Spec42 --> Spec43
+    Spec05 --> Spec44
+    Spec06 --> Spec44
+    Spec43 --> Spec44
 ```
 
 ## Index of Task Specifications
@@ -229,6 +238,8 @@ flowchart TD
 | **Phase 23** | [40-configurable-service-prefixes-and-virtualservice-spec.md](./40-configurable-service-prefixes-and-virtualservice-spec.md) | `complete` | Configurable Service Prefixes (`/api/aad/v1`, `/api/aad-mcp/v1`, `/mfe/aad`) & Istio VirtualService Composition | [Master PRD](../prds/agent-as-data-prd.md), [MCP PRD](../prds/mcp-server-container-prd.md), [Agent UI PRD](../prds/agent-ui-testing-kit-prd.md) | Phase 23 Spec (Depends on Spec 09 & Spec 23) |
 | **Phase 24** | [41-cli-hydration-and-manifest-tool-spec.md](./41-cli-hydration-and-manifest-tool-spec.md) | `draft` | CLI Manifest Hydration (`apply`, `validate`, `get`, `delete`, `export`, `sync-tools`), DAG Topo-Sort, Name-to-UUID Resolution, Templating, Auth & REST API Parity | [CLI Manifest & Hydration Tool PRD](../prds/cli-manifest-tool-prd.md) | Step 1 of Phase 24 (Supersedes `cli-manifest-tool-spec.md`; depends on Spec 24, 34, 40) |
 | **Phase 24** | [42-ecosystem-hydration-manifests-pack-spec.md](./42-ecosystem-hydration-manifests-pack-spec.md) | `draft` | Canonical PolecatWorks 5-Repo Ecosystem Hydration Manifest Pack (`manifests/ecosystem/` & `manifests/vars/`) & Makefile Targets | [CLI Manifest & Hydration Tool PRD](../prds/cli-manifest-tool-prd.md), [Data Semantic Stewardship PRD](../prds/data-semantic-stewardship-and-provenance-prd.md) | Step 2 of Phase 24 (Depends on Spec 41) |
+| **Phase 25** | [43-statistical-analytics-manifests-pack-spec.md](./43-statistical-analytics-manifests-pack-spec.md) | `draft` | Statistical Analytics Manifests Extension (`AppliedStatistician` Trait, 5 Statistical Skills, `Applied Statistician Agent` in `manifests/ecosystem/`) | [Analytics Skills & Guardrails PRD](../prds/analytics-thinking-skills-and-guardrails-prd.md), [CLI Manifest & Hydration Tool PRD](../prds/cli-manifest-tool-prd.md) | Step 1 of Phase 25 (Depends on Spec 41 & Spec 42) |
+| **Phase 25** | [44-statistical-rigor-guardrails-and-ablation-spec.md](./44-statistical-rigor-guardrails-and-ablation-spec.md) | `draft` | Configurable `soft`/`strict` Statistical Rigor Guardrails (4 Gates) & `STAT-TRAP-01..04` Ablation Evaluation | [Analytics Skills & Guardrails PRD](../prds/analytics-thinking-skills-and-guardrails-prd.md) | Step 2 of Phase 25 (Depends on Spec 05, Spec 06 & Spec 43) |
 
 - [CLI Manifest Tool Spec](./cli-manifest-tool-spec.md) (`deprecated` — superseded by Spec 41)
 
