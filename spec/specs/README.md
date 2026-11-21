@@ -152,6 +152,11 @@ flowchart TD
         Spec40["40-configurable-service-prefixes-and-virtualservice-spec.md<br/>(Configurable Service Prefixes & VirtualService)"]:::complete
     end
 
+    subgraph Phase24 ["Phase 24: CLI Hydration Tools & Ecosystem Manifest Pack"]
+        Spec41["41-cli-hydration-and-manifest-tool-spec.md<br/>(CLI Manifest Hydration, Validation & Export)"]:::draft
+        Spec42["42-ecosystem-hydration-manifests-pack-spec.md<br/>(Canonical PolecatWorks Ecosystem Manifest Pack)"]:::draft
+    end
+
     Spec20 --> Spec21
     Spec21 --> Spec22
     Spec09 --> Spec23
@@ -170,6 +175,10 @@ flowchart TD
     Spec08 --> Spec34
     Spec09 --> Spec40
     Spec23 --> Spec40
+    Spec24 --> Spec41
+    Spec34 --> Spec41
+    Spec40 --> Spec41
+    Spec41 --> Spec42
 ```
 
 ## Index of Task Specifications
@@ -218,8 +227,10 @@ flowchart TD
 | **Phase 21** | [38-ui-nested-routing-refactor-spec.md](./38-ui-nested-routing-refactor-spec.md) | `draft` | UI Nested Routing Refactor (Layouts, Outlets, Master-Detail decoupling) | [Nested Routing PRD](../prds/ui-nested-routing-refactor-prd.md) | Phase 21 Spec |
 | **Phase 22** | [39-workbench-run-telemetry-and-error-visualization-spec.md](./39-workbench-run-telemetry-and-error-visualization-spec.md) | `complete` | Workbench Run Telemetry, Token Metrics & Error Logging Visualization | [Workbench Bench & Thread PRD](../prds/workbench-bench-thread-prd.md) | Phase 22 Spec (Depends on Spec 16 & Spec 30) |
 | **Phase 23** | [40-configurable-service-prefixes-and-virtualservice-spec.md](./40-configurable-service-prefixes-and-virtualservice-spec.md) | `complete` | Configurable Service Prefixes (`/api/aad/v1`, `/api/aad-mcp/v1`, `/mfe/aad`) & Istio VirtualService Composition | [Master PRD](../prds/agent-as-data-prd.md), [MCP PRD](../prds/mcp-server-container-prd.md), [Agent UI PRD](../prds/agent-ui-testing-kit-prd.md) | Phase 23 Spec (Depends on Spec 09 & Spec 23) |
+| **Phase 24** | [41-cli-hydration-and-manifest-tool-spec.md](./41-cli-hydration-and-manifest-tool-spec.md) | `draft` | CLI Manifest Hydration (`apply`, `validate`, `get`, `delete`, `export`, `sync-tools`), DAG Topo-Sort, Name-to-UUID Resolution, Templating, Auth & REST API Parity | [CLI Manifest & Hydration Tool PRD](../prds/cli-manifest-tool-prd.md) | Step 1 of Phase 24 (Supersedes `cli-manifest-tool-spec.md`; depends on Spec 24, 34, 40) |
+| **Phase 24** | [42-ecosystem-hydration-manifests-pack-spec.md](./42-ecosystem-hydration-manifests-pack-spec.md) | `draft` | Canonical PolecatWorks 5-Repo Ecosystem Hydration Manifest Pack (`manifests/ecosystem/` & `manifests/vars/`) & Makefile Targets | [CLI Manifest & Hydration Tool PRD](../prds/cli-manifest-tool-prd.md), [Data Semantic Stewardship PRD](../prds/data-semantic-stewardship-and-provenance-prd.md) | Step 2 of Phase 24 (Depends on Spec 41) |
 
-- [CLI Manifest Tool Spec](./cli-manifest-tool-spec.md)
+- [CLI Manifest Tool Spec](./cli-manifest-tool-spec.md) (`deprecated` — superseded by Spec 41)
 
 
 - [12. Skills Registry Tools Spec](./12-skills-tools-spec.md)

@@ -1,5 +1,8 @@
 # CLI Manifest Tool Technical Specification
 
+- **Status**: `deprecated`
+- **Superseded By**: [41-cli-hydration-and-manifest-tool-spec.md](./41-cli-hydration-and-manifest-tool-spec.md)
+
 ## 1. Overview
 The `ctl` tool will be added to the `aad-be` CLI to parse multi-part YAML definitions of Agents and Skills, validating schemas using existing models, and executing API calls to create, read, delete, and list resources.
 
