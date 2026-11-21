@@ -1,0 +1,57 @@
+type: Skill
+name: regression_and_driver_diagnostics
+description: Evaluates linear, monotonic, and partial correlations, screens VIF multicollinearity, fits OLS/GLM/logistic/robust regressions, checks heteroscedasticity and influential outliers, and enforces non-causal observational interpretation.
+current_version: "1.0.0"
+tags:
+  - statistics
+  - regression
+  - correlation
+  - diagnostics
+  - data-engine
+implements_traits:
+  - AppliedStatistician
+attached_tools:
+  - data-engine-mcp
+attached_skills:
+  - eda_and_assumption_protocol
+definition: |
+  # Regression & Driver Diagnostics Protocol
+  1. Execute `eda_and_assumption_protocol` first to check skew, heavy tails, and missingness.
+  2. Run `stat_correlation_vif` on `data-engine-mcp` to compare Pearson vs. Spearman correlations (flagging `|r - rho| > 0.15`), compute partial correlations controlling for confounders, and screen multicollinearity (`VIF > 5` warning, `VIF > 10` severe).
+  3. Fit the appropriate model family via `stat_regression_fit` (`ols`, `glm_gaussian`, `glm_binomial`, `glm_poisson`, `glm_gamma`, `huber_robust`, or `ransac_robust`).
+  4. Inspect Breusch-Pagan heteroscedasticity, Durbin-Watson autocorrelation, residual normality, and Cook's distance influence counts. Whenever heteroscedasticity or extreme leverage fails, report HC3 robust standard errors or Huber robust estimates from `recommended_alternative`.
+  5. Use strictly associative language ("associated with", "correlated with", "observational") unless backed by a randomized experimental design; never claim causation from observational regressions.
+  6. Always report sample size (n), coefficients with 95% confidence intervals, goodness-of-fit metrics (R^2 / Adj-R^2 / AIC / deviance), diagnostic plots, and `provenance_run_id`.
+input_schema:
+  type: object
+  properties:
+    input_binding:
+      type: object
+    model_type:
+      type: string
+      enum: ["ols", "glm_gaussian", "glm_binomial", "glm_poisson", "glm_gamma", "huber_robust", "ransac_robust"]
+    target_col:
+      type: string
+    feature_cols:
+      type: array
+      items:
+        type: string
+  required: ["input_binding", "model_type", "target_col", "feature_cols"]
+output_schema:
+  type: object
+  properties:
+    primary_result:
+      type: object
+    assumption_checks:
+      type: array
+      items:
+        type: object
+    recommended_alternative:
+      type: object
+    diagnostic_plots:
+      type: array
+      items:
+        type: object
+    provenance_run_id:
+      type: string
+  required: ["primary_result", "assumption_checks", "provenance_run_id"]

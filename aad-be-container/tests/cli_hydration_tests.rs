@@ -832,3 +832,86 @@ fn test_register_tool_request_allow_degraded_sync_defaults_false() {
     let req: RegisterToolRequest = serde_json::from_value(json).unwrap();
     assert!(!req.allow_degraded_sync);
 }
+
+#[tokio::test]
+async fn test_repo_ecosystem_pack_includes_34_resources_with_statistical_extension() {
+    let manifest_root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../manifests/ecosystem");
+    if !manifest_root.exists() {
+        // Skipped inside isolated Docker build contexts where repo-root manifests/ is not copied.
+        return;
+    }
+
+    let vars_root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../manifests/vars");
+    let presets = [
+        None,
+        Some(vars_root.join("local.yaml")),
+        Some(vars_root.join("cluster-dev.yaml")),
+        Some(vars_root.join("istio-gateway.yaml")),
+    ];
+
+    for preset in presets {
+        let plan = run_validate_offline(
+            std::slice::from_ref(&manifest_root),
+            true,
+            true,
+            preset.as_deref(),
+            &[],
+        )
+        .expect("full 34-resource ecosystem pack must validate offline with --self-contained");
+
+        assert_eq!(plan.traits.len(), 7);
+        assert_eq!(plan.tools.len(), 4);
+        assert_eq!(plan.skills.len(), 16);
+        assert_eq!(plan.agents.len(), 7);
+        assert_eq!(plan.total_count(), 34);
+
+        let skill_pos = |name: &str| plan.skills.iter().position(|s| s.name == name).unwrap();
+        let eda_pos = skill_pos("eda_and_assumption_protocol");
+        assert!(eda_pos < skill_pos("hypothesis_testing_and_experimental_design"));
+        assert!(eda_pos < skill_pos("regression_and_driver_diagnostics"));
+        assert!(eda_pos < skill_pos("timeseries_decomposition_and_forecasting"));
+        assert!(eda_pos < skill_pos("custom_algorithm_synthesis_and_promotion"));
+        assert!(
+            skill_pos("synthesize_and_run_sandbox_algorithm")
+                < skill_pos("custom_algorithm_synthesis_and_promotion")
+        );
+
+        let agent_pos = |name: &str| plan.agents.iter().position(|a| a.name == name).unwrap();
+        let stat_agent_pos = agent_pos("Applied Statistician Agent");
+        assert!(stat_agent_pos < agent_pos("Epistemic Benchmark & Governance Agent"));
+        assert!(stat_agent_pos < agent_pos("PolecatWorks Ecosystem Orchestrator Agent"));
+    }
+
+    // Mock hydration idempotency + export round-trip over all 34 live manifests
+    let (base_url, _store) = spawn_mock_aad_server(Some(EXPECTED_TOKEN.to_string())).await;
+    let client = AadApiClient::new(
+        base_url,
+        Some(EXPECTED_TOKEN.to_string()),
+        Duration::from_secs(10),
+    )
+    .unwrap();
+    let loaded = load_manifests(&[manifest_root], true, &TemplateVars::default()).unwrap();
+    let plan = build_hydration_plan(loaded, true).unwrap();
+
+    let first = apply_plan(&client, &plan, Uuid::nil(), false, true, true)
+        .await
+        .unwrap();
+    assert_eq!(first.total_created(), 34);
+    assert_eq!(first.total_updated(), 0);
+
+    let second = apply_plan(&client, &plan, Uuid::nil(), false, true, true)
+        .await
+        .unwrap();
+    assert_eq!(second.total_created(), 0);
+    assert_eq!(second.total_updated(), 34);
+
+    let tmp_dir = create_temp_dir("aad-stat-pack-export");
+    let export_file = tmp_dir.join("ecosystem-34.yaml");
+    let exported = export_resources(&client, None, Some(&export_file), None, false)
+        .await
+        .unwrap();
+    assert_eq!(exported.len(), 34);
+    let roundtrip = run_validate_offline(&[export_file], false, true, None, &[]).unwrap();
+    assert_eq!(roundtrip.total_count(), 34);
+    let _ = std::fs::remove_dir_all(&tmp_dir);
+}

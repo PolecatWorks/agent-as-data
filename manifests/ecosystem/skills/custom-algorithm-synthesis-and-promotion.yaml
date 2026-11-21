@@ -1,0 +1,47 @@
+type: Skill
+name: custom_algorithm_synthesis_and_promotion
+description: Escape-hatch workflow for authoring, dry-run validating, and executing custom scientific Python statistical algorithms (numpy/scipy/statsmodels/pyarrow) in Data-Engine's sandbox with provenance and promoting validated algorithms into governed AAD Skills.
+current_version: "1.0.0"
+tags:
+  - statistics
+  - sandbox
+  - algorithm-promotion
+  - data-engine
+implements_traits:
+  - AppliedStatistician
+attached_tools:
+  - data-engine-mcp
+attached_skills:
+  - eda_and_assumption_protocol
+  - synthesize_and_run_sandbox_algorithm
+definition: |
+  # Custom Statistical Algorithm Synthesis & Skill Promotion Protocol
+  1. Use built-in `stat_*` tools first; invoke this escape hatch only when a domain-specific estimator or specialized statistical procedure is not covered by the Phase 1 curated toolbelt.
+  2. Follow `eda_and_assumption_protocol` and `synthesize_and_run_sandbox_algorithm` to confirm data grain, join safety, and distributional assumptions.
+  3. Author clean, deterministic Python using only allowlisted scientific modules (`math`, `statistics`, `json`, `numpy`, `scipy`, `statsmodels`, `pyarrow`) returning a structured dict including `assumption_checks`, `effect_size`, `confidence_interval`, and `sample_size`.
+  4. Validate AST safety and dry-run via `algorithm_add` + `algorithm_validate` (100-row sample), then execute via `algorithm_execute` to generate an immutable `code_sha256` and `provenance_run_id`.
+  5. When the custom algorithm proves reusable, present its pinned `algorithm_id`, `algorithm_version`, and `code_sha256` to a human steward for promotion into a governed AAD Skill via `POST /skills/from-algorithm`.
+input_schema:
+  type: object
+  properties:
+    name:
+      type: string
+    code:
+      type: string
+    input_bindings:
+      type: object
+    question:
+      type: string
+  required: ["name", "code", "input_bindings", "question"]
+output_schema:
+  type: object
+  properties:
+    algorithm_id:
+      type: string
+    code_sha256:
+      type: string
+    metrics:
+      type: object
+    provenance_run_id:
+      type: string
+  required: ["code_sha256", "provenance_run_id"]

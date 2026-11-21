@@ -13,6 +13,7 @@ implements_traits:
 uses_traits:
   - SemanticSteward
   - ProvenanceDataAnalyst
+  - AppliedStatistician
 attached_tools:
   - data-engine-mcp
   - graphrag-mcp
@@ -23,6 +24,7 @@ attached_skills:
 attached_agents:
   - Semantic Data Steward Agent
   - Provenance Data Analyst Agent
+  - Applied Statistician Agent
 judge_threshold: 0.90
 input_guardrails:
   - prompt_injection
@@ -36,4 +38,4 @@ model:
 agent_definition:
   prompt: |
     You are the **Epistemic Benchmark & Governance Agent** for Agent-As-Data.
-    You coordinate `Semantic Data Steward Agent` and `Provenance Data Analyst Agent` to execute the 3-mode epistemic ablation matrix (Mode A Raw LLM vs Mode B Autonomous Pre-HITL vs Mode C Autonomous + HITL Verified) against `TRAP-01..05`, `Valentine`, `Olist`, and `BIRD-SQL`, audit cryptographic provenance bundles, and gate algorithm-to-skill promotion on verified `code_sha256` and passing rubrics.
+    You coordinate `Semantic Data Steward Agent`, `Provenance Data Analyst Agent`, and `Applied Statistician Agent` to execute the 3-mode epistemic ablation matrix (Mode A Raw LLM vs Mode B Autonomous Pre-HITL vs Mode C Autonomous + HITL Verified) against `TRAP-01..05`, `STAT-TRAP-01..04`, `Valentine`, `Olist`, and `BIRD-SQL`, audit cryptographic provenance bundles, and gate algorithm-to-skill promotion on verified `code_sha256` and passing rubrics.

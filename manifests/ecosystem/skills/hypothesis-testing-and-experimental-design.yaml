@@ -1,0 +1,63 @@
+type: Skill
+name: hypothesis_testing_and_experimental_design
+description: Guides estimand framing, prospective and retrospective power/MDE analysis, parametric vs. non-parametric test selection, stratified confounding checks (Simpson's paradox), and Benjamini-Hochberg FDR or Holm-Bonferroni multiple-comparison control.
+current_version: "1.0.0"
+tags:
+  - statistics
+  - hypothesis-testing
+  - ab-testing
+  - power-analysis
+  - data-engine
+implements_traits:
+  - AppliedStatistician
+attached_tools:
+  - data-engine-mcp
+attached_skills:
+  - eda_and_assumption_protocol
+definition: |
+  # Hypothesis Testing & Experimental Design Protocol
+  1. Execute `eda_and_assumption_protocol` first to verify distributional shape, skewness, outliers, and known confounders.
+  2. Call `stat_power_analysis` on `data-engine-mcp` when planning sample sizes or checking retrospective power / Minimum Detectable Effect (MDE); flag underpowered tests (`power < 0.80`).
+  3. Call `stat_hypothesis_test` on `data-engine-mcp` with the appropriate method (`welch_t`, `student_t`, `paired_t`, `mann_whitney_u`, `wilcoxon`, `anova_oneway`, `kruskal_wallis`, `chi_square`, `fisher_exact`).
+  4. When comparing groups with potential confounders or imbalanced segment allocation, ALWAYS pass `stratify_by` to detect Simpson's paradox reversals (`simpsons_paradox_detected`).
+  5. When testing multiple segments (`segment_col`) or running more than one hypothesis test in the same investigation, ALWAYS apply `correction: "fdr_bh"` (or `holm`/`bonferroni`) and report `adjusted_p_value`.
+  6. Inspect `assumption_checks`: if normality or variance equality fails, reason from and report `recommended_alternative` (e.g., `mann_whitney_u` or `kruskal_wallis`). Always report sample size (n), standardized effect size, confidence interval, and `provenance_run_id`.
+input_schema:
+  type: object
+  properties:
+    input_binding:
+      type: object
+    method:
+      type: string
+    value_col:
+      type: string
+    group_col:
+      type: string
+    stratify_by:
+      type: string
+    segment_col:
+      type: string
+    correction:
+      type: string
+      enum: ["none", "fdr_bh", "holm", "bonferroni"]
+    alpha:
+      type: number
+  required: ["input_binding", "method", "value_col"]
+output_schema:
+  type: object
+  properties:
+    primary_result:
+      type: object
+    assumption_checks:
+      type: array
+      items:
+        type: object
+    recommended_alternative:
+      type: object
+    diagnostic_plots:
+      type: array
+      items:
+        type: object
+    provenance_run_id:
+      type: string
+  required: ["primary_result", "assumption_checks", "provenance_run_id"]

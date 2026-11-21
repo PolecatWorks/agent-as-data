@@ -1,6 +1,6 @@
 # Spec 44: Statistical Rigor Guardrails (`soft`/`strict`) & `STAT-TRAP-01..04` Ablation Evaluation
 
-- **Status**: `draft`
+- **Status**: `complete`
 - **Phase**: Phase 25 (Statistical Analytics Skills, Agent & Rigor Guardrails)
 - **Primary PRD References**:
   - [Analytics Thinking Skills, AppliedStatistician Trait & Statistical Guardrails PRD](../prds/analytics-thinking-skills-and-guardrails-prd.md)

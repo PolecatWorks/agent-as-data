@@ -9,6 +9,13 @@ Working alongside `data-engine`'s deterministic statistical toolbelt (`stat_*` M
 3. **Configurable Statistical Guardrails** (`soft` warning mode by default; `strict` blocking mode opt-in per agent).
 4. **Epistemic & Statistical Ablation Evaluation** against `data-engine`'s `STAT-TRAP-01`..`STAT-TRAP-04` benchmark suite.
 
+### Architectural Rationale: Separating Analytics Thinking from Statistical Calculations
+Delivering statistician-grade analytics requires separating two complementary disciplines across a **4-Layer Hybrid Statistician Stack**:
+- **Layer 1 — Analytics Thinking & Guardrails (`agent-as-data`)**: LLMs excel at problem framing, domain synthesis, and methodological workflow selection when governed by explicit trait invariants and composable skills — yet they routinely skip assumption checks, ignore confounders, or over-interpret observational correlations unless structurally guided and guarded.
+- **Layer 2 — Fast Data Reduction & Epistemic Memory (`data-engine` DataFusion + `Graphrag`)**: Rust/DataFusion handles SQL grain/fan-out validation, filtering, aggregation, and explicit seeded sampling at scale, while `Graphrag` preserves verified distributional traits (`is_heavy_tailed`, `seasonality_period`, `known_confounders`) across sessions.
+- **Layer 3 — Governed Statistical Toolbelt (`data-engine` Scientific Python Sandbox)**: Deterministic, NIST-verified `scipy`/`statsmodels` algorithms pinned to immutable `code_sha256` digests execute over zero-copy `/dev/shm` Arrow IPC and return self-checking `assumption_checks` + `recommended_alternative` payloads (avoiding the numerical bugs of ad-hoc LLM-authored math scripts while retaining custom algorithm synthesis + `POST /skills/from-algorithm` promotion as an escape hatch).
+- **Layer 4 — Visual Statistical Diagnostics (`de-fe-container` / `Angry-agent`)**: Bounded diagnostic chart specs (Q-Q, residual vs. fitted, distributions, CI forest bars, STL/ACF/forecast bands) mount into `./StatisticalDiagnosticsWrapper` alongside 1-click steward verification and provenance lineage.
+
 ---
 
 ## Architecture & Reasoning Flow
