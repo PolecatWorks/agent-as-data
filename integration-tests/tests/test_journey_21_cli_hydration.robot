@@ -21,9 +21,11 @@ Run AAD Ctl
     [Arguments]    @{args}
     ${bin_exists}=    Run Keyword And Return Status    File Should Exist    ${AAD_BIN}
     IF    ${bin_exists}
-        ${result}=    Run Process    ${AAD_BIN}    ctl    @{args}    stdout=PIPE    stderr=PIPE
+        ${result}=    Run Process    ${AAD_BIN}    ctl    @{args}
     ELSE
-        ${result}=    Run Process    cargo    run    --quiet    --    ctl    @{args}    cwd=${REPO_ROOT}${/}aad-be-container    stdout=PIPE    stderr=PIPE
+        ${src_exists}=    Run Keyword And Return Status    Directory Should Exist    ${REPO_ROOT}${/}aad-be-container
+        Pass Execution If    not ${src_exists}    aad-be-container binary and source not available in test container
+        ${result}=    Run Process    cargo    run    --quiet    --    ctl    @{args}    cwd=${REPO_ROOT}${/}aad-be-container
     END
     Log    STDOUT:\n${result.stdout}
     Log    STDERR:\n${result.stderr}
