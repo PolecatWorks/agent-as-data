@@ -59,20 +59,21 @@ spec:
             location /alive { return 200; access_log off; }
             location /ready { return 200; access_log off; }
 
-            # 2. SPA routing logic. Serve index.html if we hit a 404
+            # 2. SPA routing logic under /mfe/aad/. Serve index.html if we hit a 404
+            location /mfe/aad/ {
+                alias /usr/share/nginx/html/;
+                index  index.html index.htm;
+                try_files $uri $uri/ /mfe/aad/index.html;
+                add_header 'Access-Control-Allow-Origin' $cors_origin;
+            }
+
+            # 3. Fallback root SPA routing
             location / {
                 alias /usr/share/nginx/html/;
                 index  index.html index.htm;
                 try_files $uri $uri/ /index.html;
             }
             error_page  404              /index.html;
-
-            # 3. General Static Files
-            location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|json)$ {
-                expires 1y;
-                add_header Cache-Control "public, no-transform";
-                add_header 'Access-Control-Allow-Origin' $cors_origin;
-            }
           }
       contents:
         app-config.json: |
