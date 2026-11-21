@@ -1,6 +1,6 @@
 # Spec 43: Statistical Analytics Ecosystem Manifests Extension (`manifests/ecosystem/`)
 
-- **Status**: `draft`
+- **Status**: `complete`
 - **Phase**: Phase 25 (Statistical Analytics Skills, Agent & Rigor Guardrails)
 - **Primary PRD References**:
   - [Analytics Thinking Skills, AppliedStatistician Trait & Statistical Guardrails PRD](../prds/analytics-thinking-skills-and-guardrails-prd.md)

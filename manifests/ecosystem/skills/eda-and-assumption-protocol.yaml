@@ -1,0 +1,61 @@
+type: Skill
+name: eda_and_assumption_protocol
+description: Performs pre-flight exploratory diagnostics, distributional checks, normality and outlier testing, missingness profiling, and Graphrag statistical caveat lookup before any inferential or regression model is chosen.
+current_version: "1.0.0"
+tags:
+  - statistics
+  - eda
+  - assumptions
+  - data-engine
+  - graphrag
+implements_traits:
+  - AppliedStatistician
+attached_tools:
+  - data-engine-mcp
+  - graphrag-mcp
+definition: |
+  # Exploratory Data Analysis & Assumption Pre-Flight Protocol
+  1. Query `graphrag_find_join_path` on `graphrag-mcp` to inspect verified join paths, `statistical_caveats` (`distribution_family`, `is_heavy_tailed`, `seasonality_period`, `recommended_test_family`), and `known_confounders`.
+  2. Run `stat_describe_and_check` on `data-engine-mcp` for all target numeric and grouping columns before running any parametric hypothesis test or regression.
+  3. Inspect moments (mean, sample std, skewness, excess kurtosis), quantiles, missingness ratios, Shapiro-Wilk / D'Agostino normality results, and IQR / modified z-score outlier flags.
+  4. Recommend parametric vs. non-parametric or transformed workflows explicitly based on observed diagnostics, and surface `learned_field_traits` for human steward verification on `./StatisticalDiagnosticsWrapper`.
+  5. If staged rows exceed `sandbox.max_sandbox_rows`, either pre-aggregate in validated DataFusion SQL or request explicit deterministic seeded sampling (`SamplingSpec`) and disclose `sampled: true` and `sampling_seed`.
+input_schema:
+  type: object
+  properties:
+    input_binding:
+      type: object
+      description: Registered dataset_id or validated read-only DataFusion SQL binding.
+    columns:
+      type: array
+      items:
+        type: string
+    sampling:
+      type: object
+  required: ["input_binding", "columns"]
+output_schema:
+  type: object
+  properties:
+    tool:
+      type: string
+    sample_context:
+      type: object
+    primary_result:
+      type: object
+    assumption_checks:
+      type: array
+      items:
+        type: object
+    recommended_alternative:
+      type: object
+    diagnostic_plots:
+      type: array
+      items:
+        type: object
+    learned_field_traits:
+      type: array
+      items:
+        type: object
+    provenance_run_id:
+      type: string
+  required: ["tool", "sample_context", "assumption_checks", "provenance_run_id"]

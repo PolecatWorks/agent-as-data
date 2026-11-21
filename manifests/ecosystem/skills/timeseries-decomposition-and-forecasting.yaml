@@ -1,0 +1,61 @@
+type: Skill
+name: timeseries_decomposition_and_forecasting
+description: Validates temporal regularity, runs STL seasonal-trend decomposition, ADF/KPSS stationarity tests, ACF/PACF diagnostics, differenced cross-series correlation checks, changepoint detection, and ETS/ARIMA forecasting with prediction intervals.
+current_version: "1.0.0"
+tags:
+  - statistics
+  - timeseries
+  - forecasting
+  - stationarity
+  - data-engine
+implements_traits:
+  - AppliedStatistician
+attached_tools:
+  - data-engine-mcp
+attached_skills:
+  - eda_and_assumption_protocol
+definition: |
+  # Time-Series Decomposition & Forecasting Protocol
+  1. Execute `eda_and_assumption_protocol` to verify timestamp ordering, missing time gaps, and outliers, and check `graphrag-mcp` for known `seasonality_period`.
+  2. Call `stat_timeseries_analyze` on `data-engine-mcp` with `time_col`, `value_col`, optional `compare_col`, `period`, `forecast_horizon`, and `model` (`ets` or `arima`).
+  3. Inspect ADF and KPSS stationarity tests before interpreting any cross-series correlation: if either series is non-stationary, NEVER report level Pearson r as a genuine relationship — inspect first-differenced correlation and `spurious_nonstationary_correlation` warnings.
+  4. Report STL seasonal/trend/remainder components, significant ACF/PACF lags, detected changepoints/anomalies, and 80%/95% forecast prediction intervals alongside Ljung-Box residual white-noise checks and `provenance_run_id`.
+input_schema:
+  type: object
+  properties:
+    input_binding:
+      type: object
+    time_col:
+      type: string
+    value_col:
+      type: string
+    compare_col:
+      type: string
+    period:
+      type: integer
+    forecast_horizon:
+      type: integer
+    model:
+      type: string
+      enum: ["ets", "arima"]
+  required: ["input_binding", "time_col", "value_col"]
+output_schema:
+  type: object
+  properties:
+    primary_result:
+      type: object
+    assumption_checks:
+      type: array
+      items:
+        type: object
+    diagnostic_plots:
+      type: array
+      items:
+        type: object
+    learned_field_traits:
+      type: array
+      items:
+        type: object
+    provenance_run_id:
+      type: string
+  required: ["primary_result", "assumption_checks", "provenance_run_id"]

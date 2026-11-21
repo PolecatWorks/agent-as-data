@@ -36,7 +36,7 @@ Journey 21a: Offline Validation of Ecosystem Manifest Pack Across All Env Preset
     [Documentation]    Validates manifests/ecosystem offline (--self-contained) across default, local, cluster-dev, and istio-gateway presets.
     ${res_default}=    Run AAD Ctl    validate    -f    ${MANIFESTS_DIR}    -R    --self-contained
     Should Be Equal As Integers    ${res_default.rc}    0
-    Should Contain    ${res_default.stdout}    27 total resources (6 traits, 4 tools, 11 skills, 6 agents)
+    Should Contain    ${res_default.stdout}    34 total resources (7 traits, 4 tools, 16 skills, 7 agents)
 
     ${res_local}=    Run AAD Ctl    --vars-file    ${VARS_LOCAL}    validate    -f    ${MANIFESTS_DIR}    -R    --self-contained
     Should Be Equal As Integers    ${res_local.rc}    0
@@ -62,17 +62,20 @@ Journey 21b: Live Hydration, Idempotent Re-Apply, Get, and Portable Export Round
     Should Be Equal As Integers    ${first.rc}    0
     Should Contain    ${first.stdout}    Hydration complete
 
-    # 3. Second apply (idempotency: 0 created, 27 updated)
+    # 3. Second apply (idempotency: 0 created, 34 updated)
     ${second}=    Run AAD Ctl    --url    ${AAD_CTL_API_URL}    apply    -f    ${MANIFESTS_DIR}    -R    --allow-degraded-tools    --strict-traits
     Should Be Equal As Integers    ${second.rc}    0
-    Should Contain    ${second.stdout}    0 created, 27 updated
+    Should Contain    ${second.stdout}    0 created, 34 updated
 
     # 4. Inspect resources via ctl get
     ${get_all}=    Run AAD Ctl    --url    ${AAD_CTL_API_URL}    get    all    --output    table
     Should Be Equal As Integers    ${get_all.rc}    0
     Should Contain    ${get_all.stdout}    SemanticSteward
+    Should Contain    ${get_all.stdout}    AppliedStatistician
     Should Contain    ${get_all.stdout}    data-engine-mcp
     Should Contain    ${get_all.stdout}    plan_semantic_join_path
+    Should Contain    ${get_all.stdout}    eda_and_assumption_protocol
+    Should Contain    ${get_all.stdout}    Applied Statistician Agent
     Should Contain    ${get_all.stdout}    PolecatWorks Ecosystem Orchestrator Agent
 
     # 5. Export to temporary multi-doc YAML and validate offline

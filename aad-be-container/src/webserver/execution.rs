@@ -36,9 +36,10 @@ pub async fn execute_agent(
         .model
         .clone()
         .unwrap_or_else(|| state.config.llm.model.clone());
+    let mut agent_guardrail_config: Option<serde_json::Value> = None;
 
     let agent_row = sqlx::query(
-        "SELECT name, current_version, agent_definition, model, description FROM agents WHERE id = $1",
+        "SELECT name, current_version, agent_definition, model, description, guardrail_config FROM agents WHERE id = $1",
     )
     .bind(agent_id)
     .fetch_optional(&state.pool)
@@ -47,6 +48,7 @@ pub async fn execute_agent(
 
     if let Some(r) = agent_row {
         agent_version = r.get("current_version");
+        agent_guardrail_config = r.try_get("guardrail_config").ok().flatten();
         let agent_def: serde_json::Value =
             r.try_get("agent_definition").unwrap_or(serde_json::Value::Null);
         if let Some(s) = agent_def.as_str() {
@@ -187,10 +189,49 @@ pub async fn execute_agent(
         };
 
 
+    // --- STATISTICAL RIGOR GUARDRAILS (Spec 44) ---
+    let mut final_output_text = output_text;
+    let mut exec_status = crate::models::execution::ExecutionStatus::Completed;
+    let mut stat_rigor_status = None;
+    let mut stat_warnings = None;
+    let mut provenance_run_ids = None;
+    let mut guardrail_events_json = serde_json::json!([]);
+    let mut tool_calls_json = serde_json::json!([]);
+
+    if let Ok(Some(stat_cfg)) =
+        crate::guardrails::parse_statistical_rigor_config(agent_guardrail_config.as_ref())
+    {
+        let envelopes = crate::guardrails::extract_statistical_envelopes(payload.context.as_ref());
+        let eval =
+            crate::guardrails::evaluate_statistical_rigor(&final_output_text, &envelopes, &stat_cfg);
+
+        if !eval.provenance_run_ids.is_empty() {
+            tool_calls_json = serde_json::json!(
+                eval.provenance_run_ids
+                    .iter()
+                    .map(|id| serde_json::json!({ "provenance_run_id": id }))
+                    .collect::<Vec<_>>()
+            );
+            provenance_run_ids = Some(eval.provenance_run_ids);
+        }
+        if !eval.warnings.is_empty() {
+            guardrail_events_json =
+                serde_json::to_value(&eval.warnings).unwrap_or_else(|_| serde_json::json!([]));
+            stat_warnings = Some(eval.warnings);
+        }
+        if eval.status == crate::models::StatisticalRigorStatus::Blocked {
+            exec_status = crate::models::execution::ExecutionStatus::Failed;
+            if let Some(critique) = eval.critique_prompt {
+                final_output_text = critique;
+            }
+        }
+        stat_rigor_status = Some(eval.status);
+    }
+
     // --- METRICS & USAGE TELEMETRY ---
 
     metrics::counter!("llm_tokens_total", "type" => "prompt", "model" => target_model.clone()).increment((full_prompt.len() / 4) as u64);
-    metrics::counter!("llm_tokens_total", "type" => "completion", "model" => target_model.clone()).increment((output_text.len() / 4) as u64);
+    metrics::counter!("llm_tokens_total", "type" => "completion", "model" => target_model.clone()).increment((final_output_text.len() / 4) as u64);
 
     if is_skill {
         metrics::counter!(
@@ -206,13 +247,11 @@ pub async fn execute_agent(
         ).increment(1);
     }
 
-
-
     // We mock the token usage as we don't get it from the standard completion API easily in this naive run
     let token_metrics = serde_json::json!({
         "prompt_tokens": full_prompt.len() / 4,
-        "completion_tokens": output_text.len() / 4,
-        "total_tokens": (full_prompt.len() + output_text.len()) / 4
+        "completion_tokens": final_output_text.len() / 4,
+        "total_tokens": (full_prompt.len() + final_output_text.len()) / 4
     });
 
     let caller = "anonymous".to_string(); // TODO: get from auth context
@@ -221,13 +260,15 @@ pub async fn execute_agent(
         sqlx::query(
             r#"
             INSERT INTO agent_usage_logs (agent_id, agent_version, caller_identity, tool_calls, token_metrics, guardrail_events, created_at)
-            VALUES ($1, $2, $3, '[]'::jsonb, $4, '[]'::jsonb, NOW())
+            VALUES ($1, $2, $3, $4, $5, $6, NOW())
             "#
         )
         .bind(agent_id)
         .bind(&agent_version)
         .bind(caller)
+        .bind(&tool_calls_json)
         .bind(&token_metrics)
+        .bind(&guardrail_events_json)
         .execute(&state.pool)
         .await
         .map_err(|e| {
@@ -239,19 +280,29 @@ pub async fn execute_agent(
 
     // 3. Log execution in database
     let request_json = serde_json::to_value(&payload).unwrap_or_default();
-    let response_json = serde_json::json!({ "output": output_text });
+    let response_json = serde_json::json!({
+        "output": final_output_text,
+        "statistical_rigor_status": stat_rigor_status,
+        "statistical_warnings": stat_warnings,
+        "provenance_run_ids": provenance_run_ids,
+    });
 
     let current_ver_int = agent_version.parse::<i32>().unwrap_or(1);
+    let status_str = match exec_status {
+        crate::models::execution::ExecutionStatus::Failed => "failed",
+        _ => "completed",
+    };
 
     sqlx::query(
         r#"
         INSERT INTO executions (id, agent_id, agent_version, execution_version, status, request_payload, response_payload, webhook_url, started_at, completed_at)
-        VALUES ($1, $2, $3, 1, 'completed', $4, $5, $6, NOW(), NOW())
+        VALUES ($1, $2, $3, 1, $4, $5, $6, $7, NOW(), NOW())
         "#,
     )
     .bind(execution_id)
     .bind(agent_id)
     .bind(current_ver_int)
+    .bind(status_str)
     .bind(request_json)
     .bind(response_json)
     .bind(&payload.webhook_url)
@@ -264,9 +315,12 @@ pub async fn execute_agent(
         Json(ExecuteAgentResponse {
             execution_id,
             agent_id,
-            status: crate::models::execution::ExecutionStatus::Completed,
-            output: output_text,
+            status: exec_status,
+            output: final_output_text,
             execution_version: 1,
+            statistical_rigor_status: stat_rigor_status,
+            statistical_warnings: stat_warnings,
+            provenance_run_ids,
         }),
     ))
 }

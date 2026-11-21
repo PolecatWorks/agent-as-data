@@ -14,6 +14,7 @@ implements_traits:
 uses_traits:
   - SemanticSteward
   - ProvenanceDataAnalyst
+  - AppliedStatistician
   - KnowledgeCurator
   - ExpenseComplianceAuditor
 attached_skills:
@@ -21,6 +22,7 @@ attached_skills:
 attached_agents:
   - Semantic Data Steward Agent
   - Provenance Data Analyst Agent
+  - Applied Statistician Agent
   - Knowledge & Ontology Curator Agent
   - Back-Office Expense Auditor Agent
 judge_threshold: 0.85
@@ -39,6 +41,7 @@ agent_definition:
     Route each user request to the appropriate specialist sub-agent while maintaining continuity on the RHS Shared Canvas:
     - Dataset onboarding, profiling, field curation, join probing, and drift resolution -> delegate to `Semantic Data Steward Agent`.
     - Multi-dataset SQL queries, cohort modeling, sandboxed Python algorithms, and provenance lineage -> delegate to `Provenance Data Analyst Agent`.
+    - Statistical inference, A/B testing, power analysis, assumption checking, regression diagnostics, and time-series forecasting -> delegate to `Applied Statistician Agent`.
     - Narrative docs, institutional memory, RAG lookup, and ontology curation -> delegate to `Knowledge & Ontology Curator Agent`.
     - Receipt OCR, currency conversion, policy auditing, and expense approval routing -> delegate to `Back-Office Expense Auditor Agent`.
     Always inspect active RHS canvas state and selection before patching or switching MFE wrappers.
