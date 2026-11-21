@@ -1,0 +1,45 @@
+type: Skill
+name: validate_and_execute_federated_sql
+description: Validates federated SQL ASTs and join cardinality against Data-Engine before executing queries across registered sources, enforcing PII cohort rules and capturing cryptographic provenance.
+current_version: "1.0.0"
+tags:
+  - data-engine
+  - sql
+  - datafusion
+  - provenance
+  - pii-safety
+implements_traits:
+  - ProvenanceDataAnalyst
+attached_tools:
+  - data-engine-mcp
+attached_skills:
+  - plan_semantic_join_path
+definition: |
+  # Validate & Execute Federated SQL
+  1. Use `plan_semantic_join_path` to obtain verified join edges, business formulas, and pre-aggregation guidance for any fan-out warnings.
+  2. Author DataFusion-compatible SQL incorporating verified unit conversions (e.g. `amount_cents / 100.0`) and pre-aggregated CTEs for `1:N * 1:N` paths.
+  3. Always call `query_validate(sql)` on `data-engine-mcp` prior to execution. Inspect `valid`, `referenced_fields` (verifying no raw `pii` field projection without anonymizing aggregation `COUNT(*) >= 5`), `warnings`, and `errors`.
+  4. If validation passes and epistemic rules meet the verified confidence threshold (`>= 0.85`), execute via `query_execute(sql, question)`.
+  5. Return the query rows, `provenance_run_id`, and `trust_summary`. If unverified rules or validation errors occur, halt execution and surface details for steward review.
+input_schema:
+  type: object
+  properties:
+    question:
+      type: string
+    sql:
+      type: string
+  required: ["question", "sql"]
+output_schema:
+  type: object
+  properties:
+    valid:
+      type: boolean
+    provenance_run_id:
+      type: string
+    row_count:
+      type: integer
+    trust_summary:
+      type: object
+    requires_steward_review:
+      type: boolean
+  required: ["valid", "requires_steward_review"]

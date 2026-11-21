@@ -1,0 +1,52 @@
+type: Skill
+name: audit_and_route_expense_approval
+description: Audits validated expenses against corporate policy caps, resolves cost-center ownership and HR reporting managers, and dispatches approval notifications via Slack.
+current_version: "1.0.0"
+tags:
+  - expense
+  - policy
+  - approval
+  - slack
+  - aad-mcp
+implements_traits:
+  - ExpenseComplianceAuditor
+attached_tools:
+  - aad-mcp-server
+attached_skills:
+  - extract_and_validate_expense_receipt
+definition: |
+  # Audit & Route Expense Approval
+  1. Ensure receipt extraction and USD normalization are completed via `extract_and_validate_expense_receipt`.
+  2. Evaluate line items against corporate spending rules ($75/day meals, no personal charges, non-refundable economy airfare) and record any `policy_violations`.
+  3. Call `lookup_cost_center` and `lookup_hr_org_chart` on `aad-mcp-server` to identify the budget owner and approving manager.
+  4. Auto-approve compliant expenses under $500; otherwise route an approval summary containing amount, category, cost center, and any policy flags via `send_slack_message`.
+input_schema:
+  type: object
+  properties:
+    employee_id:
+      type: string
+    cost_center_code:
+      type: string
+    merchant:
+      type: string
+    amount_usd:
+      type: number
+    category:
+      type: string
+  required: ["employee_id", "amount_usd"]
+output_schema:
+  type: object
+  properties:
+    approved:
+      type: boolean
+    requires_manager_approval:
+      type: boolean
+    approver_handle:
+      type: string
+    policy_violations:
+      type: array
+      items:
+        type: string
+    notification_sent:
+      type: boolean
+  required: ["approved", "requires_manager_approval"]

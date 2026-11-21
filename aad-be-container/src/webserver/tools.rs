@@ -2,7 +2,7 @@ use axum::{
     Json, Router,
     extract::{Path, State},
     http::StatusCode,
-    routing::{delete, get, post},
+    routing::{get, post},
 };
 use chrono::Utc;
 use sqlx::{PgPool, Row};
@@ -20,7 +20,7 @@ pub fn router() -> Router<AppState> {
     Router::new()
         .route("/", get(list_tools))
         .route("/register", post(register_tool))
-        .route("/{id}", delete(delete_tool))
+        .route("/{id}", get(get_tool).delete(delete_tool))
         .route("/{id}/sync", post(sync_tool))
         .route("/{id}/sync-embeddings", post(sync_tool_embeddings))
         .route("/{id}/test", post(test_tool_execution))
@@ -228,29 +228,51 @@ pub async fn register_tool(
             )
         })?;
 
-    let cached_capabilities = if payload.transport_type == crate::models::tool::TransportType::Http {
-        match fetch_mcp_capabilities(url).await {
-            Ok(caps) => caps,
-            Err(err) => {
-                tracing::warn!(
-                    "Failed to fetch capabilities from MCP server '{}' at '{}': {}",
-                    payload.server_name,
-                    url,
-                    err
-                );
-                return Err((
-                    StatusCode::UNPROCESSABLE_ENTITY,
-                    format!("Failed to connect to MCP server: {}", err),
-                ));
+    let (cached_capabilities, sync_status, last_sync_error) =
+        if payload.transport_type == crate::models::tool::TransportType::Http {
+            match fetch_mcp_capabilities(url).await {
+                Ok(caps) => (caps, crate::models::tool::SyncStatus::Synced, None),
+                Err(err) if payload.allow_degraded_sync => {
+                    tracing::warn!(
+                        "MCP server '{}' at '{}' unreachable during bootstrap; registering in degraded mode: {}",
+                        payload.server_name,
+                        url,
+                        err
+                    );
+                    (
+                        serde_json::json!({
+                            "tools": [],
+                            "resources": [],
+                            "prompts": []
+                        }),
+                        crate::models::tool::SyncStatus::Degraded,
+                        Some(err),
+                    )
+                }
+                Err(err) => {
+                    tracing::warn!(
+                        "Failed to fetch capabilities from MCP server '{}' at '{}': {}",
+                        payload.server_name,
+                        url,
+                        err
+                    );
+                    return Err((
+                        StatusCode::UNPROCESSABLE_ENTITY,
+                        format!("Failed to connect to MCP server: {}", err),
+                    ));
+                }
             }
-        }
-    } else {
-        serde_json::json!({
-            "tools": [],
-            "resources": [],
-            "prompts": []
-        })
-    };
+        } else {
+            (
+                serde_json::json!({
+                    "tools": [],
+                    "resources": [],
+                    "prompts": []
+                }),
+                crate::models::tool::SyncStatus::Synced,
+                None,
+            )
+        };
 
     let cached_tools_count = cached_capabilities
         .get("tools")
@@ -261,7 +283,7 @@ pub async fn register_tool(
     let row = sqlx::query(
         r#"
         INSERT INTO tools (id, server_name, transport_type, endpoint_config, cached_capabilities, owner_id, sync_policy, sync_status, last_synced_at, last_sync_error)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NULL)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), $9)
         ON CONFLICT (server_name) DO UPDATE 
         SET transport_type = EXCLUDED.transport_type, 
             endpoint_config = EXCLUDED.endpoint_config,
@@ -270,7 +292,7 @@ pub async fn register_tool(
             sync_policy = EXCLUDED.sync_policy,
             sync_status = EXCLUDED.sync_status,
             last_synced_at = NOW(),
-            last_sync_error = NULL
+            last_sync_error = EXCLUDED.last_sync_error
         RETURNING id
         "#,
     )
@@ -281,17 +303,19 @@ pub async fn register_tool(
     .bind(&cached_capabilities)
     .bind(payload.owner_id)
     .bind(&payload.sync_policy)
-    .bind(crate::models::tool::SyncStatus::Synced)
+    .bind(&sync_status)
+    .bind(&last_sync_error)
     .fetch_one(&pool)
     .await
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("MCP Register Error: {}", e)))?;
 
     let final_id: Uuid = row.get("id");
     tracing::info!(
-        "Tool server '{}' registered successfully with {} tools (ID: {})",
+        "Tool server '{}' registered successfully with {} tools (ID: {}, status: {:?})",
         payload.server_name,
         cached_tools_count,
-        final_id
+        final_id,
+        sync_status
     );
 
     // Automatically sync tool embeddings with reverse references
@@ -305,7 +329,7 @@ pub async fn register_tool(
             server_name: payload.server_name,
             transport_type: payload.transport_type,
             cached_tools_count,
-            sync_status: crate::models::tool::SyncStatus::Synced,
+            sync_status,
             sync_policy: payload.sync_policy,
         }),
     ))
@@ -621,6 +645,29 @@ pub async fn list_tools(
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to list MCP servers: {}", e)))?;
 
     Ok((StatusCode::OK, Json(servers)))
+}
+
+pub async fn get_tool(
+    State(pool): State<PgPool>,
+    Path(id): Path<Uuid>,
+) -> Result<(StatusCode, Json<Tool>), (StatusCode, String)> {
+    let server = sqlx::query_as::<_, Tool>(
+        r#"
+        SELECT id, server_name, transport_type, endpoint_config, cached_capabilities, owner_id, sync_policy, sync_status, last_synced_at, last_sync_error
+        FROM tools
+        WHERE id = $1
+        "#
+    )
+    .bind(id)
+    .fetch_optional(&pool)
+    .await
+    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to fetch MCP server: {}", e)))?;
+
+    let Some(tool) = server else {
+        return Err((StatusCode::NOT_FOUND, format!("Tool server '{}' not found", id)));
+    };
+
+    Ok((StatusCode::OK, Json(tool)))
 }
 
 pub async fn delete_tool(

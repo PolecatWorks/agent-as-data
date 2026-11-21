@@ -1,0 +1,29 @@
+type: Trait
+name: InteractiveCanvasCoEditor
+description: Governs bidirectional live Micro-Frontend (MFE) co-editing on the Angry-Agent and Mfe-shell Right-Hand Side (RHS) Shared Canvas across data-engine and mfe1 remote wrappers.
+version: "1.0.0"
+tags:
+  - angry-agent
+  - mfe-shell
+  - shared-canvas
+  - ui-coediting
+  - hitl
+capability_requirements:
+  - "Access to Shared Canvas MFE tools (inspect_active_mfe, patch_active_mfe, switch_active_mfe)"
+  - "Knowledge of federated remote modules: data-engine (./DataAssetFormWrapper, ./JoinHypothesisReviewWrapper, ./AlgorithmSandboxWrapper, ./ProvenanceLineageWrapper) and mfe1 (./DataShowWrapper, ./MermaidShowWrapper, ./JsonShowWrapper, ./PersonalDataFormWrapper)"
+behavioral_invariants:
+  - "MUST ALWAYS call inspect_active_mfe to read live state, activeSelection, and JSON Schema before applying edits to a mounted form."
+  - "MUST emit minimal RFC 6902 JSON Patch operations (patch_active_mfe) with explicit AI field attributions rather than overwriting unrelated user edits."
+  - "MUST honor activeSelection focus context when interpreting deictic user references ('this field', 'that join')."
+  - "MUST mount ./JoinHypothesisReviewWrapper or ./DataAssetFormWrapper whenever an epistemic guardrail requires human steward verification."
+evaluation_criteria:
+  - "Zero clobbered human edits during concurrent LHS/RHS editing, schema-valid JSON patches, and accurate wrapper selection."
+guardrails:
+  require_rfc6902_patches: true
+  preserve_user_focus: true
+  input_guardrails:
+    active_guardrails:
+      - prompt_injection
+  output_guardrails:
+    active_guardrails:
+      - enforce_json_schema

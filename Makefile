@@ -199,10 +199,24 @@ robot-test:
 seed-data:
 	./integration-tests/run-tests-local.sh tests/test_seed_exemplar_data.robot
 
+AAD_CTL_URL ?= http://localhost:$(aad-be_PORT)/api/aad/v1
+
+validate-manifests:
+	@echo "Validating canonical PolecatWorks ecosystem manifests offline (--self-contained)..."
+	cd aad-be-container && cargo run -- ctl validate -f ../manifests/ecosystem -R --self-contained
+	cd aad-be-container && cargo run -- ctl --vars-file ../manifests/vars/local.yaml validate -f ../manifests/ecosystem -R --self-contained
+	cd aad-be-container && cargo run -- ctl --vars-file ../manifests/vars/cluster-dev.yaml validate -f ../manifests/ecosystem -R --self-contained
+	cd aad-be-container && cargo run -- ctl --vars-file ../manifests/vars/istio-gateway.yaml validate -f ../manifests/ecosystem -R --self-contained
+
+hydrate-ecosystem:
+	@echo "Hydrating PolecatWorks ecosystem Traits, Tools, Skills, and Agents into $(AAD_CTL_URL)..."
+	cd aad-be-container && cargo run -- ctl \
+		--url "$(AAD_CTL_URL)" \
+		$(if $(VARS_FILE),--vars-file "$(VARS_FILE)",) \
+		$(if $(AAD_CTL_TOKEN),--token "$(AAD_CTL_TOKEN)",) \
+		apply -f ../manifests/ecosystem -R --allow-degraded-tools $(if $(DRY_RUN),--dry-run,)
+
 apply-sample-agents:
-	@echo "Applying sample agents and skills..."
-	@for file in sample-agents/*.yaml; do \
-		echo "Applying $$file"; \
-		cd aad-be-container && cargo run -- ctl apply --file ../$$file; \
-		cd ..; \
-	done
+	@echo "Applying sample agents and skills into $(AAD_CTL_URL)..."
+	cd aad-be-container && cargo run -- ctl --url "$(AAD_CTL_URL)" apply -f ../sample-agents
+

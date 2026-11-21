@@ -1,0 +1,45 @@
+type: Skill
+name: coedit_shared_canvas_mfe
+description: Coordinates bidirectional live Micro-Frontend (MFE) co-editing on the Angry-Agent / Mfe-shell RHS Shared Canvas using schema-aware RFC 6902 JSON Patches and dynamic remote module mounting.
+current_version: "1.0.0"
+tags:
+  - angry-agent
+  - mfe-shell
+  - shared-canvas
+  - rfc6902
+  - hitl
+implements_traits:
+  - InteractiveCanvasCoEditor
+definition: |
+  # Co-Edit Shared Canvas MFE
+  1. Call `inspect_active_mfe` to read the active RHS visualization's live `content`, `active_selection` focus context, and Draft-07 `json_schema`.
+  2. Select the appropriate federated remote module when switching views via `switch_active_mfe`:
+     - `data-engine`: `./DataAssetFormWrapper` (dataset & field curation), `./JoinHypothesisReviewWrapper` (empirical join proof HITL review), `./AlgorithmSandboxWrapper` (live Python algorithm editing), `./ProvenanceLineageWrapper` (cryptographic provenance & Mermaid DAG).
+     - `mfe1`: `./DataShowWrapper` (charts & tables), `./MermaidShowWrapper` (diagrams), `./JsonShowWrapper` (structured JSON inspection), `./PersonalDataFormWrapper` (interactive form co-editing).
+  3. For live edits to an already-mounted MFE, generate minimal RFC 6902 JSON Patch operations (`add`, `replace`, `remove`) anchored to `active_selection` when the user makes deictic references, and apply them via `patch_active_mfe` with explicit `attributions` explaining why each field was modified.
+input_schema:
+  type: object
+  properties:
+    action:
+      type: string
+      enum: ["inspect", "patch", "switch"]
+    provider:
+      type: string
+      enum: ["data-engine", "mfe1"]
+    component:
+      type: string
+    patches:
+      type: array
+      items:
+        type: object
+  required: ["action"]
+output_schema:
+  type: object
+  properties:
+    mounted_component:
+      type: string
+    patches_applied:
+      type: integer
+    status:
+      type: string
+  required: ["status"]

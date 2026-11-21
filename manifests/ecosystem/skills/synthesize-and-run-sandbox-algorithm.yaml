@@ -1,0 +1,49 @@
+type: Skill
+name: synthesize_and_run_sandbox_algorithm
+description: Creates, dry-run validates on a 100-row sample, and executes versioned Python/SQL algorithms in Data-Engine's isolated zero-copy Arrow sandbox with full provenance capture.
+current_version: "1.0.0"
+tags:
+  - data-engine
+  - python-sandbox
+  - algorithms
+  - provenance
+  - analytics
+implements_traits:
+  - ProvenanceDataAnalyst
+attached_tools:
+  - data-engine-mcp
+attached_skills:
+  - plan_semantic_join_path
+definition: |
+  # Synthesize & Run Sandbox Algorithm
+  1. Resolve dataset inputs and verified join paths via `plan_semantic_join_path`.
+  2. Check existing reusable algorithms via `algorithm_browse` on `data-engine-mcp`.
+  3. Register a new deterministic Python/SQL algorithm using `algorithm_add(name, code, input_bindings)` restricted to sandbox-allowed standard libraries (`math`, `statistics`, `json`) with zero network calls.
+  4. Always run `algorithm_validate(id)` to verify static AST checks and dry-run over a bounded 100-row sample.
+  5. Execute the validated algorithm via `algorithm_execute(id, question)` over zero-copy Arrow `/dev/shm` buffers and return `output_rows`, `metrics`, `provenance_run_id`, `provenance_signature_sha256`, and `trust_summary`.
+input_schema:
+  type: object
+  properties:
+    name:
+      type: string
+    question:
+      type: string
+    code:
+      type: string
+    input_bindings:
+      type: object
+  required: ["name", "question", "code", "input_bindings"]
+output_schema:
+  type: object
+  properties:
+    algorithm_id:
+      type: string
+    provenance_run_id:
+      type: string
+    code_sha256:
+      type: string
+    trust_summary:
+      type: object
+    output_row_count:
+      type: integer
+  required: ["algorithm_id", "provenance_run_id"]
