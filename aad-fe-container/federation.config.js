@@ -21,6 +21,14 @@ module.exports = withNativeFederation({
     'rxjs/webSocket',
     '@fontsource/inter',
     'material-symbols',
+    '@softarc/native-federation-node',
+    'autoprefixer',
+    'tailwindcss',
+    'glob-parent',
+    /^marked/,
+    '@tailwindcss/container-queries',
+    '@tailwindcss/forms',
+    '@tailwindcss/typography',
     // Add further packages you don't need at runtime
   ],
 
