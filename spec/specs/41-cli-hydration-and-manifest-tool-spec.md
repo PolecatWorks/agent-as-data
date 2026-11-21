@@ -1,6 +1,6 @@
 # Spec 41: CLI Manifest Hydration, Validation & Export Tool (`aad-be ctl`)
 
-- **Status**: `draft`
+- **Status**: `complete`
 - **Phase**: Phase 24 (CLI Hydration Tools & Ecosystem Manifest Pack)
 - **Primary PRD References**:
   - [CLI Manifest & Hydration Tool PRD](../prds/cli-manifest-tool-prd.md)

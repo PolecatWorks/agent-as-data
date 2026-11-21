@@ -1,0 +1,49 @@
+type: Skill
+name: probe_and_verify_join_hypothesis
+description: Empirically tests candidate foreign-key joins in Apache DataFusion, computes inclusion ratios and cardinality (1:1, 1:N, N:M), and routes results to steward verification or FORBIDDEN_JOIN recording.
+current_version: "1.0.0"
+tags:
+  - data-engine
+  - graphrag
+  - join-discovery
+  - hitl
+  - stewardship
+implements_traits:
+  - SemanticSteward
+attached_tools:
+  - data-engine-mcp
+  - graphrag-mcp
+definition: |
+  # Probe & Verify Join Hypothesis
+  1. Identify candidate field pairs via `field_browse` and existing hypotheses via `join_browse` on `data-engine-mcp`.
+  2. Never rely solely on column name similarity (homonym traps like `account_id` across billing vs marketing namespaces). Always invoke `join_probe(left_field_id, right_field_id)` to measure empirical overlap ratio, orphan rate, and join cardinality (`1:1`, `1:N`, `N:1`, `N:M`).
+  3. Inspect sample matched and orphan rows in the returned `empirical_proof`.
+  4. Sync the `empirically_tested` edge to `graphrag-mcp` via `ontology_sync_dataset` or `edge_add`.
+  5. When steward feedback arrives, invoke `join_verify(id, epistemic_status)` to promote valid joins to `verified` or record invalid joins as `rejected` (`FORBIDDEN_JOIN`) with `steward_notes`.
+input_schema:
+  type: object
+  properties:
+    left_field_id:
+      type: string
+    right_field_id:
+      type: string
+    steward_decision:
+      type: string
+      enum: ["probe_only", "verified", "rejected"]
+    steward_notes:
+      type: string
+  required: ["left_field_id", "right_field_id"]
+output_schema:
+  type: object
+  properties:
+    hypothesis_id:
+      type: string
+    inclusion_ratio:
+      type: number
+    cardinality:
+      type: string
+    epistemic_status:
+      type: string
+    forbidden_join_recorded:
+      type: boolean
+  required: ["hypothesis_id", "epistemic_status"]

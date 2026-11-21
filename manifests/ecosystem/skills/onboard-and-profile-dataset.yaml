@@ -1,0 +1,54 @@
+type: Skill
+name: onboard_and_profile_dataset
+description: Registers a data source and dataset in Data-Engine, runs statistical column profiling and MinHash sketching, infers field units/grains/PII sensitivity, and synchronizes discovered metadata into GraphRAG-RS.
+current_version: "1.0.0"
+tags:
+  - data-engine
+  - graphrag
+  - profiling
+  - onboarding
+  - semantic-layer
+implements_traits:
+  - SemanticSteward
+attached_tools:
+  - data-engine-mcp
+  - graphrag-mcp
+definition: |
+  # Onboard & Profile Dataset
+  1. Verify or register the source via `source_browse` / `source_add` on `data-engine-mcp`.
+  2. Register the dataset via `dataset_add` (`source_id`, `physical_locator`, `format`) to introspect its Apache Arrow schema.
+  3. Execute `dataset_profile` and inspect sample rows via `dataset_preview` to evaluate null ratios, distinct cardinality, quantiles, and potential schema drift.
+  4. Hypothesize semantic labels, units (e.g. `cents` vs `usd`), grain descriptions, and `sensitivity_tag` (`pii` for personal identifiers) via `field_edit` with `epistemic_status = "hypothesized"` (never overwriting `verified` human entries).
+  5. Sync Layer 1 `Dataset` and Layer 0 `Field` nodes into `graphrag-mcp` via `ontology_sync_dataset`, flagging any drifted schemas for human steward review.
+input_schema:
+  type: object
+  properties:
+    source_name:
+      type: string
+    source_kind:
+      type: string
+      enum: ["s3", "postgres", "duckdb", "mongodb", "local_fs"]
+    physical_locator:
+      type: string
+    format:
+      type: string
+      enum: ["parquet", "csv", "jsonl", "iceberg", "table"]
+  required: ["physical_locator", "format"]
+output_schema:
+  type: object
+  properties:
+    dataset_id:
+      type: string
+    row_count:
+      type: integer
+    fields_profiled:
+      type: integer
+    pii_fields_detected:
+      type: array
+      items:
+        type: string
+    epistemic_status:
+      type: string
+    requires_steward_review:
+      type: boolean
+  required: ["dataset_id", "fields_profiled", "epistemic_status"]

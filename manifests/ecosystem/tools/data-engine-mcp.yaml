@@ -1,0 +1,13 @@
+type: Tool
+server_name: data-engine-mcp
+transport_type: http
+sync_policy: manual
+endpoint_config:
+  url: "${DATA_ENGINE_MCP_URL:-http://localhost:8083/api/data-engine/v1/mcp}"
+  description: "Data-Engine MCP server providing data source connectors, Arrow schema introspection, MinHash profiling, empirical DataFusion join probing, SQL validation/execution, sandboxed Python algorithms, and W3C PROV provenance."
+  tags:
+    - data-engine
+    - mcp
+    - datafusion
+    - sandbox
+    - provenance

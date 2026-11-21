@@ -1,0 +1,13 @@
+type: Tool
+server_name: graphrag-mcp
+transport_type: http
+sync_policy: manual
+endpoint_config:
+  url: "${GRAPHRAG_MCP_URL:-http://localhost:8081/api/graphrag/v1/mcp}"
+  description: "GraphRAG-RS MCP server exposing 3-layer business ontology management, narrative document ingestion, hybrid vector+graph retrieval, community summaries, ontology_sync_dataset, and multi-hop Steiner join-path planning."
+  tags:
+    - graphrag
+    - mcp
+    - ontology
+    - knowledge-graph
+    - join-path

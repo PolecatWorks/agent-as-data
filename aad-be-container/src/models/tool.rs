@@ -44,6 +44,8 @@ pub struct RegisterToolRequest {
     pub owner_id: Uuid,
     #[serde(default = "default_sync_policy")]
     pub sync_policy: SyncPolicy,
+    #[serde(default)]
+    pub allow_degraded_sync: bool,
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]

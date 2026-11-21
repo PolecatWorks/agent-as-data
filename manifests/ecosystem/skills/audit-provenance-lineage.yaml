@@ -1,0 +1,42 @@
+type: Skill
+name: audit_provenance_lineage
+description: Retrieves cryptographic provenance bundles from Data-Engine, audits epistemic trust rollups across consulted semantic rules, and emits W3C PROV / Mermaid lineage DAGs.
+current_version: "1.0.0"
+tags:
+  - data-engine
+  - provenance
+  - audit
+  - lineage
+  - mermaid
+implements_traits:
+  - ProvenanceDataAnalyst
+attached_tools:
+  - data-engine-mcp
+definition: |
+  # Audit Provenance Lineage
+  1. Locate target runs via `provenance_browse` or read a specific run via `provenance_read(id)` on `data-engine-mcp`.
+  2. Inspect dataset snapshot digests, consulted semantic rules (`epistemic_status`, `confidence`, `verified_by`), SQL AST / Python code SHA-256 digests, and output signatures.
+  3. Flag any run where `all_rules_human_verified == false` or where drifted/hypothesized rules influenced the result.
+  4. Emit a structured trust report along with the Mermaid lineage DAG for visualization in `./ProvenanceLineageWrapper` or `mfe1/./MermaidShowWrapper`.
+input_schema:
+  type: object
+  properties:
+    provenance_run_id:
+      type: string
+  required: ["provenance_run_id"]
+output_schema:
+  type: object
+  properties:
+    provenance_run_id:
+      type: string
+    all_rules_human_verified:
+      type: boolean
+    min_rule_confidence:
+      type: number
+    unverified_rules:
+      type: array
+      items:
+        type: string
+    mermaid_dag:
+      type: string
+  required: ["provenance_run_id", "all_rules_human_verified"]
