@@ -760,6 +760,347 @@ impl PortableTool for UpdateBenchMemoryTool {
     }
 }
 
+// ============================================================================
+// In-Process AAD Capability Tools (backed directly by AadMcpServer)
+// ============================================================================
+
+#[derive(Deserialize, Default)]
+pub struct ListAgentsToolArgs {
+    pub name: Option<String>,
+}
+
+#[derive(Serialize)]
+pub struct AadCapabilityToolOutput {
+    pub result: serde_json::Value,
+}
+
+fn parse_mcp_json_output(raw: String) -> AadCapabilityToolOutput {
+    let parsed = serde_json::from_str(&raw).unwrap_or_else(|_| serde_json::Value::String(raw));
+    AadCapabilityToolOutput { result: parsed }
+}
+
+pub struct ListAgentsTool {
+    pub pool: sqlx::PgPool,
+}
+
+impl PortableTool for ListAgentsTool {
+    const NAME: &'static str = "list_agents";
+    type Error = std::io::Error;
+    type Args = ListAgentsToolArgs;
+    type Output = AadCapabilityToolOutput;
+
+    fn description(&self) -> String {
+        "Lists active declarative agents registered in Agent-As-Data, optionally filtered by exact name.".to_string()
+    }
+
+    fn parameters(&self) -> serde_json::Value {
+        json!({
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "Optional exact agent name filter."
+                }
+            }
+        })
+    }
+
+    async fn call(&self, args: Self::Args) -> Result<Self::Output, Self::Error> {
+        let server = crate::webserver::aad_mcp::AadMcpServer::from_pool(self.pool.clone());
+        let raw = server
+            .call_tool("list_agents", json!({ "name": args.name }))
+            .await
+            .map_err(std::io::Error::other)?;
+        Ok(parse_mcp_json_output(raw))
+    }
+}
+
+#[derive(Deserialize)]
+pub struct GetAgentToolArgs {
+    pub id: Option<Uuid>,
+    pub name: Option<String>,
+}
+
+pub struct GetAgentTool {
+    pub pool: sqlx::PgPool,
+}
+
+impl PortableTool for GetAgentTool {
+    const NAME: &'static str = "get_agent";
+    type Error = std::io::Error;
+    type Args = GetAgentToolArgs;
+    type Output = AadCapabilityToolOutput;
+
+    fn description(&self) -> String {
+        "Retrieves a declarative agent definition from Agent-As-Data by UUID or exact name.".to_string()
+    }
+
+    fn parameters(&self) -> serde_json::Value {
+        json!({
+            "type": "object",
+            "properties": {
+                "id": { "type": "string", "description": "UUID of the agent." },
+                "name": { "type": "string", "description": "Exact name of the agent." }
+            }
+        })
+    }
+
+    async fn call(&self, args: Self::Args) -> Result<Self::Output, Self::Error> {
+        let server = crate::webserver::aad_mcp::AadMcpServer::from_pool(self.pool.clone());
+        let raw = server
+            .call_tool("get_agent", json!({ "id": args.id, "name": args.name }))
+            .await
+            .map_err(std::io::Error::other)?;
+        Ok(parse_mcp_json_output(raw))
+    }
+}
+
+#[derive(Deserialize)]
+pub struct SearchAgentsToolArgs {
+    pub query: String,
+    pub limit: Option<usize>,
+}
+
+pub struct SearchAgentsTool {
+    pub pool: sqlx::PgPool,
+}
+
+impl PortableTool for SearchAgentsTool {
+    const NAME: &'static str = "search_agents";
+    type Error = std::io::Error;
+    type Args = SearchAgentsToolArgs;
+    type Output = AadCapabilityToolOutput;
+
+    fn description(&self) -> String {
+        "Searches active agents in Agent-As-Data by keyword or natural-language query.".to_string()
+    }
+
+    fn parameters(&self) -> serde_json::Value {
+        json!({
+            "type": "object",
+            "properties": {
+                "query": { "type": "string", "description": "Search query for matching agents." },
+                "limit": { "type": "integer", "description": "Maximum number of results." }
+            },
+            "required": ["query"]
+        })
+    }
+
+    async fn call(&self, args: Self::Args) -> Result<Self::Output, Self::Error> {
+        let server = crate::webserver::aad_mcp::AadMcpServer::from_pool(self.pool.clone());
+        let raw = server
+            .call_tool(
+                "search_agents",
+                json!({ "query": args.query, "limit": args.limit }),
+            )
+            .await
+            .map_err(std::io::Error::other)?;
+        Ok(parse_mcp_json_output(raw))
+    }
+}
+
+#[derive(Deserialize, Default)]
+pub struct ListTraitsToolArgs {
+    pub page: Option<i64>,
+    pub size: Option<i64>,
+}
+
+pub struct ListTraitsTool {
+    pub pool: sqlx::PgPool,
+}
+
+impl PortableTool for ListTraitsTool {
+    const NAME: &'static str = "list_traits";
+    type Error = std::io::Error;
+    type Args = ListTraitsToolArgs;
+    type Output = AadCapabilityToolOutput;
+
+    fn description(&self) -> String {
+        "Lists trait contracts defined in Agent-As-Data.".to_string()
+    }
+
+    fn parameters(&self) -> serde_json::Value {
+        json!({
+            "type": "object",
+            "properties": {
+                "page": { "type": "integer", "description": "Zero-based page index." },
+                "size": { "type": "integer", "description": "Maximum traits per page." }
+            }
+        })
+    }
+
+    async fn call(&self, args: Self::Args) -> Result<Self::Output, Self::Error> {
+        let server = crate::webserver::aad_mcp::AadMcpServer::from_pool(self.pool.clone());
+        let raw = server
+            .call_tool("list_traits", json!({ "page": args.page, "size": args.size }))
+            .await
+            .map_err(std::io::Error::other)?;
+        Ok(parse_mcp_json_output(raw))
+    }
+}
+
+#[derive(Deserialize, Default)]
+pub struct ListMcpServersToolArgs {}
+
+pub struct ListMcpServersTool {
+    pub pool: sqlx::PgPool,
+}
+
+impl PortableTool for ListMcpServersTool {
+    const NAME: &'static str = "list_mcp_servers";
+    type Error = std::io::Error;
+    type Args = ListMcpServersToolArgs;
+    type Output = AadCapabilityToolOutput;
+
+    fn description(&self) -> String {
+        "Lists registered MCP tool servers in Agent-As-Data and their cached tool capabilities.".to_string()
+    }
+
+    fn parameters(&self) -> serde_json::Value {
+        json!({
+            "type": "object",
+            "properties": {}
+        })
+    }
+
+    async fn call(&self, _args: Self::Args) -> Result<Self::Output, Self::Error> {
+        let server = crate::webserver::aad_mcp::AadMcpServer::from_pool(self.pool.clone());
+        let raw = server
+            .call_tool("list_mcp_servers", json!({}))
+            .await
+            .map_err(std::io::Error::other)?;
+        Ok(parse_mcp_json_output(raw))
+    }
+}
+
+#[derive(Deserialize)]
+pub struct SearchAgentContextToolArgs {
+    pub query: String,
+    pub limit: Option<usize>,
+}
+
+pub struct SearchAgentContextTool {
+    pub pool: sqlx::PgPool,
+}
+
+impl PortableTool for SearchAgentContextTool {
+    const NAME: &'static str = "search_agent_context";
+    type Error = std::io::Error;
+    type Args = SearchAgentContextToolArgs;
+    type Output = AadCapabilityToolOutput;
+
+    fn description(&self) -> String {
+        "Performs unified semantic/hybrid search across Agents, Skills, Traits, MCP Tool Servers, and Knowledge.".to_string()
+    }
+
+    fn parameters(&self) -> serde_json::Value {
+        json!({
+            "type": "object",
+            "properties": {
+                "query": { "type": "string", "description": "Natural-language context query." },
+                "limit": { "type": "integer", "description": "Maximum number of results." }
+            },
+            "required": ["query"]
+        })
+    }
+
+    async fn call(&self, args: Self::Args) -> Result<Self::Output, Self::Error> {
+        let server = crate::webserver::aad_mcp::AadMcpServer::from_pool(self.pool.clone());
+        let raw = server
+            .call_tool(
+                "search_agent_context",
+                json!({ "query": args.query, "limit": args.limit }),
+            )
+            .await
+            .map_err(std::io::Error::other)?;
+        Ok(parse_mcp_json_output(raw))
+    }
+}
+
+#[derive(Deserialize, Default)]
+pub struct ListAadCapabilitiesArgs {}
+
+pub struct ListAadCapabilitiesTool {
+    pub state: crate::state::AppState,
+}
+
+impl PortableTool for ListAadCapabilitiesTool {
+    const NAME: &'static str = "list_aad_capabilities";
+    type Error = std::io::Error;
+    type Args = ListAadCapabilitiesArgs;
+    type Output = AadCapabilityToolOutput;
+
+    fn description(&self) -> String {
+        "Lists all Agent-As-Data platform MCP tools and their JSON input schemas available for invocation via invoke_aad_capability.".to_string()
+    }
+
+    fn parameters(&self) -> serde_json::Value {
+        json!({
+            "type": "object",
+            "properties": {}
+        })
+    }
+
+    async fn call(&self, _args: Self::Args) -> Result<Self::Output, Self::Error> {
+        let server = crate::webserver::aad_mcp::AadMcpServer::new(self.state.clone());
+        let tools = serde_json::to_value(server.list_tools()).map_err(std::io::Error::other)?;
+        Ok(AadCapabilityToolOutput { result: tools })
+    }
+}
+
+#[derive(Deserialize)]
+pub struct InvokeAadCapabilityArgs {
+    pub tool_name: String,
+    #[serde(default)]
+    pub arguments: serde_json::Value,
+}
+
+pub struct InvokeAadCapabilityTool {
+    pub state: crate::state::AppState,
+}
+
+impl PortableTool for InvokeAadCapabilityTool {
+    const NAME: &'static str = "invoke_aad_capability";
+    type Error = std::io::Error;
+    type Args = InvokeAadCapabilityArgs;
+    type Output = AadCapabilityToolOutput;
+
+    fn description(&self) -> String {
+        "Invokes any Agent-As-Data platform MCP tool (agents, skills, traits, tools, knowledge, benches, threads, execution) directly in-process.".to_string()
+    }
+
+    fn parameters(&self) -> serde_json::Value {
+        json!({
+            "type": "object",
+            "properties": {
+                "tool_name": {
+                    "type": "string",
+                    "description": "Name of the AAD MCP tool to invoke (discover via list_aad_capabilities)."
+                },
+                "arguments": {
+                    "type": "object",
+                    "description": "JSON arguments matching the tool's inputSchema."
+                }
+            },
+            "required": ["tool_name"]
+        })
+    }
+
+    async fn call(&self, args: Self::Args) -> Result<Self::Output, Self::Error> {
+        let server = crate::webserver::aad_mcp::AadMcpServer::new(self.state.clone());
+        let arguments = if args.arguments.is_null() {
+            json!({})
+        } else {
+            args.arguments
+        };
+        let raw = server
+            .call_tool(&args.tool_name, arguments)
+            .await
+            .map_err(std::io::Error::other)?;
+        Ok(parse_mcp_json_output(raw))
+    }
+}
+
 pub async fn execute_workspace_tool(
     bench_id: Uuid,
     tool_name: &str,
@@ -896,6 +1237,13 @@ pub async fn execute_workspace_tool(
         }
         _ => {
             if let Some(pool) = pool {
+                // 1. Check in-process unified AAD MCP capabilities first
+                let aad_mcp = crate::webserver::aad_mcp::AadMcpServer::from_pool(pool.clone());
+                if aad_mcp.list_tools().iter().any(|t| t.name == tool_name) {
+                    return aad_mcp.call_tool(tool_name, args_json.clone()).await;
+                }
+
+                // 2. Fallback to registered remote MCP servers
                 let row = sqlx::query(
                     r#"
                     SELECT endpoint_config
@@ -906,9 +1254,12 @@ pub async fn execute_workspace_tool(
                 )
                 .bind(serde_json::json!([{"name": tool_name}]).to_string())
                 .fetch_optional(pool)
-                .await;
+                .await
+                .map_err(|e| {
+                    format!("Database error looking up MCP tool '{}': {}", tool_name, e)
+                })?;
 
-                if let Ok(Some(row)) = row {
+                if let Some(row) = row {
                     let endpoint_config: serde_json::Value =
                         sqlx::Row::get(&row, "endpoint_config");
                     if let Some(url) = endpoint_config.get("url").and_then(|u| u.as_str()) {
@@ -1164,5 +1515,83 @@ mod tests {
             .execute(&pool)
             .await
             .expect("Failed to cleanup test skill");
+    }
+
+    #[tokio::test]
+    async fn test_aad_capability_rig_tools_definitions_and_discovery() {
+        let pool = sqlx::postgres::PgPoolOptions::new()
+            .connect_lazy("postgres://user:pass@localhost:5432/test")
+            .unwrap();
+        let handle = axum_prometheus::metrics_exporter_prometheus::PrometheusBuilder::new()
+            .build_recorder()
+            .handle();
+        let config = crate::config::AppConfig {
+            debugging: crate::config::DebuggingConfig {
+                environment: "test".into(),
+                log_level: "info".into(),
+                fail_debug_delay: std::time::Duration::from_secs(0),
+            },
+            webservice: crate::config::WebServiceConfig {
+                address: "127.0.0.1:8080".into(),
+                api_prefix: "/api/aad/v1".into(),
+            },
+            llm: crate::config::LlmConfig {
+                ollama_url: "http://localhost:11434".into(),
+                model: "llama3".into(),
+                timeout: std::time::Duration::from_secs(30),
+                default_max_turns: 5,
+            },
+            runtime: crate::tokio_tools::ThreadRuntime::default(),
+            database: crate::config::DatabaseConfig {
+                url: crate::config::UrlWithUsernamePassword {
+                    url: url::Url::parse("postgres://localhost:5432/test").unwrap(),
+                    username: Some("user".into()),
+                    password: Some("pass".into()),
+                },
+                max_connections: 1,
+            },
+            hams: ::hams::hams::config::HamsConfig::default(),
+        };
+        let state = crate::state::AppState {
+            pool: pool.clone(),
+            config,
+            prometheus_handle: std::sync::Arc::new(handle),
+            tokio_handle: tokio::runtime::Handle::current(),
+        };
+
+        assert_eq!(ListAgentsTool::NAME, "list_agents");
+        assert_eq!(GetAgentTool::NAME, "get_agent");
+        assert_eq!(SearchAgentsTool::NAME, "search_agents");
+        assert_eq!(ListTraitsTool::NAME, "list_traits");
+        assert_eq!(ListMcpServersTool::NAME, "list_mcp_servers");
+        assert_eq!(SearchAgentContextTool::NAME, "search_agent_context");
+        assert_eq!(ListAadCapabilitiesTool::NAME, "list_aad_capabilities");
+        assert_eq!(InvokeAadCapabilityTool::NAME, "invoke_aad_capability");
+
+        let list_caps = ListAadCapabilitiesTool {
+            state: state.clone(),
+        };
+        let output = list_caps
+            .call(ListAadCapabilitiesArgs {})
+            .await
+            .expect("list_aad_capabilities should succeed without DB query");
+        let tools = output
+            .result
+            .as_array()
+            .expect("capabilities should be a JSON array");
+        assert!(tools.iter().any(|t| t["name"] == "list_agents"));
+        assert!(tools.iter().any(|t| t["name"] == "list_skills"));
+        assert!(tools.iter().any(|t| t["name"] == "list_traits"));
+        assert!(tools.iter().any(|t| t["name"] == "search_knowledge"));
+        assert!(tools.iter().any(|t| t["name"] == "execute_agent"));
+
+        let invoke_caps = InvokeAadCapabilityTool { state };
+        let err = invoke_caps
+            .call(InvokeAadCapabilityArgs {
+                tool_name: "unknown_tool_xyz".to_string(),
+                arguments: json!({}),
+            })
+            .await;
+        assert!(err.is_err());
     }
 }

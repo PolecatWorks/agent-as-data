@@ -184,7 +184,7 @@ type: Tool
 server_name: mcp-1
 transport_type: http
 endpoint_config:
-  url: "${MCP_URL:-http://localhost:8082/api/aad-mcp/v1/mcp}"
+  url: "${MCP_URL:-http://localhost:8080/api/aad/v1/mcp}"
 ---
 "#;
         let vars = TemplateVars::default();

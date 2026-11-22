@@ -57,14 +57,7 @@ pub async fn handle_json_rpc(server: &KnowledgeMcpServer, raw_request: Value) ->
             json!({})
         }
         "tools/list" => {
-            let tools = serde_json::json!([
-                { "name": "search_knowledge", "description": "Searches the knowledge graph using a text query" },
-                { "name": "read_knowledge", "description": "Reads a specific knowledge node by its ID" },
-                { "name": "ingest_knowledge", "description": "Ingests a new knowledge node and returns the created node" },
-                { "name": "update_knowledge", "description": "Updates an existing knowledge node and returns the updated node" },
-                { "name": "delete_knowledge", "description": "Deletes a knowledge node by its ID and returns the deleted node" },
-                { "name": "traverse_knowledge_graph", "description": "Traverses the knowledge graph starting from a subject" }
-            ]);
+            let tools = server.list_tools();
             json!({
                 "tools": tools
             })

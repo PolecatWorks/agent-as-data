@@ -283,6 +283,30 @@ async fn process_thread_message(
         .tool(crate::llm_tools::ViewSkillTool {
             pool: state.pool.clone(),
         })
+        .tool(crate::llm_tools::ListAgentsTool {
+            pool: state.pool.clone(),
+        })
+        .tool(crate::llm_tools::GetAgentTool {
+            pool: state.pool.clone(),
+        })
+        .tool(crate::llm_tools::SearchAgentsTool {
+            pool: state.pool.clone(),
+        })
+        .tool(crate::llm_tools::ListTraitsTool {
+            pool: state.pool.clone(),
+        })
+        .tool(crate::llm_tools::ListMcpServersTool {
+            pool: state.pool.clone(),
+        })
+        .tool(crate::llm_tools::SearchAgentContextTool {
+            pool: state.pool.clone(),
+        })
+        .tool(crate::llm_tools::ListAadCapabilitiesTool {
+            state: state.clone(),
+        })
+        .tool(crate::llm_tools::InvokeAadCapabilityTool {
+            state: state.clone(),
+        })
         .tool(crate::kb_tools::KbNodeBrowseTool {
             backend_url: "http://127.0.0.1:8080".to_string(),
         })

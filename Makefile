@@ -1,24 +1,21 @@
 .PHONY: help all dev aad-be-dev aad-be-watch aad-be-migrate aad-be-test aad-be-docker aad-be-docker-run \
-        aad-mcp-dev aad-mcp-watch aad-mcp-test aad-mcp-docker aad-mcp-docker-run \
         aad-fe-dev aad-fe-test aad-fe-docker aad-fe-docker-run \
         db-up db-down compose-db-up compose-db-down compose-db-clean stop-other-db \
-        test build-be build-mcp build-fe build-docker garden-up garden-test garden-down robot-test
+        test build-be build-fe build-docker garden-up garden-test garden-down robot-test
 
 DATABASE_URL ?= postgres://postgres:mysecretpassword@localhost:5432/aaddb
 
-RUST_APPS := aad-be aad-mcp
+RUST_APPS := aad-be
 NODE_APPS := aad-fe
 
 aad-be_PORT ?= 8080
 aad-be_HEALTH_PORT ?= 8079
-aad-mcp_PORT ?= 8082
-aad-mcp_HEALTH_PORT ?= 8078
 aad-fe_PORT ?= 4200
 ROBOT_REPORT_DIR ?= integration-tests/reports
 GHCR_USER ?= bengreen
 GHCR_TOKEN ?= $(shell gh auth token 2>/dev/null)
 
-all: build-be build-mcp build-fe
+all: build-be build-fe
 
 help:
 	@echo "Agent-As-Data Make Targets:"
@@ -30,11 +27,6 @@ help:
 	@echo "  aad-be-test        - Run backend unit tests via cargo test"
 	@echo "  aad-be-docker      - Build Rust backend Docker image"
 	@echo "  aad-be-docker-run  - Build and run backend container locally"
-	@echo "  aad-mcp-dev        - Run Rust MCP dev server with auto-port cleanup"
-	@echo "  aad-mcp-watch      - Run Rust MCP server with cargo watch auto-recompilation"
-	@echo "  aad-mcp-test       - Run MCP server unit tests via cargo test"
-	@echo "  aad-mcp-docker     - Build Rust MCP Docker image"
-	@echo "  aad-mcp-docker-run - Build and run MCP container locally"
 	@echo "  ensure-pgvector    - Ensure pgvector extension is installed in PostgreSQL"
 	@echo "  aad-fe-dev         - Run Angular frontend dev server"
 	@echo "  aad-fe-test        - Run Angular frontend unit tests via Karma/ChromeHeadless"
@@ -48,9 +40,8 @@ help:
 	@echo "  stop-other-db      - Stop conflicting Postgres container (sward-postgres)"
 	@echo "  test               - Run backend unit tests via cargo test (alias for aad-be-test)"
 	@echo "  build-be           - Build backend Docker image (agent-as-data-be:latest)"
-	@echo "  build-mcp          - Build MCP server Docker image (agent-as-data-mcp:latest)"
 	@echo "  build-fe           - Build frontend Docker image (agent-as-data-fe:latest)"
-	@echo "  build-docker       - Alias for build-be"
+	@echo "  build-docker       - Alias for build-be and build-fe"
 	@echo "  garden-up          - Deploy dev environment via Garden"
 	@echo "  garden-test        - Run integration tests inside Garden local cluster"
 	@echo "  garden-down        - Tear down Garden local dev environment"
@@ -117,36 +108,6 @@ aad-be-docker-run: aad-be-docker
 		-p $(aad-be_HEALTH_PORT):8079 \
 		agent-as-data-be:latest
 
-aad-mcp-dev:
-	-@lsof -t -i :$(aad-mcp_PORT) | xargs kill -9 2>/dev/null || true
-	-@lsof -t -i :$(aad-mcp_HEALTH_PORT) | xargs kill -9 2>/dev/null || true
-	cd aad-mcp-container && \
-	AAD_MCP__WEBSERVICE__ADDRESS="0.0.0.0:$(aad-mcp_PORT)" \
-	AAD_MCP__HAMS__ADDRESS="0.0.0.0:$(aad-mcp_HEALTH_PORT)" \
-	cargo run -- serve
-
-aad-mcp-watch:
-	-@lsof -t -i :$(aad-mcp_PORT) | xargs kill -9 2>/dev/null || true
-	-@lsof -t -i :$(aad-mcp_HEALTH_PORT) | xargs kill -9 2>/dev/null || true
-	cd aad-mcp-container && \
-	AAD_MCP__WEBSERVICE__ADDRESS="0.0.0.0:$(aad-mcp_PORT)" \
-	AAD_MCP__HAMS__ADDRESS="0.0.0.0:$(aad-mcp_HEALTH_PORT)" \
-	AAD_MCP__DEBUGGING__LOG_LEVEL="debug" \
-	RUST_LOG="debug" \
-	cargo watch -x 'run -- serve'
-
-aad-mcp-test:
-	cd aad-mcp-container && cargo test
-
-aad-mcp-docker:
-	docker build -t agent-as-data-mcp:latest aad-mcp-container
-
-aad-mcp-docker-run: aad-mcp-docker
-	docker run -it --rm --name agent-as-data-mcp \
-		-p $(aad-mcp_PORT):8080 \
-		-p $(aad-mcp_HEALTH_PORT):8079 \
-		agent-as-data-mcp:latest
-
 aad-fe-dev:
 	-@lsof -t -i :$(aad-fe_PORT) | xargs kill -9 2>/dev/null || true
 	cd aad-fe-container && npm start
@@ -166,11 +127,9 @@ test: aad-be-test
 
 build-be: aad-be-docker
 
-build-mcp: aad-mcp-docker
-
 build-fe: aad-fe-docker
 
-build-docker: build-be build-mcp build-fe
+build-docker: build-be build-fe
 
 garden-up:
 	@echo "Logging Helm into GHCR and running Garden deploy..."

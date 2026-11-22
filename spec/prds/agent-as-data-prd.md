@@ -38,20 +38,19 @@ Agent-As-Data (AAD) is an enterprise-grade declarative platform and specificatio
 * **ID**: UUID.
 * **Owner ID**: UUID (Strictly enforced non-optional identifier).
 
-### 4. Native Model Context Protocol (MCP) Server Container (`aad-mcp-container`)
-- Dedicated containerized microservice running a Model Context Protocol (MCP) server supporting standard stateless HTTP JSON-RPC 2.0 transport optimized for Kubernetes, Istio Service Mesh, and Ingress Gateways.
-- **Backend Architectural Parity**: Follows the `aad-be-container` structure with Clap CLI parsing (`--config-path`, `--secrets-dir`, `serve`), centralized configuration & secrets loader (fail-fast validation, `fail_debug_delay`), HaMS health monitoring sidecar on `:8079` (`/hams/alive`, `/hams/ready`, `/hams/metrics`), and Tokio runtime harness.
-- **Dedicated Helm Chart (`charts/agent-as-data-mcp`)**: Copied and adapted from `charts/agent-as-data` with dual-port configuration (MCP Web `:8080` and HaMS `:8079`) and pre-configured probes.
-- Initial baseline verification tool:
-  - `hello`: Takes a `name` string input and returns a friendly greeting to the client (`"Hello, {name}!"`).
-- Domain-specific MCP tools:
-  - `search_agents`: RAG vector search for top `n` agents matching task context.
-  - `execute_agent`: Hydrate and run agent with prompt and guardrail checks.
-  - `visualize_agents`: Generate Mermaid flowchart string and JSON graph nodes/edges for agent hierarchies.
-  - `ingest_knowledge`: Store new text notes or graph tuples.
-  - `search_knowledge`: Semantic RAG search over knowledge items.
-  - `query_knowledge_graph`: Query subject-predicate-object relationships.
-- Refer to the dedicated [MCP Server Container PRD](./mcp-server-container-prd.md) for full architectural specifications, schema contracts, transport configurations, and container build requirements.
+### 4. Unified In-Process Model Context Protocol (MCP) Server (`aad-be-container`)
+- **Single-Backend Architecture**: Following the PolecatWorks single-backend-per-repository pattern (matching `Graphrag` and `data-engine`), the standalone `aad-mcp-container` and `charts/agent-as-data-mcp` have been retired. All AAD MCP capabilities are served **in-process** by `aad-be-container` over stateless HTTP JSON-RPC 2.0 at `POST /mcp`, `POST {api_prefix}/mcp` (`/api/aad/v1/mcp`), and `POST /api/v1/mcp` (while preserving `POST {api_prefix}/knowledge/mcp` for backward compatibility).
+- **Unified Domain Tool Surface**: Exposes full JSON-Schema-validated MCP tools via `rmcp` covering:
+  - **Agents Registry**: `list_agents`, `get_agent`, `search_agents`, `create_agent`, `update_agent`, `delete_agent`
+  - **Skills Registry**: `list_skills`, `get_skill`, `create_skill`, `update_skill`, `delete_skill`
+  - **Traits Registry**: `list_traits`, `get_trait`, `create_trait`, `update_trait`, `delete_trait`
+  - **MCP Tools Registry**: `list_mcp_servers`, `get_mcp_server`
+  - **Semantic Context Search**: `search_agent_context`
+  - **Knowledge & Graph**: `search_knowledge`, `read_knowledge`, `ingest_knowledge`, `update_knowledge`, `delete_knowledge`, `traverse_knowledge_graph`
+  - **Workbenches & Memory**: `list_benches`, `get_bench`, `list_threads`, `read_bench_memory`, `update_bench_memory`
+  - **Execution**: `execute_agent`, `get_execution`
+- **Internal Agent Access**: Workbench agents running inside `aad-be-container` (`threads.rs`) also receive in-process `rig` tool bindings backed directly by `AadMcpServer` (zero HTTP loopback).
+- Refer to the [Unified AAD MCP Server PRD](./mcp-server-container-prd.md) for full architectural specifications and schema contracts.
 
 ### 5. Agent Execution Engine
 - **Synchronous & Streaming Execution**: `POST /{{api_prefix}}/v1/agents/:id/execute` and `POST /{{api_prefix}}/v1/agents/search-and-execute`, streaming LLM output and tool call events back via SSE/chunked response.
@@ -471,17 +470,15 @@ flowchart TD
 
 ### Configurable Service Prefixes & Istio VirtualService Composition (Zero Path Rewrites)
 
-All Agent-As-Data microservices run in a shared Kubernetes namespace and expose their REST APIs, MCP endpoints, and Micro-Frontend (MFE) assets through an Istio `VirtualService` **without URI path rewrites**:
+All Agent-As-Data services run in a shared Kubernetes namespace and expose their REST APIs, MCP endpoints, and Micro-Frontend (MFE) assets through an Istio `VirtualService` **without URI path rewrites**:
 - **MFE Frontend (`aad-fe-container` / `aad-fe-nginx-view`)**: Hosted under `/mfe/aad` (`SERVE_ROOT=/mfe/aad`) and configured via runtime `assets/contents/app-config.json` (`"apiPath": "/api/aad/v1"`).
-- **Backend REST API (`aad-be-container`)**: Uses configurable `webservice.api_prefix: "/api/aad/v1"` so domain routes (`/agents`, `/skills`, `/traits`, `/agents/tools`, `/knowledge`, `/benches`, `/threads`, `/analytics`) are mounted directly under `{api_prefix}` (`/api/aad/v1/...`), while preserving `/api/v1/...` and `{api_prefix}/v1/...` aliases for backward compatibility with existing CLI tools and integration test harnesses.
-- **MCP Server (`aad-mcp-container`)**: Uses configurable `webservice.api_prefix: "/api/aad-mcp/v1"` so the stateless HTTP JSON-RPC 2.0 endpoint is exposed directly at `{api_prefix}/mcp` (`/api/aad-mcp/v1/mcp`) alongside `{api_prefix}/v1/mcp`, `/mcp`, and `/`.
+- **Backend REST & MCP API (`aad-be-container`)**: Uses configurable `webservice.api_prefix: "/api/aad/v1"` so domain routes (`/agents`, `/skills`, `/traits`, `/agents/tools`, `/knowledge`, `/knowledge/mcp`, `/mcp`, `/benches`, `/threads`, `/analytics`) are mounted directly under `{api_prefix}` (`/api/aad/v1/...`), while preserving `/mcp`, `/api/v1/...`, and `{api_prefix}/v1/...` aliases for backward compatibility with existing CLI tools, MCP clients, and integration test harnesses.
 
 ```mermaid
 flowchart LR
     Client["Browser / MFE Shell / AI Client"] --> Gateway["Istio Ingress Gateway & VirtualService<br/>(Zero URI Path Rewrites)"]
     Gateway -->|"/mfe/aad & /"| FE["aad-fe-nginx-view (:8080)<br/>SERVE_ROOT=/mfe/aad"]
-    Gateway -->|"/api/aad/v1 & /api"| BE["agent-as-data-be (:8080)<br/>api_prefix: /api/aad/v1"]
-    Gateway -->|"/api/aad-mcp/v1 & /mcp"| MCP["agent-as-data-mcp (:8080)<br/>api_prefix: /api/aad-mcp/v1"]
+    Gateway -->|"/api/aad/v1, /api & /mcp"| BE["agent-as-data-be (:8080)<br/>api_prefix: /api/aad/v1"]
 ```
 
 ---
