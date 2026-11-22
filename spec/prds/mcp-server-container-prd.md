@@ -1,21 +1,19 @@
 # Unified AAD MCP Server PRD (Consolidated from `aad-mcp-container`)
 
 > [!IMPORTANT]
-> **Architectural Consolidation**: The standalone `aad-mcp-container` binary, its separate Helm chart (`charts/agent-as-data-mcp`), and its mock back-office tools have been **removed** to uphold the PolecatWorks **single-backend-per-repository** architecture (matching `Graphrag` and `data-engine`). All Agent-As-Data (AAD) Model Context Protocol (MCP) capabilities are now served **in-process** by [`aad-be-container`](./agent-as-data-prd.md) at `POST /mcp`, `POST {api_prefix}/mcp` (`/api/aad/v1/mcp`), and `POST /api/v1/mcp` (while preserving `POST {api_prefix}/knowledge/mcp` for backward compatibility), and are also exposed directly to internal workbench agents via in-process `rig` tools.
+> **Architectural Consolidation**: The standalone `aad-mcp-container` binary, its separate Helm chart (`charts/agent-as-data-mcp`), its mock back-office tools, and the legacy `KnowledgeMcpServer` (`/knowledge/mcp` route) have been **removed** to uphold the PolecatWorks **single-backend-per-repository** architecture (matching `Graphrag` and `data-engine`). All Agent-As-Data (AAD) Model Context Protocol (MCP) capabilities—including all 6 Knowledge Base & Graph tools—are now served exclusively **in-process** by [`aad-be-container`](./agent-as-data-prd.md) at `POST /mcp`, `POST {api_prefix}/mcp` (`/api/aad/v1/mcp`), and `POST /api/v1/mcp`, and are also exposed directly to internal workbench agents via in-process `rig` tools.
 
 ## Overview
 This document defines the requirements, architecture, and tool contracts for the **Unified Agent-As-Data Model Context Protocol (MCP) Server** embedded directly within `aad-be-container`.
 
-Rather than maintaining a second backend container, `aad-be-container` exposes AAD's full domain surface—**Agents, Skills, Traits, Registered MCP Tool Servers, Semantic Context Search, Knowledge Base & Graph, Workbenches/Threads/Memory, and Agent Execution**—over both standard HTTP JSON-RPC 2.0 MCP endpoints (for external AI clients, IDEs, `Angry-agent`, and registered MCP tools) and in-process `rig` agent tools (for autonomous workbench threads).
+Rather than maintaining a second backend container or separate Knowledge MCP handler, `aad-be-container` exposes AAD's full domain surface—**Agents, Skills, Traits, Registered MCP Tool Servers, Semantic Context Search, Knowledge Base & Graph, Workbenches/Threads/Memory, and Agent Execution**—over both standard HTTP JSON-RPC 2.0 MCP endpoints (for external AI clients, IDEs, `Angry-agent`, and registered MCP tools) and in-process `rig` agent tools (for autonomous workbench threads).
 
 ```mermaid
 flowchart LR
     Clients["External MCP Clients / IDEs / Angry-agent"] -->|"HTTP JSON-RPC 2.0\nPOST /mcp | /api/aad/v1/mcp | /api/v1/mcp"| McpHandler["aad_mcp_handler\n(Axum Router)"]
     Workbench["Workbench Agent Loop\n(threads.rs / rig)"] -->|"In-process rig Tools\n(zero HTTP loopback)"| AadMcp["AadMcpServer\n(rmcp ToolRouter + AppState)"]
     McpHandler --> AadMcp
-    LegacyKb["POST /api/aad/v1/knowledge/mcp"] --> KnowledgeMcp["KnowledgeMcpServer\n(backward-compatible subset)"]
     AadMcp --> PG[("PostgreSQL + pgvector")]
-    KnowledgeMcp --> PG
 ```
 
 ---

@@ -3,8 +3,8 @@ server_name: aad-knowledge-mcp
 transport_type: http
 sync_policy: manual
 endpoint_config:
-  url: "${AAD_KNOWLEDGE_MCP_URL:-http://localhost:8080/api/aad/v1/knowledge/mcp}"
-  description: "Agent-As-Data native Knowledge Base MCP server providing BREAD and graph traversal operations over project knowledge nodes and SPO relational tuples."
+  url: "${AAD_KNOWLEDGE_MCP_URL:-http://localhost:8080/api/aad/v1/mcp}"
+  description: "Agent-As-Data Knowledge Base MCP tool alias targeting the unified AAD MCP server (/api/aad/v1/mcp) for BREAD and graph traversal operations over project knowledge nodes and SPO relational tuples."
   tags:
     - agent-as-data
     - mcp

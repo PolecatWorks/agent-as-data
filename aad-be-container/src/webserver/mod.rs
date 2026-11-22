@@ -8,8 +8,6 @@ pub mod benches;
 pub mod execution;
 pub mod fs;
 pub mod knowledge;
-pub mod knowledge_mcp;
-pub mod knowledge_mcp_handler;
 pub mod memory;
 pub mod skills;
 pub mod threads;
@@ -34,7 +32,6 @@ fn v1_routes(state: AppState) -> Router {
         .nest("/traits", traits::router())
         .nest("/agents/tools", tools::router())
         .nest("/knowledge", knowledge::router())
-        .nest("/knowledge/mcp", knowledge_mcp_handler::router())
         .nest("/mcp", aad_mcp_handler::router())
         .merge(execution::router())
         .nest("/benches", benches::router())
@@ -86,8 +83,6 @@ pub async fn start_webserver(
     config: &WebServiceConfig,
     ct: tokio_util::sync::CancellationToken,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    let _ = knowledge_mcp::DB_POOL.set(state.pool.clone());
-
     let app = app_router(state);
     let listener = tokio::net::TcpListener::bind(&config.address)
         .await
@@ -283,7 +278,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_unified_mcp_and_knowledge_mcp_routes() {
+    async fn test_unified_mcp_routes_expose_knowledge_tools_and_retire_legacy_route() {
         use http_body_util::BodyExt;
 
         let state = build_test_state("/api/aad/v1");
@@ -295,6 +290,15 @@ mod tests {
             "method": "tools/list"
         })
         .to_string();
+
+        let knowledge_tools = [
+            "search_knowledge",
+            "read_knowledge",
+            "ingest_knowledge",
+            "update_knowledge",
+            "delete_knowledge",
+            "traverse_knowledge_graph",
+        ];
 
         for uri in ["/mcp", "/api/aad/v1/mcp", "/api/v1/mcp"] {
             let res = app
@@ -318,30 +322,39 @@ mod tests {
                 "URI {} should expose list_agents",
                 uri
             );
-            assert!(
-                tools.iter().any(|t| t["name"] == "search_knowledge"),
-                "URI {} should expose search_knowledge",
-                uri
-            );
+            for kb_tool in knowledge_tools {
+                assert!(
+                    tools
+                        .iter()
+                        .any(|t| t["name"] == kb_tool && t["inputSchema"].is_object()),
+                    "URI {} should expose {} with JSON inputSchema",
+                    uri,
+                    kb_tool
+                );
+            }
         }
 
-        // Verify backward-compatible /api/aad/v1/knowledge/mcp still returns Knowledge tools with schemas
-        let kb_res = app
-            .clone()
-            .oneshot(
-                Request::builder()
-                    .method("POST")
-                    .uri("/api/aad/v1/knowledge/mcp")
-                    .header("content-type", "application/json")
-                    .body(Body::from(list_payload))
-                    .unwrap(),
-            )
-            .await
-            .unwrap();
-        assert_eq!(kb_res.status(), StatusCode::OK);
-        let kb_bytes = kb_res.into_body().collect().await.unwrap().to_bytes();
-        let kb_body: serde_json::Value = serde_json::from_slice(&kb_bytes).unwrap();
-        let kb_tools = kb_body["result"]["tools"].as_array().unwrap();
-        assert!(kb_tools.iter().any(|t| t["name"] == "search_knowledge" && t["inputSchema"].is_object()));
+        // Verify retired /knowledge/mcp POST endpoints are no longer mounted
+        // (POST falls through to /knowledge/{id} which only accepts GET/PUT/DELETE -> 405)
+        for retired_uri in ["/api/aad/v1/knowledge/mcp", "/api/v1/knowledge/mcp"] {
+            let kb_res = app
+                .clone()
+                .oneshot(
+                    Request::builder()
+                        .method("POST")
+                        .uri(retired_uri)
+                        .header("content-type", "application/json")
+                        .body(Body::from(list_payload.clone()))
+                        .unwrap(),
+                )
+                .await
+                .unwrap();
+            assert_eq!(
+                kb_res.status(),
+                StatusCode::METHOD_NOT_ALLOWED,
+                "Retired URI {} should not accept MCP POST requests",
+                retired_uri
+            );
+        }
     }
 }
