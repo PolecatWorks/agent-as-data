@@ -74,3 +74,9 @@ flowchart TD
 
 ### 3. Service Account Integration (`agent-as-data-sa`)
 - Used by automated CI/CD pipelines, MCP daemon runners, and telemetry collectors to push and pull agent definitions programmatically.
+
+### 4. Ecosystem Realm Groups (`DataAgentAdmins` & `DataAgentUsers`)
+Agent-As-Data client roles are mapped to users through centralized Keycloak realm groups defined in `Mfe-shell/fluxcd-dev/keycloak-service-capture.yaml`:
+- **`DataAgentAdmins` (`metadata.name: data-agent-admins`)**: Grants `agent:read`, `agent:author`, `agent:publish`, and `governance:admin`.
+- **`DataAgentUsers` (`metadata.name: data-agent-users`)**: Grants `agent:read` and `agent:author`.
+
