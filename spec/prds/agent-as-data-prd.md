@@ -39,7 +39,7 @@ Agent-As-Data (AAD) is an enterprise-grade declarative platform and specificatio
 * **Owner ID**: UUID (Strictly enforced non-optional identifier).
 
 ### 4. Unified In-Process Model Context Protocol (MCP) Server (`aad-be-container`)
-- **Single-Backend Architecture**: Following the PolecatWorks single-backend-per-repository pattern (matching `Graphrag` and `data-engine`), the standalone `aad-mcp-container` and `charts/agent-as-data-mcp` have been retired. All AAD MCP capabilities are served **in-process** by `aad-be-container` over stateless HTTP JSON-RPC 2.0 at `POST /mcp`, `POST {api_prefix}/mcp` (`/api/aad/v1/mcp`), and `POST /api/v1/mcp` (while preserving `POST {api_prefix}/knowledge/mcp` for backward compatibility).
+- **Single-Backend Architecture**: Following the PolecatWorks single-backend-per-repository pattern (matching `Graphrag` and `data-engine`), the standalone `aad-mcp-container`, `charts/agent-as-data-mcp`, and the legacy `/knowledge/mcp` endpoint have been retired. All AAD MCP capabilities—including all 6 Knowledge Base & Graph tools—are served exclusively **in-process** by `aad-be-container` over stateless HTTP JSON-RPC 2.0 at `POST /mcp`, `POST {api_prefix}/mcp` (`/api/aad/v1/mcp`), and `POST /api/v1/mcp`.
 - **Unified Domain Tool Surface**: Exposes full JSON-Schema-validated MCP tools via `rmcp` covering:
   - **Agents Registry**: `list_agents`, `get_agent`, `search_agents`, `create_agent`, `update_agent`, `delete_agent`
   - **Skills Registry**: `list_skills`, `get_skill`, `create_skill`, `update_skill`, `delete_skill`
@@ -472,7 +472,7 @@ flowchart TD
 
 All Agent-As-Data services run in a shared Kubernetes namespace and expose their REST APIs, MCP endpoints, and Micro-Frontend (MFE) assets through an Istio `VirtualService` **without URI path rewrites**:
 - **MFE Frontend (`aad-fe-container` / `aad-fe-nginx-view`)**: Hosted under `/mfe/aad` (`SERVE_ROOT=/mfe/aad`) and configured via runtime `assets/contents/app-config.json` (`"apiPath": "/api/aad/v1"`).
-- **Backend REST & MCP API (`aad-be-container`)**: Uses configurable `webservice.api_prefix: "/api/aad/v1"` so domain routes (`/agents`, `/skills`, `/traits`, `/agents/tools`, `/knowledge`, `/knowledge/mcp`, `/mcp`, `/benches`, `/threads`, `/analytics`) are mounted directly under `{api_prefix}` (`/api/aad/v1/...`), while preserving `/mcp`, `/api/v1/...`, and `{api_prefix}/v1/...` aliases for backward compatibility with existing CLI tools, MCP clients, and integration test harnesses.
+- **Backend REST & MCP API (`aad-be-container`)**: Uses configurable `webservice.api_prefix: "/api/aad/v1"` so domain routes (`/agents`, `/skills`, `/traits`, `/agents/tools`, `/knowledge`, `/mcp`, `/benches`, `/threads`, `/analytics`) are mounted directly under `{api_prefix}` (`/api/aad/v1/...`), while preserving `/mcp`, `/api/v1/...`, and `{api_prefix}/v1/...` aliases for backward compatibility with existing CLI tools, MCP clients, and integration test harnesses.
 
 ```mermaid
 flowchart LR

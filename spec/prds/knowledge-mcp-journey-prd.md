@@ -37,10 +37,10 @@ The following tools must be exposed via the backend:
 - `kb_node_edit`: Updates an existing knowledge node by ID.
 - `kb_node_delete`: Deletes a knowledge node by ID.
 
-### 5.2. Tool Implementation Constraints
-- Built into the Rust backend (`aad-be-container/src/llm_tools.rs`).
-- Implement the `PortableTool` trait from `rig_core`.
+### 5.2. Tool Implementation Constraints & Unified MCP Endpoint
+- Built into the Rust backend (`aad-be-container/src/webserver/aad_mcp.rs` and `aad-be-container/src/llm_tools.rs`).
+- All 6 Knowledge MCP tools (`search_knowledge`, `read_knowledge`, `ingest_knowledge`, `update_knowledge`, `delete_knowledge`, `traverse_knowledge_graph`) are served exclusively through the unified in-process `AadMcpServer` at `POST /mcp`, `POST /api/aad/v1/mcp`, and `POST /api/v1/mcp` (and in-process via `rig_core` tools). The legacy `/knowledge/mcp` endpoint and standalone `KnowledgeMcpServer` have been retired.
 - Tool methods must return `Result<String, String>` mapping to JSON output.
 
 ## 6. Success Metrics
-- Successful execution of a Robot Framework integration test validating the complete Browse -> Read -> Add -> Edit -> Delete cycle using the MCP tools.
+- Successful execution of a Robot Framework integration test validating the complete Browse -> Read -> Add -> Edit -> Delete cycle using the unified MCP endpoint (`/api/aad/v1/mcp`).

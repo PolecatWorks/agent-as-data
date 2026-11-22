@@ -49,6 +49,7 @@ The Knowledge & Data System in **Agent-As-Data (AAD)** serves as a persistent **
 ### 4. Knowledge Retrieval & Graph Traversal
 - **Semantic Vector Search**: Nearest-neighbor retrieval over chunked text context given a user or agent prompt. Both source documents and granular concept nodes are indexed into `knowledge_embeddings` (`pgvector`).
 - **Multi-Hop Graph Queries**: Traversal endpoint (`POST /{{api_prefix}}/v1/knowledge/graph/traverse`) to discover connected entities, conceptual dependencies, and document hierarchies.
+- **Unified MCP Exposure**: All 6 Knowledge MCP tools (`search_knowledge`, `read_knowledge`, `ingest_knowledge`, `update_knowledge`, `delete_knowledge`, `traverse_knowledge_graph`) are served exclusively through the unified in-process `AadMcpServer` at `POST /mcp`, `POST /api/aad/v1/mcp`, and `POST /api/v1/mcp` (the legacy `/knowledge/mcp` route has been retired).
 - **AI / LLM Integration**: Integration with AI via the `rig-core` crate and connection to an Ollama instance to process natural language queries over vector data (RAG).
 
 ### 5. Knowledge Editor (BREAD)
