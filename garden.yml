@@ -78,7 +78,7 @@ spec:
           spec:
             containers:
               - name: postgres
-                image: pgvector/pgvector:pg16
+                image: pgvector/pgvector:pg18
                 env:
                   - name: POSTGRES_DB
                     value: agent_as_data
