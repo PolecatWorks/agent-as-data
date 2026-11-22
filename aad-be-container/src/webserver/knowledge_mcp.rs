@@ -18,6 +18,10 @@ impl KnowledgeMcpServer {
     pub fn new() -> Self {
         Self {}
     }
+
+    pub fn list_tools(&self) -> Vec<rmcp::model::Tool> {
+        Self::tool_router().list_all()
+    }
 }
 
 #[tool_router]

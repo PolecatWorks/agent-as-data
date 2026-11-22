@@ -1,5 +1,7 @@
 //! HTTP webserver and API router definitions.
 
+pub mod aad_mcp;
+pub mod aad_mcp_handler;
 pub mod agents;
 pub mod analytics;
 pub mod benches;
@@ -14,7 +16,7 @@ pub mod threads;
 pub mod tools;
 pub mod traits;
 
-use axum::{Router, routing::get};
+use axum::{Router, routing::{get, post}};
 use axum_prometheus::PrometheusMetricLayer;
 use tower_http::trace::{DefaultMakeSpan, DefaultOnRequest, DefaultOnResponse, TraceLayer};
 use tracing::{Level, info};
@@ -33,6 +35,7 @@ fn v1_routes(state: AppState) -> Router {
         .nest("/agents/tools", tools::router())
         .nest("/knowledge", knowledge::router())
         .nest("/knowledge/mcp", knowledge_mcp_handler::router())
+        .nest("/mcp", aad_mcp_handler::router())
         .merge(execution::router())
         .nest("/benches", benches::router())
         .nest("/benches", fs::router())
@@ -55,6 +58,8 @@ pub fn app_router(state: AppState) -> Router {
 
     let mut router = Router::new()
         .route("/health", get(|| async { "OK" }))
+        .route("/mcp", post(aad_mcp_handler::handle_http_rpc))
+        .with_state(state.clone())
         .nest(normalized_prefix, v1_routes(state.clone()));
 
     let prefixed_v1 = format!("{}/v1", normalized_prefix);
@@ -275,5 +280,68 @@ mod tests {
             .await
             .unwrap();
         assert_eq!(res.status(), StatusCode::OK);
+    }
+
+    #[tokio::test]
+    async fn test_unified_mcp_and_knowledge_mcp_routes() {
+        use http_body_util::BodyExt;
+
+        let state = build_test_state("/api/aad/v1");
+        let app = app_router(state);
+
+        let list_payload = serde_json::json!({
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "tools/list"
+        })
+        .to_string();
+
+        for uri in ["/mcp", "/api/aad/v1/mcp", "/api/v1/mcp"] {
+            let res = app
+                .clone()
+                .oneshot(
+                    Request::builder()
+                        .method("POST")
+                        .uri(uri)
+                        .header("content-type", "application/json")
+                        .body(Body::from(list_payload.clone()))
+                        .unwrap(),
+                )
+                .await
+                .unwrap();
+            assert_eq!(res.status(), StatusCode::OK, "URI {} should return 200", uri);
+            let bytes = res.into_body().collect().await.unwrap().to_bytes();
+            let body: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+            let tools = body["result"]["tools"].as_array().unwrap();
+            assert!(
+                tools.iter().any(|t| t["name"] == "list_agents"),
+                "URI {} should expose list_agents",
+                uri
+            );
+            assert!(
+                tools.iter().any(|t| t["name"] == "search_knowledge"),
+                "URI {} should expose search_knowledge",
+                uri
+            );
+        }
+
+        // Verify backward-compatible /api/aad/v1/knowledge/mcp still returns Knowledge tools with schemas
+        let kb_res = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri("/api/aad/v1/knowledge/mcp")
+                    .header("content-type", "application/json")
+                    .body(Body::from(list_payload))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(kb_res.status(), StatusCode::OK);
+        let kb_bytes = kb_res.into_body().collect().await.unwrap().to_bytes();
+        let kb_body: serde_json::Value = serde_json::from_slice(&kb_bytes).unwrap();
+        let kb_tools = kb_body["result"]["tools"].as_array().unwrap();
+        assert!(kb_tools.iter().any(|t| t["name"] == "search_knowledge" && t["inputSchema"].is_object()));
     }
 }

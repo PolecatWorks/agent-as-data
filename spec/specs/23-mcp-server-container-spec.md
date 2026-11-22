@@ -1,6 +1,6 @@
 # Spec 23: Dedicated MCP Server Container & Baseline Greeting Tool
 
-**Status**: `complete`
+**Status**: `deprecated` *(superseded by [45-unified-aad-mcp-and-container-consolidation-spec.md](./45-unified-aad-mcp-and-container-consolidation-spec.md))*
 
 ---
 

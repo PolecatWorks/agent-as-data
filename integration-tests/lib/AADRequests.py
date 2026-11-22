@@ -273,11 +273,11 @@ class AADRequests:
 
     def resolve_hams_endpoint(self, service="backend"):
         """
-        Resolves the base URL for the HaMS telemetry endpoint of the requested service.
+        Resolves the base URL for the HaMS telemetry endpoint of the backend service.
         Hierarchy:
-          1. Direct URL override (HAMS_BE_URL / HAMS_MCP_URL)
-          2. Pod IP direct addressing (BE_POD_IP / MCP_POD_IP) with port 8079
-          3. Local development loopback fallback (:8079 for backend, :8078 for mcp)
+          1. Direct URL override (HAMS_BE_URL)
+          2. Pod IP direct addressing (BE_POD_IP) with port 8079
+          3. Local development loopback fallback (:8079)
         """
         s = service.lower().strip()
         if s in ("backend", "be", "aad-be-container", "agent-as-data"):
@@ -288,16 +288,8 @@ class AADRequests:
             if pod_ip:
                 return f"http://{pod_ip}:8079"
             return "http://localhost:8079"
-        elif s in ("mcp", "aad-mcp-container", "agent-as-data-mcp"):
-            override = self._get_var("HAMS_MCP_URL")
-            if override:
-                return override.rstrip("/")
-            pod_ip = self._get_var("MCP_POD_IP")
-            if pod_ip:
-                return f"http://{pod_ip}:8079"
-            return "http://localhost:8078"
         else:
-            raise ValueError(f"Unknown service '{service}'. Expected 'backend' or 'mcp'.")
+            raise ValueError(f"Unknown service '{service}'. Expected 'backend'.")
 
     def get_hams_metrics(self, service="backend", timeout=5):
         """

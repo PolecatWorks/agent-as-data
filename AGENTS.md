@@ -95,6 +95,6 @@ Both dev servers have **watch/hot-reload enabled** — do **NOT** manually kill 
 
 ## Build & Test Execution
 
-- **Always Use `Makefile` Targets**: When running builds or tests (e.g., `make aad-be-test`, `make aad-mcp-test`, `make aad-fe-test`, `make build-be`, `make build-mcp`, `make build-fe`, `make robot-test`), always use the `Makefile` rather than invoking `cargo`, `npm`, or `ng` directly. Run `make help` to see all available targets.
+- **Always Use `Makefile` Targets**: When running builds or tests (e.g., `make aad-be-test`, `make aad-fe-test`, `make build-be`, `make build-fe`, `make robot-test`), always use the `Makefile` rather than invoking `cargo`, `npm`, or `ng` directly. Run `make help` to see all available targets.
 
 

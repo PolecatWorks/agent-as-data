@@ -6,7 +6,7 @@ Agent-As-Data is a declarative platform and specification for representing AI ag
 
 ## Directory & Repository Structure
 
-- `aad-be-container/`: Rust backend microservice (`Axum`, `SQLx`, `pgvector`, `Tokio`, `HaMS`).
+- `aad-be-container/`: Rust backend microservice (`Axum`, `SQLx`, `pgvector`, `Tokio`, `HaMS`, and unified in-process `rmcp` MCP server at `/mcp`, `/api/aad/v1/mcp`, `/api/v1/mcp`, and `/api/aad/v1/knowledge/mcp`).
 - `aad-fe-container/`: Angular 18+ Developer UI Studio web dashboard.
 - `spec/`: Specifications, Product Requirement Documents (PRDs), research notes, and DDL schema references.
   - `spec/prds/`: Master product requirements and domain PRDs.

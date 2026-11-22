@@ -902,20 +902,16 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_live_sample_mcp_container_hello_tool() {
-        // Verify against the running sample container if available on 8082
-        let sample_url = "http://127.0.0.1:8082/mcp";
+    async fn test_live_aad_be_unified_mcp_capabilities() {
+        // Verify against a running aad-be-container instance if available on 8080
+        let sample_url = "http://127.0.0.1:8080/api/aad/v1/mcp";
         if let Ok(caps) = fetch_mcp_capabilities(sample_url).await {
             let tools = caps.get("tools").and_then(|t| t.as_array()).unwrap();
-            assert!(tools.iter().any(|t| t["name"] == "hello"));
-
-            let exec_res =
-                execute_remote_mcp_tool(sample_url, "hello", json!({"name": "Antigravity"})).await;
-            assert!(exec_res.is_ok());
-            assert_eq!(exec_res.unwrap(), json!("Hello, Antigravity!"));
+            assert!(tools.iter().any(|t| t["name"] == "list_agents"));
+            assert!(tools.iter().any(|t| t["name"] == "search_knowledge"));
         } else {
-            // Live container not running; skip live assertion gracefully
-            println!("Note: Live sample MCP container not running on 8082, skipping live test");
+            // Live backend not running; skip live assertion gracefully
+            println!("Note: Live aad-be-container not running on 8080, skipping live test");
         }
     }
 

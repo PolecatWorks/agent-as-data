@@ -1,13 +1,22 @@
-# MCP Server Container (`aad-mcp-container`) PRD
+# Unified AAD MCP Server PRD (Consolidated from `aad-mcp-container`)
+
+> [!IMPORTANT]
+> **Architectural Consolidation**: The standalone `aad-mcp-container` binary, its separate Helm chart (`charts/agent-as-data-mcp`), and its mock back-office tools have been **removed** to uphold the PolecatWorks **single-backend-per-repository** architecture (matching `Graphrag` and `data-engine`). All Agent-As-Data (AAD) Model Context Protocol (MCP) capabilities are now served **in-process** by [`aad-be-container`](./agent-as-data-prd.md) at `POST /mcp`, `POST {api_prefix}/mcp` (`/api/aad/v1/mcp`), and `POST /api/v1/mcp` (while preserving `POST {api_prefix}/knowledge/mcp` for backward compatibility), and are also exposed directly to internal workbench agents via in-process `rig` tools.
 
 ## Overview
-This document defines the requirements, architecture, container specifications, and initial tool contracts for the dedicated **Model Context Protocol (MCP) Server Container (`aad-mcp-container`)** within the **Agent-As-Data (AAD)** ecosystem. 
+This document defines the requirements, architecture, and tool contracts for the **Unified Agent-As-Data Model Context Protocol (MCP) Server** embedded directly within `aad-be-container`.
 
-While the primary backend microservice ([aad-be-container](./agent-as-data-prd.md)) provides persistent storage, declarative agent versioning, and execution pipelines, the MCP Server container provides an isolated, highly accessible interface for AI clients (such as IDEs, desktop assistants, and autonomous agents) to communicate with AAD capabilities using the standardized Model Context Protocol (MCP).
+Rather than maintaining a second backend container, `aad-be-container` exposes AAD's full domain surface—**Agents, Skills, Traits, Registered MCP Tool Servers, Semantic Context Search, Knowledge Base & Graph, Workbenches/Threads/Memory, and Agent Execution**—over both standard HTTP JSON-RPC 2.0 MCP endpoints (for external AI clients, IDEs, `Angry-agent`, and registered MCP tools) and in-process `rig` agent tools (for autonomous workbench threads).
 
-The code implementation strictly adheres to the established architectural pattern of `aad-be-container` (Clap CLI entrypoint, centralized configuration and secrets loader, fail-fast validation, HaMS health monitoring sidecar on health port `8079`, and web transport listener). Deployment assets include a dedicated Helm chart (`charts/agent-as-data-mcp`) copied and adapted from the existing backend Helm chart.
-
-As a baseline milestone, the container build packages an operational MCP server exposing a canonical verification tool: `hello`, which accepts a `name` string input and returns a friendly greeting.
+```mermaid
+flowchart LR
+    Clients["External MCP Clients / IDEs / Angry-agent"] -->|"HTTP JSON-RPC 2.0\nPOST /mcp | /api/aad/v1/mcp | /api/v1/mcp"| McpHandler["aad_mcp_handler\n(Axum Router)"]
+    Workbench["Workbench Agent Loop\n(threads.rs / rig)"] -->|"In-process rig Tools\n(zero HTTP loopback)"| AadMcp["AadMcpServer\n(rmcp ToolRouter + AppState)"]
+    McpHandler --> AadMcp
+    LegacyKb["POST /api/aad/v1/knowledge/mcp"] --> KnowledgeMcp["KnowledgeMcpServer\n(backward-compatible subset)"]
+    AadMcp --> PG[("PostgreSQL + pgvector")]
+    KnowledgeMcp --> PG
+```
 
 ---
 

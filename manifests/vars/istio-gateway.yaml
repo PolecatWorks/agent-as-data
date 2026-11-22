@@ -2,4 +2,4 @@
 DATA_ENGINE_MCP_URL: "http://ai.k8s/api/data-engine/v1/mcp"
 GRAPHRAG_MCP_URL: "http://ai.k8s/api/graphrag/v1/mcp"
 AAD_KNOWLEDGE_MCP_URL: "http://aad.k8s/api/aad/v1/knowledge/mcp"
-AAD_MCP_URL: "http://aad.k8s/api/aad-mcp/v1/mcp"
+AAD_MCP_URL: "http://aad.k8s/api/aad/v1/mcp"
