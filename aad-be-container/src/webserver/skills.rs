@@ -450,18 +450,22 @@ pub async fn ai_review_skill(
         .preamble(&system_prompt)
         .build();
 
-    let output_text = agent.prompt(&prompt).await.unwrap_or_else(|e| format!("{{\"feedback\": \"LLM generation failed: {}\", \"suggested_rewrite\": \"\", \"similar_skills\": []}}", e));
+    let output_text = agent.prompt(&prompt).await?;
 
-    // Try to parse the output as JSON
-    let mut parsed_response: crate::models::ReviewSkillResponse = serde_json::from_str(&output_text).unwrap_or_else(|_| {
-
-        let cleaned_output = output_text.trim_start_matches("```json").trim_end_matches("```").trim();
-        serde_json::from_str(cleaned_output).unwrap_or_else(|_| crate::models::ReviewSkillResponse {
-            feedback: "Failed to parse LLM JSON response. Raw output:\n".to_string() + &output_text,
-            suggested_rewrite: payload.current_description.clone(),
-            similar_skills: similarities.clone(),
-        })
-    });
+    // Parse the LLM output as JSON (stripping optional markdown code fences)
+    let cleaned_output = output_text
+        .trim()
+        .trim_start_matches("```json")
+        .trim_start_matches("```")
+        .trim_end_matches("```")
+        .trim();
+    let mut parsed_response: crate::models::ReviewSkillResponse =
+        serde_json::from_str(cleaned_output).map_err(|e| {
+            AppError::LlmExtractionError(format!(
+                "Failed to parse LLM JSON response: {}. Raw output: {}",
+                e, output_text
+            ))
+        })?;
 
     // In case the LLM generates string overlaps rather than structured array, fallback
     if parsed_response.similar_skills.is_empty() && !similarities.is_empty() {
