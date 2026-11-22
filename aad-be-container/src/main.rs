@@ -58,8 +58,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 init_logging(&config.debugging.log_level);
                 delay = Some(config.debugging.fail_debug_delay);
 
-                run_in_tokio(&config.runtime, async {
-                    service_main(&cli.config_path, &cli.secrets_dir)
+                config
+                    .validate()
+                    .map_err(|e| format!("Fail-Fast Configuration Error: {}", e))?;
+
+                let runtime_cfg = config.runtime.clone();
+                run_in_tokio(&runtime_cfg, async {
+                    service_main(config)
                         .await
                         .map_err(|e| format!("Service Error: {}", e))
                 })?;
@@ -94,8 +99,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 init_logging(&config.debugging.log_level);
                 delay = Some(config.debugging.fail_debug_delay);
 
-                run_in_tokio(&config.runtime, async {
-                    run_migrations(&cli.config_path, &cli.secrets_dir)
+                config
+                    .validate()
+                    .map_err(|e| format!("Fail-Fast Configuration Error: {}", e))?;
+
+                let runtime_cfg = config.runtime.clone();
+                run_in_tokio(&runtime_cfg, async {
+                    run_migrations(config)
                         .await
                         .map_err(|e| format!("Migration error: {}", e))
                 })?;

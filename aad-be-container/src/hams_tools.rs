@@ -12,7 +12,7 @@ pub struct HamsHarness {
 
 impl HamsHarness {
     pub async fn init(mut hams: Hams, ct: CancellationToken) -> Result<Self, String> {
-        let ready_signal = ProbeManual::new("db-connected", true);
+        let ready_signal = ProbeManual::new("db-connected", false);
 
         hams.ready_insert_async(
             Box::new(FFIProbe::from(ready_signal.clone())) as Box<dyn AsyncHealthProbe>
