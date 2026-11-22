@@ -194,11 +194,11 @@ mod tests {
                 fail_debug_delay: std::time::Duration::from_secs(0),
             },
             webservice: crate::config::WebServiceConfig {
-                address: "127.0.0.1:8080".into(),
+                address: "127.0.0.1:8080".parse().unwrap(),
                 api_prefix: "/api/aad/v1".into(),
             },
             llm: crate::config::LlmConfig {
-                ollama_url: "http://localhost:11434".into(),
+                ollama_url: url::Url::parse("http://localhost:11434").unwrap(),
                 model: "llama3".into(),
                 timeout: std::time::Duration::from_secs(30),
                 default_max_turns: 5,

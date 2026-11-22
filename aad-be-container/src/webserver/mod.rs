@@ -48,12 +48,7 @@ fn v1_routes(state: AppState) -> Router {
 
 pub fn app_router(state: AppState) -> Router {
     let metric_layer = PrometheusMetricLayer::new();
-    let prefix = state.config.webservice.api_prefix.trim_end_matches('/');
-    let normalized_prefix = if prefix.is_empty() {
-        "/api/aad/v1"
-    } else {
-        prefix
-    };
+    let normalized_prefix = state.config.webservice.api_prefix.trim_end_matches('/');
 
     let mut base_router = Router::new().route("/health", get(|| async { "OK" }));
     if state.config.mcp.enabled {
@@ -89,7 +84,7 @@ pub async fn start_webserver(
     ct: tokio_util::sync::CancellationToken,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let app = app_router(state);
-    let listener = tokio::net::TcpListener::bind(&config.address)
+    let listener = tokio::net::TcpListener::bind(config.address)
         .await
         .map_err(|e| format!("Listener bind error on {}: {}", config.address, e))?;
 
@@ -128,11 +123,11 @@ mod tests {
                 fail_debug_delay: std::time::Duration::from_secs(0),
             },
             webservice: crate::config::WebServiceConfig {
-                address: "127.0.0.1:8080".into(),
+                address: "127.0.0.1:8080".parse().unwrap(),
                 api_prefix: api_prefix.into(),
             },
             llm: crate::config::LlmConfig {
-                ollama_url: "http://localhost:11434".into(),
+                ollama_url: url::Url::parse("http://localhost:11434").unwrap(),
                 model: "llama3".into(),
                 timeout: std::time::Duration::from_secs(30),
                 default_max_turns: 5,

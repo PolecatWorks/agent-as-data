@@ -22,7 +22,7 @@ use sqlx::{PgPool, Row};
 use uuid::Uuid;
 
 use crate::{
-    mcp::{McpConfig, McpError},
+    mcp::McpError,
     models::{
         Agent, AgentSearchRequest, Bench, ExecuteAgentRequest, GraphTraverseRequest,
         GraphTraverseResult, KnowledgeIdRequest, KnowledgeNode, KnowledgeSearchRequest,
@@ -370,7 +370,7 @@ pub struct ExecutionIdMcpRequest {
 #[derive(Clone)]
 pub struct AadMcpServer {
     pool: PgPool,
-    state: Option<AppState>,
+    state: AppState,
     tool_router: ToolRouter<Self>,
 }
 
@@ -379,15 +379,7 @@ impl AadMcpServer {
         let pool = state.pool.clone();
         Self {
             pool,
-            state: Some(state),
-            tool_router: Self::tool_router(),
-        }
-    }
-
-    pub fn from_pool(pool: PgPool) -> Self {
-        Self {
-            pool,
-            state: None,
+            state,
             tool_router: Self::tool_router(),
         }
     }
@@ -1411,14 +1403,11 @@ impl AadMcpServer {
         &self,
         Parameters(req): Parameters<ExecuteAgentMcpRequest>,
     ) -> Result<String, String> {
-        let Some(state) = self.state.clone() else {
-            return Err("execute_agent requires full AppState runtime configuration".to_string());
-        };
         if req.prompt.trim().is_empty() {
             return Err("'prompt' must not be empty".to_string());
         }
         let (_, Json(resp)) = crate::webserver::execution::execute_agent(
-            State(state),
+            State(self.state.clone()),
             Path(req.agent_id),
             Json(ExecuteAgentRequest {
                 prompt: req.prompt,
@@ -1448,12 +1437,7 @@ impl AadMcpServer {
 #[tool_handler(router = self.tool_router)]
 impl ServerHandler for AadMcpServer {
     fn get_info(&self) -> ServerConfig {
-        let instructions = self
-            .state
-            .as_ref()
-            .map(|s| s.config.mcp.instructions.clone())
-            .unwrap_or_else(|| McpConfig::default().instructions);
         ServerConfig::new(ServerCapabilities::builder().enable_tools().build())
-            .with_instructions(instructions)
+            .with_instructions(self.state.config.mcp.instructions.clone())
     }
 }

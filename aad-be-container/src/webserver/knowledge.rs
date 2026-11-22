@@ -151,7 +151,7 @@ pub async fn analyze_markdown(
     Json(payload): Json<AnalyzeMarkdownRequest>,
 ) -> Result<Json<AnalyzeMarkdownResponse>, crate::error::AppError> {
     let builder = rig_core::providers::ollama::Client::builder()
-        .base_url(&state.config.llm.ollama_url)
+        .base_url(state.config.llm.ollama_url.as_str())
         .api_key(rig_core::client::Nothing);
 
     let ollama_client = builder.build()?;
