@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   postgres:
-    image: pgvector/pgvector:pg16
+    image: pgvector/pgvector:pg18
     container_name: aad-postgres
     environment:
       POSTGRES_USER: postgres
@@ -11,7 +11,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - aad-pgdata:/var/lib/postgresql/data
+      - aad-pgdata:/var/lib/postgresql
 
 volumes:
   aad-pgdata:
