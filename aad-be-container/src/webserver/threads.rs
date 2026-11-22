@@ -255,10 +255,19 @@ async fn process_thread_message(
     );
 
     let client_builder = rig::providers::ollama::Client::builder()
-        .base_url(&state.config.llm.ollama_url)
+        .base_url(state.config.llm.ollama_url.as_str())
         .api_key(rig_core::client::Nothing);
 
     let client = client_builder.build()?;
+    let backend_url = format!(
+        "http://{}",
+        state
+            .config
+            .webservice
+            .address
+            .to_string()
+            .replace("0.0.0.0", "127.0.0.1")
+    );
 
     let agent = client
         .agent(&state.config.llm.model)
@@ -284,22 +293,22 @@ async fn process_thread_message(
             pool: state.pool.clone(),
         })
         .tool(crate::llm_tools::ListAgentsTool {
-            pool: state.pool.clone(),
+            state: state.clone(),
         })
         .tool(crate::llm_tools::GetAgentTool {
-            pool: state.pool.clone(),
+            state: state.clone(),
         })
         .tool(crate::llm_tools::SearchAgentsTool {
-            pool: state.pool.clone(),
+            state: state.clone(),
         })
         .tool(crate::llm_tools::ListTraitsTool {
-            pool: state.pool.clone(),
+            state: state.clone(),
         })
         .tool(crate::llm_tools::ListMcpServersTool {
-            pool: state.pool.clone(),
+            state: state.clone(),
         })
         .tool(crate::llm_tools::SearchAgentContextTool {
-            pool: state.pool.clone(),
+            state: state.clone(),
         })
         .tool(crate::llm_tools::ListAadCapabilitiesTool {
             state: state.clone(),
@@ -308,20 +317,18 @@ async fn process_thread_message(
             state: state.clone(),
         })
         .tool(crate::kb_tools::KbNodeBrowseTool {
-            backend_url: "http://127.0.0.1:8080".to_string(),
+            backend_url: backend_url.clone(),
         })
         .tool(crate::kb_tools::KbNodeReadTool {
-            backend_url: "http://127.0.0.1:8080".to_string(),
+            backend_url: backend_url.clone(),
         })
         .tool(crate::kb_tools::KbNodeAddTool {
-            backend_url: "http://127.0.0.1:8080".to_string(),
+            backend_url: backend_url.clone(),
         })
         .tool(crate::kb_tools::KbNodeEditTool {
-            backend_url: "http://127.0.0.1:8080".to_string(),
+            backend_url: backend_url.clone(),
         })
-        .tool(crate::kb_tools::KbNodeDeleteTool {
-            backend_url: "http://127.0.0.1:8080".to_string(),
-        })
+        .tool(crate::kb_tools::KbNodeDeleteTool { backend_url })
         .default_max_turns(state.config.llm.default_max_turns)
         .build();
 

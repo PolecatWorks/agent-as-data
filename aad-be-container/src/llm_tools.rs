@@ -780,7 +780,7 @@ fn parse_mcp_json_output(raw: String) -> AadCapabilityToolOutput {
 }
 
 pub struct ListAgentsTool {
-    pub pool: sqlx::PgPool,
+    pub state: crate::state::AppState,
 }
 
 impl PortableTool for ListAgentsTool {
@@ -806,7 +806,7 @@ impl PortableTool for ListAgentsTool {
     }
 
     async fn call(&self, args: Self::Args) -> Result<Self::Output, Self::Error> {
-        let server = crate::mcp::server::AadMcpServer::from_pool(self.pool.clone());
+        let server = crate::mcp::server::AadMcpServer::new(self.state.clone());
         let raw = server
             .call_tool("list_agents", json!({ "name": args.name }))
             .await
@@ -822,7 +822,7 @@ pub struct GetAgentToolArgs {
 }
 
 pub struct GetAgentTool {
-    pub pool: sqlx::PgPool,
+    pub state: crate::state::AppState,
 }
 
 impl PortableTool for GetAgentTool {
@@ -846,7 +846,7 @@ impl PortableTool for GetAgentTool {
     }
 
     async fn call(&self, args: Self::Args) -> Result<Self::Output, Self::Error> {
-        let server = crate::mcp::server::AadMcpServer::from_pool(self.pool.clone());
+        let server = crate::mcp::server::AadMcpServer::new(self.state.clone());
         let raw = server
             .call_tool("get_agent", json!({ "id": args.id, "name": args.name }))
             .await
@@ -862,7 +862,7 @@ pub struct SearchAgentsToolArgs {
 }
 
 pub struct SearchAgentsTool {
-    pub pool: sqlx::PgPool,
+    pub state: crate::state::AppState,
 }
 
 impl PortableTool for SearchAgentsTool {
@@ -887,7 +887,7 @@ impl PortableTool for SearchAgentsTool {
     }
 
     async fn call(&self, args: Self::Args) -> Result<Self::Output, Self::Error> {
-        let server = crate::mcp::server::AadMcpServer::from_pool(self.pool.clone());
+        let server = crate::mcp::server::AadMcpServer::new(self.state.clone());
         let raw = server
             .call_tool(
                 "search_agents",
@@ -906,7 +906,7 @@ pub struct ListTraitsToolArgs {
 }
 
 pub struct ListTraitsTool {
-    pub pool: sqlx::PgPool,
+    pub state: crate::state::AppState,
 }
 
 impl PortableTool for ListTraitsTool {
@@ -930,7 +930,7 @@ impl PortableTool for ListTraitsTool {
     }
 
     async fn call(&self, args: Self::Args) -> Result<Self::Output, Self::Error> {
-        let server = crate::mcp::server::AadMcpServer::from_pool(self.pool.clone());
+        let server = crate::mcp::server::AadMcpServer::new(self.state.clone());
         let raw = server
             .call_tool("list_traits", json!({ "page": args.page, "size": args.size }))
             .await
@@ -943,7 +943,7 @@ impl PortableTool for ListTraitsTool {
 pub struct ListMcpServersToolArgs {}
 
 pub struct ListMcpServersTool {
-    pub pool: sqlx::PgPool,
+    pub state: crate::state::AppState,
 }
 
 impl PortableTool for ListMcpServersTool {
@@ -964,7 +964,7 @@ impl PortableTool for ListMcpServersTool {
     }
 
     async fn call(&self, _args: Self::Args) -> Result<Self::Output, Self::Error> {
-        let server = crate::mcp::server::AadMcpServer::from_pool(self.pool.clone());
+        let server = crate::mcp::server::AadMcpServer::new(self.state.clone());
         let raw = server
             .call_tool("list_mcp_servers", json!({}))
             .await
@@ -980,7 +980,7 @@ pub struct SearchAgentContextToolArgs {
 }
 
 pub struct SearchAgentContextTool {
-    pub pool: sqlx::PgPool,
+    pub state: crate::state::AppState,
 }
 
 impl PortableTool for SearchAgentContextTool {
@@ -1005,7 +1005,7 @@ impl PortableTool for SearchAgentContextTool {
     }
 
     async fn call(&self, args: Self::Args) -> Result<Self::Output, Self::Error> {
-        let server = crate::mcp::server::AadMcpServer::from_pool(self.pool.clone());
+        let server = crate::mcp::server::AadMcpServer::new(self.state.clone());
         let raw = server
             .call_tool(
                 "search_agent_context",
@@ -1101,12 +1101,66 @@ impl PortableTool for InvokeAadCapabilityTool {
     }
 }
 
+fn default_workspace_state(pool: sqlx::PgPool) -> crate::state::AppState {
+    let config = crate::config::AppConfig::load(
+        std::path::Path::new("config/default.yaml"),
+        std::path::Path::new("."),
+    )
+    .unwrap_or_else(|_| crate::config::AppConfig {
+        debugging: crate::config::DebuggingConfig {
+            environment: "development".into(),
+            log_level: "info".into(),
+            fail_debug_delay: std::time::Duration::from_secs(0),
+        },
+        webservice: crate::config::WebServiceConfig {
+            address: "127.0.0.1:8080".parse().unwrap(),
+            api_prefix: "/api/aad/v1".into(),
+        },
+        llm: crate::config::LlmConfig {
+            ollama_url: url::Url::parse("http://localhost:11434").unwrap(),
+            model: "llama3.1:8b".into(),
+            timeout: std::time::Duration::from_secs(30),
+            default_max_turns: 5,
+        },
+        mcp: crate::mcp::McpConfig::default(),
+        runtime: crate::tokio_tools::ThreadRuntime::default(),
+        database: crate::config::DatabaseConfig {
+            url: crate::config::UrlWithUsernamePassword {
+                url: url::Url::parse("postgres://localhost:5432/aaddb").unwrap(),
+                username: Some("postgres".into()),
+                password: Some("mysecretpassword".into()),
+            },
+            max_connections: 5,
+        },
+        hams: ::hams::hams::config::HamsConfig::default(),
+    });
+    let handle = axum_prometheus::metrics_exporter_prometheus::PrometheusBuilder::new()
+        .build_recorder()
+        .handle();
+    crate::state::AppState {
+        pool,
+        config,
+        prometheus_handle: std::sync::Arc::new(handle),
+        tokio_handle: tokio::runtime::Handle::current(),
+    }
+}
+
 pub async fn execute_workspace_tool(
     bench_id: Uuid,
     tool_name: &str,
     args_json: &serde_json::Value,
-    pool: Option<&sqlx::PgPool>,
+    pool: &sqlx::PgPool,
 ) -> Result<String, String> {
+    let state = default_workspace_state(pool.clone());
+    let backend_url = format!(
+        "http://{}",
+        state
+            .config
+            .webservice
+            .address
+            .to_string()
+            .replace("0.0.0.0", "127.0.0.1")
+    );
     match tool_name {
         ReadFileTool::NAME => {
             let args: ReadFileArgs = serde_json::from_value(args_json.clone())
@@ -1151,8 +1205,6 @@ pub async fn execute_workspace_tool(
             serde_json::to_string(&res).map_err(|e| e.to_string())
         }
         ReadBenchMemoryTool::NAME => {
-            let pool =
-                pool.ok_or_else(|| "Database pool required for read_bench_memory".to_string())?;
             let args: ReadBenchMemoryArgs =
                 serde_json::from_value(args_json.clone()).unwrap_or(ReadBenchMemoryArgs {});
             let tool = ReadBenchMemoryTool {
@@ -1163,8 +1215,6 @@ pub async fn execute_workspace_tool(
             serde_json::to_string(&res).map_err(|e| e.to_string())
         }
         UpdateBenchMemoryTool::NAME => {
-            let pool =
-                pool.ok_or_else(|| "Database pool required for update_bench_memory".to_string())?;
             let args: UpdateBenchMemoryArgs = serde_json::from_value(args_json.clone())
                 .map_err(|e| format!("Invalid arguments for {}: {}", tool_name, e))?;
             let tool = UpdateBenchMemoryTool {
@@ -1175,7 +1225,6 @@ pub async fn execute_workspace_tool(
             serde_json::to_string(&res).map_err(|e| e.to_string())
         }
         ListSkillsTool::NAME => {
-            let pool = pool.ok_or_else(|| "Database pool required for list_skills".to_string())?;
             let args: ListSkillsArgs =
                 serde_json::from_value(args_json.clone()).unwrap_or(ListSkillsArgs {});
             let tool = ListSkillsTool { pool: pool.clone() };
@@ -1183,7 +1232,6 @@ pub async fn execute_workspace_tool(
             serde_json::to_string(&res).map_err(|e| e.to_string())
         }
         ViewSkillTool::NAME => {
-            let pool = pool.ok_or_else(|| "Database pool required for view_skill".to_string())?;
             let args: ViewSkillArgs = serde_json::from_value(args_json.clone())
                 .map_err(|e| format!("Invalid arguments for {}: {}", tool_name, e))?;
             let tool = ViewSkillTool { pool: pool.clone() };
@@ -1193,87 +1241,75 @@ pub async fn execute_workspace_tool(
         crate::kb_tools::KbNodeBrowseTool::NAME => {
             let args: crate::kb_tools::KbNodeBrowseArgs = serde_json::from_value(args_json.clone())
                 .map_err(|e| format!("Invalid arguments for {}: {}", tool_name, e))?;
-            let tool = crate::kb_tools::KbNodeBrowseTool {
-                backend_url: "http://127.0.0.1:8080".to_string(),
-            };
+            let tool = crate::kb_tools::KbNodeBrowseTool { backend_url };
             let res = tool.call(args).await.map_err(|e| e.to_string())?;
             serde_json::to_string(&res).map_err(|e| e.to_string())
         }
         crate::kb_tools::KbNodeReadTool::NAME => {
             let args: crate::kb_tools::KbNodeReadArgs = serde_json::from_value(args_json.clone())
                 .map_err(|e| format!("Invalid arguments for {}: {}", tool_name, e))?;
-            let tool = crate::kb_tools::KbNodeReadTool {
-                backend_url: "http://127.0.0.1:8080".to_string(),
-            };
+            let tool = crate::kb_tools::KbNodeReadTool { backend_url };
             let res = tool.call(args).await.map_err(|e| e.to_string())?;
             serde_json::to_string(&res).map_err(|e| e.to_string())
         }
         crate::kb_tools::KbNodeAddTool::NAME => {
             let args: crate::kb_tools::KbNodeAddArgs = serde_json::from_value(args_json.clone())
                 .map_err(|e| format!("Invalid arguments for {}: {}", tool_name, e))?;
-            let tool = crate::kb_tools::KbNodeAddTool {
-                backend_url: "http://127.0.0.1:8080".to_string(),
-            };
+            let tool = crate::kb_tools::KbNodeAddTool { backend_url };
             let res = tool.call(args).await.map_err(|e| e.to_string())?;
             serde_json::to_string(&res).map_err(|e| e.to_string())
         }
         crate::kb_tools::KbNodeEditTool::NAME => {
             let args: crate::kb_tools::KbNodeEditArgs = serde_json::from_value(args_json.clone())
                 .map_err(|e| format!("Invalid arguments for {}: {}", tool_name, e))?;
-            let tool = crate::kb_tools::KbNodeEditTool {
-                backend_url: "http://127.0.0.1:8080".to_string(),
-            };
+            let tool = crate::kb_tools::KbNodeEditTool { backend_url };
             let res = tool.call(args).await.map_err(|e| e.to_string())?;
             serde_json::to_string(&res).map_err(|e| e.to_string())
         }
         crate::kb_tools::KbNodeDeleteTool::NAME => {
             let args: crate::kb_tools::KbNodeDeleteArgs = serde_json::from_value(args_json.clone())
                 .map_err(|e| format!("Invalid arguments for {}: {}", tool_name, e))?;
-            let tool = crate::kb_tools::KbNodeDeleteTool {
-                backend_url: "http://127.0.0.1:8080".to_string(),
-            };
+            let tool = crate::kb_tools::KbNodeDeleteTool { backend_url };
             let res = tool.call(args).await.map_err(|e| e.to_string())?;
             serde_json::to_string(&res).map_err(|e| e.to_string())
         }
         _ => {
-            if let Some(pool) = pool {
-                // 1. Check in-process unified AAD MCP capabilities first
-                let aad_mcp = crate::mcp::server::AadMcpServer::from_pool(pool.clone());
-                if aad_mcp.list_tools().iter().any(|t| t.name == tool_name) {
-                    return aad_mcp
-                        .call_tool(tool_name, args_json.clone())
-                        .await
-                        .map_err(|e| e.to_string());
-                }
+            // 1. Check in-process unified AAD MCP capabilities first
+            let aad_mcp = crate::mcp::server::AadMcpServer::new(state);
+            if aad_mcp.list_tools().iter().any(|t| t.name == tool_name) {
+                return aad_mcp
+                    .call_tool(tool_name, args_json.clone())
+                    .await
+                    .map_err(|e| e.to_string());
+            }
 
-                // 2. Fallback to registered remote MCP servers
-                let row = sqlx::query(
-                    r#"
-                    SELECT endpoint_config
-                    FROM tools
-                    WHERE cached_capabilities->'tools' @> $1::jsonb
-                    LIMIT 1
-                    "#,
-                )
-                .bind(serde_json::json!([{"name": tool_name}]).to_string())
-                .fetch_optional(pool)
-                .await
-                .map_err(|e| {
-                    format!("Database error looking up MCP tool '{}': {}", tool_name, e)
-                })?;
+            // 2. Fallback to registered remote MCP servers
+            let row = sqlx::query(
+                r#"
+                SELECT endpoint_config
+                FROM tools
+                WHERE cached_capabilities->'tools' @> $1::jsonb
+                LIMIT 1
+                "#,
+            )
+            .bind(serde_json::json!([{"name": tool_name}]).to_string())
+            .fetch_optional(pool)
+            .await
+            .map_err(|e| {
+                format!("Database error looking up MCP tool '{}': {}", tool_name, e)
+            })?;
 
-                if let Some(row) = row {
-                    let endpoint_config: serde_json::Value =
-                        sqlx::Row::get(&row, "endpoint_config");
-                    if let Some(url) = endpoint_config.get("url").and_then(|u| u.as_str()) {
-                        let res = crate::webserver::tools::execute_remote_mcp_tool(
-                            url,
-                            tool_name,
-                            args_json.clone(),
-                        )
-                        .await?;
-                        return serde_json::to_string(&res).map_err(|e| e.to_string());
-                    }
+            if let Some(row) = row {
+                let endpoint_config: serde_json::Value =
+                    sqlx::Row::get(&row, "endpoint_config");
+                if let Some(url) = endpoint_config.get("url").and_then(|u| u.as_str()) {
+                    let res = crate::webserver::tools::execute_remote_mcp_tool(
+                        url,
+                        tool_name,
+                        args_json.clone(),
+                    )
+                    .await?;
+                    return serde_json::to_string(&res).map_err(|e| e.to_string());
                 }
             }
             Err(format!("Unknown tool: {}", tool_name))
@@ -1402,18 +1438,21 @@ mod tests {
         let bench_id = Uuid::new_v4();
         let workspace_root = get_workspace_root(bench_id);
         let _ = std::fs::remove_dir_all(&workspace_root);
+        let pool = sqlx::postgres::PgPoolOptions::new()
+            .connect_lazy("postgres://user:pass@localhost:5432/test")
+            .unwrap();
 
         // 1. Dispatch write_file
         let write_args = json!({
             "filepath": "sample.txt",
             "content": "Hello via dispatcher!"
         });
-        let write_out = execute_workspace_tool(bench_id, "write_file", &write_args, None).await;
+        let write_out = execute_workspace_tool(bench_id, "write_file", &write_args, &pool).await;
         assert!(write_out.is_ok());
 
         // 2. Dispatch list_files
         let list_args = json!({});
-        let list_out = execute_workspace_tool(bench_id, "list_files", &list_args, None).await;
+        let list_out = execute_workspace_tool(bench_id, "list_files", &list_args, &pool).await;
         assert!(list_out.is_ok());
         assert!(list_out.unwrap().contains("sample.txt"));
 
@@ -1421,13 +1460,13 @@ mod tests {
         let read_args = json!({
             "filepath": "sample.txt"
         });
-        let read_out = execute_workspace_tool(bench_id, "read_file", &read_args, None).await;
+        let read_out = execute_workspace_tool(bench_id, "read_file", &read_args, &pool).await;
         assert!(read_out.is_ok());
         assert!(read_out.unwrap().contains("Hello via dispatcher!"));
 
         // 4. Dispatch unknown tool
         let unknown_out =
-            execute_workspace_tool(bench_id, "nonexistent_tool", &json!({}), None).await;
+            execute_workspace_tool(bench_id, "nonexistent_tool", &json!({}), &pool).await;
         assert!(unknown_out.is_err());
 
         let _ = std::fs::remove_dir_all(&workspace_root);
@@ -1535,11 +1574,11 @@ mod tests {
                 fail_debug_delay: std::time::Duration::from_secs(0),
             },
             webservice: crate::config::WebServiceConfig {
-                address: "127.0.0.1:8080".into(),
+                address: "127.0.0.1:8080".parse().unwrap(),
                 api_prefix: "/api/aad/v1".into(),
             },
             llm: crate::config::LlmConfig {
-                ollama_url: "http://localhost:11434".into(),
+                ollama_url: url::Url::parse("http://localhost:11434").unwrap(),
                 model: "llama3".into(),
                 timeout: std::time::Duration::from_secs(30),
                 default_max_turns: 5,

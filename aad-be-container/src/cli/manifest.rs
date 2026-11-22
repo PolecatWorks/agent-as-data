@@ -1,5 +1,6 @@
 //! Declarative YAML manifest models for Traits, Tools, Skills, and Agents.
 
+use clap::ValueEnum;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fmt;
@@ -13,11 +14,15 @@ use crate::models::tool::{RegisterToolRequest, SyncPolicy, Tool, TransportType};
 use crate::models::traits::TraitContract;
 
 /// Canonical registry entity kind managed by `aad-be ctl`.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(ValueEnum, Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum ResourceKind {
+    #[value(alias = "traits")]
     Trait,
+    #[value(alias = "tools")]
     Tool,
+    #[value(alias = "skills")]
     Skill,
+    #[value(alias = "agents")]
     Agent,
 }
 
@@ -70,6 +75,36 @@ impl fmt::Display for ResourceKind {
 pub enum ResourceSelector {
     Single(ResourceKind),
     All,
+}
+
+impl ValueEnum for ResourceSelector {
+    fn value_variants<'a>() -> &'a [Self] {
+        &[
+            Self::Single(ResourceKind::Trait),
+            Self::Single(ResourceKind::Tool),
+            Self::Single(ResourceKind::Skill),
+            Self::Single(ResourceKind::Agent),
+            Self::All,
+        ]
+    }
+
+    fn to_possible_value(&self) -> Option<clap::builder::PossibleValue> {
+        Some(match self {
+            Self::Single(ResourceKind::Trait) => {
+                clap::builder::PossibleValue::new("trait").alias("traits")
+            }
+            Self::Single(ResourceKind::Tool) => {
+                clap::builder::PossibleValue::new("tool").alias("tools")
+            }
+            Self::Single(ResourceKind::Skill) => {
+                clap::builder::PossibleValue::new("skill").alias("skills")
+            }
+            Self::Single(ResourceKind::Agent) => {
+                clap::builder::PossibleValue::new("agent").alias("agents")
+            }
+            Self::All => clap::builder::PossibleValue::new("all"),
+        })
+    }
 }
 
 impl ResourceSelector {

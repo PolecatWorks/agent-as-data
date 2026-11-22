@@ -42,7 +42,7 @@ pub fn normalize_base_url(raw: &str) -> Result<String, CtlError> {
 /// Derives a normalized REST API base URL from `WebServiceConfig` without double slashes
 /// or duplicated `/v1` path segments.
 pub fn base_url_from_webservice_config(ws: &WebServiceConfig) -> Result<String, CtlError> {
-    let host_port = ws.address.replace("0.0.0.0", "127.0.0.1");
+    let host_port = ws.address.to_string().replace("0.0.0.0", "127.0.0.1");
     let prefix = ws.api_prefix.trim_matches('/');
     let raw = if prefix.is_empty() {
         format!("http://{}", host_port)
@@ -348,7 +348,7 @@ mod tests {
     #[test]
     fn test_base_url_from_webservice_config_avoids_double_slash_and_duplicate_v1() {
         let ws = WebServiceConfig {
-            address: "0.0.0.0:8080".to_string(),
+            address: "0.0.0.0:8080".parse().unwrap(),
             api_prefix: "/api/aad/v1".to_string(),
         };
         let url = base_url_from_webservice_config(&ws).unwrap();

@@ -13,7 +13,7 @@ pub struct ThreadRuntime {
     /// Name prefix assigned to worker threads.
     pub name: String,
     /// Metrics sampling interval for tokio-metrics runtime reporter.
-    #[serde(default = "default_metrics_interval", with = "humantime_serde")]
+    #[serde(with = "humantime_serde")]
     pub metrics_interval: Duration,
 }
 

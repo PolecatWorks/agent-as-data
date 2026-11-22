@@ -100,7 +100,7 @@ pub async fn execute_agent(
 
     // 2. Perform live LLM execution via rig-core Ollama provider
     let builder = rig_core::providers::ollama::Client::builder()
-        .base_url(&state.config.llm.ollama_url)
+        .base_url(state.config.llm.ollama_url.as_str())
         .api_key(rig_core::client::Nothing);
 
     let ollama_client = builder.build().map_err(|e| {

@@ -21,6 +21,7 @@ use aad_be_container::cli::ctl::{
 };
 use aad_be_container::cli::error::CtlError;
 use aad_be_container::cli::loader::load_manifests;
+use aad_be_container::cli::manifest::{ResourceKind, ResourceSelector};
 use aad_be_container::cli::planner::build_hydration_plan;
 use aad_be_container::cli::template::TemplateVars;
 use aad_be_container::models::agent::Agent;
@@ -725,7 +726,7 @@ async fn test_full_ecosystem_hydration_dry_run_idempotency_and_export_roundtrip(
     }
 
     // 4. Get by name and table output
-    let table = get_resources(&client, "all", None, OutputFormat::Table)
+    let table = get_resources(&client, ResourceSelector::All, None, OutputFormat::Table)
         .await
         .unwrap();
     assert!(table.contains("SemanticSteward"));
@@ -735,7 +736,7 @@ async fn test_full_ecosystem_hydration_dry_run_idempotency_and_export_roundtrip(
 
     let single_agent_json = get_resources(
         &client,
-        "agent",
+        ResourceSelector::Single(ResourceKind::Agent),
         Some("Semantic Data Steward Agent"),
         OutputFormat::Json,
     )
@@ -780,7 +781,7 @@ async fn test_full_ecosystem_hydration_dry_run_idempotency_and_export_roundtrip(
     // 7. Delete by canonical name (including --hard for Agent)
     let deleted_agent_id = delete_resource(
         &client,
-        "agent",
+        ResourceKind::Agent,
         "Epistemic Benchmark & Governance Agent",
         true,
     )
@@ -792,13 +793,13 @@ async fn test_full_ecosystem_hydration_dry_run_idempotency_and_export_roundtrip(
         assert_eq!(s.agents.len(), 1);
     }
 
-    delete_resource(&client, "skill", "plan_semantic_join_path", false)
+    delete_resource(&client, ResourceKind::Skill, "plan_semantic_join_path", false)
         .await
         .unwrap();
-    delete_resource(&client, "tool", "data-engine-mcp", false)
+    delete_resource(&client, ResourceKind::Tool, "data-engine-mcp", false)
         .await
         .unwrap();
-    delete_resource(&client, "trait", "SemanticSteward", false)
+    delete_resource(&client, ResourceKind::Trait, "SemanticSteward", false)
         .await
         .unwrap();
 }

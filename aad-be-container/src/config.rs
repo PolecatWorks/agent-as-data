@@ -4,6 +4,7 @@ use figment::{
 };
 use figment_file_provider_adapter::FileAdapter;
 use serde::{Deserialize, Serialize};
+use std::net::SocketAddr;
 use std::time::Duration;
 use url::Url;
 
@@ -77,11 +78,9 @@ pub struct AppConfig {
     pub database: DatabaseConfig,
     pub webservice: WebServiceConfig,
     pub llm: LlmConfig,
-    #[serde(default)]
     pub mcp: McpConfig,
     #[serde(serialize_with = "serialize_hams")]
     pub hams: HamsConfig,
-    #[serde(default)]
     pub runtime: ThreadRuntime,
     pub debugging: DebuggingConfig,
 }
@@ -95,26 +94,19 @@ where
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct LlmConfig {
-    pub ollama_url: String,
+    pub ollama_url: Url,
     pub model: String,
     #[serde(with = "humantime_serde")]
     pub timeout: Duration,
-    #[serde(default = "default_max_turns_value")]
     pub default_max_turns: usize,
 }
-
-fn default_max_turns_value() -> usize { 5 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct DebuggingConfig {
     pub environment: String,
     pub log_level: String,
-    #[serde(default = "default_fail_debug_delay", with = "humantime_serde")]
+    #[serde(with = "humantime_serde")]
     pub fail_debug_delay: Duration,
-}
-
-fn default_fail_debug_delay() -> Duration {
-    Duration::from_secs(0)
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
@@ -125,7 +117,7 @@ pub struct DatabaseConfig {
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct WebServiceConfig {
-    pub address: String,
+    pub address: SocketAddr,
     pub api_prefix: String,
 }
 
@@ -149,10 +141,11 @@ impl AppConfig {
         if db_url.as_str().trim().is_empty() {
             return Err("Database URL cannot be empty".to_string());
         }
-        if self.webservice.address.trim().is_empty() {
-            return Err("Webservice address cannot be empty".to_string());
+        let api_prefix = self.webservice.api_prefix.trim();
+        if api_prefix.is_empty() || !api_prefix.starts_with('/') {
+            return Err("Webservice api_prefix must be non-empty and start with '/'".to_string());
         }
-        if self.llm.ollama_url.trim().is_empty() {
+        if self.llm.ollama_url.as_str().trim().is_empty() {
             return Err("LLM Ollama URL cannot be empty".to_string());
         }
         if self.llm.model.trim().is_empty() {
@@ -161,8 +154,6 @@ impl AppConfig {
         if self.llm.timeout.is_zero() {
             return Err("LLM timeout must be greater than 0".to_string());
         }
-        Url::parse(&self.llm.ollama_url)
-            .map_err(|e| format!("Invalid LLM Ollama URL format: {}", e))?;
         self.mcp.validate().map_err(|e| e.to_string())?;
         if self.runtime.metrics_interval.is_zero() {
             return Err("Runtime metrics_interval must be greater than 0".to_string());
@@ -187,11 +178,11 @@ mod tests {
                 max_connections: 5,
             },
             webservice: WebServiceConfig {
-                address: "0.0.0.0:8080".to_string(),
+                address: "0.0.0.0:8080".parse().unwrap(),
                 api_prefix: "/api".to_string(),
             },
             llm: LlmConfig {
-                ollama_url: "http://localhost:11434".to_string(),
+                ollama_url: Url::parse("http://localhost:11434").unwrap(),
                 model: "llama3".to_string(),
                 timeout: Duration::from_secs(15),
                 default_max_turns: 5,
@@ -215,8 +206,8 @@ mod tests {
     }
 
     #[test]
-    fn test_config_validation_empty_llm_url() {
-        let config = AppConfig {
+    fn test_config_validation_invalid_api_prefix() {
+        let mut config = AppConfig {
             database: DatabaseConfig {
                 url: UrlWithUsernamePassword {
                     url: Url::parse("postgres://localhost:5432/aaddb").unwrap(),
@@ -226,11 +217,11 @@ mod tests {
                 max_connections: 5,
             },
             webservice: WebServiceConfig {
-                address: "0.0.0.0:8080".to_string(),
-                api_prefix: "/api".to_string(),
+                address: "0.0.0.0:8080".parse().unwrap(),
+                api_prefix: "".to_string(),
             },
             llm: LlmConfig {
-                ollama_url: "".to_string(),
+                ollama_url: Url::parse("http://localhost:11434").unwrap(),
                 model: "llama3".to_string(),
                 timeout: Duration::from_secs(15),
                 default_max_turns: 5,
@@ -246,6 +237,9 @@ mod tests {
         };
 
         assert!(config.validate().is_err());
+
+        config.webservice.api_prefix = "api/v1".to_string();
+        assert!(config.validate().is_err());
     }
 
     #[test]
@@ -260,11 +254,11 @@ mod tests {
                 max_connections: 5,
             },
             webservice: WebServiceConfig {
-                address: "0.0.0.0:8080".to_string(),
+                address: "0.0.0.0:8080".parse().unwrap(),
                 api_prefix: "/api".to_string(),
             },
             llm: LlmConfig {
-                ollama_url: "http://localhost:11434".to_string(),
+                ollama_url: Url::parse("http://localhost:11434").unwrap(),
                 model: "llama3".to_string(),
                 timeout: Duration::from_secs(0),
                 default_max_turns: 5,
@@ -294,11 +288,11 @@ mod tests {
                 max_connections: 5,
             },
             webservice: WebServiceConfig {
-                address: "0.0.0.0:8080".to_string(),
+                address: "0.0.0.0:8080".parse().unwrap(),
                 api_prefix: "/api".to_string(),
             },
             llm: LlmConfig {
-                ollama_url: "http://localhost:11434".to_string(),
+                ollama_url: Url::parse("http://localhost:11434").unwrap(),
                 model: "llama3".to_string(),
                 timeout: Duration::from_secs(15),
                 default_max_turns: 5,
@@ -331,11 +325,11 @@ mod tests {
                 max_connections: 5,
             },
             webservice: WebServiceConfig {
-                address: "0.0.0.0:8080".to_string(),
+                address: "0.0.0.0:8080".parse().unwrap(),
                 api_prefix: "/api".to_string(),
             },
             llm: LlmConfig {
-                ollama_url: "http://localhost:11434".to_string(),
+                ollama_url: Url::parse("http://localhost:11434").unwrap(),
                 model: "llama3".to_string(),
                 timeout: Duration::from_secs(15),
                 default_max_turns: 5,
@@ -387,6 +381,10 @@ mod tests {
         writeln!(file, "  model: 'qwen2.5-coder:14b'").unwrap();
         writeln!(file, "  timeout: 120s").unwrap();
         writeln!(file, "  default_max_turns: 5").unwrap();
+        writeln!(file, "mcp:").unwrap();
+        writeln!(file, "  enabled: true").unwrap();
+        writeln!(file, "  server_name: 'aad-be-mcp'").unwrap();
+        writeln!(file, "  instructions: 'AAD MCP Server'").unwrap();
         writeln!(file, "hams:").unwrap();
         writeln!(file, "  name: 'aad-be'").unwrap();
         writeln!(file, "  version: '0.1.0'").unwrap();
@@ -395,9 +393,11 @@ mod tests {
         writeln!(file, "  threads: 4").unwrap();
         writeln!(file, "  stack_size: 3000000").unwrap();
         writeln!(file, "  name: 'aad-worker'").unwrap();
+        writeln!(file, "  metrics_interval: 5s").unwrap();
         writeln!(file, "debugging:").unwrap();
         writeln!(file, "  environment: 'development'").unwrap();
         writeln!(file, "  log_level: 'info'").unwrap();
+        writeln!(file, "  fail_debug_delay: 0s").unwrap();
 
         let config = AppConfig::load(&test_config_path, &test_dir).unwrap();
 

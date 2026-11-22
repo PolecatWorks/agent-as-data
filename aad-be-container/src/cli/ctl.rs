@@ -114,7 +114,8 @@ pub enum CtlCommands {
     /// Get details of a resource or list resources (trait, tool, skill, agent, or all)
     Get {
         /// Resource type: trait, tool, skill, agent, or all
-        resource_type: String,
+        #[arg(value_enum)]
+        resource_type: ResourceSelector,
         /// Optional resource UUID or canonical name
         id_or_name: Option<String>,
         /// Output format: yaml, json, or table
@@ -124,7 +125,8 @@ pub enum CtlCommands {
     /// Delete a resource by UUID or canonical name
     Delete {
         /// Resource type: trait, tool, skill, or agent
-        resource_type: String,
+        #[arg(value_enum)]
+        resource_type: ResourceKind,
         /// Resource UUID or canonical name
         id_or_name: String,
         /// Hard-delete an agent (only applies to agents; default is soft-archive)
@@ -134,8 +136,8 @@ pub enum CtlCommands {
     /// Export live AAD resources as portable YAML manifests
     Export {
         /// Comma-separated resource types to export (default: trait,tool,skill,agent)
-        #[arg(long, value_delimiter = ',')]
-        types: Option<Vec<String>>,
+        #[arg(long, value_enum, value_delimiter = ',')]
+        types: Option<Vec<ResourceKind>>,
         /// Write all exported documents into a single multi-document YAML file
         #[arg(short, long, conflicts_with = "output_dir")]
         file: Option<PathBuf>,
@@ -273,7 +275,7 @@ pub async fn run_ctl(args: CtlArgs, base_url: &str) -> Result<(), CtlError> {
             id_or_name,
             output,
         } => {
-            let rendered = get_resources(&client, &resource_type, id_or_name.as_deref(), output).await?;
+            let rendered = get_resources(&client, resource_type, id_or_name.as_deref(), output).await?;
             println!("{}", rendered);
         }
         CtlCommands::Delete {
@@ -281,7 +283,7 @@ pub async fn run_ctl(args: CtlArgs, base_url: &str) -> Result<(), CtlError> {
             id_or_name,
             hard,
         } => {
-            delete_resource(&client, &resource_type, &id_or_name, hard).await?;
+            delete_resource(&client, resource_type, &id_or_name, hard).await?;
         }
         CtlCommands::Export {
             types,
@@ -618,12 +620,10 @@ pub async fn apply_plan(
 /// Fetches and formats resources for `aad-be ctl get`.
 pub async fn get_resources(
     client: &AadApiClient,
-    resource_type: &str,
+    selector: ResourceSelector,
     id_or_name: Option<&str>,
     output: OutputFormat,
 ) -> Result<String, CtlError> {
-    let selector = ResourceSelector::parse(resource_type)?;
-
     match selector {
         ResourceSelector::All => {
             let (traits, tools, skills, agents) = tokio::try_join!(
@@ -777,12 +777,10 @@ async fn find_agent(client: &AadApiClient, ident: &str) -> Result<Agent, CtlErro
 /// Deletes a resource by UUID or canonical name.
 pub async fn delete_resource(
     client: &AadApiClient,
-    resource_type: &str,
+    kind: ResourceKind,
     id_or_name: &str,
     hard: bool,
 ) -> Result<Uuid, CtlError> {
-    let kind = ResourceKind::parse_singular_or_plural(resource_type)?;
-
     let id = match kind {
         ResourceKind::Trait => {
             let uuid = match Uuid::parse_str(id_or_name) {
@@ -843,29 +841,13 @@ pub async fn delete_resource(
 /// Dehydrates live AAD resources into portable YAML manifests.
 pub async fn export_resources(
     client: &AadApiClient,
-    types: Option<&[String]>,
+    types: Option<&[ResourceKind]>,
     file: Option<&Path>,
     output_dir: Option<&Path>,
     raw_ids: bool,
 ) -> Result<Vec<ResourceManifest>, CtlError> {
     let selected_kinds: HashSet<ResourceKind> = match types {
-        Some(list) if !list.is_empty() => {
-            let mut set = HashSet::new();
-            for item in list {
-                match ResourceSelector::parse(item)? {
-                    ResourceSelector::All => {
-                        set.insert(ResourceKind::Trait);
-                        set.insert(ResourceKind::Tool);
-                        set.insert(ResourceKind::Skill);
-                        set.insert(ResourceKind::Agent);
-                    }
-                    ResourceSelector::Single(k) => {
-                        set.insert(k);
-                    }
-                }
-            }
-            set
-        }
+        Some(list) if !list.is_empty() => list.iter().copied().collect(),
         _ => [
             ResourceKind::Trait,
             ResourceKind::Tool,

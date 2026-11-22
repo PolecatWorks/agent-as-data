@@ -362,7 +362,7 @@ pub async fn test_agent(
     let mut num_evaluated = 0;
 
     let builder = rig_core::providers::ollama::Client::builder()
-        .base_url(&state.config.llm.ollama_url)
+        .base_url(state.config.llm.ollama_url.as_str())
         .api_key(rig_core::client::Nothing);
 
     let ollama_client = builder
