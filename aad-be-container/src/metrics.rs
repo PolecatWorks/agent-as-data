@@ -112,6 +112,7 @@ mod tests {
                 timeout: std::time::Duration::from_secs(30),
                 default_max_turns: 5,
             },
+            mcp: crate::mcp::McpConfig::default(),
             runtime: crate::tokio_tools::ThreadRuntime::default(),
             database: crate::config::DatabaseConfig {
                 url: crate::config::UrlWithUsernamePassword {

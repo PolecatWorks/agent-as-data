@@ -17,6 +17,11 @@ llm:
   timeout: "180s"
   default_max_turns: 5
 
+mcp:
+  enabled: true
+  server_name: "aad-be-mcp"
+  instructions: "Agent-As-Data (AAD) Unified MCP Server exposing Agents, Skills, Traits, MCP Tool Registry, Semantic Context Search, Knowledge Base & Graph, Workbenches/Memory, and Execution."
+
 hams:
   name: "aad-be"
   version: "0.1.0"

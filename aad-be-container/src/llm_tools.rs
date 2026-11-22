@@ -806,7 +806,7 @@ impl PortableTool for ListAgentsTool {
     }
 
     async fn call(&self, args: Self::Args) -> Result<Self::Output, Self::Error> {
-        let server = crate::webserver::aad_mcp::AadMcpServer::from_pool(self.pool.clone());
+        let server = crate::mcp::server::AadMcpServer::from_pool(self.pool.clone());
         let raw = server
             .call_tool("list_agents", json!({ "name": args.name }))
             .await
@@ -846,7 +846,7 @@ impl PortableTool for GetAgentTool {
     }
 
     async fn call(&self, args: Self::Args) -> Result<Self::Output, Self::Error> {
-        let server = crate::webserver::aad_mcp::AadMcpServer::from_pool(self.pool.clone());
+        let server = crate::mcp::server::AadMcpServer::from_pool(self.pool.clone());
         let raw = server
             .call_tool("get_agent", json!({ "id": args.id, "name": args.name }))
             .await
@@ -887,7 +887,7 @@ impl PortableTool for SearchAgentsTool {
     }
 
     async fn call(&self, args: Self::Args) -> Result<Self::Output, Self::Error> {
-        let server = crate::webserver::aad_mcp::AadMcpServer::from_pool(self.pool.clone());
+        let server = crate::mcp::server::AadMcpServer::from_pool(self.pool.clone());
         let raw = server
             .call_tool(
                 "search_agents",
@@ -930,7 +930,7 @@ impl PortableTool for ListTraitsTool {
     }
 
     async fn call(&self, args: Self::Args) -> Result<Self::Output, Self::Error> {
-        let server = crate::webserver::aad_mcp::AadMcpServer::from_pool(self.pool.clone());
+        let server = crate::mcp::server::AadMcpServer::from_pool(self.pool.clone());
         let raw = server
             .call_tool("list_traits", json!({ "page": args.page, "size": args.size }))
             .await
@@ -964,7 +964,7 @@ impl PortableTool for ListMcpServersTool {
     }
 
     async fn call(&self, _args: Self::Args) -> Result<Self::Output, Self::Error> {
-        let server = crate::webserver::aad_mcp::AadMcpServer::from_pool(self.pool.clone());
+        let server = crate::mcp::server::AadMcpServer::from_pool(self.pool.clone());
         let raw = server
             .call_tool("list_mcp_servers", json!({}))
             .await
@@ -1005,7 +1005,7 @@ impl PortableTool for SearchAgentContextTool {
     }
 
     async fn call(&self, args: Self::Args) -> Result<Self::Output, Self::Error> {
-        let server = crate::webserver::aad_mcp::AadMcpServer::from_pool(self.pool.clone());
+        let server = crate::mcp::server::AadMcpServer::from_pool(self.pool.clone());
         let raw = server
             .call_tool(
                 "search_agent_context",
@@ -1042,7 +1042,7 @@ impl PortableTool for ListAadCapabilitiesTool {
     }
 
     async fn call(&self, _args: Self::Args) -> Result<Self::Output, Self::Error> {
-        let server = crate::webserver::aad_mcp::AadMcpServer::new(self.state.clone());
+        let server = crate::mcp::server::AadMcpServer::new(self.state.clone());
         let tools = serde_json::to_value(server.list_tools()).map_err(std::io::Error::other)?;
         Ok(AadCapabilityToolOutput { result: tools })
     }
@@ -1087,7 +1087,7 @@ impl PortableTool for InvokeAadCapabilityTool {
     }
 
     async fn call(&self, args: Self::Args) -> Result<Self::Output, Self::Error> {
-        let server = crate::webserver::aad_mcp::AadMcpServer::new(self.state.clone());
+        let server = crate::mcp::server::AadMcpServer::new(self.state.clone());
         let arguments = if args.arguments.is_null() {
             json!({})
         } else {
@@ -1238,9 +1238,12 @@ pub async fn execute_workspace_tool(
         _ => {
             if let Some(pool) = pool {
                 // 1. Check in-process unified AAD MCP capabilities first
-                let aad_mcp = crate::webserver::aad_mcp::AadMcpServer::from_pool(pool.clone());
+                let aad_mcp = crate::mcp::server::AadMcpServer::from_pool(pool.clone());
                 if aad_mcp.list_tools().iter().any(|t| t.name == tool_name) {
-                    return aad_mcp.call_tool(tool_name, args_json.clone()).await;
+                    return aad_mcp
+                        .call_tool(tool_name, args_json.clone())
+                        .await
+                        .map_err(|e| e.to_string());
                 }
 
                 // 2. Fallback to registered remote MCP servers
@@ -1541,6 +1544,7 @@ mod tests {
                 timeout: std::time::Duration::from_secs(30),
                 default_max_turns: 5,
             },
+            mcp: crate::mcp::McpConfig::default(),
             runtime: crate::tokio_tools::ThreadRuntime::default(),
             database: crate::config::DatabaseConfig {
                 url: crate::config::UrlWithUsernamePassword {
