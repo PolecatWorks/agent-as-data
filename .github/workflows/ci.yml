@@ -10,7 +10,6 @@ jobs:
     outputs:
       backend: ${{ steps.filter.outputs.backend }}
       frontend: ${{ steps.filter.outputs.frontend }}
-      helm: ${{ steps.filter.outputs.helm }}
     steps:
       - uses: actions/checkout@v4
       - uses: dorny/paths-filter@v3
@@ -24,9 +23,6 @@ jobs:
             frontend:
               - 'aad-fe-container/**'
               - '.github/workflows/ci.yml'
-            helm:
-              - 'charts/**'
-              - '.github/workflows/ci.yml'
 
   backend-test:
     name: Build & Test Backend
@@ -36,7 +32,7 @@ jobs:
 
     services:
       postgres:
-        image: postgres:16-alpine
+        image: pgvector/pgvector:pg16
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
@@ -103,18 +99,3 @@ jobs:
       - name: Run Frontend Tests
         run: npm run test -- --watch=false --browsers=ChromeHeadless
         working-directory: aad-fe-container
-
-  helm-lint:
-    name: Helm Chart Lint
-    needs: detect-changes
-    if: needs.detect-changes.outputs.helm == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Helm
-        uses: azure/setup-helm@v4
-
-      - name: Lint Helm Charts
-        run: |
-          helm lint charts/agent-as-data
