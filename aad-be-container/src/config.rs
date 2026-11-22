@@ -9,6 +9,7 @@ use url::Url;
 
 use ::hams::hams::config::HamsConfig;
 
+use crate::mcp::McpConfig;
 use crate::tokio_tools::ThreadRuntime;
 
 /// A URL structure that optionally embeds credential placeholders for file-based secret resolution.
@@ -76,6 +77,8 @@ pub struct AppConfig {
     pub database: DatabaseConfig,
     pub webservice: WebServiceConfig,
     pub llm: LlmConfig,
+    #[serde(default)]
+    pub mcp: McpConfig,
     #[serde(serialize_with = "serialize_hams")]
     pub hams: HamsConfig,
     #[serde(default)]
@@ -160,6 +163,7 @@ impl AppConfig {
         }
         Url::parse(&self.llm.ollama_url)
             .map_err(|e| format!("Invalid LLM Ollama URL format: {}", e))?;
+        self.mcp.validate().map_err(|e| e.to_string())?;
         if self.runtime.metrics_interval.is_zero() {
             return Err("Runtime metrics_interval must be greater than 0".to_string());
         }
@@ -192,6 +196,7 @@ mod tests {
                 timeout: Duration::from_secs(15),
                 default_max_turns: 5,
             },
+            mcp: McpConfig::default(),
             hams: ::hams::hams::config::HamsConfig::default(),
             runtime: ThreadRuntime::default(),
             debugging: DebuggingConfig {
@@ -230,6 +235,7 @@ mod tests {
                 timeout: Duration::from_secs(15),
                 default_max_turns: 5,
             },
+            mcp: McpConfig::default(),
             hams: ::hams::hams::config::HamsConfig::default(),
             runtime: ThreadRuntime::default(),
             debugging: DebuggingConfig {
@@ -263,6 +269,7 @@ mod tests {
                 timeout: Duration::from_secs(0),
                 default_max_turns: 5,
             },
+            mcp: McpConfig::default(),
             hams: ::hams::hams::config::HamsConfig::default(),
             runtime: ThreadRuntime::default(),
             debugging: DebuggingConfig {
@@ -296,6 +303,7 @@ mod tests {
                 timeout: Duration::from_secs(15),
                 default_max_turns: 5,
             },
+            mcp: McpConfig::default(),
             hams: ::hams::hams::config::HamsConfig::default(),
             runtime: ThreadRuntime::default(),
             debugging: DebuggingConfig {
@@ -309,6 +317,43 @@ mod tests {
         let res = config.validate();
         assert!(res.is_err());
         assert!(res.unwrap_err().contains("metrics_interval"));
+    }
+
+    #[test]
+    fn test_config_validation_delegates_to_mcp() {
+        let mut config = AppConfig {
+            database: DatabaseConfig {
+                url: UrlWithUsernamePassword {
+                    url: Url::parse("postgres://localhost:5432/aaddb").unwrap(),
+                    username: Some("postgres".to_string()),
+                    password: Some("mysecretpassword".to_string()),
+                },
+                max_connections: 5,
+            },
+            webservice: WebServiceConfig {
+                address: "0.0.0.0:8080".to_string(),
+                api_prefix: "/api".to_string(),
+            },
+            llm: LlmConfig {
+                ollama_url: "http://localhost:11434".to_string(),
+                model: "llama3".to_string(),
+                timeout: Duration::from_secs(15),
+                default_max_turns: 5,
+            },
+            mcp: McpConfig::default(),
+            hams: ::hams::hams::config::HamsConfig::default(),
+            runtime: ThreadRuntime::default(),
+            debugging: DebuggingConfig {
+                environment: "development".to_string(),
+                log_level: "info".to_string(),
+                fail_debug_delay: Duration::from_secs(0),
+            },
+        };
+        config.mcp.server_name = "   ".to_string();
+
+        let res = config.validate();
+        assert!(res.is_err());
+        assert!(res.unwrap_err().contains("server_name"));
     }
 
     #[test]

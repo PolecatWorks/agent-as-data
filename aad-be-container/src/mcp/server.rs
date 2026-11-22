@@ -22,6 +22,7 @@ use sqlx::{PgPool, Row};
 use uuid::Uuid;
 
 use crate::{
+    mcp::{McpConfig, McpError},
     models::{
         Agent, AgentSearchRequest, Bench, ExecuteAgentRequest, GraphTraverseRequest,
         GraphTraverseResult, KnowledgeIdRequest, KnowledgeNode, KnowledgeSearchRequest,
@@ -399,12 +400,14 @@ impl AadMcpServer {
         self.get_info()
     }
 
-    pub async fn call_tool(&self, name: &str, arguments: Value) -> Result<String, String> {
+    pub async fn call_tool(&self, name: &str, arguments: Value) -> Result<String, McpError> {
         macro_rules! dispatch {
             ($req_ty:ty, $method:ident) => {{
                 let req: $req_ty = serde_json::from_value(arguments)
-                    .map_err(|e| format!("Invalid arguments for '{}': {}", name, e))?;
-                self.$method(Parameters(req)).await
+                    .map_err(|e| McpError::InvalidArguments(name.to_string(), e.to_string()))?;
+                self.$method(Parameters(req))
+                    .await
+                    .map_err(McpError::Execution)
             }};
         }
 
@@ -451,7 +454,7 @@ impl AadMcpServer {
             // Execution
             "execute_agent" => dispatch!(ExecuteAgentMcpRequest, execute_agent),
             "get_execution" => dispatch!(ExecutionIdMcpRequest, get_execution),
-            _ => Err(format!("Tool '{}' not found", name)),
+            _ => Err(McpError::ToolNotFound(name.to_string())),
         }
     }
 }
@@ -1445,8 +1448,12 @@ impl AadMcpServer {
 #[tool_handler(router = self.tool_router)]
 impl ServerHandler for AadMcpServer {
     fn get_info(&self) -> ServerConfig {
-        ServerConfig::new(ServerCapabilities::builder().enable_tools().build()).with_instructions(
-            "Agent-As-Data (AAD) Unified MCP Server exposing Agents, Skills, Traits, MCP Tool Registry, Semantic Context Search, Knowledge Base & Graph, Workbenches/Memory, and Execution.",
-        )
+        let instructions = self
+            .state
+            .as_ref()
+            .map(|s| s.config.mcp.instructions.clone())
+            .unwrap_or_else(|| McpConfig::default().instructions);
+        ServerConfig::new(ServerCapabilities::builder().enable_tools().build())
+            .with_instructions(instructions)
     }
 }

@@ -1,7 +1,5 @@
 //! HTTP webserver and API router definitions.
 
-pub mod aad_mcp;
-pub mod aad_mcp_handler;
 pub mod agents;
 pub mod analytics;
 pub mod benches;
@@ -25,14 +23,13 @@ use crate::state::AppState;
 pub mod search;
 
 fn v1_routes(state: AppState) -> Router {
-    Router::new()
+    let mut router = Router::new()
         .nest("/agents", agents::router())
         .nest("/agent-context/search", search::router())
         .nest("/skills", skills::router())
         .nest("/traits", traits::router())
         .nest("/agents/tools", tools::router())
         .nest("/knowledge", knowledge::router())
-        .nest("/mcp", aad_mcp_handler::router())
         .merge(execution::router())
         .nest("/benches", benches::router())
         .nest("/benches", fs::router())
@@ -40,8 +37,13 @@ fn v1_routes(state: AppState) -> Router {
         .nest("/threads", threads::router())
         .nest("/threads", fs::router())
         .nest("/analytics", analytics::router())
-        .route("/health", get(|| async { "OK" }))
-        .with_state(state)
+        .route("/health", get(|| async { "OK" }));
+
+    if state.config.mcp.enabled {
+        router = router.nest("/mcp", crate::mcp::rpc::router());
+    }
+
+    router.with_state(state)
 }
 
 pub fn app_router(state: AppState) -> Router {
@@ -53,9 +55,12 @@ pub fn app_router(state: AppState) -> Router {
         prefix
     };
 
-    let mut router = Router::new()
-        .route("/health", get(|| async { "OK" }))
-        .route("/mcp", post(aad_mcp_handler::handle_http_rpc))
+    let mut base_router = Router::new().route("/health", get(|| async { "OK" }));
+    if state.config.mcp.enabled {
+        base_router = base_router.route("/mcp", post(crate::mcp::rpc::handle_http_rpc));
+    }
+
+    let mut router = base_router
         .with_state(state.clone())
         .nest(normalized_prefix, v1_routes(state.clone()));
 
@@ -132,6 +137,7 @@ mod tests {
                 timeout: std::time::Duration::from_secs(30),
                 default_max_turns: 5,
             },
+            mcp: crate::mcp::McpConfig::default(),
             runtime: crate::tokio_tools::ThreadRuntime::default(),
             database: crate::config::DatabaseConfig {
                 url: crate::config::UrlWithUsernamePassword {
@@ -354,6 +360,41 @@ mod tests {
                 StatusCode::METHOD_NOT_ALLOWED,
                 "Retired URI {} should not accept MCP POST requests",
                 retired_uri
+            );
+        }
+    }
+
+    #[tokio::test]
+    async fn test_mcp_disabled_returns_404() {
+        let mut state = build_test_state("/api/aad/v1");
+        state.config.mcp.enabled = false;
+        let app = app_router(state);
+
+        let list_payload = serde_json::json!({
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "tools/list"
+        })
+        .to_string();
+
+        for uri in ["/mcp", "/api/aad/v1/mcp", "/api/v1/mcp"] {
+            let res = app
+                .clone()
+                .oneshot(
+                    Request::builder()
+                        .method("POST")
+                        .uri(uri)
+                        .header("content-type", "application/json")
+                        .body(Body::from(list_payload.clone()))
+                        .unwrap(),
+                )
+                .await
+                .unwrap();
+            assert_eq!(
+                res.status(),
+                StatusCode::NOT_FOUND,
+                "URI {} should return 404 when mcp.enabled is false",
+                uri
             );
         }
     }

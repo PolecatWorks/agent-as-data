@@ -11,6 +11,7 @@ pub mod guardrails;
 pub mod hams_tools;
 pub mod kb_tools;
 pub mod llm_tools;
+pub mod mcp;
 pub mod metrics;
 pub mod models;
 pub mod state;
