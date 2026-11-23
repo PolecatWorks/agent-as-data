@@ -67,21 +67,27 @@ describe('ApiService Configurable Prefixes', () => {
     expect(service.getBaseUrl()).toBe('/api/aad/v1');
   });
 
-  it('NEGATIVE: loadAppConfig handles missing or empty apiPath gracefully by preserving default baseUrl', async () => {
+  it('NEGATIVE: loadAppConfig throws on missing or empty apiPath', async () => {
     const loadPromise = service.loadAppConfig('assets/contents/empty-config.json');
     const req = httpMock.expectOne('assets/contents/empty-config.json');
     req.flush({});
 
-    await loadPromise;
-    expect(service.getBaseUrl()).toBe('/api/aad/v1');
+    await expectAsync(loadPromise).toBeRejectedWithError(/Invalid or missing apiPath/);
   });
 
-  it('NEGATIVE: loadAppConfig handles 404 or network errors gracefully by preserving default baseUrl', async () => {
+  it('NEGATIVE: loadAppConfig throws on invalid apiPath format', async () => {
+    const loadPromise = service.loadAppConfig('assets/contents/invalid-config.json');
+    const req = httpMock.expectOne('assets/contents/invalid-config.json');
+    req.flush({ apiPath: 'relative/path' });
+
+    await expectAsync(loadPromise).toBeRejectedWithError(/Invalid or missing apiPath/);
+  });
+
+  it('NEGATIVE: loadAppConfig throws on 404 or network errors', async () => {
     const loadPromise = service.loadAppConfig('assets/contents/not-found.json');
     const req = httpMock.expectOne('assets/contents/not-found.json');
     req.error(new ProgressEvent('error'), { status: 404, statusText: 'Not Found' });
 
-    await loadPromise;
-    expect(service.getBaseUrl()).toBe('/api/aad/v1');
+    await expectAsync(loadPromise).toBeRejected();
   });
 });

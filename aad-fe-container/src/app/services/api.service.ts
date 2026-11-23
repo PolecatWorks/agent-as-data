@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable, of } from 'rxjs';
+import { Observable, firstValueFrom, of } from 'rxjs';
 import { map } from 'rxjs/operators';
 
 export type InputGuardrailType = 
@@ -242,14 +242,12 @@ export class ApiService {
   }
 
   async loadAppConfig(configUrl: string = 'assets/contents/app-config.json'): Promise<void> {
-    try {
-      const config = await this.http.get<{ apiPath?: string }>(configUrl).toPromise();
-      if (config && config.apiPath) {
-        this.setBaseUrl(config.apiPath);
-      }
-    } catch (e) {
-      // Fallback to default baseUrl
+    const config = await firstValueFrom(this.http.get<{ apiPath?: string }>(configUrl));
+    const apiPath = config?.apiPath?.trim();
+    if (!apiPath || (!apiPath.startsWith('/') && !apiPath.startsWith('http'))) {
+      throw new Error(`Invalid or missing apiPath in ${configUrl}: ${String(config?.apiPath)}`);
     }
+    this.setBaseUrl(apiPath);
   }
 
   // Agent Registry APIs

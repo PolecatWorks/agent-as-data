@@ -773,7 +773,9 @@ export class NetworkVisualizerComponent implements OnInit, AfterViewInit {
             event.preventDefault();
             this.router.navigateByUrl(url.pathname);
           }
-        } catch (e) {}
+        } catch (e) {
+          console.error('Failed to parse link URL in network visualizer:', e);
+        }
       }
     }
   }
