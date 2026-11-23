@@ -26,6 +26,14 @@ pub enum AppError {
     #[error("Forbidden `{0}`")]
     Forbidden(String),
 
+    /// Semantic validation or upstream capability error (422 Unprocessable Entity).
+    #[error("Unprocessable Entity `{0}`")]
+    UnprocessableEntity(String),
+
+    /// Upstream service communication error (502 Bad Gateway).
+    #[error("Bad Gateway `{0}`")]
+    BadGateway(String),
+
     /// JSON serialization or deserialization error.
     #[error("Serde error `{0}`")]
     Serde(#[from] serde_json::Error),
@@ -75,6 +83,33 @@ pub enum AppError {
     LlmExtractionError(String),
 }
 
+impl AppError {
+    pub fn status_code(&self) -> axum::http::StatusCode {
+        match self {
+            AppError::Message(_) => axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+            AppError::BadRequest(_) => axum::http::StatusCode::BAD_REQUEST,
+            AppError::NotFound(_) => axum::http::StatusCode::NOT_FOUND,
+            AppError::Unauthorized(_) => axum::http::StatusCode::UNAUTHORIZED,
+            AppError::Forbidden(_) => axum::http::StatusCode::FORBIDDEN,
+            AppError::UnprocessableEntity(_) => axum::http::StatusCode::UNPROCESSABLE_ENTITY,
+            AppError::BadGateway(_) => axum::http::StatusCode::BAD_GATEWAY,
+            AppError::Serde(_) => axum::http::StatusCode::BAD_REQUEST,
+            AppError::Io(_) => axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+            AppError::JsonRejection(rejection) => rejection.status(),
+            AppError::FigmentError(_) => axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+            AppError::DatabaseError(sqlx::Error::RowNotFound) => axum::http::StatusCode::NOT_FOUND,
+            AppError::DatabaseError(_) => axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+            AppError::Timeout(_) => axum::http::StatusCode::GATEWAY_TIMEOUT,
+            AppError::CompletionError(_) => axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+            AppError::LlmClientError(_) => axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+            AppError::PromptError(_) => axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+            AppError::ToolHallucination(_) => axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+            AppError::LlmExtractionError(_) => axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+            AppError::Cancelled(_) => axum::http::StatusCode::CONFLICT,
+        }
+    }
+}
+
 impl axum::response::IntoResponse for AppError {
     fn into_response(self) -> axum::response::Response {
         #[derive(serde::Serialize)]
@@ -88,6 +123,10 @@ impl axum::response::IntoResponse for AppError {
             AppError::NotFound(msg) => (axum::http::StatusCode::NOT_FOUND, msg),
             AppError::Unauthorized(msg) => (axum::http::StatusCode::UNAUTHORIZED, msg),
             AppError::Forbidden(msg) => (axum::http::StatusCode::FORBIDDEN, msg),
+            AppError::UnprocessableEntity(msg) => {
+                (axum::http::StatusCode::UNPROCESSABLE_ENTITY, msg)
+            }
+            AppError::BadGateway(msg) => (axum::http::StatusCode::BAD_GATEWAY, msg),
             AppError::Serde(error) => (
                 axum::http::StatusCode::BAD_REQUEST,
                 format!("JSON Error: {}", error),

@@ -7,6 +7,7 @@ use axum::{
 use uuid::Uuid;
 
 use crate::{
+    error::AppError,
     models::{AppendDecisionRequest, BenchMemory, UpsertBenchMemoryRequest},
     state::AppState,
 };
@@ -23,19 +24,13 @@ pub fn router() -> Router<AppState> {
 pub async fn get_bench_memory(
     State(state): State<AppState>,
     Path(bench_id): Path<Uuid>,
-) -> Result<Json<Vec<BenchMemory>>, (StatusCode, String)> {
+) -> Result<Json<Vec<BenchMemory>>, AppError> {
     let records = sqlx::query_as::<_, BenchMemory>(
         "SELECT * FROM bench_memory WHERE bench_id = $1 ORDER BY memory_type ASC, updated_at DESC",
     )
     .bind(bench_id)
     .fetch_all(&state.pool)
-    .await
-    .map_err(|e| {
-        (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            format!("Failed to get bench memory: {}", e),
-        )
-    })?;
+    .await?;
 
     Ok(Json(records))
 }
@@ -44,7 +39,7 @@ pub async fn upsert_working_memory(
     State(state): State<AppState>,
     Path(bench_id): Path<Uuid>,
     Json(payload): Json<UpsertBenchMemoryRequest>,
-) -> Result<Json<BenchMemory>, (StatusCode, String)> {
+) -> Result<Json<BenchMemory>, AppError> {
     tracing::info!("Upserting working memory for bench {}", bench_id);
 
     let title = payload
@@ -68,13 +63,7 @@ pub async fn upsert_working_memory(
     .bind(&payload.content)
     .bind(metadata_json)
     .fetch_one(&state.pool)
-    .await
-    .map_err(|e| {
-        (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            format!("Failed to upsert working memory: {}", e),
-        )
-    })?;
+    .await?;
 
     Ok(Json(memory))
 }
@@ -83,7 +72,7 @@ pub async fn append_decision(
     State(state): State<AppState>,
     Path(bench_id): Path<Uuid>,
     Json(payload): Json<AppendDecisionRequest>,
-) -> Result<(StatusCode, Json<BenchMemory>), (StatusCode, String)> {
+) -> Result<(StatusCode, Json<BenchMemory>), AppError> {
     tracing::info!(
         "Appending decision for bench {}: {}",
         bench_id,
@@ -104,13 +93,7 @@ pub async fn append_decision(
     .bind(&payload.content)
     .bind(sqlx::types::Json(metadata_val))
     .fetch_one(&state.pool)
-    .await
-    .map_err(|e| {
-        (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            format!("Failed to append decision: {}", e),
-        )
-    })?;
+    .await?;
 
     Ok((StatusCode::CREATED, Json(decision)))
 }

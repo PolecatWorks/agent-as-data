@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use std::path::{Path as StdPath, PathBuf};
 use uuid::Uuid;
 
-use crate::state::AppState;
+use crate::{error::AppError, state::AppState};
 
 pub fn router() -> Router<AppState> {
     Router::new()
@@ -98,7 +98,7 @@ pub(crate) fn get_workspace_root(bench_id: Uuid) -> PathBuf {
 pub async fn write_file(
     Path(entity_id): Path<Uuid>,
     Json(payload): Json<WriteFileRequest>,
-) -> Result<(StatusCode, Json<FileOperationResponse>), (StatusCode, String)> {
+) -> Result<(StatusCode, Json<FileOperationResponse>), AppError> {
     tracing::info!(
         "Saving file '{}' in workspace {}",
         payload.filepath,
@@ -107,34 +107,19 @@ pub async fn write_file(
     let workspace_root = get_workspace_root(entity_id);
 
     if !workspace_root.exists() {
-        if let Err(e) = std::fs::create_dir_all(&workspace_root) {
-            return Err((
-                StatusCode::INTERNAL_SERVER_ERROR,
-                format!("Failed to create workspace directory: {}", e),
-            ));
-        }
+        std::fs::create_dir_all(&workspace_root)?;
     }
 
     let safe_path = resolve_safe_path(&workspace_root, &payload.filepath)
-        .map_err(|e| (StatusCode::FORBIDDEN, e))?;
+        .map_err(AppError::Forbidden)?;
 
     if let Some(parent) = safe_path.parent() {
         if !parent.exists() {
-            std::fs::create_dir_all(parent).map_err(|e| {
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    format!("Failed to create parent directory: {}", e),
-                )
-            })?;
+            std::fs::create_dir_all(parent)?;
         }
     }
 
-    std::fs::write(&safe_path, payload.content).map_err(|e| {
-        (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            format!("Failed to write file: {}", e),
-        )
-    })?;
+    std::fs::write(&safe_path, payload.content)?;
 
     tracing::info!(
         "Successfully saved file '{}' in workspace {}",
@@ -152,33 +137,27 @@ pub async fn write_file(
 
 pub async fn read_file(
     Path((entity_id, filepath)): Path<(Uuid, String)>,
-) -> Result<(StatusCode, Json<ReadFileResponse>), (StatusCode, String)> {
+) -> Result<(StatusCode, Json<ReadFileResponse>), AppError> {
     let workspace_root = get_workspace_root(entity_id);
 
     if !workspace_root.exists() {
-        return Err((StatusCode::NOT_FOUND, "Workspace not found".to_string()));
+        return Err(AppError::NotFound("Workspace not found".to_string()));
     }
 
     let safe_path =
-        resolve_safe_path(&workspace_root, &filepath).map_err(|e| (StatusCode::FORBIDDEN, e))?;
+        resolve_safe_path(&workspace_root, &filepath).map_err(AppError::Forbidden)?;
 
     if !safe_path.exists() {
-        return Err((StatusCode::NOT_FOUND, "File not found".to_string()));
+        return Err(AppError::NotFound("File not found".to_string()));
     }
 
     if safe_path.is_dir() {
-        return Err((
-            StatusCode::BAD_REQUEST,
+        return Err(AppError::BadRequest(
             "Target path is a directory".to_string(),
         ));
     }
 
-    let content = std::fs::read_to_string(&safe_path).map_err(|e| {
-        (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            format!("Failed to read file: {}", e),
-        )
-    })?;
+    let content = std::fs::read_to_string(&safe_path)?;
 
     Ok((StatusCode::OK, Json(ReadFileResponse { content })))
 }
@@ -186,16 +165,11 @@ pub async fn read_file(
 pub async fn list_files(
     Path(entity_id): Path<Uuid>,
     Json(payload): Json<ListFilesRequest>,
-) -> Result<(StatusCode, Json<ListFilesResponse>), (StatusCode, String)> {
+) -> Result<(StatusCode, Json<ListFilesResponse>), AppError> {
     let workspace_root = get_workspace_root(entity_id);
 
     if !workspace_root.exists() {
-        if let Err(e) = std::fs::create_dir_all(&workspace_root) {
-            return Err((
-                StatusCode::INTERNAL_SERVER_ERROR,
-                format!("Failed to create workspace directory: {}", e),
-            ));
-        }
+        std::fs::create_dir_all(&workspace_root)?;
     }
 
     let target_dir = match payload.dir_path {
@@ -204,26 +178,18 @@ pub async fn list_files(
     };
 
     let safe_path =
-        resolve_safe_path(&workspace_root, &target_dir).map_err(|e| (StatusCode::FORBIDDEN, e))?;
+        resolve_safe_path(&workspace_root, &target_dir).map_err(AppError::Forbidden)?;
 
     if !safe_path.exists() {
-        return Err((StatusCode::NOT_FOUND, "Directory not found".to_string()));
+        return Err(AppError::NotFound("Directory not found".to_string()));
     }
 
     if !safe_path.is_dir() {
-        return Err((
-            StatusCode::BAD_REQUEST,
-            "Path is not a directory".to_string(),
-        ));
+        return Err(AppError::BadRequest("Path is not a directory".to_string()));
     }
 
     let mut files = Vec::new();
-    let entries = std::fs::read_dir(safe_path).map_err(|e| {
-        (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            format!("Failed to read directory: {}", e),
-        )
-    })?;
+    let entries = std::fs::read_dir(safe_path)?;
 
     for entry in entries {
         let Ok(entry) = entry else { continue };
@@ -246,7 +212,7 @@ pub async fn list_files(
 pub async fn delete_file(
     Path(entity_id): Path<Uuid>,
     Json(payload): Json<DeleteFileRequest>,
-) -> Result<(StatusCode, Json<FileOperationResponse>), (StatusCode, String)> {
+) -> Result<(StatusCode, Json<FileOperationResponse>), AppError> {
     tracing::info!(
         "Deleting file '{}' in workspace {}",
         payload.filepath,
@@ -255,33 +221,22 @@ pub async fn delete_file(
     let workspace_root = get_workspace_root(entity_id);
 
     if !workspace_root.exists() {
-        return Err((StatusCode::NOT_FOUND, "Workspace not found".to_string()));
+        return Err(AppError::NotFound("Workspace not found".to_string()));
     }
 
     let safe_path = resolve_safe_path(&workspace_root, &payload.filepath)
-        .map_err(|e| (StatusCode::FORBIDDEN, e))?;
+        .map_err(AppError::Forbidden)?;
 
     if !safe_path.exists() {
-        return Err((
-            StatusCode::NOT_FOUND,
+        return Err(AppError::NotFound(
             "File or directory not found".to_string(),
         ));
     }
 
     if safe_path.is_dir() {
-        std::fs::remove_dir_all(&safe_path).map_err(|e| {
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                format!("Failed to delete directory: {}", e),
-            )
-        })?;
+        std::fs::remove_dir_all(&safe_path)?;
     } else {
-        std::fs::remove_file(&safe_path).map_err(|e| {
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                format!("Failed to delete file: {}", e),
-            )
-        })?;
+        std::fs::remove_file(&safe_path)?;
     }
 
     tracing::info!(

@@ -8,6 +8,7 @@ use sqlx::{PgPool, Row};
 use uuid::Uuid;
 
 use crate::{
+    error::AppError,
     models::{ListPages, PageOptions, TraitContract},
     state::AppState,
 };
@@ -25,7 +26,7 @@ pub fn router() -> Router<AppState> {
 pub async fn list_traits(
     State(pool): State<PgPool>,
     Query(options): Query<PageOptions>,
-) -> Result<Json<ListPages>, (StatusCode, String)> {
+) -> Result<Json<ListPages>, AppError> {
     let options = PageOptions::defaulting(options);
 
     let rows =
@@ -33,15 +34,12 @@ pub async fn list_traits(
             .bind(options.size)
             .bind(options.page.unwrap_or(0) * options.size.unwrap_or(10))
             .fetch_all(&pool)
-            .await
-            .map_err(|e| {
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    format!("Fetch Error: {}", e),
-                )
-            })?;
+            .await?;
 
-    let ids: Vec<Uuid> = rows.iter().map(|r| r.get("id")).collect();
+    let mut ids = Vec::with_capacity(rows.len());
+    for r in &rows {
+        ids.push(r.try_get("id")?);
+    }
 
     Ok(Json(ListPages {
         ids,
@@ -52,28 +50,22 @@ pub async fn list_traits(
 pub async fn get_trait(
     State(pool): State<PgPool>,
     Path(id): Path<Uuid>,
-) -> Result<Json<TraitContract>, (StatusCode, String)> {
-    let trait_opt = sqlx::query_as::<_, TraitContract>(
+) -> Result<Json<TraitContract>, AppError> {
+    let t = sqlx::query_as::<_, TraitContract>(
         "SELECT id, name, description, version, capability_requirements, behavioral_invariants, evaluation_criteria, tags, guardrails, owner_id, created_at, updated_at FROM trait_contracts WHERE id = $1"
     )
     .bind(id)
     .fetch_optional(&pool)
-    .await
-    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Fetch Error: {}", e)))?;
+    .await?
+    .ok_or_else(|| AppError::NotFound("Trait contract not found".to_string()))?;
 
-    match trait_opt {
-        Some(t) => Ok(Json(t)),
-        None => Err((
-            StatusCode::NOT_FOUND,
-            "Trait contract not found".to_string(),
-        )),
-    }
+    Ok(Json(t))
 }
 
 pub async fn create_trait(
     State(pool): State<PgPool>,
     Json(payload): Json<TraitContract>,
-) -> Result<(StatusCode, Json<TraitContract>), (StatusCode, String)> {
+) -> Result<(StatusCode, Json<TraitContract>), AppError> {
     let id = payload.id.unwrap_or_else(Uuid::new_v4);
     let version = if payload.version.is_empty() || payload.version == "0" || payload.version == "1"
     {
@@ -117,8 +109,7 @@ pub async fn create_trait(
     .bind(&payload.guardrails)
     .bind(payload.owner_id)
     .fetch_one(&pool)
-    .await
-    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Insert Trait Error: {}", e)))?;
+    .await?;
 
     let final_id = new_trait.id.unwrap_or(id);
 
@@ -132,7 +123,7 @@ pub async fn create_trait(
     let inv_str = new_trait.behavioral_invariants.join("; ");
     let crit_str = new_trait.evaluation_criteria.join("; ");
     let cap_str = new_trait.capability_requirements.join("; ");
-    let _ = crate::webserver::search::sync_entity_embeddings(
+    if let Err(e) = crate::webserver::search::sync_entity_embeddings(
         &pool,
         final_id,
         crate::models::search::EntityType::Traits,
@@ -144,7 +135,10 @@ pub async fn create_trait(
             ("capabilities", &cap_str),
         ],
     )
-    .await;
+    .await
+    {
+        tracing::warn!(error = %e, trait_id = %final_id, "Failed to sync trait embeddings");
+    }
 
     Ok((StatusCode::CREATED, Json(new_trait)))
 }
@@ -153,7 +147,7 @@ pub async fn update_trait(
     State(pool): State<PgPool>,
     Path(id): Path<Uuid>,
     Json(payload): Json<TraitContract>,
-) -> Result<Json<TraitContract>, (StatusCode, String)> {
+) -> Result<Json<TraitContract>, AppError> {
     tracing::info!("Updating trait contract '{}' (ID: {})", payload.name, id);
     let current_version = crate::models::bump_minor_version(&payload.version);
 
@@ -177,8 +171,7 @@ pub async fn update_trait(
     .bind(payload.owner_id)
     .bind(id)
     .fetch_one(&pool)
-    .await
-    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Update Trait Error: {}", e)))?;
+    .await?;
 
     tracing::info!(
         "Trait contract '{}' updated successfully (ID: {})",
@@ -190,7 +183,7 @@ pub async fn update_trait(
     let inv_str = updated_trait.behavioral_invariants.join("; ");
     let crit_str = updated_trait.evaluation_criteria.join("; ");
     let cap_str = updated_trait.capability_requirements.join("; ");
-    let _ = crate::webserver::search::sync_entity_embeddings(
+    if let Err(e) = crate::webserver::search::sync_entity_embeddings(
         &pool,
         id,
         crate::models::search::EntityType::Traits,
@@ -202,7 +195,10 @@ pub async fn update_trait(
             ("capabilities", &cap_str),
         ],
     )
-    .await;
+    .await
+    {
+        tracing::warn!(error = %e, trait_id = %id, "Failed to sync trait embeddings");
+    }
 
     Ok(Json(updated_trait))
 }
@@ -210,7 +206,7 @@ pub async fn update_trait(
 pub async fn delete_trait(
     State(pool): State<PgPool>,
     Path(id): Path<Uuid>,
-) -> Result<Json<TraitContract>, (StatusCode, String)> {
+) -> Result<Json<TraitContract>, AppError> {
     tracing::info!("Deleting trait contract (ID: {})", id);
     let deleted = sqlx::query_as::<_, TraitContract>(
         r#"
@@ -221,22 +217,19 @@ pub async fn delete_trait(
     )
     .bind(id)
     .fetch_optional(&pool)
-    .await
-    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Delete Trait Error: {}", e)))?;
+    .await?
+    .ok_or_else(|| AppError::NotFound("Trait not found".to_string()))?;
 
     // Purge embeddings for the deleted trait
-    let _ = crate::webserver::search::purge_entity_embeddings(&pool, id).await;
+    crate::webserver::search::purge_entity_embeddings(&pool, id).await?;
 
-    match deleted {
-        Some(t) => Ok(Json(t)),
-        None => Err((StatusCode::NOT_FOUND, "Trait not found".to_string())),
-    }
+    Ok(Json(deleted))
 }
 
 pub async fn sync_trait_embeddings(
     State(pool): State<PgPool>,
     Path(id): Path<Uuid>,
-) -> Result<Json<crate::models::SyncEmbeddingsResponse>, (StatusCode, String)> {
+) -> Result<Json<crate::models::SyncEmbeddingsResponse>, AppError> {
     let t = get_trait(State(pool.clone()), Path(id)).await?.0;
     let inv_str = t.behavioral_invariants.join("; ");
     let crit_str = t.evaluation_criteria.join("; ");
@@ -254,13 +247,7 @@ pub async fn sync_trait_embeddings(
             ("capabilities", &cap_str),
         ],
     )
-    .await
-    .map_err(|e| {
-        (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            format!("Sync Error: {}", e),
-        )
-    })?;
+    .await?;
 
     Ok(Json(crate::models::SyncEmbeddingsResponse {
         status: "success".to_string(),

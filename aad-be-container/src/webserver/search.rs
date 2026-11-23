@@ -1,8 +1,9 @@
-use axum::{Json, Router, extract::State, http::StatusCode, routing::post};
+use axum::{Json, Router, extract::State, routing::post};
 use sqlx::{PgPool, Row};
 use uuid::Uuid;
 
 use crate::{
+    error::AppError,
     models::{SemanticSearchRequest, SemanticSearchResult},
     state::AppState,
 };
@@ -14,7 +15,7 @@ pub fn router() -> Router<AppState> {
 pub async fn semantic_search(
     State(pool): State<PgPool>,
     Json(payload): Json<SemanticSearchRequest>,
-) -> Result<Json<Vec<SemanticSearchResult>>, (StatusCode, String)> {
+) -> Result<Json<Vec<SemanticSearchResult>>, AppError> {
     let limit = payload.limit.unwrap_or(5) as i64;
     let query_trimmed = payload.query.trim();
     if query_trimmed.is_empty() {
@@ -79,46 +80,42 @@ pub async fn semantic_search(
         .bind(query_trimmed)
         .bind(limit)
         .fetch_all(&pool)
-        .await
-        .map_err(|e| {
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                format!("Semantic Search Error: {}", e),
-            )
-        })?;
+        .await?;
 
-    let results = rows
-        .into_iter()
-        .map(|r| {
-            let field_name: String = r.get("field_name");
-            let match_reason = match field_name.as_str() {
-                "name" => "Matched on entity name".to_string(),
-                "description" => "Matched on entity description".to_string(),
-                "prompt" => "Matched on agent prompt".to_string(),
-                "definition" => "Matched on skill definition".to_string(),
-                "invariants" => "Matched on behavioral invariants".to_string(),
-                "criteria" => "Matched on evaluation criteria".to_string(),
-                "capabilities" => "Matched on tool capabilities".to_string(),
-                other => format!("Matched on {}", other),
-            };
+    let mut results = Vec::with_capacity(rows.len());
+    for r in rows {
+        let field_name: String = r.try_get("field_name")?;
+        let match_reason = match field_name.as_str() {
+            "name" => "Matched on entity name".to_string(),
+            "description" => "Matched on entity description".to_string(),
+            "prompt" => "Matched on agent prompt".to_string(),
+            "definition" => "Matched on skill definition".to_string(),
+            "invariants" => "Matched on behavioral invariants".to_string(),
+            "criteria" => "Matched on evaluation criteria".to_string(),
+            "capabilities" => "Matched on tool capabilities".to_string(),
+            other => format!("Matched on {}", other),
+        };
 
-            SemanticSearchResult {
-                entity_id: r.get("entity_id"),
-                entity_type: r.get("entity_type"),
-                name: r.try_get("name").ok(),
-                description: r.try_get("description").ok(),
-                field_name,
-                content: r.get("content"),
-                score: r.get("score"),
-                match_reason,
-                search_type: crate::models::search::SearchType::Hybrid,
-                origin_id: r.try_get("origin_id").ok(),
-                origin_type: r.try_get("origin_type").ok(),
-                origin_uri: r.try_get("origin_uri").ok(),
-                origin_name: r.try_get("origin_name").ok(),
-            }
-        })
-        .collect();
+        let origin_id: Uuid = r.try_get("origin_id")?;
+        let origin_type: crate::models::search::EntityType = r.try_get("origin_type")?;
+        let origin_uri: String = r.try_get("origin_uri")?;
+
+        results.push(SemanticSearchResult {
+            entity_id: r.try_get("entity_id")?,
+            entity_type: r.try_get("entity_type")?,
+            name: r.try_get("name")?,
+            description: r.try_get("description")?,
+            field_name,
+            content: r.try_get("content")?,
+            score: r.try_get("score")?,
+            match_reason,
+            search_type: crate::models::search::SearchType::Hybrid,
+            origin_id: Some(origin_id),
+            origin_type: Some(origin_type),
+            origin_uri: Some(origin_uri),
+            origin_name: r.try_get("origin_name")?,
+        });
+    }
 
     Ok(Json(results))
 }

@@ -116,7 +116,7 @@ pub async fn create_skill(
 
     // Automatically sync embeddings with reverse references
     let prompt_str = &payload.definition;
-    let _ = crate::webserver::search::sync_entity_embeddings(
+    if let Err(e) = crate::webserver::search::sync_entity_embeddings(
         &pool,
         final_id,
         crate::models::search::EntityType::Skills,
@@ -124,7 +124,10 @@ pub async fn create_skill(
         Some(payload.description.as_str()),
         &[("definition", prompt_str.as_str())],
     )
-    .await;
+    .await
+    {
+        tracing::warn!(error = %e, skill_id = %final_id, "Failed to sync skill embeddings");
+    }
 
     tracing::info!("Skill '{}' saved successfully (ID: {})", payload.name, final_id);
 
@@ -171,7 +174,7 @@ pub async fn update_skill(
 
     // Automatically sync embeddings with reverse references
     let prompt_str = &payload.definition;
-    let _ = crate::webserver::search::sync_entity_embeddings(
+    if let Err(e) = crate::webserver::search::sync_entity_embeddings(
         &pool,
         id,
         crate::models::search::EntityType::Skills,
@@ -179,7 +182,10 @@ pub async fn update_skill(
         Some(payload.description.as_str()),
         &[("definition", prompt_str.as_str())],
     )
-    .await;
+    .await
+    {
+        tracing::warn!(error = %e, skill_id = %id, "Failed to sync skill embeddings");
+    }
 
     tracing::info!("Skill '{}' updated successfully (ID: {})", payload.name, id);
     Ok(Json(response_skill))
@@ -197,7 +203,7 @@ pub async fn delete_skill(
         ?;
 
     // Purge embeddings for the deleted skill
-    let _ = crate::webserver::search::purge_entity_embeddings(&pool, id).await;
+    crate::webserver::search::purge_entity_embeddings(&pool, id).await?;
 
     Ok(StatusCode::NO_CONTENT)
 }
@@ -207,7 +213,7 @@ pub async fn promote_skill(
     Path(id): Path<Uuid>,
 ) -> Result<(StatusCode, Json<Agent>), AppError> {
     let skill_row = sqlx::query(
-        "SELECT name, description, owner_id, implements_traits FROM skills WHERE id = $1",
+        "SELECT name, description, owner_id, implements_traits, uses_traits FROM skills WHERE id = $1",
     )
     .bind(id)
     .fetch_optional(&pool)
@@ -215,11 +221,11 @@ pub async fn promote_skill(
     ?
     .ok_or(AppError::NotFound("Skill not found".to_string()))?;
 
-    let name: String = skill_row.get("name");
-    let description: String = skill_row.get("description");
-    let owner_id: Uuid = skill_row.get("owner_id");
-    let implements_traits: Vec<String> = skill_row.get("implements_traits");
-    let uses_traits: Vec<String> = skill_row.try_get("uses_traits").unwrap_or_default();
+    let name: String = skill_row.try_get("name")?;
+    let description: String = skill_row.try_get("description")?;
+    let owner_id: Uuid = skill_row.try_get("owner_id")?;
+    let implements_traits: Vec<String> = skill_row.try_get("implements_traits")?;
+    let uses_traits: Vec<String> = skill_row.try_get("uses_traits")?;
 
     let agent_id = Uuid::new_v4();
     let agent_definition = serde_json::json!({
@@ -245,8 +251,8 @@ pub async fn promote_skill(
     ?;
 
     // Purge skill embeddings and sync under agents
-    let _ = crate::webserver::search::purge_entity_embeddings(&pool, id).await;
-    let _ = crate::webserver::search::sync_entity_embeddings(
+    crate::webserver::search::purge_entity_embeddings(&pool, id).await?;
+    if let Err(e) = crate::webserver::search::sync_entity_embeddings(
         &pool,
         agent_id,
         crate::models::search::EntityType::Agents,
@@ -254,7 +260,10 @@ pub async fn promote_skill(
         Some(&description),
         &[("prompt", &description)],
     )
-    .await;
+    .await
+    {
+        tracing::warn!(error = %e, agent_id = %agent_id, "Failed to sync promoted agent embeddings");
+    }
 
     Ok((
         StatusCode::CREATED,
@@ -295,9 +304,9 @@ pub async fn demote_skill(
         ?
         .ok_or(AppError::NotFound("Skill not found".to_string()))?;
 
-    let name: String = skill_row.get("name");
-    let description: String = skill_row.get("description");
-    let owner_id: Uuid = skill_row.get("owner_id");
+    let name: String = skill_row.try_get("name")?;
+    let description: String = skill_row.try_get("description")?;
+    let owner_id: Uuid = skill_row.try_get("owner_id")?;
 
     let agent_id = Uuid::new_v4();
     sqlx::query(
@@ -336,18 +345,17 @@ pub async fn sync_skill_embeddings(
         None => return Err(AppError::NotFound("Skill not found".to_string())),
     };
 
-    let name: String = skill_row.get("name");
-    let description: Option<String> = skill_row.try_get("description").ok();
-    let definition: Option<String> = skill_row.try_get("definition").ok();
-    let prompt_str = definition.unwrap_or_default();
+    let name: String = skill_row.try_get("name")?;
+    let description: String = skill_row.try_get("description")?;
+    let definition: String = skill_row.try_get("definition")?;
 
     let count = crate::webserver::search::sync_entity_embeddings(
         &pool,
         id,
         crate::models::search::EntityType::Skills,
         &name,
-        description.as_deref(),
-        &[("definition", &prompt_str)],
+        Some(description.as_str()),
+        &[("definition", &definition)],
     )
     .await
     ?;
@@ -387,10 +395,10 @@ pub async fn ai_review_skill(
     let mut similar_skills_context = String::new();
     let mut similarities: Vec<crate::models::SimilarSkillInfo> = Vec::new();
     for row in raw_search_results.iter() {
-        let id: Uuid = row.try_get("entity_id").unwrap_or_default();
-        let name: String = row.try_get("name").unwrap_or_default();
-        let desc: String = row.try_get("description").unwrap_or_default();
-        let _content: String = row.try_get("content").unwrap_or_default();
+        let id: Uuid = row.try_get("entity_id")?;
+        let name: String = row.try_get("name")?;
+        let desc: String = row.try_get("description")?;
+        let _content: String = row.try_get("content")?;
 
         // Don't include the target review skill in similarities if it matched
         if id == payload.reviewer_skill_id.unwrap_or_default() {

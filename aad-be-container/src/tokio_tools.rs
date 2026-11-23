@@ -1,8 +1,19 @@
 use serde::{Deserialize, Serialize};
+use thiserror::Error;
 use tokio::runtime::{self, Runtime};
 use tracing::info;
 
 use std::time::Duration;
+
+#[derive(Debug, Error)]
+pub enum RuntimeError {
+    #[error("Failed to create single-threaded Tokio runtime: {0}")]
+    SingleThreadInit(#[source] std::io::Error),
+    #[error("Failed to create multi-threaded Tokio runtime: {0}")]
+    MultiThreadInit(#[source] std::io::Error),
+    #[error("{0}")]
+    Task(#[from] Box<dyn std::error::Error + Send + Sync>),
+}
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct ThreadRuntime {
@@ -32,13 +43,13 @@ impl Default for ThreadRuntime {
     }
 }
 
-pub fn create_tokio_runtime(runtime: &ThreadRuntime) -> Result<Runtime, String> {
+pub fn create_tokio_runtime(runtime: &ThreadRuntime) -> Result<Runtime, RuntimeError> {
     if runtime.threads == 0 {
         runtime::Builder::new_current_thread()
             .enable_io()
             .enable_time()
             .build()
-            .map_err(|e| format!("Failed to create single-threaded Tokio runtime: {}", e))
+            .map_err(RuntimeError::SingleThreadInit)
     } else {
         runtime::Builder::new_multi_thread()
             .worker_threads(runtime.threads)
@@ -47,13 +58,14 @@ pub fn create_tokio_runtime(runtime: &ThreadRuntime) -> Result<Runtime, String> 
             .enable_io()
             .enable_time()
             .build()
-            .map_err(|e| format!("Failed to create multi-threaded Tokio runtime: {}", e))
+            .map_err(RuntimeError::MultiThreadInit)
     }
 }
 
-pub fn run_in_tokio<F, T>(runtime: &ThreadRuntime, my_function: F) -> Result<T, String>
+pub fn run_in_tokio<F, T, E>(runtime: &ThreadRuntime, my_function: F) -> Result<T, RuntimeError>
 where
-    F: std::future::Future<Output = Result<T, String>>,
+    F: std::future::Future<Output = Result<T, E>>,
+    E: Into<Box<dyn std::error::Error + Send + Sync>>,
 {
     info!(
         "Starting Tokio runtime instance: '{}' with {} worker threads",
@@ -61,6 +73,7 @@ where
     );
     let rt = create_tokio_runtime(runtime)?;
     rt.block_on(my_function)
+        .map_err(|e| RuntimeError::Task(e.into()))
 }
 
 #[cfg(test)]

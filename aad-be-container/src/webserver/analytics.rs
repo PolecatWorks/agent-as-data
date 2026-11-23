@@ -1,7 +1,8 @@
-use axum::{Json, Router, extract::State, http::StatusCode, routing::get};
+use axum::{Json, Router, extract::State, routing::get};
 use sqlx::{PgPool, Row};
 
 use crate::{
+    error::AppError,
     models::{AgentUsageLog, AnalyticsUsageResponse},
     state::AppState,
 };
@@ -12,7 +13,7 @@ pub fn router() -> Router<AppState> {
 
 pub async fn get_usage(
     State(pool): State<PgPool>,
-) -> Result<Json<AnalyticsUsageResponse>, (StatusCode, String)> {
+) -> Result<Json<AnalyticsUsageResponse>, AppError> {
     let rows = sqlx::query(
         r#"
         SELECT
@@ -30,13 +31,7 @@ pub async fn get_usage(
         "#,
     )
     .fetch_all(&pool)
-    .await
-    .map_err(|e| {
-        (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            format!("DB Error: {}", e),
-        )
-    })?;
+    .await?;
 
     let usage_logs: Vec<AgentUsageLog> = rows
         .into_iter()

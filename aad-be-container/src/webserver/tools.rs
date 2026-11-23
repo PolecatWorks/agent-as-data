@@ -9,6 +9,7 @@ use sqlx::{PgPool, Row};
 use uuid::Uuid;
 
 use crate::{
+    error::AppError,
     models::{
         RegisterToolRequest, RegisterToolResponse, SyncToolResponse, TestToolRequest,
         TestToolResponse, Tool,
@@ -209,7 +210,7 @@ pub async fn execute_remote_mcp_tool(
 pub async fn register_tool(
     State(pool): State<PgPool>,
     Json(payload): Json<RegisterToolRequest>,
-) -> Result<(StatusCode, Json<RegisterToolResponse>), (StatusCode, String)> {
+) -> Result<(StatusCode, Json<RegisterToolResponse>), AppError> {
     let server_id = payload.id.unwrap_or_else(Uuid::new_v4);
     tracing::info!(
         "Registering tool server '{}' (ID: {})",
@@ -221,12 +222,7 @@ pub async fn register_tool(
         .endpoint_config
         .get("url")
         .and_then(|v| v.as_str())
-        .ok_or_else(|| {
-            (
-                StatusCode::BAD_REQUEST,
-                "Missing endpoint_config.url".to_string(),
-            )
-        })?;
+        .ok_or_else(|| AppError::BadRequest("Missing endpoint_config.url".to_string()))?;
 
     let (cached_capabilities, sync_status, last_sync_error) =
         if payload.transport_type == crate::models::tool::TransportType::Http {
@@ -256,10 +252,10 @@ pub async fn register_tool(
                         url,
                         err
                     );
-                    return Err((
-                        StatusCode::UNPROCESSABLE_ENTITY,
-                        format!("Failed to connect to MCP server: {}", err),
-                    ));
+                    return Err(AppError::UnprocessableEntity(format!(
+                        "Failed to connect to MCP server: {}",
+                        err
+                    )));
                 }
             }
         } else {
@@ -306,8 +302,7 @@ pub async fn register_tool(
     .bind(&sync_status)
     .bind(&last_sync_error)
     .fetch_one(&pool)
-    .await
-    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("MCP Register Error: {}", e)))?;
+    .await?;
 
     let final_id: Uuid = row.get("id");
     tracing::info!(
@@ -338,7 +333,7 @@ pub async fn register_tool(
 pub async fn sync_tool(
     State(pool): State<PgPool>,
     Path(id): Path<Uuid>,
-) -> Result<(StatusCode, Json<SyncToolResponse>), (StatusCode, String)> {
+) -> Result<(StatusCode, Json<SyncToolResponse>), AppError> {
     tracing::info!("Syncing tool server (ID: {})", id);
 
     let tool = sqlx::query_as::<_, Tool>(
@@ -350,20 +345,14 @@ pub async fn sync_tool(
     )
     .bind(id)
     .fetch_optional(&pool)
-    .await
-    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Database query error: {}", e)))?
-    .ok_or_else(|| (StatusCode::NOT_FOUND, format!("Tool server '{}' not found", id)))?;
+    .await?
+    .ok_or_else(|| AppError::NotFound(format!("Tool server '{}' not found", id)))?;
 
     let url = tool
         .endpoint_config
         .get("url")
         .and_then(|v| v.as_str())
-        .ok_or_else(|| {
-            (
-                StatusCode::BAD_REQUEST,
-                "Missing endpoint_config.url".to_string(),
-            )
-        })?;
+        .ok_or_else(|| AppError::BadRequest("Missing endpoint_config.url".to_string()))?;
 
     let now = Utc::now();
 
@@ -389,13 +378,7 @@ pub async fn sync_tool(
             .bind(now)
             .bind(id)
             .execute(&pool)
-            .await
-            .map_err(|e| {
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    format!("Failed to update tool: {}", e),
-                )
-            })?;
+            .await?;
 
             // Automatically sync tool embeddings with reverse references
             sync_tool_capabilities_embeddings(&pool, id, &tool.server_name, &new_caps).await;
@@ -441,13 +424,7 @@ pub async fn sync_tool(
             .bind(&err)
             .bind(id)
             .execute(&pool)
-            .await
-            .map_err(|e| {
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    format!("Failed to update tool: {}", e),
-                )
-            })?;
+            .await?;
 
             Ok((
                 StatusCode::OK,
@@ -468,7 +445,7 @@ pub async fn test_tool_execution(
     State(pool): State<PgPool>,
     Path(id): Path<Uuid>,
     Json(payload): Json<TestToolRequest>,
-) -> Result<(StatusCode, Json<TestToolResponse>), (StatusCode, String)> {
+) -> Result<(StatusCode, Json<TestToolResponse>), AppError> {
     tracing::info!("Testing tool '{}' on server ID: {}", payload.tool_name, id);
 
     let tool = sqlx::query_as::<_, Tool>(
@@ -480,9 +457,8 @@ pub async fn test_tool_execution(
     )
     .bind(id)
     .fetch_optional(&pool)
-    .await
-    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Database query error: {}", e)))?
-    .ok_or_else(|| (StatusCode::NOT_FOUND, format!("Tool server '{}' not found", id)))?;
+    .await?
+    .ok_or_else(|| AppError::NotFound(format!("Tool server '{}' not found", id)))?;
 
     // Verify tool_name exists in cached_capabilities.tools
     let tools_list = tool
@@ -498,37 +474,24 @@ pub async fn test_tool_execution(
         .unwrap_or(false);
 
     if !tool_found {
-        return Err((
-            StatusCode::UNPROCESSABLE_ENTITY,
-            format!(
-                "Tool '{}' not found in server capabilities",
-                payload.tool_name
-            ),
-        ));
+        return Err(AppError::UnprocessableEntity(format!(
+            "Tool '{}' not found in server capabilities",
+            payload.tool_name
+        )));
     }
 
     let url = tool
         .endpoint_config
         .get("url")
         .and_then(|v| v.as_str())
-        .ok_or_else(|| {
-            (
-                StatusCode::BAD_REQUEST,
-                "Missing endpoint_config.url".to_string(),
-            )
-        })?;
+        .ok_or_else(|| AppError::BadRequest("Missing endpoint_config.url".to_string()))?;
 
     let start = std::time::Instant::now();
 
     let client = reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(15))
         .build()
-        .map_err(|e| {
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                format!("Failed to build HTTP client: {}", e),
-            )
-        })?;
+        .map_err(|e| AppError::Message(format!("Failed to build HTTP client: {}", e)))?;
 
     let call_payload = serde_json::json!({
         "jsonrpc": "2.0",
@@ -547,26 +510,20 @@ pub async fn test_tool_execution(
         .send()
         .await
         .map_err(|e| {
-            (
-                StatusCode::BAD_GATEWAY,
-                format!("Remote MCP server communication failed: {}", e),
-            )
+            AppError::BadGateway(format!("Remote MCP server communication failed: {}", e))
         })?;
 
     let latency_ms = start.elapsed().as_millis() as u64;
 
     if !res.status().is_success() {
-        return Err((
-            StatusCode::BAD_GATEWAY,
-            format!("Remote MCP server returned HTTP status {}", res.status()),
-        ));
+        return Err(AppError::BadGateway(format!(
+            "Remote MCP server returned HTTP status {}",
+            res.status()
+        )));
     }
 
     let json: serde_json::Value = res.json().await.map_err(|e| {
-        (
-            StatusCode::BAD_GATEWAY,
-            format!("Invalid JSON response from MCP server: {}", e),
-        )
+        AppError::BadGateway(format!("Invalid JSON response from MCP server: {}", e))
     })?;
 
     if let Some(err) = json.get("error") {
@@ -633,7 +590,7 @@ pub async fn test_tool_execution(
 
 pub async fn list_tools(
     State(pool): State<PgPool>,
-) -> Result<(StatusCode, Json<Vec<Tool>>), (StatusCode, String)> {
+) -> Result<(StatusCode, Json<Vec<Tool>>), AppError> {
     let servers = sqlx::query_as::<_, Tool>(
         r#"
         SELECT id, server_name, transport_type, endpoint_config, cached_capabilities, owner_id, sync_policy, sync_status, last_synced_at, last_sync_error
@@ -641,8 +598,7 @@ pub async fn list_tools(
         "#
     )
     .fetch_all(&pool)
-    .await
-    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to list MCP servers: {}", e)))?;
+    .await?;
 
     Ok((StatusCode::OK, Json(servers)))
 }
@@ -650,8 +606,8 @@ pub async fn list_tools(
 pub async fn get_tool(
     State(pool): State<PgPool>,
     Path(id): Path<Uuid>,
-) -> Result<(StatusCode, Json<Tool>), (StatusCode, String)> {
-    let server = sqlx::query_as::<_, Tool>(
+) -> Result<(StatusCode, Json<Tool>), AppError> {
+    let tool = sqlx::query_as::<_, Tool>(
         r#"
         SELECT id, server_name, transport_type, endpoint_config, cached_capabilities, owner_id, sync_policy, sync_status, last_synced_at, last_sync_error
         FROM tools
@@ -660,12 +616,8 @@ pub async fn get_tool(
     )
     .bind(id)
     .fetch_optional(&pool)
-    .await
-    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to fetch MCP server: {}", e)))?;
-
-    let Some(tool) = server else {
-        return Err((StatusCode::NOT_FOUND, format!("Tool server '{}' not found", id)));
-    };
+    .await?
+    .ok_or_else(|| AppError::NotFound(format!("Tool server '{}' not found", id)))?;
 
     Ok((StatusCode::OK, Json(tool)))
 }
@@ -673,21 +625,15 @@ pub async fn get_tool(
 pub async fn delete_tool(
     State(pool): State<PgPool>,
     Path(id): Path<Uuid>,
-) -> Result<StatusCode, (StatusCode, String)> {
+) -> Result<StatusCode, AppError> {
     tracing::info!("Deleting tool server (ID: {})", id);
     sqlx::query("DELETE FROM tools WHERE id = $1")
         .bind(id)
         .execute(&pool)
-        .await
-        .map_err(|e| {
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                format!("Failed to delete MCP server: {}", e),
-            )
-        })?;
+        .await?;
 
     // Purge embeddings for the deleted tool
-    let _ = crate::webserver::search::purge_entity_embeddings(&pool, id).await;
+    crate::webserver::search::purge_entity_embeddings(&pool, id).await?;
 
     Ok(StatusCode::NO_CONTENT)
 }
@@ -712,7 +658,7 @@ pub async fn sync_tool_capabilities_embeddings(
         }
     }
     let ref_fields: Vec<(&str, &str)> = fields.iter().map(|(k, v)| (*k, v.as_str())).collect();
-    let _ = crate::webserver::search::sync_entity_embeddings(
+    if let Err(e) = crate::webserver::search::sync_entity_embeddings(
         pool,
         tool_id,
         crate::models::search::EntityType::Tools,
@@ -720,13 +666,16 @@ pub async fn sync_tool_capabilities_embeddings(
         None,
         &ref_fields,
     )
-    .await;
+    .await
+    {
+        tracing::warn!(error = %e, tool_id = %tool_id, "Failed to sync tool embeddings");
+    }
 }
 
 pub async fn sync_tool_embeddings(
     State(pool): State<PgPool>,
     Path(id): Path<Uuid>,
-) -> Result<Json<crate::models::SyncEmbeddingsResponse>, (StatusCode, String)> {
+) -> Result<Json<crate::models::SyncEmbeddingsResponse>, AppError> {
     let tool = sqlx::query_as::<_, Tool>(
         r#"
         SELECT id, server_name, transport_type, endpoint_config, cached_capabilities, owner_id, sync_policy, sync_status, last_synced_at, last_sync_error
@@ -736,9 +685,8 @@ pub async fn sync_tool_embeddings(
     )
     .bind(id)
     .fetch_optional(&pool)
-    .await
-    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Fetch Error: {}", e)))?
-    .ok_or_else(|| (StatusCode::NOT_FOUND, "Tool not found".to_string()))?;
+    .await?
+    .ok_or_else(|| AppError::NotFound("Tool not found".to_string()))?;
 
     sync_tool_capabilities_embeddings(&pool, id, &tool.server_name, &tool.cached_capabilities)
         .await;
@@ -747,8 +695,7 @@ pub async fn sync_tool_embeddings(
         sqlx::query_scalar("SELECT COUNT(*) FROM entity_embeddings WHERE entity_id = $1")
             .bind(id)
             .fetch_one(&pool)
-            .await
-            .unwrap_or(0);
+            .await?;
 
     Ok(Json(crate::models::SyncEmbeddingsResponse {
         status: "success".to_string(),
@@ -975,9 +922,9 @@ mod tests {
             )
             .await;
             assert!(unk_res.is_err());
-            let (unk_status, unk_msg) = unk_res.unwrap_err();
-            assert_eq!(unk_status, StatusCode::UNPROCESSABLE_ENTITY);
-            assert!(unk_msg.contains("not found in server capabilities"));
+            let unk_err = unk_res.unwrap_err();
+            assert_eq!(unk_err.status_code(), StatusCode::UNPROCESSABLE_ENTITY);
+            assert!(unk_err.to_string().contains("not found in server capabilities"));
 
             // 3. Unknown server fails with 404
             let missing_server_id = Uuid::new_v4();
@@ -988,8 +935,8 @@ mod tests {
             )
             .await;
             assert!(missing_res.is_err());
-            let (missing_status, _) = missing_res.unwrap_err();
-            assert_eq!(missing_status, StatusCode::NOT_FOUND);
+            let missing_err = missing_res.unwrap_err();
+            assert_eq!(missing_err.status_code(), StatusCode::NOT_FOUND);
 
             // Cleanup
             sqlx::query("DELETE FROM tools WHERE id = $1")
