@@ -50,7 +50,7 @@ pub async fn service_main(
     info!("Starting {} v{}", NAME, VERSION);
 
     // 1. Connect DB Pool & Verify pgvector (Fail-Fast)
-    let db_url: url::Url = config.database.url.clone().into();
+    let db_url = config.database.url.connection_url()?;
     let pool = init_db_pool(db_url.as_str(), config.database.max_connections)
         .await
         .map_err(|e| format!("Fail-Fast Error: Database connection failed: {}", e))?;
@@ -97,9 +97,7 @@ pub async fn service_main(
     hams_config.version = VERSION.to_owned();
 
     let hams = Hams::new(hams_config);
-    let mut hams_harness = HamsHarness::init(hams, ct.clone())
-        .await
-        .map_err(|e| format!("HaMS init error: {}", e))?;
+    let mut hams_harness = HamsHarness::init(hams, ct.clone()).await?;
 
     let handle_clone = Arc::clone(&app_state.prometheus_handle);
     hams_harness
@@ -132,7 +130,7 @@ pub async fn service_main(
 pub async fn run_migrations(
     config: AppConfig,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    let db_url: url::Url = config.database.url.into();
+    let db_url = config.database.url.connection_url()?;
     let pool = init_db_pool(db_url.as_str(), config.database.max_connections)
         .await
         .map_err(|e| format!("DB connection error: {}", e))?;

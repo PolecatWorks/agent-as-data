@@ -1145,12 +1145,32 @@ fn default_workspace_state(pool: sqlx::PgPool) -> crate::state::AppState {
     }
 }
 
+#[derive(thiserror::Error, Debug)]
+pub enum WorkspaceToolError {
+    #[error("Invalid arguments for {0}: {1}")]
+    InvalidArguments(String, #[source] serde_json::Error),
+    #[error(transparent)]
+    Io(#[from] std::io::Error),
+    #[error(transparent)]
+    Serde(#[from] serde_json::Error),
+    #[error(transparent)]
+    KbTool(#[from] crate::kb_tools::ToolError),
+    #[error(transparent)]
+    Mcp(#[from] crate::mcp::McpError),
+    #[error("Database error looking up MCP tool '{0}': {1}")]
+    DatabaseLookup(String, #[source] sqlx::Error),
+    #[error("{0}")]
+    RemoteExecution(String),
+    #[error("Unknown tool: {0}")]
+    UnknownTool(String),
+}
+
 pub async fn execute_workspace_tool(
     bench_id: Uuid,
     tool_name: &str,
     args_json: &serde_json::Value,
     pool: &sqlx::PgPool,
-) -> Result<String, String> {
+) -> Result<String, WorkspaceToolError> {
     let state = default_workspace_state(pool.clone());
     let backend_url = format!(
         "http://{}",
@@ -1164,45 +1184,45 @@ pub async fn execute_workspace_tool(
     match tool_name {
         ReadFileTool::NAME => {
             let args: ReadFileArgs = serde_json::from_value(args_json.clone())
-                .map_err(|e| format!("Invalid arguments for {}: {}", tool_name, e))?;
+                .map_err(|e| WorkspaceToolError::InvalidArguments(tool_name.to_string(), e))?;
             let tool = ReadFileTool { bench_id };
-            let res = tool.call(args).await.map_err(|e| e.to_string())?;
-            serde_json::to_string(&res).map_err(|e| e.to_string())
+            let res = tool.call(args).await?;
+            Ok(serde_json::to_string(&res)?)
         }
         WriteFileTool::NAME => {
             let args: WriteFileArgs = serde_json::from_value(args_json.clone())
-                .map_err(|e| format!("Invalid arguments for {}: {}", tool_name, e))?;
+                .map_err(|e| WorkspaceToolError::InvalidArguments(tool_name.to_string(), e))?;
             let tool = WriteFileTool { bench_id };
-            let res = tool.call(args).await.map_err(|e| e.to_string())?;
-            serde_json::to_string(&res).map_err(|e| e.to_string())
+            let res = tool.call(args).await?;
+            Ok(serde_json::to_string(&res)?)
         }
         ReplaceInFileTool::NAME => {
             let args: ReplaceInFileArgs = serde_json::from_value(args_json.clone())
-                .map_err(|e| format!("Invalid arguments for {}: {}", tool_name, e))?;
+                .map_err(|e| WorkspaceToolError::InvalidArguments(tool_name.to_string(), e))?;
             let tool = ReplaceInFileTool { bench_id };
-            let res = tool.call(args).await.map_err(|e| e.to_string())?;
-            serde_json::to_string(&res).map_err(|e| e.to_string())
+            let res = tool.call(args).await?;
+            Ok(serde_json::to_string(&res)?)
         }
         ListFilesTool::NAME => {
             let args: ListFilesArgs = serde_json::from_value(args_json.clone())
                 .unwrap_or(ListFilesArgs { dir_path: None });
             let tool = ListFilesTool { bench_id };
-            let res = tool.call(args).await.map_err(|e| e.to_string())?;
-            serde_json::to_string(&res).map_err(|e| e.to_string())
+            let res = tool.call(args).await?;
+            Ok(serde_json::to_string(&res)?)
         }
         DeleteFileTool::NAME => {
             let args: DeleteFileArgs = serde_json::from_value(args_json.clone())
-                .map_err(|e| format!("Invalid arguments for {}: {}", tool_name, e))?;
+                .map_err(|e| WorkspaceToolError::InvalidArguments(tool_name.to_string(), e))?;
             let tool = DeleteFileTool { bench_id };
-            let res = tool.call(args).await.map_err(|e| e.to_string())?;
-            serde_json::to_string(&res).map_err(|e| e.to_string())
+            let res = tool.call(args).await?;
+            Ok(serde_json::to_string(&res)?)
         }
         RenameFileTool::NAME => {
             let args: RenameFileArgs = serde_json::from_value(args_json.clone())
-                .map_err(|e| format!("Invalid arguments for {}: {}", tool_name, e))?;
+                .map_err(|e| WorkspaceToolError::InvalidArguments(tool_name.to_string(), e))?;
             let tool = RenameFileTool { bench_id };
-            let res = tool.call(args).await.map_err(|e| e.to_string())?;
-            serde_json::to_string(&res).map_err(|e| e.to_string())
+            let res = tool.call(args).await?;
+            Ok(serde_json::to_string(&res)?)
         }
         ReadBenchMemoryTool::NAME => {
             let args: ReadBenchMemoryArgs =
@@ -1211,76 +1231,73 @@ pub async fn execute_workspace_tool(
                 bench_id,
                 pool: pool.clone(),
             };
-            let res = tool.call(args).await.map_err(|e| e.to_string())?;
-            serde_json::to_string(&res).map_err(|e| e.to_string())
+            let res = tool.call(args).await?;
+            Ok(serde_json::to_string(&res)?)
         }
         UpdateBenchMemoryTool::NAME => {
             let args: UpdateBenchMemoryArgs = serde_json::from_value(args_json.clone())
-                .map_err(|e| format!("Invalid arguments for {}: {}", tool_name, e))?;
+                .map_err(|e| WorkspaceToolError::InvalidArguments(tool_name.to_string(), e))?;
             let tool = UpdateBenchMemoryTool {
                 bench_id,
                 pool: pool.clone(),
             };
-            let res = tool.call(args).await.map_err(|e| e.to_string())?;
-            serde_json::to_string(&res).map_err(|e| e.to_string())
+            let res = tool.call(args).await?;
+            Ok(serde_json::to_string(&res)?)
         }
         ListSkillsTool::NAME => {
             let args: ListSkillsArgs =
                 serde_json::from_value(args_json.clone()).unwrap_or(ListSkillsArgs {});
             let tool = ListSkillsTool { pool: pool.clone() };
-            let res = tool.call(args).await.map_err(|e| e.to_string())?;
-            serde_json::to_string(&res).map_err(|e| e.to_string())
+            let res = tool.call(args).await?;
+            Ok(serde_json::to_string(&res)?)
         }
         ViewSkillTool::NAME => {
             let args: ViewSkillArgs = serde_json::from_value(args_json.clone())
-                .map_err(|e| format!("Invalid arguments for {}: {}", tool_name, e))?;
+                .map_err(|e| WorkspaceToolError::InvalidArguments(tool_name.to_string(), e))?;
             let tool = ViewSkillTool { pool: pool.clone() };
-            let res = tool.call(args).await.map_err(|e| e.to_string())?;
-            serde_json::to_string(&res).map_err(|e| e.to_string())
+            let res = tool.call(args).await?;
+            Ok(serde_json::to_string(&res)?)
         }
         crate::kb_tools::KbNodeBrowseTool::NAME => {
             let args: crate::kb_tools::KbNodeBrowseArgs = serde_json::from_value(args_json.clone())
-                .map_err(|e| format!("Invalid arguments for {}: {}", tool_name, e))?;
+                .map_err(|e| WorkspaceToolError::InvalidArguments(tool_name.to_string(), e))?;
             let tool = crate::kb_tools::KbNodeBrowseTool { backend_url };
-            let res = tool.call(args).await.map_err(|e| e.to_string())?;
-            serde_json::to_string(&res).map_err(|e| e.to_string())
+            let res = tool.call(args).await?;
+            Ok(serde_json::to_string(&res)?)
         }
         crate::kb_tools::KbNodeReadTool::NAME => {
             let args: crate::kb_tools::KbNodeReadArgs = serde_json::from_value(args_json.clone())
-                .map_err(|e| format!("Invalid arguments for {}: {}", tool_name, e))?;
+                .map_err(|e| WorkspaceToolError::InvalidArguments(tool_name.to_string(), e))?;
             let tool = crate::kb_tools::KbNodeReadTool { backend_url };
-            let res = tool.call(args).await.map_err(|e| e.to_string())?;
-            serde_json::to_string(&res).map_err(|e| e.to_string())
+            let res = tool.call(args).await?;
+            Ok(serde_json::to_string(&res)?)
         }
         crate::kb_tools::KbNodeAddTool::NAME => {
             let args: crate::kb_tools::KbNodeAddArgs = serde_json::from_value(args_json.clone())
-                .map_err(|e| format!("Invalid arguments for {}: {}", tool_name, e))?;
+                .map_err(|e| WorkspaceToolError::InvalidArguments(tool_name.to_string(), e))?;
             let tool = crate::kb_tools::KbNodeAddTool { backend_url };
-            let res = tool.call(args).await.map_err(|e| e.to_string())?;
-            serde_json::to_string(&res).map_err(|e| e.to_string())
+            let res = tool.call(args).await?;
+            Ok(serde_json::to_string(&res)?)
         }
         crate::kb_tools::KbNodeEditTool::NAME => {
             let args: crate::kb_tools::KbNodeEditArgs = serde_json::from_value(args_json.clone())
-                .map_err(|e| format!("Invalid arguments for {}: {}", tool_name, e))?;
+                .map_err(|e| WorkspaceToolError::InvalidArguments(tool_name.to_string(), e))?;
             let tool = crate::kb_tools::KbNodeEditTool { backend_url };
-            let res = tool.call(args).await.map_err(|e| e.to_string())?;
-            serde_json::to_string(&res).map_err(|e| e.to_string())
+            let res = tool.call(args).await?;
+            Ok(serde_json::to_string(&res)?)
         }
         crate::kb_tools::KbNodeDeleteTool::NAME => {
             let args: crate::kb_tools::KbNodeDeleteArgs = serde_json::from_value(args_json.clone())
-                .map_err(|e| format!("Invalid arguments for {}: {}", tool_name, e))?;
+                .map_err(|e| WorkspaceToolError::InvalidArguments(tool_name.to_string(), e))?;
             let tool = crate::kb_tools::KbNodeDeleteTool { backend_url };
-            let res = tool.call(args).await.map_err(|e| e.to_string())?;
-            serde_json::to_string(&res).map_err(|e| e.to_string())
+            let res = tool.call(args).await?;
+            Ok(serde_json::to_string(&res)?)
         }
         _ => {
             // 1. Check in-process unified AAD MCP capabilities first
             let aad_mcp = crate::mcp::server::AadMcpServer::new(state);
             if aad_mcp.list_tools().iter().any(|t| t.name == tool_name) {
-                return aad_mcp
-                    .call_tool(tool_name, args_json.clone())
-                    .await
-                    .map_err(|e| e.to_string());
+                return Ok(aad_mcp.call_tool(tool_name, args_json.clone()).await?);
             }
 
             // 2. Fallback to registered remote MCP servers
@@ -1295,9 +1312,7 @@ pub async fn execute_workspace_tool(
             .bind(serde_json::json!([{"name": tool_name}]).to_string())
             .fetch_optional(pool)
             .await
-            .map_err(|e| {
-                format!("Database error looking up MCP tool '{}': {}", tool_name, e)
-            })?;
+            .map_err(|e| WorkspaceToolError::DatabaseLookup(tool_name.to_string(), e))?;
 
             if let Some(row) = row {
                 let endpoint_config: serde_json::Value =
@@ -1308,11 +1323,12 @@ pub async fn execute_workspace_tool(
                         tool_name,
                         args_json.clone(),
                     )
-                    .await?;
-                    return serde_json::to_string(&res).map_err(|e| e.to_string());
+                    .await
+                    .map_err(WorkspaceToolError::RemoteExecution)?;
+                    return Ok(serde_json::to_string(&res)?);
                 }
             }
-            Err(format!("Unknown tool: {}", tool_name))
+            Err(WorkspaceToolError::UnknownTool(tool_name.to_string()))
         }
     }
 }

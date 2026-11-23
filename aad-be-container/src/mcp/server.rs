@@ -766,7 +766,7 @@ impl AadMcpServer {
         if let Some(id) = req.id {
             let Json(t) = crate::webserver::traits::get_trait(State(self.pool.clone()), Path(id))
                 .await
-                .map_err(|(_, msg)| msg)?;
+                .map_err(|e| e.to_string())?;
             return serde_json::to_string(&t).map_err(|e| e.to_string());
         }
 
@@ -818,7 +818,7 @@ impl AadMcpServer {
         let (_, Json(created)) =
             crate::webserver::traits::create_trait(State(self.pool.clone()), Json(contract))
                 .await
-                .map_err(|(_, msg)| msg)?;
+                .map_err(|e| e.to_string())?;
         serde_json::to_string(&created).map_err(|e| e.to_string())
     }
 
@@ -852,7 +852,7 @@ impl AadMcpServer {
             Json(contract),
         )
         .await
-        .map_err(|(_, msg)| msg)?;
+        .map_err(|e| e.to_string())?;
         serde_json::to_string(&updated).map_err(|e| e.to_string())
     }
 
@@ -864,7 +864,7 @@ impl AadMcpServer {
         let Json(deleted) =
             crate::webserver::traits::delete_trait(State(self.pool.clone()), Path(req.id))
                 .await
-                .map_err(|(_, msg)| msg)?;
+                .map_err(|e| e.to_string())?;
         serde_json::to_string(&deleted).map_err(|e| e.to_string())
     }
 
@@ -879,7 +879,7 @@ impl AadMcpServer {
     ) -> Result<String, String> {
         let (_, Json(servers)) = crate::webserver::tools::list_tools(State(self.pool.clone()))
             .await
-            .map_err(|(_, msg)| msg)?;
+            .map_err(|e| e.to_string())?;
         serde_json::to_string(&servers).map_err(|e| e.to_string())
     }
 
@@ -892,7 +892,7 @@ impl AadMcpServer {
             let (_, Json(server)) =
                 crate::webserver::tools::get_tool(State(self.pool.clone()), Path(id))
                     .await
-                    .map_err(|(_, msg)| msg)?;
+                    .map_err(|e| e.to_string())?;
             return serde_json::to_string(&server).map_err(|e| e.to_string());
         }
 
@@ -934,7 +934,7 @@ impl AadMcpServer {
             }),
         )
         .await
-        .map_err(|(_, msg)| msg)?;
+        .map_err(|e| e.to_string())?;
         serde_json::to_string(&results).map_err(|e| e.to_string())
     }
 

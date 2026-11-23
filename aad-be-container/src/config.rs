@@ -6,12 +6,35 @@ use figment_file_provider_adapter::FileAdapter;
 use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
 use std::time::Duration;
+use thiserror::Error;
 use url::Url;
 
 use ::hams::hams::config::HamsConfig;
 
-use crate::mcp::McpConfig;
+use crate::mcp::{McpConfig, McpError};
 use crate::tokio_tools::ThreadRuntime;
+
+#[derive(Debug, Error)]
+pub enum ConfigError {
+    #[error("Database URL cannot be empty")]
+    EmptyDatabaseUrl,
+    #[error("Failed to set database username on database.url")]
+    SetDatabaseUsernameFailed,
+    #[error("Failed to set database password on database.url")]
+    SetDatabasePasswordFailed,
+    #[error("Webservice api_prefix must be non-empty and start with '/'")]
+    InvalidApiPrefix,
+    #[error("LLM Ollama URL cannot be empty")]
+    EmptyLlmUrl,
+    #[error("LLM Model cannot be empty")]
+    EmptyLlmModel,
+    #[error("LLM timeout must be greater than 0")]
+    ZeroLlmTimeout,
+    #[error("Runtime metrics_interval must be greater than 0")]
+    ZeroMetricsInterval,
+    #[error(transparent)]
+    Mcp(#[from] McpError),
+}
 
 /// A URL structure that optionally embeds credential placeholders for file-based secret resolution.
 #[derive(Serialize, Debug, Clone)]
@@ -60,16 +83,28 @@ impl<'de> Deserialize<'de> for UrlWithUsernamePassword {
     }
 }
 
-impl From<UrlWithUsernamePassword> for Url {
-    fn from(value: UrlWithUsernamePassword) -> Self {
-        let mut return_url = value.url;
-        if let Some(password) = value.password {
-            let _ = return_url.set_password(Some(&password));
+impl UrlWithUsernamePassword {
+    pub fn connection_url(&self) -> Result<Url, ConfigError> {
+        let mut return_url = self.url.clone();
+        if let Some(ref username) = self.username {
+            return_url
+                .set_username(username)
+                .map_err(|()| ConfigError::SetDatabaseUsernameFailed)?;
         }
-        if let Some(username) = value.username {
-            let _ = return_url.set_username(&username);
+        if let Some(ref password) = self.password {
+            return_url
+                .set_password(Some(password))
+                .map_err(|()| ConfigError::SetDatabasePasswordFailed)?;
         }
-        return_url
+        Ok(return_url)
+    }
+}
+
+impl TryFrom<UrlWithUsernamePassword> for Url {
+    type Error = ConfigError;
+
+    fn try_from(value: UrlWithUsernamePassword) -> Result<Self, Self::Error> {
+        value.connection_url()
     }
 }
 
@@ -136,27 +171,27 @@ impl AppConfig {
     }
 
     /// Fail-Fast early validation of loaded configuration.
-    pub fn validate(&self) -> Result<(), String> {
-        let db_url: Url = self.database.url.clone().into();
+    pub fn validate(&self) -> Result<(), ConfigError> {
+        let db_url = self.database.url.connection_url()?;
         if db_url.as_str().trim().is_empty() {
-            return Err("Database URL cannot be empty".to_string());
+            return Err(ConfigError::EmptyDatabaseUrl);
         }
         let api_prefix = self.webservice.api_prefix.trim();
         if api_prefix.is_empty() || !api_prefix.starts_with('/') {
-            return Err("Webservice api_prefix must be non-empty and start with '/'".to_string());
+            return Err(ConfigError::InvalidApiPrefix);
         }
         if self.llm.ollama_url.as_str().trim().is_empty() {
-            return Err("LLM Ollama URL cannot be empty".to_string());
+            return Err(ConfigError::EmptyLlmUrl);
         }
         if self.llm.model.trim().is_empty() {
-            return Err("LLM Model cannot be empty".to_string());
+            return Err(ConfigError::EmptyLlmModel);
         }
         if self.llm.timeout.is_zero() {
-            return Err("LLM timeout must be greater than 0".to_string());
+            return Err(ConfigError::ZeroLlmTimeout);
         }
-        self.mcp.validate().map_err(|e| e.to_string())?;
+        self.mcp.validate()?;
         if self.runtime.metrics_interval.is_zero() {
-            return Err("Runtime metrics_interval must be greater than 0".to_string());
+            return Err(ConfigError::ZeroMetricsInterval);
         }
         Ok(())
     }
@@ -198,7 +233,7 @@ mod tests {
         };
 
         assert!(config.validate().is_ok());
-        let db_url: Url = config.database.url.into();
+        let db_url = config.database.url.connection_url().unwrap();
         assert_eq!(
             db_url.as_str(),
             "postgres://postgres:mysecretpassword@localhost:5432/aaddb"
@@ -236,10 +271,16 @@ mod tests {
             },
         };
 
-        assert!(config.validate().is_err());
+        assert!(matches!(
+            config.validate(),
+            Err(ConfigError::InvalidApiPrefix)
+        ));
 
         config.webservice.api_prefix = "api/v1".to_string();
-        assert!(config.validate().is_err());
+        assert!(matches!(
+            config.validate(),
+            Err(ConfigError::InvalidApiPrefix)
+        ));
     }
 
     #[test]
@@ -273,7 +314,10 @@ mod tests {
             },
         };
 
-        assert!(config.validate().is_err());
+        assert!(matches!(
+            config.validate(),
+            Err(ConfigError::ZeroLlmTimeout)
+        ));
     }
 
     #[test]
@@ -309,8 +353,8 @@ mod tests {
         config.runtime.metrics_interval = Duration::from_secs(0);
 
         let res = config.validate();
-        assert!(res.is_err());
-        assert!(res.unwrap_err().contains("metrics_interval"));
+        assert!(matches!(res, Err(ConfigError::ZeroMetricsInterval)));
+        assert!(res.unwrap_err().to_string().contains("metrics_interval"));
     }
 
     #[test]
@@ -346,8 +390,24 @@ mod tests {
         config.mcp.server_name = "   ".to_string();
 
         let res = config.validate();
-        assert!(res.is_err());
-        assert!(res.unwrap_err().contains("server_name"));
+        assert!(matches!(
+            res,
+            Err(ConfigError::Mcp(McpError::EmptyServerName))
+        ));
+        assert!(res.unwrap_err().to_string().contains("server_name"));
+    }
+
+    #[test]
+    fn test_url_with_username_password_rejects_cannot_be_a_base_credentials() {
+        let bad_creds = UrlWithUsernamePassword {
+            url: Url::parse("mailto:someone@example.com").unwrap(),
+            username: Some("user".to_string()),
+            password: Some("pass".to_string()),
+        };
+        assert!(matches!(
+            bad_creds.connection_url(),
+            Err(ConfigError::SetDatabaseUsernameFailed)
+        ));
     }
 
     #[test]
@@ -404,7 +464,7 @@ mod tests {
         assert_eq!(config.database.url.username.as_deref(), Some("secretuser"));
         assert_eq!(config.database.url.password.as_deref(), Some("secretpass"));
 
-        let db_url: Url = config.database.url.into();
+        let db_url = config.database.url.connection_url().unwrap();
         assert_eq!(
             db_url.as_str(),
             "postgres://secretuser:secretpass@localhost:5432/aaddb"

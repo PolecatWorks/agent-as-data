@@ -115,7 +115,7 @@ pub async fn create_agent(
 
     // 3. Automatically sync embeddings with reverse references
     let prompt_str = payload.agent_definition.to_string();
-    let _ = crate::webserver::search::sync_entity_embeddings(
+    if let Err(e) = crate::webserver::search::sync_entity_embeddings(
         &pool,
         agent_id,
         crate::models::search::EntityType::Agents,
@@ -123,7 +123,10 @@ pub async fn create_agent(
         Some(payload.description.as_str()),
         &[("prompt", &prompt_str)],
     )
-    .await;
+    .await
+    {
+        tracing::warn!(error = %e, agent_id = %agent_id, "Failed to sync agent embeddings");
+    }
 
     tracing::info!(
         "Agent '{}' created successfully (ID: {})",
@@ -188,7 +191,7 @@ pub async fn update_agent(
 
     // Automatically sync embeddings with reverse references
     let prompt_str = payload.agent_definition.to_string();
-    let _ = crate::webserver::search::sync_entity_embeddings(
+    if let Err(e) = crate::webserver::search::sync_entity_embeddings(
         &pool,
         id,
         crate::models::search::EntityType::Agents,
@@ -196,7 +199,10 @@ pub async fn update_agent(
         Some(payload.description.as_str()),
         &[("prompt", &prompt_str)],
     )
-    .await;
+    .await
+    {
+        tracing::warn!(error = %e, agent_id = %id, "Failed to sync agent embeddings");
+    }
 
     tracing::info!("Agent '{}' updated successfully (ID: {})", payload.name, id);
     Ok(Json(response_agent))
@@ -335,7 +341,7 @@ pub async fn delete_agent(
     }
 
     // Purge embeddings for the deleted/archived agent
-    let _ = crate::webserver::search::purge_entity_embeddings(&pool, id).await;
+    crate::webserver::search::purge_entity_embeddings(&pool, id).await?;
 
     Ok(agent_res)
 }
